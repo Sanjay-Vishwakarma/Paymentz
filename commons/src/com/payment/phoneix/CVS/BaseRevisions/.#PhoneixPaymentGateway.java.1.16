@@ -1,0 +1,453 @@
+package com.payment.phoneix;
+
+import com.directi.pg.Functions;
+import com.directi.pg.LoadProperties;
+import com.directi.pg.Logger;
+import com.directi.pg.TransactionLogger;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.GenericRequestVO;
+import com.directi.pg.core.valueObjects.GenericResponseVO;
+import com.google.gson.Gson;
+import com.payment.Enum.PZProcessType;
+import com.payment.KortaPay.KortaPayUtils;
+import com.payment.common.core.*;
+import com.payment.exceptionHandler.*;
+import com.payment.exceptionHandler.constraintType.PZTechnicalExceptionEnum;
+import org.codehaus.jettison.json.JSONObject;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.errors.EncodingException;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.util.ResourceBundle;
+
+/**
+ * Created by Vivek on 9/10/2019.
+ */
+public class PhoneixPaymentGateway extends AbstractPaymentGateway
+{
+    public static final String GATEWAY_TYPE = "phoneix";
+    final static ResourceBundle RB = LoadProperties.getProperty("com.directi.pg.Phoneix");
+    private static TransactionLogger transactionLogger = new TransactionLogger(PhoneixPaymentGateway.class.getName());
+    private static Logger log = new Logger(PhoneixPaymentGateway.class.getName());
+
+    public PhoneixPaymentGateway(String accountId)
+    {
+        this.accountId = accountId;
+    }
+
+    public GenericResponseVO processSale(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+        transactionLogger.error("---Entering into processSale---");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        Functions functions = new Functions();
+        CommTransactionDetailsVO transDetailsVO = commRequestVO.getTransDetailsVO();
+        CommCardDetailsVO cardDetailsVO=commRequestVO.getCardDetailsVO();
+        CommAddressDetailsVO addressDetailsVO=commRequestVO.getAddressDetailsVO();
+        CommMerchantVO commMerchantVO = commRequestVO.getCommMerchantVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String mId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId();
+        String termUrl="";
+        boolean isTest = gatewayAccount.isTest();
+        String is3dSupported = gatewayAccount.get_3DSupportAccount();
+        /*if (functions.isValueNull(commMerchantVO.getHostUrl())){
+            termUrl = "https://" + commMerchantVO.getHostUrl() + RB.getString("HOST_URL");
+        }
+        else{
+            termUrl = RB.getString("TERM_URL");
+        }*/
+        transactionLogger.error("inside sale");
+        String saleResponse="";
+        String cardNum	=cardDetailsVO.getCardNum();
+        String ExpMonth	=cardDetailsVO.getExpMonth();
+        String ExpYear	=cardDetailsVO.getExpYear();
+        String Member	="";
+        String BillingZipCode="";
+        String BillingCountry="";
+        String BillingCity="";
+        String BillingAddress="";
+        String Email="";
+        //Member=URLEncoder.encode(addressDetailsVO.getFirstname()+" "+addressDetailsVO.getLastname(),"utf-8").replaceAll("\\+","%20");
+        try
+        {
+            Member=URLEncoder.encode(addressDetailsVO.getFirstname()+" "+addressDetailsVO.getLastname(),"UTF-8").replaceAll("\\+","%20");
+            BillingZipCode =URLEncoder.encode(addressDetailsVO.getZipCode(),"UTF-8").replaceAll("\\+", "%20");
+            BillingCountry =URLEncoder.encode(addressDetailsVO.getCountry(),"UTF-8").replaceAll("\\+","%20");
+            BillingCity =URLEncoder.encode(addressDetailsVO.getCity(),"UTF-8").replaceAll("\\+","%20");
+            BillingAddress =URLEncoder.encode(addressDetailsVO.getStreet(),"UTF-8").replaceAll("\\+","%20");
+            Email =URLEncoder.encode(addressDetailsVO.getEmail(),"UTF-8").replaceAll("\\+","%20");
+
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            Member= addressDetailsVO.getFirstname() + " " + addressDetailsVO.getLastname();
+            BillingZipCode =addressDetailsVO.getZipCode();
+            BillingCountry =addressDetailsVO.getCountry();
+            BillingCity =addressDetailsVO.getCity();
+            BillingAddress =addressDetailsVO.getStreet();
+            Email=addressDetailsVO.getEmail();
+        }
+
+
+        String TypeCredit 	="1";//1 = Debit 8 = Installments 0 = Refund
+        String Amount 	=transDetailsVO.getAmount();
+        String Currency =PhoneixUtils.getCurrencyCode(transDetailsVO.getCurrency());
+        String CVV2 =cardDetailsVO.getcVV();
+        String PhoneNumber =addressDetailsVO.getPhone();
+        String notifyUrl ="";
+        String ClientIP =addressDetailsVO.getCardHolderIpAddress();
+        String personalNum =addressDetailsVO.getCustomerid();
+        transactionLogger.error("Host Url---->"+commMerchantVO.getHostUrl());
+        if (functions.isValueNull(commMerchantVO.getHostUrl()))
+        {
+            termUrl = "https://" + commMerchantVO.getHostUrl() + RB.getString("HOST_URL")+trackingID;
+            notifyUrl = RB.getString("NOTIFY_URL")+trackingID;
+            transactionLogger.error("From HOST_URL----" + termUrl);
+        }
+        else
+        {
+            termUrl = RB.getString("TERM_URL")+trackingID;
+            notifyUrl = RB.getString("NOTIFY_URL")+trackingID;
+            transactionLogger.error("From RB TERM_URL ----" + termUrl);
+        }
+        String hostUrl="";
+        String request="CompanyNum="+mId+"&TransType=0&CardNum="+cardNum+"&ExpMonth="+ExpMonth+"&ExpYear="+ExpYear+"&Member="+Member+"&TypeCredit="+TypeCredit+"&Payments=1&Amount="+Amount+"&Currency="+Currency+"&CVV2="+CVV2+"&PhoneNumber="+PhoneNumber+"&Email="+Email+"&BillingZipCode="+BillingZipCode+"&BillingCountry="+BillingCountry+"&BillingAddress1="+BillingAddress+"&BillingCity="+BillingCity+"&ClientIP="+ClientIP+"&Order="+trackingID+"&RetURL="+termUrl+"&NotifyURL="+notifyUrl+"&PersonalNum="+personalNum;
+        String requestLog="CompanyNum="+mId+"&TransType=0&CardNum="+functions.maskingPan(cardNum)+"&ExpMonth="+functions.maskingNumber(ExpMonth)+"&ExpYear="+functions.maskingNumber(ExpYear)+"&Member="+Member+"&TypeCredit="+TypeCredit+"&Payments=1&Amount="+Amount+"&Currency="+Currency+"&CVV2="+functions.maskingNumber(CVV2)+"&PhoneNumber="+PhoneNumber+"&Email="+Email+"&BillingZipCode="+BillingZipCode+"&BillingCountry="+BillingCountry+"&BillingAddress1="+BillingAddress+"&BillingCity="+BillingCity+"&ClientIP="+ClientIP+"&Order="+trackingID+"&RetURL="+termUrl+"&NotifyURL="+notifyUrl+"&PersonalNum="+personalNum;
+        transactionLogger.error("saleRequest--"+trackingID+"-->"+requestLog);
+        if (isTest)
+        {
+            transactionLogger.error("inside isTest-----" + RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_TEST_SALE_URL"));
+            saleResponse = PhoneixUtils.doHttpPostConnection(RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase() + "_TEST_SALE_URL"), request);
+        }
+        else
+        {
+            transactionLogger.error("inside isLive-----" + RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_LIVE_SALE_URL"));
+            saleResponse = PhoneixUtils.doHttpPostConnection(RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_LIVE_SALE_URL"),request);
+        }
+        transactionLogger.error("saleResponse--"+trackingID+"-->"+saleResponse);
+        if(functions.isValueNull(saleResponse))
+        {
+            commResponseVO=PhoneixUtils.readQueryStringResponse(saleResponse);
+            if("success".equalsIgnoreCase(commResponseVO.getStatus()))
+            {
+                commResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                commResponseVO.setRemark(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+                if(functions.isValueNull(PhoneixUtils.getDescription(commResponseVO.getErrorCode())))
+                    commResponseVO.setDescription(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+
+                commResponseVO.setBankDescription(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+            }
+            else if("pending3DConfirmation".equalsIgnoreCase(commResponseVO.getStatus()))
+            {
+                transactionLogger.error("---- Inside Sale 3D ----");
+                commResponseVO.setUrlFor3DRedirect(URLDecoder.decode(commResponseVO.getRedirectUrl()));
+                commResponseVO.setBankDescription(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+            }
+            else
+            {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+                if(functions.isValueNull(PhoneixUtils.getDescription(commResponseVO.getErrorCode())))
+                    commResponseVO.setDescription(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+
+                commResponseVO.setBankDescription(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+                if(!functions.isValueNull(commResponseVO.getRemark()))
+                    commResponseVO.setRemark("Transaction Declined");
+            }
+            commResponseVO.setTransactionType(PZProcessType.SALE.toString());
+        }
+        return commResponseVO;
+    }
+    public GenericResponseVO processAuthentication(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+        transactionLogger.error("---Entering into processSale---");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        Functions functions = new Functions();
+        CommTransactionDetailsVO transDetailsVO = commRequestVO.getTransDetailsVO();
+        CommCardDetailsVO cardDetailsVO=commRequestVO.getCardDetailsVO();
+        CommAddressDetailsVO addressDetailsVO=commRequestVO.getAddressDetailsVO();
+        CommMerchantVO commMerchantVO = commRequestVO.getCommMerchantVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String mId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId();
+        String termUrl="";
+        boolean isTest = gatewayAccount.isTest();
+        String is3dSupported = gatewayAccount.get_3DSupportAccount();
+        transactionLogger.error("inside Auth");
+        String authResponse="";
+        String cardNum	=cardDetailsVO.getCardNum();
+        String ExpMonth	=cardDetailsVO.getExpMonth();
+        String ExpYear	=cardDetailsVO.getExpYear();
+        String Member	="";
+        String BillingZipCode="";
+        String BillingCountry="";
+        String BillingCity="";
+        String BillingAddress="";
+        String Email="";
+        //Member=URLEncoder.encode(addressDetailsVO.getFirstname()+" "+addressDetailsVO.getLastname(),"utf-8").replaceAll("\\+","%20");
+        try
+        {
+            Member=URLEncoder.encode(addressDetailsVO.getFirstname() + " " + addressDetailsVO.getLastname(), "UTF-8").replaceAll("\\+", "%20");
+            BillingZipCode =URLEncoder.encode(addressDetailsVO.getZipCode(),"UTF-8").replaceAll("\\+", "%20");
+            BillingCountry =URLEncoder.encode(addressDetailsVO.getCountry(),"UTF-8").replaceAll("\\+","%20");
+            BillingCity =URLEncoder.encode(addressDetailsVO.getCity(),"UTF-8").replaceAll("\\+","%20");
+            BillingAddress =URLEncoder.encode(addressDetailsVO.getStreet(),"UTF-8").replaceAll("\\+","%20");
+            Email =URLEncoder.encode(addressDetailsVO.getEmail(),"UTF-8").replaceAll("\\+","%20");
+
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            Member= addressDetailsVO.getFirstname() + " " + addressDetailsVO.getLastname();
+            BillingZipCode =addressDetailsVO.getZipCode();
+            BillingCountry =addressDetailsVO.getCountry();
+            BillingCity =addressDetailsVO.getCity();
+            BillingAddress =addressDetailsVO.getStreet();
+            Email=addressDetailsVO.getEmail();
+        }
+
+        String TypeCredit 	="1";//1 = Debit 8 = Installments 0 = Refund
+        String Amount 	=transDetailsVO.getAmount();
+        String Currency =PhoneixUtils.getCurrencyCode(transDetailsVO.getCurrency());
+        String CVV2 =cardDetailsVO.getcVV();
+        String PhoneNumber =addressDetailsVO.getPhone();
+        String ClientIP =addressDetailsVO.getCardHolderIpAddress();
+        String personalNum =addressDetailsVO.getCustomerid();
+        String notifyUrl ="";
+        String TransType ="1";//Auth
+        transactionLogger.error("Host Url---->"+commMerchantVO.getHostUrl());
+        if (functions.isValueNull(commMerchantVO.getHostUrl()))
+        {
+            termUrl = "https://" + commMerchantVO.getHostUrl() + RB.getString("HOST_URL")+trackingID;
+            notifyUrl = "https://" + commMerchantVO.getHostUrl() + RB.getString("NOTIFY_URL")+trackingID;
+            transactionLogger.error("From HOST_URL----" + termUrl);
+        }
+        else
+        {
+        termUrl = RB.getString("TERM_URL")+trackingID;
+        transactionLogger.error("From RB TERM_URL ----" + termUrl);
+        notifyUrl=RB.getString("NOTIFY_URL")+trackingID;
+        transactionLogger.error("notifyUrl---->"+notifyUrl);
+        }
+        String request="CompanyNum="+mId+"&TransType="+TransType+"&CardNum="+cardNum+"&ExpMonth="+ExpMonth+"&ExpYear="+ExpYear+"&Member="+Member+"&TypeCredit="+TypeCredit+"&Payments=1&Amount="+Amount+"&Currency="+Currency+"&CVV2="+CVV2+"&PhoneNumber="+PhoneNumber+"&Email="+Email+"&BillingZipCode="+BillingZipCode+"&BillingCountry="+BillingCountry+"&BillingCity="+BillingCity+"&BillingAddress1="+BillingAddress+"&ClientIP="+ClientIP+"&Order="+trackingID+"&RetURL="+termUrl+"&NotifyURL="+notifyUrl+"&PersonalNum="+personalNum;
+        String requestLog="CompanyNum="+mId+"&TransType="+TransType+"&CardNum="+functions.maskingPan(cardNum)+"&ExpMonth="+functions.maskingNumber(ExpMonth)+"&ExpYear="+functions.maskingNumber(ExpYear)+"&Member="+Member+"&TypeCredit="+TypeCredit+"&Payments=1&Amount="+Amount+"&Currency="+Currency+"&CVV2="+functions.maskingNumber(CVV2)+"&PhoneNumber="+PhoneNumber+"&Email="+Email+"&BillingZipCode="+BillingZipCode+"&BillingCountry="+BillingCountry+"&BillingCity="+BillingCity+"&BillingAddress1="+BillingAddress+"&ClientIP="+ClientIP+"&Order="+trackingID+"&RetURL="+termUrl+"&NotifyURL="+notifyUrl+"&PersonalNum="+personalNum;
+        transactionLogger.error("authRequest--"+trackingID+"-->"+requestLog);
+        if (isTest)
+        {
+            transactionLogger.error("inside isTest-----" + RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_TEST_SALE_URL"));
+            authResponse = PhoneixUtils.doHttpPostConnection(RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase() + "_TEST_SALE_URL"), request);
+        }
+        else
+        {
+            transactionLogger.error("inside isLive-----" + RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_LIVE_SALE_URL"));
+            authResponse = PhoneixUtils.doHttpPostConnection(RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_LIVE_SALE_URL"),request);
+        }
+        transactionLogger.error("authResponse--"+trackingID+"-->"+authResponse);
+        if(functions.isValueNull(authResponse))
+        {
+            commResponseVO=PhoneixUtils.readQueryStringResponse(authResponse);
+            if(commResponseVO.getStatus().equalsIgnoreCase("success"))
+            {
+                commResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                commResponseVO.setRemark(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+                if(!commResponseVO.getDescription().equalsIgnoreCase(PhoneixUtils.getDescription(commResponseVO.getErrorCode())) && functions.isValueNull(PhoneixUtils.getDescription(commResponseVO.getErrorCode())))
+                    commResponseVO.setDescription(PhoneixUtils.getDescription(commResponseVO.getErrorCode())+"("+commResponseVO.getDescription()+")");
+
+                commResponseVO.setBankDescription(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+            }
+            else if("pending3DConfirmation".equalsIgnoreCase(commResponseVO.getStatus()))
+            {
+                transactionLogger.error("----Inside Auth 3D---- ");
+                commResponseVO.setUrlFor3DRedirect(URLDecoder.decode(commResponseVO.getRedirectUrl()));
+            }
+            else
+            {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+                if(!commResponseVO.getDescription().equalsIgnoreCase(PhoneixUtils.getDescription(commResponseVO.getErrorCode())) && functions.isValueNull(PhoneixUtils.getDescription(commResponseVO.getErrorCode())))
+                    commResponseVO.setDescription(PhoneixUtils.getDescription(commResponseVO.getErrorCode())+"("+commResponseVO.getDescription()+")");
+
+                commResponseVO.setBankDescription(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+                if(!functions.isValueNull(commResponseVO.getRemark()))
+                    commResponseVO.setRemark("Transaction Declined");
+            }
+            commResponseVO.setTransactionType(PZProcessType.AUTH.toString());
+        }
+
+        return commResponseVO;
+    }
+    public GenericResponseVO processCapture(String trackingID, GenericRequestVO requestVO) throws PZConstraintViolationException, PZTechnicalViolationException, PZDBViolationException
+    {
+        transactionLogger.error("---Entering into processCapture---");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        Functions functions = new Functions();
+        CommTransactionDetailsVO transDetailsVO = commRequestVO.getTransDetailsVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String mId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId();
+        boolean isTest = gatewayAccount.isTest();
+        transactionLogger.error("inside non 3D sale");
+        String captureResponse="";
+        String TypeCredit 	="1";//1 = Debit 8 = Installments 0 = Refund
+        String Amount 	=transDetailsVO.getAmount();
+        String Currency =PhoneixUtils.getCurrencyCode(transDetailsVO.getCurrency());
+        String request="CompanyNum="+mId+"&TransType=2&TypeCredit="+TypeCredit+"&Payments=1&Amount="+Amount+"&Currency="+Currency+"&TransApprovalID="+transDetailsVO.getPreviousTransactionId();
+        transactionLogger.error("captureRequest--"+trackingID+"-->"+request);
+        if (isTest)
+        {
+            transactionLogger.error("inside isTest-----" + RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_TEST_SALE_URL"));
+            captureResponse = PhoneixUtils.doHttpPostConnection(RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_TEST_SALE_URL"),request);
+        }
+        else
+        {
+            transactionLogger.error("inside isLive-----" + RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_LIVE_SALE_URL"));
+            captureResponse = PhoneixUtils.doHttpPostConnection(RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_LIVE_SALE_URL"),request);
+        }
+        transactionLogger.error("captureResponse--"+trackingID+"-->"+captureResponse);
+        if(functions.isValueNull(captureResponse))
+        {
+            commResponseVO=PhoneixUtils.readQueryStringResponse(captureResponse);
+            if(commResponseVO.getStatus().equalsIgnoreCase("success"))
+            {
+                commResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+            }
+            else
+            {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+                commResponseVO.setDescription(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+                if(!functions.isValueNull(commResponseVO.getRemark()))
+                    commResponseVO.setRemark("Transaction Declined");
+            }
+            commResponseVO.setTransactionType(PZProcessType.CAPTURE.toString());
+        }
+
+        return commResponseVO;
+    }
+    public GenericResponseVO processRefund(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException, PZConstraintViolationException, PZDBViolationException
+    {
+        transactionLogger.error("---Entering into processRefund---");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        Functions functions = new Functions();
+        CommTransactionDetailsVO transDetailsVO = commRequestVO.getTransDetailsVO();
+        CommAddressDetailsVO addressDetailsVO = commRequestVO.getAddressDetailsVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String mId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId();
+        boolean isTest = gatewayAccount.isTest();
+        String refundResponse="";
+        String TypeCredit 	="0";//1 = Debit 8 = Installments 0 = Refund
+        String Amount 	=transDetailsVO.getAmount();
+        String Currency =PhoneixUtils.getCurrencyCode(transDetailsVO.getCurrency());
+        String request="CompanyNum="+mId+"&TransType=0&TypeCredit="+TypeCredit+"&Amount="+Amount+"&RefTransID="+transDetailsVO.getPreviousTransactionId()+"&BillingAddress1="+addressDetailsVO.getStreet()+"&BillingCountry="+addressDetailsVO.getCountry()+"&Currency="+Currency;
+        transactionLogger.error(" processRefund request--"+trackingID+"-->"+request);
+        if (isTest)
+        {
+            transactionLogger.error("inside isTest-----" + RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_TEST_SALE_URL"));
+            refundResponse = PhoneixUtils.doHttpPostConnection(RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase() + "_TEST_SALE_URL"), request);
+        }
+        else
+        {
+            transactionLogger.error("inside isLive-----" + RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_LIVE_SALE_URL"));
+            refundResponse = PhoneixUtils.doHttpPostConnection(RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_LIVE_SALE_URL"),request);
+        }
+        transactionLogger.error("processRefund Response--"+trackingID+"-->"+refundResponse);
+        if(functions.isValueNull(refundResponse))
+        {
+            commResponseVO=PhoneixUtils.readQueryStringResponse(refundResponse);
+            if(commResponseVO.getStatus().equalsIgnoreCase("success"))
+            {
+                commResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+            }
+            else
+            {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+                commResponseVO.setDescription(PhoneixUtils.getDescription(commResponseVO.getErrorCode()));
+            }
+            commResponseVO.setTransactionType(PZProcessType.REFUND.toString());
+        }
+        return commResponseVO;
+    }
+    public GenericResponseVO processQuery(String trackingID, GenericRequestVO requestVO) throws PZConstraintViolationException, PZGenericConstraintViolationException
+    {
+        transactionLogger.error(":::::Entering into  processQuery:::::");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        CommResponseVO commResponseVO = new CommResponseVO();
+        JSONObject inquiryRes=new JSONObject();
+        Functions functions=new Functions();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String mId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId();
+        boolean isTest = gatewayAccount.isTest();
+        String inquiryResponse = "";
+        String status="";
+        try
+        {
+            String merchantkey = gatewayAccount.getFRAUD_FTP_PASSWORD();
+            String signature = PhoneixUtils.hashSignature(mId + trackingID + merchantkey);
+            String request = "CompanyNum=" + mId + "&Order=" + trackingID + "&Signature=" + signature;
+            transactionLogger.error(" processInquiry request--"+trackingID+"-->" + request);
+            if (isTest)
+            {
+                transactionLogger.error("inside isTest-----" + RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_TEST_INQUIRY_URL"));
+                inquiryResponse = PhoneixUtils.doHttpPostConnection(RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase() + "_TEST_INQUIRY_URL"), request);
+            }
+            else
+            {
+                transactionLogger.error("inside isLive-----" + RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase()+"_LIVE_INQUIRY_URL"));
+                inquiryResponse = PhoneixUtils.doHttpPostConnection(RB.getString(gatewayAccount.getFRAUD_FTP_USERNAME().toUpperCase() + "_LIVE_INQUIRY_URL"), request);
+            }
+            transactionLogger.error("processInquiry Response--"+trackingID+"-->"+inquiryResponse);
+            if(functions.isValueNull(inquiryResponse))
+            {
+                inquiryRes = new JSONObject(inquiryResponse);
+                if (inquiryRes.getString("error").equals("0") && inquiryRes.getString("message").equals("SUCCESS")){
+                    status = "success";
+                    //commResponseVO.setDescription((String) readStatus.get("description"));
+                }
+                else{
+                    status = "fail";
+                    // commResponseVO.setDescription((String) readStatus.get("description"));
+                }
+                transactionLogger.error("inquiryRes--------------->"+inquiryRes.toString());
+                if(inquiryRes.getJSONArray("data").length()>0)
+                {
+                    JSONObject data = inquiryRes.getJSONArray("data").getJSONObject(0);
+                    String amount = data.getString("trans_amount");
+                    commResponseVO.setStatus(status);
+                    commResponseVO.setMerchantId(mId);
+                    commResponseVO.setMerchantOrderId(trackingID);
+                    commResponseVO.setTransactionId((String) data.getString("trans_id"));
+                    commResponseVO.setTransactionType(PhoneixUtils.getTransactionType((String) data.getString("trans_type")));
+                    if("000".equalsIgnoreCase((String)data.get("replyCode")))
+                     commResponseVO.setTransactionStatus("success");
+                    else
+                        commResponseVO.setTransactionStatus("failed");
+                    commResponseVO.setBankTransactionDate((String) data.getString("trans_date"));
+                    commResponseVO.setErrorCode((String) data.get("replyCode"));
+                    commResponseVO.setAuthCode((String) data.get("replyCode"));
+                    commResponseVO.setDescription((String) data.get("replyDesc"));
+                    commResponseVO.setAmount(amount);
+                    commResponseVO.setCurrency(data.getString("trans_currency"));
+                    commResponseVO.setDescriptor(GatewayAccountService.getGatewayAccount(accountId).getDisplayName());
+                }
+            }
+
+        }
+        catch(Exception e)
+        {
+        transactionLogger.error("Exception while connecting with bank", e);
+        PZExceptionHandler.raiseTechnicalViolationException("WireCardNPaymentGateway.java", "processSale()", null, "common", "Technical Exception Occurred:::", PZTechnicalExceptionEnum.SERVICE_EXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        return commResponseVO;
+    }
+
+    @Override
+    public String getMaxWaitDays()
+    {
+        return null;
+    }
+}

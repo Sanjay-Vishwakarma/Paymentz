@@ -1,0 +1,246 @@
+import com.directi.pg.*;
+import com.manager.WhiteListManager;
+import com.manager.dao.WhiteListDAO;
+import com.manager.vo.PaginationVO;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.apache.commons.lang3.StringUtils;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.ValidationErrorList;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.ResourceBundle;
+
+/**
+ * Created by Mahima on 1/9/2016.
+ */
+public class WhiteListEmail extends HttpServlet
+{
+    private static Logger log = new Logger(WhiteListEmail.class.getName());
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        HttpSession session         = req.getSession();
+        User user                   = (User) session.getAttribute("ESAPIUserSessionKey");
+        String msg                  ="";
+        Merchants merchants         = new Merchants();
+        StringBuffer stringBuffer   = new StringBuffer();
+        Functions functions         = new Functions();
+        ResourceBundle rb1          = null;
+        String language_property1   = (String)session.getAttribute("language_property");
+        rb1 = LoadProperties.getProperty(language_property1);
+        String WhiteListEmail_email_errormsg        = StringUtils.isNotEmpty(rb1.getString("WhiteListEmail_email_errormsg"))?rb1.getString("WhiteListEmail_email_errormsg"): "Invalid Email or Email should not be empty";
+        String WhiteListEmail_cardholder_errormsg   = StringUtils.isNotEmpty(rb1.getString("WhiteListEmail_cardholder_errormsg"))?rb1.getString("WhiteListEmail_cardholder_errormsg"): "Invalid Card Holder Name.";
+        String WhiteListEmail_accountID_errormsg    = StringUtils.isNotEmpty(rb1.getString("WhiteListEmail_accountID_errormsg"))?rb1.getString("WhiteListEmail_accountID_errormsg"): "Invalid accountID or accountID should not be empty";
+        String WhiteListEmail_memberid_errormsg     = StringUtils.isNotEmpty(rb1.getString("WhiteListEmail_memberid_errormsg"))?rb1.getString("WhiteListEmail_memberid_errormsg"): "MemberID/AccountID NOT mapped.";
+        String WhiteListEmail_ipaddress_errormsg    = StringUtils.isNotEmpty(rb1.getString("WhiteListEmail_ipaddress_errormsg"))?rb1.getString("WhiteListEmail_ipaddress_errormsg"): "Invalid IP Address.";
+        String WhiteListEmail_expiry_errormsg       = StringUtils.isNotEmpty(rb1.getString("WhiteListEmail_expiry_errormsg"))?rb1.getString("WhiteListEmail_expiry_errormsg"): "Invalid Expiry Date.";
+        String WhiteListEmail_uploaded_errormsg     = StringUtils.isNotEmpty(rb1.getString("WhiteListEmail_uploaded_errormsg"))?rb1.getString("WhiteListEmail_uploaded_errormsg"): "Records Uploaded Successfully.";
+        String WhiteListEmail_already_errormsg      = StringUtils.isNotEmpty(rb1.getString("WhiteListEmail_already_errormsg"))?rb1.getString("WhiteListEmail_already_errormsg"): "Records Already Uploaded.";
+        String WhiteListEmail_deleted_errormsg      = StringUtils.isNotEmpty(rb1.getString("WhiteListEmail_deleted_errormsg"))?rb1.getString("WhiteListEmail_deleted_errormsg"): "Records deleted successfully.";
+        WhiteListDAO whiteListDAO               = new WhiteListDAO();
+        PaginationVO paginationVO               = new PaginationVO();
+        List<WhitelistingDetailsVO> listOfEmail = null;
+        WhiteListManager whiteListManager       = new WhiteListManager();
+
+        if (!merchants.isLoggedIn(session))
+        {
+            log.debug("member is logout ");
+            res.sendRedirect("/merchant/Logout.jsp");
+            return;
+        }
+        String memberid     = (String) session.getAttribute("merchantid");
+        String accountID    = req.getParameter("accountid");
+        String emailAddress = req.getParameter("emailaddr");
+        String expiryDate   = req.getParameter("expiryDate");
+        String encryptExpiryDate = "";
+        String name             = req.getParameter("name");
+        String ipAddress        = req.getParameter("ipAddress");
+        String action           = req.getParameter("upload");
+        String delete           = req.getParameter("delete");
+        String error            = "";
+        String EOL              = "<br>";
+        String role             = "Admin";
+        String username         = (String)session.getAttribute("username");
+        String actionExecutorId = (String)session.getAttribute("merchantid");
+        String actionExecutorName   =role+"-"+username;
+
+
+        paginationVO.setPageNo(Functions.convertStringtoInt(req.getParameter("SPageno"), 1));
+        paginationVO.setPage(WhiteListEmail.class.getName());
+        paginationVO.setCurrentBlock(Functions.convertStringtoInt(req.getParameter("currentblock"), 1));
+        paginationVO.setRecordsPerPage(Functions.convertStringtoInt(req.getParameter("SRecords"), 15));
+        paginationVO.setInputs("&emailaddr=" + emailAddress + "&name=" + name + "&ipAddress=" + ipAddress + "&accountid=" + accountID);
+
+        boolean isValid = true;
+        if ("upload".equalsIgnoreCase(action))
+            isValid = false;
+        try
+        {
+            error = error + validateOptionalParameters(req);
+            if (functions.isValueNull(error))
+            {
+                req.setAttribute("error", error);
+                RequestDispatcher rd = req.getRequestDispatcher("/whitelistEmail.jsp?ctoken=" + user.getCSRFToken());
+                rd.forward(req, res);
+            }
+            if (!ESAPI.validator().isValidInput("emailaddr", emailAddress, "Email", 50, isValid))
+            {
+                log.debug("Invalid email address");
+                stringBuffer.append(WhiteListEmail_email_errormsg + EOL);
+            }
+            if (functions.isValueNull(name))
+            {
+                if (!ESAPI.validator().isValidInput("name", name, "SafeString", 50, isValid) || functions.hasHTMLTags(name))
+                {
+                    log.debug("Invalid Card Holder Name.");
+                    stringBuffer.append(WhiteListEmail_cardholder_errormsg + EOL);
+                }
+            }
+            String whitelistlevel=whiteListManager.getWhitelistingLevel(memberid);
+           /* if(functions.isValueNull(whitelistlevel) && "Account".equalsIgnoreCase(whitelistlevel))
+            {
+                if (!ESAPI.validator().isValidInput("accountid", accountID, "Numbers", 50, isValid))
+                {
+                    log.debug("Invalid AccountId");
+                    stringBuffer.append("Invalid accountID or accountID should not be empty" + EOL);
+                }
+            }else
+            {
+                if (!ESAPI.validator().isValidInput("accountid", accountID, "Numbers", 50, isValid))
+                {
+                    log.debug("Invalid AccountId");
+                    stringBuffer.append(WhiteListEmail_accountID_errormsg + EOL);
+                }
+            }
+            if (functions.isValueNull(memberid) && functions.isValueNull(accountID))
+            {
+                boolean valid = whiteListDAO.getMemberidAccountid(memberid, accountID);
+                if (valid == false)
+                {
+                    stringBuffer.append(WhiteListEmail_memberid_errormsg);
+                }
+            }*/
+            if (functions.isValueNull(ipAddress))
+            {
+                if (!ESAPI.validator().isValidInput("ipAddress", ipAddress, "Numbers", 50, isValid))
+                {
+                    log.debug("Invalid IP Address.");
+                    stringBuffer.append(WhiteListEmail_ipaddress_errormsg + EOL);
+                }
+            }
+
+
+            if (functions.isValueNull(expiryDate))
+            {
+                try
+                {
+                    String input = expiryDate;
+                    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/yy");
+                    simpleDateFormat.setLenient(false);
+                    Date expiry = simpleDateFormat.parse(input);
+                    boolean expired = expiry.before(new Date());
+                    if (expired == true)
+                    {
+                        stringBuffer.append(WhiteListEmail_expiry_errormsg + EOL);
+                    }
+                    encryptExpiryDate = PzEncryptor.hashExpiryDate(expiryDate, memberid);
+                }
+                catch (Exception e)
+                {
+                    log.error("Exception--->",e);
+                    stringBuffer.append(WhiteListEmail_expiry_errormsg + EOL);
+                }
+            }
+            if (stringBuffer.length() > 0)
+            {
+                req.setAttribute("error", stringBuffer.toString());
+                RequestDispatcher rd = req.getRequestDispatcher("/whitelistEmail.jsp?ctoken=" + user.getCSRFToken());
+                rd.forward(req, res);
+                return;
+            }
+
+            listOfEmail = whiteListDAO.getWhiteListEmailDetailsForMerchantPage(emailAddress, name, ipAddress, memberid, paginationVO);
+            if ("upload".equalsIgnoreCase(action))
+            {
+                if (listOfEmail.size() <= 0)
+                {
+                    whiteListDAO.addCard("", "", emailAddress, accountID, memberid, name, ipAddress, encryptExpiryDate,actionExecutorId,actionExecutorName);
+                    msg = WhiteListEmail_uploaded_errormsg;
+                }
+                else
+                {
+                    msg= WhiteListEmail_already_errormsg;
+                }
+                listOfEmail = whiteListDAO.getWhiteListEmailDetailsForMerchantPage(emailAddress, name, ipAddress, memberid, paginationVO);
+            }
+            String[] ids = req.getParameterValues("id");
+            if (functions.isValueNull(delete))
+            {
+                for (String id : ids)
+                {
+                    whiteListDAO.deleteWhitelistEmail(id);
+                   }
+                msg = WhiteListEmail_deleted_errormsg;
+                listOfEmail = whiteListDAO.getWhiteListEmailDetailsForMerchantPage(emailAddress, name, ipAddress, memberid, paginationVO);
+            }
+        }
+        catch (PZDBViolationException e)
+        {
+            log.error("PZDBViolationException--->", e);
+        }
+        req.setAttribute("error", error);
+        req.setAttribute("error", stringBuffer.toString());
+        req.setAttribute("msg", msg);
+        req.setAttribute("merchantid", memberid);
+        req.setAttribute("listOfEmail", listOfEmail);
+        req.setAttribute("accountID", accountID);
+        req.setAttribute("paginationVO", paginationVO);
+        RequestDispatcher rd = req.getRequestDispatcher("/whitelistEmail.jsp?ctoken=" + user.getCSRFToken());
+        rd.forward(req, res);
+        return;
+    }
+
+    private String validateOptionalParameters(HttpServletRequest req)
+    {
+        InputValidator inputValidator = new InputValidator();
+        String error = "";
+        String EOL = "<BR>";
+        List<InputFields> inputFieldsListOptional = new ArrayList<InputFields>();
+        inputFieldsListOptional.add(InputFields.PAGENO);
+        inputFieldsListOptional.add(InputFields.RECORDS);
+
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.InputValidations(req, inputFieldsListOptional, errorList, true);
+
+        if (!errorList.isEmpty())
+        {
+            for (InputFields inputFields : inputFieldsListOptional)
+            {
+                if (errorList.getError(inputFields.toString()) != null)
+                {
+                    log.debug(errorList.getError(inputFields.toString()).getLogMessage());
+                    error = error + errorList.getError(inputFields.toString()).getMessage() + EOL;
+                }
+            }
+        }
+        return error;
+    }
+}

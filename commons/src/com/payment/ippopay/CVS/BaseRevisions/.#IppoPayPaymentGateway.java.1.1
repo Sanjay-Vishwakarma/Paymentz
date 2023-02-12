@@ -1,0 +1,534 @@
+package com.payment.ippopay;
+
+import com.directi.pg.Functions;
+import com.directi.pg.LoadProperties;
+import com.directi.pg.TransactionLogger;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.GenericRequestVO;
+import com.directi.pg.core.valueObjects.GenericResponseVO;
+import com.payment.Rubixpay.RubixpayUtils;
+import com.payment.common.core.*;
+import com.payment.exceptionHandler.PZConstraintViolationException;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.PZGenericConstraintViolationException;
+import com.payment.exceptionHandler.PZTechnicalViolationException;
+import com.payment.validators.vo.CommonValidatorVO;
+import com.payment.verve.VervePaymentProcess;
+import com.payment.verve.VerveUtils;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
+import java.util.ResourceBundle;
+
+/**
+ * Created by Admin on 10/17/2020.
+ */
+public class IppoPayPaymentGateway  extends AbstractPaymentGateway
+{
+    private static TransactionLogger transactionlogger = new TransactionLogger(IppoPayPaymentGateway.class.getName());
+    public static final String GATEWAY_TYPE = "ippopay";
+    private final static ResourceBundle RB = LoadProperties.getProperty("com.directi.pg.ippopay");
+    String redirecturl= "";
+
+    public IppoPayPaymentGateway(String accountId)
+    {
+        this.accountId = accountId;
+        transactionlogger.error("IppoPayPaymentGateway  accountid------------------->" + accountId);
+
+    }
+
+    @Override
+    public String getMaxWaitDays()
+    {
+        return null;
+    }
+
+    public GenericResponseVO processSale(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        transactionlogger.error("Entering processSale of IppoPayPaymentGateway......");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        Functions functions = new Functions();
+        IppoPayUtils ippoPayUtils=new IppoPayUtils();
+        CommTransactionDetailsVO transactionDetailsVO=commRequestVO.getTransDetailsVO();
+        CommCardDetailsVO commCardDetailsVO=commRequestVO.getCardDetailsVO();
+        CommAddressDetailsVO commAddressDetailsVO=commRequestVO.getAddressDetailsVO();
+        CommMerchantVO commMerchantVO = commRequestVO.getCommMerchantVO();
+        GatewayAccount gatewayAccount= GatewayAccountService.getGatewayAccount(accountId);
+        // GenericAddressDetailsVO addressDetailsVO = commRequestVO.getAddressDetailsVO();
+
+        String payment_url="";
+        String national_number="";
+        String convertedPaymentModes="";
+
+        boolean isTest = gatewayAccount.isTest();
+
+        String payment_modes= GatewayAccountService.getPaymentMode(transactionDetailsVO.getPaymentType());
+        if(payment_modes.length()==3&&"NBI".equalsIgnoreCase(payment_modes)){
+            convertedPaymentModes= payment_modes.substring(0, payment_modes.length() - 1).toLowerCase();
+        }
+        else{
+            convertedPaymentModes= payment_modes.toLowerCase();
+        }
+
+        transactionlogger.error("payment_modes  is------------------->"+payment_modes);
+        String currencycode =transactionDetailsVO.getCurrency();
+        transactionlogger.error("currencycode is-------------->"+currencycode);
+        String amount=transactionDetailsVO.getAmount();
+        transactionlogger.error("amount is-------------->"+amount);
+        if(functions.isValueNull(commAddressDetailsVO.getPhone()))
+        {
+            national_number=commAddressDetailsVO.getPhone();
+        }
+        else{
+            national_number="9999999999";
+        }
+        transactionlogger.error("phone is-------------->"+national_number);
+        String country_code ="91";
+        transactionlogger.error("country_code is-------------->"+country_code);
+        String fullname =commAddressDetailsVO.getFirstname()+" "+commAddressDetailsVO.getLastname();
+        transactionlogger.error("fullname is-------------->"+fullname);
+        String email=commAddressDetailsVO.getEmail();
+        transactionlogger.error("email is-------------->"+email);
+        String orderid =trackingID;
+        transactionlogger.error("orderid is-------------->"+orderid);
+
+        String public_key =gatewayAccount.getFRAUD_FTP_PASSWORD();
+        transactionlogger.error("public_key is-------------->" + public_key);
+        String secret_key =gatewayAccount.getFRAUD_FTP_PATH();
+        transactionlogger.error("secret_key is-------------->"+secret_key);
+
+
+        String securePaymentGateway="";
+
+        if (isTest){
+            payment_url=RB.getString("TEST_SALE_URL");
+            transactionlogger.error("TEST_SALE_URL------------------------->"+payment_url);
+
+
+        }
+        else {
+            payment_url=RB.getString("LIVE_SALE_URL");
+            transactionlogger.error("LIVE_SALE_URL------------------------->"+payment_url);
+        }
+
+        String request="{\n" +
+                "   \"amount\":\""+amount+"\",\n" +
+                "   \"currency\":\""+currencycode+"\",\n" +
+                "   \"payment_modes\":\""+convertedPaymentModes+"\",\n" +
+                "   \"customer\":{\n" +
+                "   \"name\":\""+fullname+"\",\n" +
+                "   \"email\":\""+email+"\",\n" +
+                "   \"phone\":{\n" +
+                "   \"country_code\":\""+country_code+"\",\n" +
+                "   \"national_number\":\""+national_number+"\"\n" +
+                "      }\n" +
+                "   }\n" +
+                "}";
+
+        transactionlogger.error("request--------------for----"+trackingID+"--" + request);
+
+        String response= ippoPayUtils.doPostHttpUrlConnection(payment_url,request,public_key,secret_key);
+        transactionlogger.error("response--------------for--"+trackingID+"--"+response);
+
+        try
+        {
+
+            String success= "";
+            String message= "";
+            String merchantid= "";
+            String credit_card= "";
+            String debit_card= "";
+            String net_banking= "";
+            String upi= "";
+            String international_cards= "";
+            String status= "";
+            String _id= "";
+            String order_id= "";
+            String responsePublic_key= "";
+            String responsePayment_url= "";
+            String mode= "";
+
+            JSONObject jsonobj =new JSONObject(response);
+            JSONObject data = jsonobj.getJSONObject("data");
+            JSONObject order = data.getJSONObject("order");
+            JSONObject merchant = order.getJSONObject("merchant");
+            JSONObject responsePayment_modes = order.getJSONObject("payment_modes");
+
+      if (jsonobj.has("success")){
+        success=jsonobj.getString("success");
+            }
+      if (jsonobj.has("message")){
+                message=jsonobj.getString("message");
+            }
+      if (merchant.has("id")){
+                merchantid=merchant.getString("id");
+        }
+      if (responsePayment_modes.has("credit_card")){
+          credit_card=responsePayment_modes.getString("credit_card");
+            }
+          if (responsePayment_modes.has("debit_card")){
+          debit_card=responsePayment_modes.getString("debit_card");
+            }
+          if (responsePayment_modes.has("net_banking")){
+          net_banking=responsePayment_modes.getString("net_banking");
+            }
+          if (responsePayment_modes.has("upi")){
+          upi=responsePayment_modes.getString("upi");
+            }
+
+      if (order.has("status")){
+          status=order.getString("status");
+            }
+            if (order.has("mode")){
+                mode=order.getString("mode");
+            }
+            if (order.has("_id")){
+                _id=order.getString("_id");
+            }
+            if (order.has("order_id")){
+                order_id=order.getString("order_id");
+            }
+            if (order.has("public_key")){
+                responsePublic_key=order.getString("public_key");
+            }
+            if (order.has("payment_url")){
+                responsePayment_url=order.getString("payment_url");
+            }
+
+            transactionlogger.error("success---------------------------->"+success);
+            transactionlogger.error("message---------------------------->"+message);
+            transactionlogger.error("merchantid---------------------------->"+merchantid);
+            transactionlogger.error("credit_card---------------------------->"+credit_card);
+            transactionlogger.error("debit_card---------------------------->"+debit_card);
+            transactionlogger.error("net_banking---------------------------->"+net_banking);
+            transactionlogger.error("upi---------------------------->"+upi);
+            transactionlogger.error("status---------------------------->"+status);
+            transactionlogger.error("_id---------------------------->"+_id);
+            transactionlogger.error("order_id---------------------------->"+order_id);
+            transactionlogger.error("responsePublic_key---------------------------->"+responsePublic_key);
+            transactionlogger.error("responsePayment_url---------------------------->"+responsePayment_url);
+            transactionlogger.error("mode---------------------------->"+mode);
+
+            if("pending".equalsIgnoreCase(status)){
+                commResponseVO.setStatus("pending3DConfirmation");
+                commResponseVO.setTerURL(RB.getString("IPPOPAYPAY_RU")+trackingID);
+                commResponseVO.setTransactionId(order_id);
+                commResponseVO.setResponseHashInfo(responsePublic_key);
+            }
+            else {
+
+                commResponseVO.setStatus("fail");
+                commResponseVO.setDescription("fail");
+                //commResponseVO.setrem(jsonobj.getString("securePaymentGateway"));
+            }
+
+
+        }
+        catch (JSONException e)
+        {
+            transactionlogger.error("JSONException------------------------->",e);
+        }
+
+        return commResponseVO;
+    }
+
+    public String  processAutoRedirect(CommonValidatorVO commonValidatorVO) throws PZTechnicalViolationException, PZDBViolationException
+    {
+        transactionlogger.error(" ---- Autoredict in IppoPay ---- ");
+        String html = "";;
+        Comm3DResponseVO transRespDetails = null;
+        IppoPayUtils ippoPayUtils =new IppoPayUtils();
+        CommRequestVO commRequestVO = ippoPayUtils.getIppoPayRequestVO(commonValidatorVO);
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        IppoPayPaymentProcess ippoPayPaymentProcess =new IppoPayPaymentProcess();
+        boolean isTest = gatewayAccount.isTest();
+        try
+        {
+            transactionlogger.error("isService Flag -----" + commonValidatorVO.getMerchantDetailsVO().getIsService());
+            transactionlogger.error("autoredirect  flag-----" + commonValidatorVO.getMerchantDetailsVO().getAutoRedirect());
+            transactionlogger.error("addressdetail  flag-----" + commonValidatorVO.getMerchantDetailsVO().getAddressDeatails());
+            transactionlogger.error("terminal id  is -----" + commonValidatorVO.getTerminalId());
+            transactionlogger.error("tracking id  is -----" + commonValidatorVO.getTrackingid());
+
+            transRespDetails = (Comm3DResponseVO) this.processSale(commonValidatorVO.getTrackingid(), commRequestVO);
+            if (transRespDetails.getStatus().equalsIgnoreCase("pending3DConfirmation"))
+            {
+                html = ippoPayPaymentProcess.get3DConfirmationForm(commonValidatorVO,transRespDetails) ;
+                transactionlogger.error("automatic redirect ippopay form -- >>"+html);
+            }
+            transactionlogger.error("orderid--------------------->"+transRespDetails.getTransactionId());
+            transactionlogger.error("response public key--------------------->"+transRespDetails.getResponseHashInfo());
+
+            ippoPayUtils.updateTransaction(commonValidatorVO.getTrackingid(),transRespDetails.getTransactionId());
+        }
+        catch (PZGenericConstraintViolationException e)
+        {
+            transactionlogger.error("PZGenericConstraintViolationException in IppoPayPaymentGateway---", e);
+        }
+        return html;
+    }
+
+   /* public GenericResponseVO process3DSaleConfirmation(String trackingID, GenericRequestVO requestVO)
+    {
+        transactionlogger.error("Entering process3DSaleConfirmation of IppoPayPaymentGateway......");
+
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        VerveUtils verveUtils =new VerveUtils();
+        CommTransactionDetailsVO transactionDetailsVO=commRequestVO.getTransDetailsVO();
+        transactionlogger.error("CommTransactionDetailsVO------------------------>"+transactionDetailsVO);
+        GatewayAccount gatewayAccount= GatewayAccountService.getGatewayAccount(accountId);
+        transactionlogger.error("inside process3DAuthConfirmation ----- ");
+        transactionlogger.error("accountId is-------------->"+accountId);
+        String payment_url="";
+        boolean isTest = gatewayAccount.isTest();
+        if (isTest){
+            payment_url=RB.getString("GET_TRANSACTION_TEST");
+            transactionlogger.error("GET_TRANSACTION_TEST------------------------->"+payment_url);
+
+
+        }
+        else {
+            payment_url=RB.getString("GET_TRANSACTION_LIVE");
+            transactionlogger.error("GET_TRANSACTION_LIVE------------------------->"+payment_url);
+        }
+
+
+        CommResponseVO commResponseVO=new CommResponseVO();
+        Functions functions = new Functions();
+        String status="";
+        String mid=gatewayAccount.getMerchantId();
+        transactionlogger.error("mid is-------------->"+mid);
+        String serverkey=gatewayAccount.getFRAUD_FTP_USERNAME();
+        transactionlogger.error("serverkey is-------------->"+serverkey);
+        String transactionid=commRequestVO.getTransDetailsVO().getPreviousTransactionId();
+        transactionlogger.error("transactionid(authcode) is-------------->"+transactionid);
+
+
+        try
+        {
+
+
+            String request="mid="+mid+"&serverkey="+serverkey+"&transactionid="+transactionid;;
+            transactionlogger.error("process3DSaleConfirmation request ------------------------> " + request);
+            String response= verveUtils.doHttpPostConnection(payment_url,request );
+            transactionlogger.error("process3DSaleConfirmation response -------------------------> " + response);
+
+            if (response != null)
+            {
+
+                JSONObject jsonObject = new JSONObject(response);
+                if (jsonObject.has("txn_status"))
+                {
+                    status=jsonObject.getString("txn_status");
+                }
+
+                if (status.equalsIgnoreCase("TXN_COMPLETE"))
+                {
+                    commResponseVO.setStatus("success");
+                    commResponseVO.setTransactionStatus("success");
+                    commResponseVO.setRemark(jsonObject.getString("txn_message"));
+                    commResponseVO.setDescription(jsonObject.getString("txn_message"));
+                }
+
+                else if(status.equalsIgnoreCase("TXN_UPI_REDIRECT")||status.equalsIgnoreCase("TXN_NB_REDIRECT")){
+                    commResponseVO.setStatus("pending");
+                    commResponseVO.setTransactionStatus("pending");
+                    commResponseVO.setRemark(jsonObject.getString("txn_message"));
+                    commResponseVO.setDescription(jsonObject.getString("txn_message"));
+                }
+                else if(status.equalsIgnoreCase("error")){
+                    commResponseVO.setStatus("pending");
+                    commResponseVO.setTransactionStatus("pending");
+                    commResponseVO.setRemark(jsonObject.getString("txn_message"));
+                    commResponseVO.setDescription(jsonObject.getString("txn_message"));
+                }
+                else
+                {
+                    commResponseVO.setStatus("fail");
+                    commResponseVO.setTransactionStatus("fail");
+                    commResponseVO.setRemark(jsonObject.getString("txn_message"));
+                    commResponseVO.setDescription(jsonObject.getString("txn_message"));
+                }
+
+                commResponseVO.setTransactionId(jsonObject.getString("transactionid"));
+                commResponseVO.setResponseHashInfo(jsonObject.getString("paymentmode"));
+            }
+            else
+            {
+                commResponseVO.setStatus("failed");
+                commResponseVO.setRemark("Sys:Transaction Fail No Response");
+                commResponseVO.setDescription("Sys:Transaction Fail No Response");
+            }
+        }
+        catch (Exception e)
+        {
+            transactionlogger.error("Exception-----", e);
+        }
+        return commResponseVO;
+    }*/
+    @Override
+    public GenericResponseVO processInquiry(GenericRequestVO requestVO) throws PZTechnicalViolationException, PZDBViolationException, PZConstraintViolationException
+    {
+        transactionlogger.error("-----inside processInquiry-----");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        IppoPayUtils ippoPayUtils =new IppoPayUtils();
+        CommTransactionDetailsVO transactionDetailsVO=commRequestVO.getTransDetailsVO();
+        transactionlogger.error("CommTransactionDetailsVO------------------------>"+transactionDetailsVO);
+        GatewayAccount gatewayAccount= GatewayAccountService.getGatewayAccount(accountId);
+        transactionlogger.error("inside processInquiry ----- ");
+        transactionlogger.error("accountId is-------------->"+accountId);
+
+        CommResponseVO commResponseVO=new CommResponseVO();
+        Functions functions = new Functions();
+
+
+        String public_key =gatewayAccount.getFRAUD_FTP_PASSWORD();
+        transactionlogger.error("public_key is-------------->" + public_key);
+        String secret_key =gatewayAccount.getFRAUD_FTP_PATH();
+        transactionlogger.error("secret_key is-------------->"+secret_key);
+        String transactionid=commRequestVO.getTransDetailsVO().getPreviousTransactionId();
+        transactionlogger.error("transactionid(authcode) is-------------->"+transactionid);
+        String inquiry_url=RB.getString("GET_TRANSACTION_TEST")+transactionid;
+        transactionlogger.error("inquiry_url is-------------->"+inquiry_url);
+        String mid=gatewayAccount.getMerchantId();
+        transactionlogger.error("mid is-------------->"+mid);
+        String serverkey=gatewayAccount.getFRAUD_FTP_USERNAME();
+        transactionlogger.error("serverkey is-------------->"+serverkey);
+
+        String request="";;
+        transactionlogger.error("process3DSaleConfirmation request ------------------------> " + request);
+        String response= ippoPayUtils.doGetHttpUrlConnection(inquiry_url,"",public_key,secret_key );
+        transactionlogger.error("process3DSaleConfirmation response -------------------------> " + response);
+
+        try
+        {
+
+            String success= "";
+            String message= "";
+            String merchantid= "";
+            String credit_card= "";
+            String debit_card= "";
+            String net_banking= "";
+            String upi= "";
+            String international_cards= "";
+            String status= "";
+            String _id= "";
+            String order_id= "";
+            String responsePublic_key= "";
+            String responsePayment_url= "";
+            String mode= "";
+
+            JSONObject jsonobj =new JSONObject(response);
+            JSONObject data = jsonobj.getJSONObject("data");
+            JSONObject order = data.getJSONObject("order");
+            JSONObject merchant = order.getJSONObject("merchant");
+            JSONObject responsePayment_modes = order.getJSONObject("payment_modes");
+
+            if (jsonobj.has("success")){
+                success=jsonobj.getString("success");
+            }
+            if (jsonobj.has("message")){
+                message=jsonobj.getString("message");
+            }
+            if (merchant.has("id")){
+                merchantid=merchant.getString("id");
+            }
+            if (responsePayment_modes.has("credit_card")){
+                credit_card=responsePayment_modes.getString("credit_card");
+            }
+            if (responsePayment_modes.has("debit_card")){
+                debit_card=responsePayment_modes.getString("debit_card");
+            }
+            if (responsePayment_modes.has("net_banking")){
+                net_banking=responsePayment_modes.getString("net_banking");
+            }
+            if (responsePayment_modes.has("upi")){
+                upi=responsePayment_modes.getString("upi");
+            }
+
+            if (order.has("status")){
+                status=order.getString("status");
+            }
+            if (order.has("mode")){
+                mode=order.getString("mode");
+            }
+            if (order.has("_id")){
+                _id=order.getString("_id");
+            }
+            if (order.has("order_id")){
+                order_id=order.getString("order_id");
+            }
+            if (order.has("public_key")){
+                responsePublic_key=order.getString("public_key");
+            }
+            if (order.has("payment_url")){
+                responsePayment_url=order.getString("payment_url");
+            }
+
+            transactionlogger.error("success---------------------------->"+success);
+            transactionlogger.error("message---------------------------->"+message);
+            transactionlogger.error("merchantid---------------------------->"+merchantid);
+            transactionlogger.error("credit_card---------------------------->"+credit_card);
+            transactionlogger.error("debit_card---------------------------->"+debit_card);
+            transactionlogger.error("net_banking---------------------------->"+net_banking);
+            transactionlogger.error("upi---------------------------->"+upi);
+            transactionlogger.error("status---------------------------->"+status);
+            transactionlogger.error("_id---------------------------->"+_id);
+            transactionlogger.error("order_id---------------------------->"+order_id);
+            transactionlogger.error("responsePublic_key---------------------------->"+responsePublic_key);
+            transactionlogger.error("responsePayment_url---------------------------->"+responsePayment_url);
+            transactionlogger.error("mode---------------------------->"+mode);
+
+
+            if (response != null)
+            {
+                if (status.equalsIgnoreCase("success"))
+                {
+                    commResponseVO.setStatus("success");
+                    commResponseVO.setTransactionStatus("success");
+                    commResponseVO.setRemark(status);
+                    commResponseVO.setDescription(status);
+                }
+                else if(status.equalsIgnoreCase("pending")){
+                    commResponseVO.setStatus("pending");
+                    commResponseVO.setTransactionStatus("pending");
+                    commResponseVO.setRemark(status);
+                    commResponseVO.setDescription(status);
+                }
+                else
+                {
+                    commResponseVO.setStatus("fail");
+                    commResponseVO.setTransactionStatus("fail");
+                    commResponseVO.setRemark(status);
+                    commResponseVO.setDescription(status);
+                }
+
+                commResponseVO.setTransactionId(order_id);
+                commResponseVO.setResponseHashInfo(public_key);
+
+            }
+
+            else
+            {
+                commResponseVO.setStatus("failed");
+                commResponseVO.setRemark("Sys:Transaction Fail No Response");
+                commResponseVO.setDescription("Sys:Transaction Fail No Response");
+            }
+
+
+        }
+        catch (JSONException e1)
+        {
+            transactionlogger.error("JSONException------------------------->", e1);
+        }
+
+
+
+        return commResponseVO;
+    }
+
+
+}

@@ -1,0 +1,270 @@
+<%--
+  Created by IntelliJ IDEA.
+  User: Mahima Rai.
+  Date: 7/4/18
+  Time: 1:46 PM
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="com.directi.pg.Functions" %>
+<%@ page import="com.directi.pg.core.GatewayAccount" %>
+<%@ page import="com.directi.pg.core.GatewayAccountService" %>
+<%@ page import="com.directi.pg.core.GatewayType" %>
+<%@ page import="com.directi.pg.core.GatewayTypeService" %>
+<%@ page import="com.manager.TerminalManager" %>
+<%@ page import="com.manager.vo.TerminalVO" %>
+<%@ page import="java.util.Hashtable" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.TreeMap" %>
+<%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="java.util.Date" %>
+<%@ include file="index.jsp" %>
+
+<html>
+<head>
+  <title></title>
+  <script type="text/javascript" src="/icici/javascript/jquery.min.js?ver=1"></script>
+  <script src="/icici/css/jquery-ui.min.js"></script>
+  <script src="/icici/javascript/gateway-account-member-terminalid1.js"></script>
+  <script type="text/javascript" src="/merchant/transactionCSS/js/content.js"></script>
+
+  <script type="text/javascript">
+    function goBack()
+    {
+      document.location.href = "/icici/whitelistdetails.jsp";
+    }
+  </script>
+  <script type="text/javascript">
+    function getWhitelistingLevel(ctoken)
+    {
+      console.log("inside = ",document.Form1);
+      var memberId = document.getElementById("memberid1").value;
+      document.Form1.action = "/icici/servlet/UploadSingleDetails?ctoken=" + ctoken + "&action=getdata";
+      console.log("action = ",document.Form1);
+      document.getElementById("submit_button").click();
+    }
+  </script>
+</head>
+<body align="center">
+<% ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+  if (com.directi.pg.Admin.isLoggedIn(session))
+  {
+    String role="Admin";
+    String username=(String)session.getAttribute("username");
+    String actionExecutorId=(String)session.getAttribute("merchantid");
+    String actionExecutorName=role+"-"+username;
+
+    String str = "";
+    String pgtypeid = "";
+    pgtypeid = Functions.checkStringNull(request.getParameter("pgtypeid"))==null?"":request.getParameter("pgtypeid");
+    String memberid=request.getParameter("toid")==null?"":request.getParameter("toid");
+    String firstSix=request.getParameter("firstsix")==null?"":request.getParameter("firstsix");
+    String lastFour=request.getParameter("lastfour")==null?"":request.getParameter("lastfour");
+    String emailAddress=request.getParameter("emailaddr")==null?"":request.getParameter("emailaddr");
+    String ipAddress=request.getParameter("ipAddress")==null?"":request.getParameter("ipAddress");
+    String name=request.getParameter("name")==null?"":request.getParameter("name");
+    String expriryDate=Functions.checkStringNull(request.getParameter("expiryDate")) == null ? "" : request.getParameter("expiryDate");
+
+    TerminalManager terminalManager = new TerminalManager();
+    List<TerminalVO> terminalList = terminalManager.getAllMappedTerminals();
+    TreeMap<String,TerminalVO> memberMap = new TreeMap<String, TerminalVO>();
+    for(TerminalVO terminalVO : terminalList)
+    {
+      String memberKey = terminalVO.getMemberId()+"-"+terminalVO.getAccountId()+"-"+terminalVO.getGateway().toUpperCase() + "-" + terminalVO.getCurrency() + "-" + terminalVO.getGateway_id();
+      memberMap.put(memberKey,terminalVO);
+    }
+    if(pgtypeid!=null)str = str + "&pgtypeid=" + pgtypeid;
+    else
+      pgtypeid="";
+    if (firstSix != null) str = str + "&firstsix=" + firstSix;
+    if (lastFour != null) str = str + "&lastfour=" + lastFour;
+    if (emailAddress != null) str = str + "&emailAddr=" + emailAddress;
+%>
+<div class="row">
+  <div class="col-lg-12">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        Whitelist Card/Email Upload
+        <div style="float: right;">
+          <form action="/icici/whitelistdetails.jsp?ctoken=<%=ctoken%>" method="POST">
+            <input type="hidden" value="<%=ctoken%>" name="ctoken" id="ctoken">
+            <button type="submit" class="addnewmember">
+              <i class="fa fa-sign-in"></i>
+              &nbsp;&nbsp;White list Module
+            </button>
+          </form>
+        </div>
+      </div>
+      <br>
+      <form name = "Form1" action="/icici/servlet/UploadSingleDetails?ctoken=<%=ctoken%>" method="post">
+        <input type="hidden" name="whitelistlevel" value="<%=request.getAttribute("whitelistlevel")%>">
+        <table align="center" width="65%" cellpadding="2" cellspacing="2">
+          <tbody>
+          <tr>
+            <td>
+              <%
+                String sSuccessMessage = (String) request.getAttribute("sSuccessMessage");
+                String sErrorMessage=(String)request.getAttribute("sErrorMessage");
+              %>
+              <table border="0" cellpadding="5" cellspacing="0" width="100%" align="center">
+                <tbody>
+                <tr><td colspan="4">&nbsp;</td>
+                </tr>
+                <tr>
+                  <td width="2%" class="textb">&nbsp;</td>
+                  <td width="43%" class="textb">Card Details</td>
+                  <td width="5%" class="textb">:</td>
+                  <td width="50%" class="textb">
+                    <input type=text  name="firstsix" maxlength="6" size="5"  class="txtbox" style="width:60px" value="<%=firstSix%>">
+                    <input type=text name="lastfour" maxlength="4" size="4" class="txtbox" style="width:60px" value="<%=lastFour%>">
+                  </td>
+                </tr>
+                <tr>
+                  <td width="2%" class="textb">&nbsp;</td>
+                  <td width="43%" class="textb"></td>
+                  <td width="5%" class="textb"></td>
+                  <td width="50%" class="textb"></td>
+                </tr>
+                <tr>
+                  <td width="4%" class="textb">&nbsp;</td>
+                  <td width="8%" class="textb" >Email ID</td>
+                  <td width="3%" class="textb">:</td>
+                  <td width="12%" class="textb">
+                    <input type="text" size="35"name="emailaddr"class="txtbox" value=<%=emailAddress%>>
+                  </td>
+                </tr>
+                <tr>
+                  <td width="2%" class="textb">&nbsp;</td>
+                  <td width="43%" class="textb"></td>
+                  <td width="5%" class="textb"></td>
+                  <td width="50%" class="textb"></td>
+                </tr>
+                <tr>
+                  <td class="textb">&nbsp;</td>
+                  <td class="textb">Gateway</td>
+                  <td class="textb">:</td>
+                  <td>
+                    <input name="pgtypeid" id="gateway1" value="<%=pgtypeid%>" class="txtbox" autocomplete="on">
+                  </td>
+                </tr>
+                <tr><td>&nbsp;&nbsp;</td></tr>
+                <tr>
+                  <td width="2%" class="textb">&nbsp;</td>
+                  <td width="43%" class="textb">Member ID*</td>
+                  <td width="5%" class="textb">:</td>
+                  <td width="50%" class="textb">
+                    <input name="toid" id="memberid1" value="<%=memberid%>" class="txtbox" autocomplete="on" maxlength="10" onblur="return getWhitelistingLevel('<%=ctoken%>')">
+                  </td>
+                </tr>
+                <tr>
+                  <td width="2%" class="textb">&nbsp;</td>
+                  <td width="43%" class="textb"></td>
+                  <td width="5%" class="textb"></td>
+                  <td width="50%" class="textb"></td>
+                </tr>
+                <tr>
+                  <td class="textb">&nbsp;</td>
+                  <td class="textb">Account ID*</td>
+                  <td class="textb">:</td>
+                  <td>
+                    <input name="accountid" id="accountid2"  maxlength="10" value="<%=Functions.checkStringNull(request.getParameter("accountid"))==null?"":request.getParameter("accountid")%>" class="txtbox" autocomplete="on">
+                  </td>
+                </tr>
+                <tr>
+                  <td width="2%" class="textb">&nbsp;</td>
+                  <td width="43%" class="textb"></td>
+                  <td width="5%" class="textb"></td>
+                  <td width="50%" class="textb"></td>
+                </tr>
+                <tr>
+                  <td width="4%" class="textb">&nbsp;</td>
+                  <td width="8%" class="textb" >Card Holder Name</td>
+                  <td width="3%" class="textb">:</td>
+                  <td width="12%" class="textb">
+                    <input type="text" name="name" size="35" class="txtbox" value=<%=name%>>
+                  </td>
+                </tr>
+                <tr>
+                  <td width="2%" class="textb">&nbsp;</td>
+                  <td width="43%" class="textb"></td>
+                  <td width="5%" class="textb"></td>
+                  <td width="50%" class="textb"></td>
+                </tr>
+                <tr>
+                  <td width="4%" class="textb">&nbsp;</td>
+                  <td width="8%" class="textb" >IP </td>
+                  <td width="3%" class="textb">:</td>
+                  <td width="12%" class="textb">
+                    <input type="text" size="35"name="ipAddress"class="txtbox" value=<%=ipAddress%>>
+                  </td>
+                </tr>
+                <tr>
+                  <td width="2%" class="textb">&nbsp;</td>
+                  <td width="43%" class="textb"></td>
+                  <td width="5%" class="textb"></td>
+                  <td width="50%" class="textb"></td>
+                </tr>
+                <tr>
+                  <td width="4%" class="textb">&nbsp;</td>
+                  <td width="8%" class="textb" >Expiry Date</td>
+                  <td width="3%" class="textb">:</td>
+                  <td width="12%" class="textb">
+                    <div class="CardExpiry txtbox"><input type="text" id="Expiry" class="txtbox" style="width:60%" placeholder="MM/YY" name="expiryDate" onkeypress="return isNumberKey(event)" onblur="expiryCheck('Expiry','CardExpiry')" autocomplete="off" onkeyup="addSlash(event,'Expiry')" value=<%=expriryDate%>></div>
+                  </td>
+                </tr>
+                <tr>
+                  <td width="2%" class="textb">&nbsp;</td>
+                  <td width="43%" class="textb"></td>
+                  <td width="5%" class="textb"></td>
+                  <td width="50%" class="textb"></td>
+                </tr>
+                <tr>
+                  <td width="2%" class="textb">&nbsp;</td>
+                  <td width="43%" class="textb"></td>
+                  <td width="5%" class="textb"></td>
+                  <td width="50%" class="textb">
+                    <button name="mybutton" type="submit" value="Upload" id="submit_button" onclick="return check()"class="buttonform">Upload</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td width="2%" class="textb">&nbsp;</td>
+                  <td width="43%" class="textb"></td>
+                  <td width="5%" class="textb"></td>
+                  <td width="50%" class="textb"></td>
+                </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="reporttable">
+  <%
+    Functions functions = new Functions();
+    if(functions.isValueNull((String) request.getAttribute("sSuccessMessage")))
+    {
+      out.println(Functions.NewShowConfirmation("Result",sSuccessMessage));
+    }
+    else if(functions.isValueNull((String) request.getAttribute("sErrorMessage"))){
+      out.println(Functions.NewShowConfirmation("Result",sErrorMessage));
+    }
+    else
+    {
+      out.println(Functions.NewShowConfirmation("Filter","Please select the Card Details or Email."));
+    }
+  %>
+</div>
+<%
+    }
+    else
+    {
+      response.sendRedirect("/icici/logout.jsp");
+      return;
+    }
+%>
+</body>
+</html>

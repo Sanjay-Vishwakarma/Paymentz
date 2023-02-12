@@ -1,0 +1,266 @@
+        function bodyonload(){
+            var table = $("#myTable").find("tr");
+             console.log(table)
+
+            //var td =$("#myTable").find("tr").find("td");
+            for( var i=0; i <table.length ;i++){
+                console.log("in bodyload",document.getElementById((table[i].getElementsByTagName("td")[2].getElementsByTagName("input")[1].id)+"_hidden").value)
+                loadhideemail(table[i].getElementsByTagName("td")[2].getElementsByTagName("input")[1].id)
+                loadhideemail(table[i].getElementsByTagName("td")[3].getElementsByTagName("input")[1].id)
+                loadphonehide(table[i].getElementsByTagName("td")[4].getElementsByTagName("input")[1].id)
+                hideMerchantKey(document.getElementById("merchant_key").id);
+            }
+
+
+
+            // add a class with the name  hidedivemail / hidedivphone  and id to any tag .
+
+            for(var j = 0 ; j < $(".hidedivemail").length ; j++){
+                loadhideemail($(".hidedivemail")[j].id)
+            }
+            for(var j = 0 ; j < $(".hidedivphone").length ; j++){
+                loadphonehide($(".hidedivphone")[j].id)
+            }
+
+        }
+
+        function loadhideemail(id){
+            if(document.getElementById(id+"_hidden"))
+            {
+                if(!document.getElementById(id).value){
+                    $("#" + id).parent().find('span').remove('span')
+                }
+                var original_email = document.getElementById(id +"_hidden").value;
+                var email ;
+                if(document.getElementById(id).value){
+                  email =   document.getElementById(id).value;
+                }
+                else{
+                  email   = document.getElementById(id).innerText;
+                }
+
+                var hiddenEmail = "";
+                var i;
+                for (i = 0; i < email.length; i++)
+                {
+                    if (i > 1 && i < email.indexOf("@"))
+                    {
+                        if (email[i] != '.' && email[i] != '-' && email[i] != '_')
+                        {
+                            hiddenEmail += "x";
+                        }
+                        else
+                        {
+                            hiddenEmail += email[i];
+                        }
+                    }
+                    else
+                    {
+                        hiddenEmail += email[i];
+                    }
+                }
+                document.getElementById(id).value = hiddenEmail;
+            }
+        }
+
+        function loadphonehide(id){
+            if(document.getElementById(id+"_hidden"))
+            {
+                if(!document.getElementById(id).value){
+                    $("#" + id).parent().find('span').remove('span')
+                }
+                var original_phone = document.getElementById(id + "_hidden").value;
+                var phoneno = document.getElementById(id).value;
+                var hiddenphoneno = "";
+                var i;
+                for (i = 0; i < phoneno.length; i++)
+                {
+                    if (i < (phoneno.length - 3 ))
+                    {
+                        if (phoneno[i] != '.' && phoneno[i] != '-' && phoneno[i] != '_')
+                        {
+                            hiddenphoneno += "x";
+                        }
+                        else
+                        {
+                            hiddenphoneno += phoneno[i];
+                        }
+                    }
+                    else
+                    {
+                        hiddenphoneno += phoneno[i];
+                    }
+                }
+                document.getElementById(id).value = hiddenphoneno;
+            }
+        }
+
+        function hideemail(id)
+        {
+            if(document.getElementById(id+"_hidden").value)
+            {
+                var original_email = document.getElementById(id + "_hidden").value;
+                console.log($("#" + id))
+                if ($("#" + id).parent().find('span').hasClass('fa-eye'))
+                {
+                    console.log("in toggle if")
+                    $("#" + id).parent().find('span').removeClass('fa-eye').addClass('fa-eye-slash');
+                    if(document.getElementById(id).value){
+                        email =   document.getElementById(id).value;
+                    }
+                    else{
+                        email   = document.getElementById(id).innerText;
+                    }
+                    var hiddenEmail = "";
+                    var i;
+                    for (i = 0; i < email.length; i++)
+                    {
+                        if (i > 1 && i < email.indexOf("@"))
+                        {
+                            if (email[i] != '.' && email[i] != '-' && email[i] != '_')
+                            {
+                                hiddenEmail += "x";
+                            }
+                            else
+                            {
+                                hiddenEmail += email[i];
+                            }
+                        }
+                        else
+                        {
+                            hiddenEmail += email[i];
+                        }
+                    }
+                    document.getElementById(id).value = hiddenEmail;
+                }
+                else
+                {
+                    console.log("in toggle else");
+                    $("#" + id).parent().find('span').removeClass('fa-eye-slash').addClass('fa-eye');
+                    document.getElementById(id).value = original_email;
+                }
+            }
+        }
+        var c = 0;
+        function hidePhone(id){
+            if(document.getElementById(id+"_hidden"))
+            {
+                var original_phone = document.getElementById(id +"_hidden").value;
+                if ($("#" + id).parent().find('span').hasClass('fa-eye'))
+                {
+                    c = 1;
+                    $("#" + id).parent().find('span').removeClass('fa-eye').addClass('fa-eye-slash');
+                    var phoneno = document.getElementById(id).value;
+                    var hiddenphoneno = "";
+                    var i;
+                    for (i = 0; i < phoneno.length; i++)
+                    {
+                        if (i < (phoneno.length - 3 ))
+                        {
+                            if (phoneno[i] != '.' && phoneno[i] != '-' && phoneno[i] != '_')
+                            {
+                                hiddenphoneno += "x";
+                            }
+                            else
+                            {
+                                hiddenphoneno += phoneno[i];
+                            }
+                        }
+                        else
+                        {
+                            hiddenphoneno += phoneno[i];
+                        }
+                    }
+                    document.getElementById(id).value = hiddenphoneno;
+                }
+                else
+                {
+                    $("#" + id).parent().find('span').removeClass('fa-eye-slash').addClass('fa-eye');
+                    document.getElementById(id).value = original_phone;
+                    c = 0;
+                }
+            }
+        }
+
+        function setvalue(id){
+            document.getElementById(id+"_hidden").value = document.getElementById(id).value
+        }
+
+        function hideshowpass(spanid,inputid)
+        {
+            var x = document.getElementById(inputid);
+            if (x.type === "password")
+            {
+                $("#"+spanid).removeClass('fa-eye-slash').addClass('fa-eye')
+                x.type = "text";
+            }
+            else
+            {
+                $("#"+spanid).removeClass('fa-eye').addClass('fa-eye-slash')
+                x.type = "password";
+            }
+        }
+
+
+        function mouseoverPass(spanid,inputid) {
+            var x = document.getElementById(inputid);
+            if (x.type === "password")
+            {
+                $("#"+spanid).removeClass('fa-eye-slash').addClass('fa-eye')
+                x.type = "text";
+            }
+        }
+        function mouseoutPass(spanid,inputid) {
+            var x = document.getElementById(inputid);
+            if (x.type === "text")
+            {
+                $("#"+spanid).removeClass('fa-eye').addClass('fa-eye-slash')
+                x.type = "password";
+            }
+        }
+
+        function showicon(inputid,spanicon){
+            if(document.getElementById(inputid).value)
+            {
+                $("#" + spanicon).removeClass("hide")
+            }
+            else{
+                $("#" + spanicon).addClass("hide")
+            }
+        }
+
+        function decrypt(spanid,inputid,msg) {
+            var x = document.getElementById(inputid);
+            $("#" + spanid).removeClass('fa-eye-slash').addClass('fa-eye')
+            x.value = msg;
+
+        }
+        function encrypt(spanid,inputid,msg) {
+            var x = document.getElementById(inputid);
+            $("#"+spanid).removeClass('fa-eye').addClass('fa-eye-slash')
+            x.value = msg;
+        }
+
+
+        function hideMerchantKey(id){
+            if(document.getElementById(id+"_hidden"))
+            {
+                if ($("#" + id).parent().find('span').hasClass('fa-eye'))
+                {
+                    $("#" + id).parent().find('span').removeClass('fa-eye').addClass('fa-eye-slash');
+                    var merchantKey = document.getElementById(id).value;
+                    var hiddenMerchantKey = "";
+                    var i;
+                    for (i = 0; i < merchantKey.length; i++)
+                    {
+                        hiddenMerchantKey += "x";
+                    }
+                    document.getElementById(id).value = hiddenMerchantKey;
+                }
+                else
+                {
+                    $("#" + id).parent().find('span').removeClass('fa-eye-slash').addClass('fa-eye');
+                    document.getElementById(id).value = document.getElementById(id +"_hidden").value;
+                }
+            }
+        }

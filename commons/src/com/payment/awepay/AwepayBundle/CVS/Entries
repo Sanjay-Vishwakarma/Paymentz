@@ -1,0 +1,16 @@
+D/core////
+/AwepayJavaBundle.java/1.2/Thu Oct 17 22:04:50 2019//
+/Awepay_ApiBase.java/1.1/Fri Nov 30 21:02:26 2018//
+/Awepay_ApiElementBase.java/1.1/Fri Nov 30 21:02:26 2018//
+/Awepay_Cart.java/1.1/Fri Nov 30 21:02:26 2018//
+/Awepay_CartItem.java/1.1/Fri Nov 30 21:02:26 2018//
+/Awepay_CartSummary.java/1.1/Fri Nov 30 21:02:26 2018//
+/Awepay_Payment.java/1.1/Fri Nov 30 21:02:26 2018//
+/Awepay_PaymentDetails.java/1.1/Fri Nov 30 21:02:26 2018//
+/Awepay_Preauth.java/1.1/Fri Nov 30 21:02:26 2018//
+/Awepay_PrimaryRequest.java/1.1/Fri Nov 30 21:02:26 2018//
+/Awepay_Refund.java/1.1/Fri Nov 30 21:02:26 2018//
+/Awepay_SecondaryRequest.java/1.1/Fri Nov 30 21:02:26 2018//
+/Awepay_Settlement.java/1.1/Fri Nov 30 21:02:26 2018//
+/Awepay_TransactionParameters.java/1.1/Fri Nov 30 21:02:26 2018//
+/Awepay_UserDetails.java/1.1/Fri Nov 30 21:02:26 2018//

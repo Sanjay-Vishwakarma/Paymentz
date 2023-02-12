@@ -1,0 +1,250 @@
+package com.payment.sbm.core;
+
+import com.directi.pg.*;
+import com.directi.pg.core.valueObjects.GenericAddressDetailsVO;
+import com.directi.pg.core.valueObjects.GenericTransDetailsVO;
+import com.manager.vo.AsyncParameterVO;
+import com.manager.vo.DirectKitResponseVO;
+import com.payment.common.core.*;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.constraintType.PZDBExceptionEnum;
+import com.payment.ipaydna.core.message.IPayDNAResponseVO;
+import com.payment.request.PZCaptureRequest;
+import com.payment.validators.vo.CommonValidatorVO;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Map;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Niket
+ * Date: 8/28/14
+ * Time: 3:24 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class SBMPaymentProcess extends CommonPaymentProcess
+{
+    private static Logger logger = new Logger(SBMPaymentProcess.class.getName());
+    private static TransactionLogger transactionLogger = new TransactionLogger(SBMPaymentProcess.class.getName());
+    Functions functions = new Functions();
+
+    public void setTransactionVOParamsExtension(CommRequestVO requestVO, Map transactionRequestPArams)
+    {
+        String language = (String) transactionRequestPArams.get("language");
+        String redirecturl = (String) transactionRequestPArams.get("redirecturl");
+        logger.debug("languge that is to be set is ::"+language+" redirectUrl::"+redirecturl);
+        transactionLogger.debug("languge that is to be set is ::"+language+" redirectUrl::"+redirecturl);
+        CommAddressDetailsVO commAddressDetailsVO=requestVO.getAddressDetailsVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = requestVO.getTransDetailsVO();
+        commAddressDetailsVO.setLanguage(language);
+        commTransactionDetailsVO.setRedirectUrl(redirecturl);
+        requestVO.setAddressDetailsVO(commAddressDetailsVO);
+        requestVO.setTransDetailsVO(commTransactionDetailsVO);
+        logger.debug("language inserted on to the commonRequestVO");
+        transactionLogger.debug("language inserted on to the commonRequestVO");
+    }
+
+    public void setTransactionVOParamsExtension(CommRequestVO requestVO, CommonValidatorVO commonValidatorVO)
+    {
+        String language = commonValidatorVO.getAddressDetailsVO().getLanguage();
+        String redirecturl = commonValidatorVO.getTransDetailsVO().getRedirectUrl();
+        logger.debug("languge that is to be set is ::"+language+" redirectUrl::"+redirecturl);
+        transactionLogger.debug("languge that is to be set is ::"+language+" redirectUrl::"+redirecturl);
+        CommAddressDetailsVO commAddressDetailsVO=requestVO.getAddressDetailsVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = requestVO.getTransDetailsVO();
+        commAddressDetailsVO.setLanguage(language);
+        commTransactionDetailsVO.setRedirectUrl(redirecturl);
+        requestVO.setAddressDetailsVO(commAddressDetailsVO);
+        requestVO.setTransDetailsVO(commTransactionDetailsVO);
+        logger.debug("language inserted on to the commonRequestVO");
+        transactionLogger.debug("language inserted on to the commonRequestVO");
+    }
+
+    @Override
+    public void setTransactionVOExtension(CommRequestVO commRequestVO, CommonValidatorVO commonValidatorVO)
+    {
+        GenericTransDetailsVO genericTransDetailsVO = commonValidatorVO.getTransDetailsVO();
+        GenericAddressDetailsVO genericAddressDetailsVO=commonValidatorVO.getAddressDetailsVO();
+
+        logger.debug("languge that is to be set is ::"+genericAddressDetailsVO.getLanguage()+" redirectUrl::"+genericTransDetailsVO.getRedirectUrl());
+        transactionLogger.debug("languge that is to be set is ::"+genericAddressDetailsVO.getLanguage()+" redirectUrl::"+genericTransDetailsVO.getRedirectUrl());
+        CommAddressDetailsVO commAddressDetailsVO=commRequestVO.getAddressDetailsVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        commAddressDetailsVO.setLanguage(genericAddressDetailsVO.getLanguage());
+        commTransactionDetailsVO.setRedirectUrl(genericTransDetailsVO.getRedirectUrl());
+        commRequestVO.setAddressDetailsVO(commAddressDetailsVO);
+        commRequestVO.setTransDetailsVO(commTransactionDetailsVO);
+        logger.debug("language inserted on to the commonRequestVO");
+        transactionLogger.debug("language inserted on to the commonRequestVO");
+    }
+
+    public int actionEntryExtension(int newDetailId, String trackingId, String amount, String action, String status, CommResponseVO responseVO, CommRequestVO commRequestVO) throws PZDBViolationException
+    {
+        logger.debug("enter in SBM action Entry Extension");
+        transactionLogger.debug("enter in SBM action Entry Extension");
+        if(responseVO==null)
+        {
+            return 0;
+        }
+        int i=0;
+        String insert=null;
+        Connection conn= null;
+        SBMResponseVO sbmResponseVO = (SBMResponseVO) responseVO;
+        try
+        {
+            conn =Database.getConnection();
+            insert="insert into `transaction_sbm_details`(detailid,trackingid,eci,isCvvValidated,depositAmount,paymentAuthCode,processingAuthCode,reffernceNumber,acsURL,acsRequest,postdate)  values(?,?,?,?,?,?,?,?,?,?,?)";
+            PreparedStatement psSbmActionEntryExtension = conn.prepareStatement(insert);
+            psSbmActionEntryExtension.setInt(1, newDetailId);
+            psSbmActionEntryExtension.setString(2,trackingId);
+            if(functions.isValueNull(sbmResponseVO.getEci()))
+            {
+                psSbmActionEntryExtension.setString(3,sbmResponseVO.getEci());
+            }
+            else
+            {
+                psSbmActionEntryExtension.setInt(3, Types.INTEGER);
+            }
+            transactionLogger.error("CVV Valid------>"+sbmResponseVO.getCvvValid());
+            if(functions.isValueNull(sbmResponseVO.getCvvValid()))
+            {
+                psSbmActionEntryExtension.setString(4,sbmResponseVO.getCvvValid());
+
+            }
+            else
+            {
+                psSbmActionEntryExtension.setString(4,"N");
+            }
+            if(functions.isValueNull(sbmResponseVO.getDepositAmount()))
+            {
+                psSbmActionEntryExtension.setString(5,sbmResponseVO.getDepositAmount());
+            }
+            else
+            {
+                psSbmActionEntryExtension.setFloat(5,Types.DECIMAL);
+            }
+            if(functions.isValueNull(sbmResponseVO.getPaymentAuthCode()))
+            {
+                psSbmActionEntryExtension.setString(6,sbmResponseVO.getPaymentAuthCode());
+            }
+            else
+            {
+                psSbmActionEntryExtension.setNull(6, Types.VARCHAR);
+            }
+            if(functions.isValueNull(sbmResponseVO.getProcessingAuthCode()))
+            {
+                psSbmActionEntryExtension.setString(7,sbmResponseVO.getProcessingAuthCode());
+            }
+            else
+            {
+                psSbmActionEntryExtension.setNull(7,Types.VARCHAR);
+            }
+            if(functions.isValueNull(sbmResponseVO.getReferenceNumber()))
+            {
+                psSbmActionEntryExtension.setString(8,sbmResponseVO.getReferenceNumber());
+            }
+            else
+            {
+                psSbmActionEntryExtension.setNull(8,Types.VARCHAR);
+            }
+            if(functions.isValueNull(sbmResponseVO.getAcsURL()))
+            {
+                psSbmActionEntryExtension.setString(9,sbmResponseVO.getAcsURL());
+            }
+            else
+            {
+                psSbmActionEntryExtension.setNull(9,Types.VARCHAR);
+            }
+            if(functions.isValueNull(sbmResponseVO.getAcsRequest()))
+            {
+                psSbmActionEntryExtension.setString(10,sbmResponseVO.getAcsRequest());
+            }
+            else
+            {
+                psSbmActionEntryExtension.setNull(10,Types.VARCHAR);
+            }
+            if(functions.isValueNull(sbmResponseVO.getPostDate()))
+            {
+                psSbmActionEntryExtension.setString(11,sbmResponseVO.getPostDate());
+            }
+            else
+            {
+                psSbmActionEntryExtension.setNull(11,Types.VARCHAR);
+            }
+            transactionLogger.error("psSbmActionEntryExtension----------------->"+psSbmActionEntryExtension);
+            i=psSbmActionEntryExtension.executeUpdate();
+
+
+        }
+        catch(SystemError systemError)
+        {
+            PZExceptionHandler.raiseDBViolationException(SBMPaymentProcess.class.getName(), "actionEntryExtension()", null, "common", "Technical exception", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, systemError.getMessage(), systemError.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException(SBMPaymentProcess.class.getName(), "actionEntryExtension()", null, "common", "Technical exception", PZDBExceptionEnum.SQL_EXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        return i;
+    }
+
+    @Override
+    public String get3DConfirmationFormVT(String trackingId, String ctoken, Comm3DResponseVO response3D)
+    {
+        transactionLogger.error("3d page displayed....." + response3D.getUrlFor3DRedirect());
+        String target = "target=_blank";
+        String form="<form name=\"launch3D\" method=\"POST\" action=\""+response3D.getUrlFor3DRedirect()+"\""+target+">"+
+                "<input type=\"hidden\" name=\"PaReq\" value=\""+response3D.getPaReq()+"\">"+
+                "<input type=\"hidden\" name=\"TermUrl\" value=\""+response3D.getTerURL()+"\">"+
+                "<input type=\"hidden\" name=\"MD\" value=\""+response3D.getMd()+"\">"+
+                "</form>"+
+                "<script language=\"javascript\"> document.launch3D.submit(); </script>";
+        return form;
+    }
+
+    @Override
+    public String get3DConfirmationForm(String trackingId, String ctoken, Comm3DResponseVO response3D)
+    {
+        transactionLogger.error("3d page displayed....." + response3D.getUrlFor3DRedirect());
+
+        String form="<form name=\"launch3D\" method=\"POST\" action=\""+response3D.getUrlFor3DRedirect()+"\">"+
+                "<input type=\"hidden\" name=\"PaReq\" value=\""+response3D.getPaReq()+"\">"+
+                "<input type=\"hidden\" name=\"TermUrl\" value=\""+response3D.getTerURL()+"\">"+
+                "<input type=\"hidden\" name=\"MD\" value=\""+response3D.getMd()+"\">"+
+                "</form>"+
+                "<script language=\"javascript\"> document.launch3D.submit(); </script>";
+        return form;
+    }
+
+    public void set3DResponseVO(DirectKitResponseVO directKitResponseVO, Comm3DResponseVO response3D)
+    {
+        AsyncParameterVO asyncParameterVO = null;
+        transactionLogger.debug("inside Allied Wallet Rest 3d payment process---"+response3D.getUrlFor3DRedirect());
+        directKitResponseVO.setBankRedirectionUrl(response3D.getUrlFor3DRedirect());
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("launch3D");
+        asyncParameterVO.setValue(response3D.getUrlFor3DRedirect());
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("PaReq");
+        asyncParameterVO.setValue(response3D.getPaReq());
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("TermUrl");
+        asyncParameterVO.setValue(response3D.getTerURL());
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("MD");
+        asyncParameterVO.setValue(response3D.getMd());
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+    }
+
+
+}

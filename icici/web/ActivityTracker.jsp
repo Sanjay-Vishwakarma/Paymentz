@@ -1,0 +1,420 @@
+<%@ page import="com.directi.pg.Functions" %>
+<%@ page import="com.directi.pg.Logger" %>
+<%@ page import="org.owasp.esapi.ESAPI" %>
+<%@ page import="org.owasp.esapi.errors.ValidationException" %>
+<%@ page import="java.util.Calendar" %>
+<%@ page import="java.util.Hashtable" %>
+<%@ page import="java.util.Iterator" %>
+<%@ page import="static com.directi.pg.Functions.convertStringtoInt" %>
+<%@ page import="java.util.TreeMap" %>
+<%@ page import="com.manager.dao.ActivityTrackerDAO" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: admin
+  Date: 6/2/14
+  Time: 3:22 PM
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ include file="index.jsp"%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+  <META content="text/html; charset=windows-1252" http-equiv=Content-Type>
+  <meta http-equiv="Expires" content="0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <script type="text/javascript" src="/icici/javascript/jquery.min.js?ver=1"></script>
+  <script src="/icici/css/jquery-ui.min.js"></script>
+  <script src="/icici/javascript/autocomplete.js"></script>
+  <title>Activity Tracker</title>
+  <style type="text/css">
+    td{
+      word-wrap:break-word
+    }
+  </style>
+</head>
+<body>
+<%!
+  private static Logger logger=new Logger("ActivityTracker.jsp");
+%>
+<%
+  ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+  if (com.directi.pg.Admin.isLoggedIn(session))
+  {
+%>
+<div class="row">
+  <div class="col-lg-12">
+    <div class="panel panel-default" >
+      <div class="panel-heading" >
+        Activity Tracker
+      </div><br>
+      <form action="/icici/servlet/ActivityTracker?ctoken=<%=ctoken%>" method="post" name="forms" >
+        <input type="hidden" value="<%=ctoken%>" name="ctoken" id="ctoken">
+        <%
+          String str="";
+          String fdate=null;
+          String tdate=null;
+          String fmonth=null;
+          String tmonth=null;
+          String fyear=null;
+          String tyear=null;
+
+          String role = Functions.checkStringNull(request.getParameter("role"))==null?"":request.getParameter("role");
+          String username = nullToStr(Functions.checkStringNull(request.getParameter("username")));
+          String modulename = nullToStr(Functions.checkStringNull(request.getParameter("modulename")));
+
+          //Get List of TerminalID
+           ActivityTrackerDAO activityTrackerDAO = new ActivityTrackerDAO();
+
+
+
+          try
+          {
+            fdate = ESAPI.validator().getValidInput("fdate",request.getParameter("fdate"),"Days",2,true);
+            tdate = ESAPI.validator().getValidInput("tdate",request.getParameter("tdate"),"Days",2,true);
+            fmonth = ESAPI.validator().getValidInput("fmonth",request.getParameter("fmonth"),"Months",2,true);
+            tmonth =  ESAPI.validator().getValidInput("tmonth",request.getParameter("tmonth"),"Months",2,true);
+            fyear = ESAPI.validator().getValidInput("fyear",request.getParameter("fyear"),"Years",4,true);
+            tyear = ESAPI.validator().getValidInput("tyear",request.getParameter("tyear"),"Years",4,true);
+
+          }
+          catch(ValidationException e)
+          {
+            logger.error("Date Format Exception while select",e);
+          }
+          Calendar rightNow = Calendar.getInstance();
+          if (fdate == null) fdate = "" + 1;
+          if (tdate == null) tdate = "" + rightNow.get(rightNow.DATE);
+          if (fmonth == null) fmonth = "" + rightNow.get(rightNow.MONTH);
+          if (tmonth == null) tmonth = "" + rightNow.get(rightNow.MONTH);
+          if (fyear == null) fyear = "" + rightNow.get(rightNow.YEAR);
+          if (tyear == null) tyear = "" + rightNow.get(rightNow.YEAR);
+          str = str + "ctoken=" + ctoken;
+          if (fdate != null) str = str + "&fdate=" + fdate;
+          if (tdate != null) str = str + "&tdate=" + tdate;
+          if (fmonth != null) str = str + "&fmonth=" + fmonth;
+          if (tmonth != null) str = str + "&tmonth=" + tmonth;
+          if (fyear != null) str = str + "&fyear=" + fyear;
+          if (tyear != null) str = str + "&tyear=" + tyear;
+          if (role != null) str = str + "&role=" + role;
+          if (username != null) str = str + "&username=" + username;
+          if (modulename != null) str = str + "&modulename=" + modulename;
+
+          int pageno=convertStringtoInt(ESAPI.encoder().encodeForHTML(request.getParameter("SPageno")), 1);
+          int pagerecords=convertStringtoInt(ESAPI.encoder().encodeForHTML(request.getParameter("SRecords")), 15);
+          //str = str + "&SRecords=" + pagerecords;
+          //str = str + "&SPageno=" + pageno;
+          int year = Calendar.getInstance().get(Calendar.YEAR);
+
+        %>
+
+        <table border="0" cellpadding="5" cellspacing="0" width="95%"  align="center">
+          <tr><td colspan="12">&nbsp;</td></tr>
+          <tr>
+            <td colspan="1" class="textb" >From</td>
+            <td colspan="2" class="textb">
+              <select size="1" name="fdate"  value="<%=request.getParameter("fdate")==null?"":request.getParameter("fdate")%>" >
+                <%
+                  if (fdate != null)
+                    out.println(Functions.dayoptions(1, 31, fdate));
+                  else
+                    out.println(Functions.printoptions(1, 31));
+                %>
+              </select>
+              <select size="1" name="fmonth"  value="<%=request.getParameter("fmonth")==null?"":request.getParameter("fmonth")%>" >
+                <%
+                  if (fmonth != null)
+                    out.println(Functions.newmonthoptions(1, 12, fmonth));
+                  else
+                    out.println(Functions.printoptions(1, 12));
+                %>
+              </select>
+              <select size="1" name="fyear"  value="<%=request.getParameter("fyear")==null?"":request.getParameter("fyear")%>" >
+                <%
+                  if (fyear != null)
+                    out.println(Functions.yearoptions(2005, year, fyear));
+                  else
+                    out.println(Functions.printoptions(2005, year));
+
+                %>
+              </select>
+            </td>
+            <td colspan="1" class="textb" >To</td>
+            <td colspan="2" class="textb">
+              <select size="1" name="tdate" >
+                <%
+                  if (tdate != null)
+                    out.println(Functions.dayoptions(1, 31, tdate));
+                  else
+                    out.println(Functions.printoptions(1, 31));
+                %>
+              </select>
+
+              <select size="1" name="tmonth" >
+                <%
+                  if (tmonth != null)
+                    out.println(Functions.newmonthoptions(1, 12, tmonth));
+                  else
+                    out.println(Functions.printoptions(1, 12));
+                %>
+              </select>
+
+              <select size="1" name="tyear" >
+                <%
+                  if (tyear != null)
+                    out.println(Functions.yearoptions(2005, year, tyear));
+                  else
+                    out.println(Functions.printoptions(2005, year));
+                %>
+              </select>
+            </td>
+
+
+            <td colspan="1" class="textb" for="gateway">Role</td>
+            <td colspan="2" class="textb">
+              <select size="1" name="role" id="role" class="txtbox">
+                <option value="">Select Role</option>
+                <%
+                  TreeMap<String, String> parameter = activityTrackerDAO.getRolelist();
+                  Set statusSet = parameter.keySet();
+                  Iterator iterator=statusSet.iterator();
+                  String selected = "";
+                  String key = "";
+                  String value = "";
+                  while (iterator.hasNext())
+                  {
+                    key = (String)iterator.next();
+                    value = (String) parameter.get(key);
+
+                    if (key.equals(role))
+                      selected = "selected";
+                    else
+                      selected = "";
+                %>
+                <option value="<%=ESAPI.encoder().encodeForHTMLAttribute(key)%>" <%=selected%>><%=ESAPI.encoder().encodeForHTML(value)%></option>
+                <%
+                  }
+                %>
+              </select>
+            </td>
+          </tr>
+
+          <tr><td colspan="12">&nbsp;</td></tr>
+          <tr><td colspan="12">&nbsp;</td></tr>
+
+
+          <tr>
+
+            <td colspan="1" class="textb">Username</td>
+            <td colspan="2" class="textb" >
+              <input name="username" id="username"
+                     value="<%=username%>"
+                     class="txtbox" autocomplete="on">
+            </td>
+
+            <td colspan="1" class="textb">Module Name</td>
+            <td colspan="2" class="textb" >
+              <select size="1" name="modulename" id="modulename" class="text">
+                <option value="">Select Module Name</option>
+                <%
+                  TreeMap<String, String> parameter1 = activityTrackerDAO.getModuleName();
+                  Set statusSet1 = parameter1.keySet();
+                  Iterator iterator1=statusSet1.iterator();
+                  String selected1 = "";
+                  String key1 = "";
+                  String value1 = "";
+
+                  while (iterator1.hasNext())
+                  {
+                    key1 = (String)iterator1.next();
+                    value1 = (String) parameter1.get(key1);
+
+                    if (key1.equals(modulename))
+                      selected1 = "selected";
+                    else
+                      selected1 = "";
+                %>
+                <option value="<%=ESAPI.encoder().encodeForHTMLAttribute(key1)%>" <%=selected1%>><%=ESAPI.encoder().encodeForHTML(value1)%></option>
+                <%
+                  }
+                %>
+              </select>
+            </td>
+
+          <tr><td colspan="12">&nbsp;</td></tr>
+          <tr><td colspan="12">&nbsp;</td></tr>
+
+
+            <td colspan="2" class="textb">
+              <button type="submit" class="buttonform" style="margin-left: 20%">
+                <i class="fa fa-clock-o"></i>
+                &nbsp;&nbsp;Search
+              </button>
+            </td>
+          </tr>
+          <tr><td colspan="12">&nbsp;</td></tr>
+
+          <tr>
+
+          </tr>
+          <tr><td colspan="12">&nbsp;</td></tr>
+        </table>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="reporttable">
+  <%  String errormsg1 = (String)request.getAttribute("message");
+    if (errormsg1 == null)
+    {
+      errormsg1 = "";
+    }
+    else
+    {
+      out.println("<table align=\"center\"><tr><td valign=\"middle\"><font class=\"textb\" >");
+      out.println(errormsg1);
+      out.println("</font></td></tr></table>");
+    }
+  %>
+  <%
+    Hashtable hash = (Hashtable) request.getAttribute("activitylist");
+    Hashtable temphash=null;
+    str = str + "&ctoken=" + ctoken;
+
+    if (hash != null && hash.size() > 0)
+    {
+      int records=0;
+      int totalrecords=0;
+      int currentblock=1;
+      try
+      {
+        records=Functions.convertStringtoInt((String)hash.get("records"),15);
+        totalrecords=Functions.convertStringtoInt((String)hash.get("totalrecords"),0);
+        currentblock = Functions.convertStringtoInt((request.getParameter("currentblock")),1);
+      }
+      catch(Exception ex)
+      {
+        logger.error("Records & TotalRecords is found null",ex);
+      }
+
+      if(records>0)
+      {
+  %>
+  <table class="table table-striped table-bordered table-hover table-green dataTable" style="overflow: auto; table-layout: fixed;  width: 100%">
+    <thead>
+    <tr>
+      <td valign="middle" align="center" class="th0">Sr No</td>
+      <td valign="middle" align="center" class="th0">Activity Date</td>
+      <td valign="middle" align="center" class="th0">Interface</td>
+      <td valign="middle" align="center" class="th0">Role</td>
+      <td valign="middle" align="center" class="th0">User Name</td>
+      <td valign="middle" align="center" class="th0">User ID</td>
+      <td valign="middle" align="center" class="th0">Action</td>
+      <td valign="middle" align="center" class="th0">Module Name</td>
+      <td valign="middle" align="center" class="th0">User Description</td>
+      <td valign="middle" class="th0">Label Name</td>
+    </tr>
+    </thead>
+    <%
+      String style="class=td1";
+      String ext="light";
+      Hashtable inner=null;
+      for(int pos=1;pos<=records;pos++)
+      {
+        String id=Integer.toString(pos);
+        int srno=Integer.parseInt(id)+ ((pageno-1)*pagerecords);
+
+        if(pos%2==0)
+        {
+          style="class=tr0";
+          ext="dark";
+        }
+        else
+        {
+          style="class=tr1";
+          ext="light";
+        }
+        temphash=(Hashtable)hash.get(id);
+        String separator ="-";
+        String username1="";
+        String username_id="";
+        String usernameid=ESAPI.encoder().encodeForHTML((String)temphash.get("user_name"));
+
+        int index = usernameid.lastIndexOf('-');
+        String lastString = usernameid.substring(index +1);
+        logger.error("lastString::: " + lastString);
+        username_id= lastString;
+        logger.error("Substring before last separator = " + usernameid.substring(0, index));
+        username1= usernameid.substring(0,index);
+
+       /* String[] arrSplit = usernameid.split(separator);
+        logger.error("arrSplit++++++  "+arrSplit);*/
+        /*for (int i=0; i < arrSplit.length; i++){
+          username1=arrSplit[0];
+          username_id=arrSplit[1];
+
+        }*/
+        logger.error("username1--------------   "+username1);
+        logger.error("username_id--------------   "+username_id);
+    %>
+    <tr>
+      <td align="center" <%=style%>><%=srno%></td>
+      <td align="center" <%=style%>><%=ESAPI.encoder().encodeForHTML((String)temphash.get("timestamp"))%></td>
+      <td align="center"<%=style%>><%=ESAPI.encoder().encodeForHTML((String)temphash.get("interface"))%></td>
+      <td align="center"<%=style%>><%=ESAPI.encoder().encodeForHTML((String)temphash.get("role"))%></td>
+      <td align="center"<%=style%>><%=username1%></td>
+      <td align="center"<%=style%>><%=username_id%></td>
+      <td align="center"<%=style%>><%=ESAPI.encoder().encodeForHTML((String)temphash.get("action"))%></td>
+      <td align="center"<%=style%>><%=ESAPI.encoder().encodeForHTML((String)temphash.get("module_name"))%></td>
+      <td align="center"<%=style%>><%=ESAPI.encoder().encodeForHTML((String)temphash.get("description"))%></td>
+      <td <%=style%>><%=ESAPI.encoder().encodeForHTML((String)temphash.get("lable_values"))%></td>
+    </tr>
+    <%
+      }
+    %>
+  </table>
+  <table align=center valign=top><tr>
+    <td align=center>
+      <jsp:include page="page.jsp" flush="true">
+        <jsp:param name="numrecords" value="<%=totalrecords%>"/>
+        <jsp:param name="numrows" value="<%=pagerecords%>"/>
+        <jsp:param name="pageno" value="<%=pageno%>"/>
+        <jsp:param name="str" value="<%=str%>"/>
+        <jsp:param name="page" value="ActivityTracker"/>
+        <jsp:param name="currentblock" value="<%=currentblock%>"/>
+        <jsp:param name="orderby" value=""/>
+      </jsp:include>
+    </td>
+  </tr>
+  </table>
+  <%
+      }
+      else
+      {
+        out.println(Functions.NewShowConfirmation("Sorry","No records found."));
+      }
+    }
+    else
+    {
+      out.println(Functions.NewShowConfirmation("Sorry","No records found."));
+    }
+  %>
+  <%
+    }
+    else
+    {
+      response.sendRedirect("/icici/logout.jsp");
+      return;
+    }
+  %>
+</div>
+</body>
+</html>
+
+<%!
+  public static String nullToStr(String str)
+  {
+    if(str == null)
+      return "";
+    return str;
+  }
+%>

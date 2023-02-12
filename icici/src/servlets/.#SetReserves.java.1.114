@@ -1,0 +1,870 @@
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.manager.dao.FraudTransactionDAO;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.ValidationErrorList;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
+
+public class SetReserves extends HttpServlet
+{
+    private static TransactionLogger transactionLogger = new TransactionLogger(SetReserves.class.getName());
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        transactionLogger.debug("Entering in SetReserves");
+        HttpSession session = req.getSession();
+
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+        Functions function = new Functions();
+        transactionLogger.debug("success");
+        String EOL = "<br>";
+
+        String errorMsg = "";
+        if (!Admin.isLoggedIn(session))
+        {   transactionLogger.debug("member is logout ");
+            res.sendRedirect("/icici/admin/logout.jsp");
+            return;
+        }
+        errorMsg = validateParameters(req);
+        if (!ESAPI.validator().isValidInput("notificationurl ", req.getParameter("notificationurl"), "SafeString", 100, true)){
+            errorMsg = errorMsg + "Invalid Notification Url." + EOL;
+        }
+        if (!ESAPI.validator().isValidInput("termsurl ",req.getParameter("termsurl"), "SafeString", 100, true)){
+            errorMsg = errorMsg + "Invalid Terms Url." + EOL;
+        }
+        if (!ESAPI.validator().isValidInput("privacyPolicyUrl ",req.getParameter("privacyPolicyUrl"), "SafeString", 100, true)){
+            errorMsg = errorMsg + "Invalid Privacy Policy Url." + EOL;
+        }
+        if (!ESAPI.validator().isValidInput("checkoutTimerTime ", req.getParameter("checkoutTimerTime"), "checkoutTimer", 5, false)||req.getParameter("checkoutTimerTime").equals("0:00")||req.getParameter("checkoutTimerTime").equals("00:00")||req.getParameter("checkoutTimerTime").equals("00:0"))
+        {
+                errorMsg = errorMsg + "Invalid Checkout Timer Time,Accepts only in [mm:ss]" + EOL;
+        }
+
+        if(!function.isEmptyOrNull(errorMsg))
+        {
+            String redirectpage = "/memberpreference.jsp?ctoken="+user.getCSRFToken();
+            req.setAttribute("error", errorMsg);
+            RequestDispatcher rd = req.getRequestDispatcher(redirectpage);
+            rd.forward(req, res);
+            return;
+        }
+        else
+        {
+            String memberids[] = req.getParameterValues("memberid");
+            String aptprompts[] = req.getParameterValues("aptprompt");
+            String accountIds[] = req.getParameterValues("accountids");
+            String isValidateEmail[] = req.getParameterValues("isValidateEmail");
+            String custremindermail[] = req.getParameterValues("custremindermail");
+            String daily_amount_limit=req.getParameter("daily_amount_limit");
+            String monthly_amount_limit=req.getParameter("monthly_amount_limit");
+            String daily_card_limit=req.getParameter("daily_card_limit");
+            String weekly_card_limit=req.getParameter("weekly_card_limit");
+            String monthly_card_limit=req.getParameter("monthly_card_limit");
+            String isrefund=req.getParameter("isrefund");
+            String isMultipleRefund=req.getParameter("isMultipleRefund");
+            String personalInfoDisplay=req.getParameter("personal_info_display");
+            String personalInfoValidation=req.getParameter("personal_info_validation");
+            String hostedPaymentPage=req.getParameter("hosted_payment_page");
+            String consent=req.getParameter("consent");
+            String refunddailylimit=req.getParameter("refunddailylimit");
+            String active=req.getParameter("activation");
+            String icici=req.getParameter("icici");
+            StringBuilder query = new StringBuilder();
+            String ispharma=req.getParameter("isPharma");
+            StringBuilder sSuccessMessage = new StringBuilder();
+            StringBuilder sErrorMessage = new StringBuilder();
+            String haspaid=req.getParameter("haspaid");
+            String isservice=req.getParameter("isservice");
+            String hralertproof=req.getParameter("hralertproof");
+            String autoredirect=req.getParameter("autoredirect");
+            String vbv=req.getParameter("vbv");
+            String hrparameterised=req.getParameter("hrparameterised");
+            String partnerId=req.getParameter("partnerId");
+            String agentid=req.getParameter("agentId");
+            String check_limit=req.getParameter("check_limit");
+            String invoicetemplate=req.getParameter("invoicetemplate");
+            String isPoweredBy=req.getParameter("isPoweredBy");
+            String template=req.getParameter("template");
+            String iswhitelisted=req.getParameter("iswhitelisted");
+            String masterCardSupported=req.getParameter("masterCardSupported");
+            String isipwhitelist=req.getParameter("isipwhitelisted");
+            String isPODRequired=req.getParameter("isPODRequired");
+            String daily_card_amount_limit=req.getParameter("daily_card_amount_limit");
+            String weekly_card_amount_limit=req.getParameter("weekly_card_amount_limit");
+            String monthly_card_amount_limit=req.getParameter("monthly_card_amount_limit");
+            String card_check_limit=req.getParameter("card_check_limit");
+            String card_transaction_limit=req.getParameter("card_transaction_limit");
+            String autoSelectTerminal = req.getParameter("autoSelectTerminal");
+            String maxScoreAllowed = req.getParameter("maxscoreallowed");
+            String maxScoreReversal = req.getParameter("maxscoreautoreversal");
+            String weekly_amount_limit = req.getParameter("weekly_amount_limit");
+            String isappmanageractivate=req.getParameter("isappmanageractivate");
+            String iscardregistrationallowed=req.getParameter("iscardregistrationallowed");
+            String isRecurring = req.getParameter("is_recurring");
+            String isRestrictedTicket = req.getParameter("isRestrictedTicket");
+            String isTokenizationAllowed = req.getParameter("isTokenizationAllowed");
+            String tokenValidDays = req.getParameter("tokenvaliddays");
+            String isAddrDetailsRequired = req.getParameter("isAddrDetailsRequired");
+            String isCardEncryptionEnable = req.getParameter("isCardEncryptionEnable");
+            String blacklistTransaction = req.getParameter("blacklistTransaction");
+            String flightMode = req.getParameter("flightMode");
+            String emailSent= req.getParameter("emailSent");
+            String fraudCheck= req.getParameter("onlineFraudCheck");
+            String splitPayment = req.getParameter("isSplitPayment");
+            String splitPaymentType = req.getParameter("splitPaymentType");
+            String isExcessCaptureAllowed = req.getParameter("isExcessCaptureAllowed");
+            String refundAllowedDays = req.getParameter("refundallowed_days");
+            String chargebackAllowedDays = req.getParameter("chargebackallowed_days");
+            String is_rest_whitelisted=req.getParameter("is_rest_whitelisted");
+            String smsActivation = req.getParameter("smsactivation");
+            String cSmsActivation = req.getParameter("customersmsactivation");
+            String isEmailLilmitenabled = req.getParameter("emailLimitEnabled");
+            String ip_whitelist_invoice = req.getParameter("ip_whitelist_invoice");
+            String binService = req.getParameter("binService");
+            String expDateOffset = req.getParameter("expDateOffset");
+            String supportSection = req.getParameter("supportSection");
+            String card_whitelist_level = req.getParameter("card_whitelist_level");
+            String multiCurrencySupport = req.getParameter("multiCurrencySupport");
+            String dashBoard=req.getParameter("dashboard_access");
+            String accounting=req.getParameter("accounting_access");
+            String settings=req.getParameter("setting_access");
+            String transactionManagement=req.getParameter("transactions_access");
+            String invoicing=req.getParameter("invoicing_access");
+            String virtualTerminal=req.getParameter("virtualterminal_access");
+            String merchantManagement=req.getParameter("merchantmgt_access");
+            String settingsMerchantConfigAccess=req.getParameter("settings_merchant_config_access");
+            String settingsFraudRuleConfigAccess=req.getParameter("settings_fraudrule_config_access");
+            String accountsAccountSummaryAccess=req.getParameter("accounts_account_summary_access");
+            String accountsChargesSummaryAccess=req.getParameter("accounts_charges_summary_access");
+            String accountsTransactionSummaryAccess=req.getParameter("accounts_transaction_summary_access");
+            String accountsReportSummaryAccess=req.getParameter("accounts_reports_summary_access");
+            String settingsMerchantProfileAccess=req.getParameter("settings_merchant_profile_access");
+            String settingsOrganisationProfileAccess=req.getParameter("settings_organisation_profile_access");
+            String settingsGenerateKeyAccess=req.getParameter("settings_generate_key_access");
+            String settingsInvoiceConfigAccess=req.getParameter("settings_invoice_config_access");
+            String transMgtTransactionAccess=req.getParameter("transmgt_transaction_access");
+            String transMgtCaptureAccess=req.getParameter("transmgt_capture_access");
+            String transMgtReversalAccess=req.getParameter("transmgt_reversal_access");
+            String transMgtPayoutAccess=req.getParameter("transmgt_payout_access");
+            String invoiceGenerateAccess=req.getParameter("invoice_generate_access");
+            String invoiceHistoryAccess=req.getParameter("invoice_history_access");
+            String tokenMgtRegistrationHistoryAccess=req.getParameter("tokenmgt_registration_history_access");
+            String tokenMgtRegisterCardAccess=req.getParameter("tokenmgt_register_card_access");
+            String merchantMgtUserManagementAccess=req.getParameter("merchantmgt_user_management_access");
+            String ispcilogo = req.getParameter("ispcilogo");
+            String notificationUrl=req.getParameter("notificationurl");
+            String termsUrl=req.getParameter("termsurl");
+            String ipValidationRequired=req.getParameter("ip_validation_required");
+            String isPartnerLogo=req.getParameter("ispartnerlogo");
+            String ismerchantlogo=req.getParameter("ismerchantlogo");
+            String isRefundEmailSent=req.getParameter("isRefundEmailSent");
+            String isPartialRefund =req.getParameter("isPartialRefund");
+            String privacyPolicyUrl=req.getParameter("privacyPolicyUrl");
+            String binRouting=req.getParameter("binRouting");
+            String vbvLogo=req.getParameter("vbvLogo");
+            String masterSecureLogo=req.getParameter("masterSecureLogo");
+            String chargebackMailSend=req.getParameter("chargebackEmail");
+            String isSecurityLogo=req.getParameter("isSecurityLogo");
+            String settingsWhitelistDetails=req.getParameter("settings_whitelist_details");
+            String settingsBlacklistDetails=req.getParameter("settings_blacklist_details");
+            String emiConfiguration="N";
+            String emiSupport=req.getParameter("emiSupport");
+            String internalFraudCheck=req.getParameter("internalFraudCheck");
+            String card_velocity_check=req.getParameter("card_velocity_check");
+            String merchant_order_details=req.getParameter("merchant_order_details");
+            String limitRouting=req.getParameter("limitRouting");
+            String checkoutTimer = req.getParameter("checkoutTimer");
+            String checkoutTimerTime = req.getParameter("checkoutTimerTime");
+            String marketplace = req.getParameter("marketplace");
+            String rejected_transaction = req.getParameter("rejected_transaction");
+            String virtual_checkout = req.getParameter("virtual_checkout");
+            String isVirtualCheckoutAllowed = req.getParameter("isVirtualCheckoutAllowed");
+            String isMobileAllowedForVC = req.getParameter("isMobileAllowedForVC");
+            String isEmailAllowedForVC = req.getParameter("isEmailAllowedForVC");
+            String isCvvStore = req.getParameter("isCvvStore");
+            String reconciliationNotification=req.getParameter("reconciliationNotification");
+            String transactionNotification=req.getParameter("transactionNotification");
+            String refundNotification=req.getParameter("refundNotification");
+            String chargebackNotification=req.getParameter("chargebackNotification");
+            String ispurchase_inquiry_blacklist = req.getParameter("ispurchase_inquiry_blacklist");
+            String ispurchase_inquiry_refund = req.getParameter("ispurchase_inquiry_refund");
+            String isfraud_determined_refund = req.getParameter("isfraud_determined_refund");
+            String isfraud_determined_blacklist = req.getParameter("isfraud_determined_blacklist");
+            String isdispute_initiated_refund = req.getParameter("isdispute_initiated_refund");
+            String isdispute_initiated_blacklist = req.getParameter("isdispute_initiated_blacklist");
+            String isstop_payment_blacklist = req.getParameter("isstop_payment_blacklist");
+            String isexception_file_listing_blacklist = req.getParameter("isexception_file_listing_blacklist");
+            //Merchant Notification Mail
+            String merchantRegistrationMail= req.getParameter("merchantRegistrationMail");
+            String merchantChangePassword=req.getParameter("merchantChangePassword");
+            String merchantChangeProfile=req.getParameter("merchantChangeProfile");
+            String transactionSuccessfulMail=req.getParameter("transactionSuccessfulMail");
+            String transactionFailMail=req.getParameter("transactionFailMail");
+            String transactionCapture=req.getParameter("transactionCapture");
+            String transactionPayoutSuccess=req.getParameter("transactionPayoutSuccess");
+            String transactionPayoutFail=req.getParameter("transactionPayoutFail");
+            String refundMail=req.getParameter("refundMail");
+            String chargebackMail=req.getParameter("chargebackMail");
+            String transactionInvoice=req.getParameter("transactionInvoice");
+            String cardRegistration=req.getParameter("cardRegistration");
+            String payoutReport=req.getParameter("payoutReport");
+            String monitoringAlertMail=req.getParameter("monitoringAlertMail");
+            String monitoringSuspensionMail=req.getParameter("monitoringSuspensionMail");
+            String highRiskRefunds=req.getParameter("highRiskRefunds");
+            String fraudFailedTxn=req.getParameter("fraudFailedTxn");
+            String dailyFraudReport=req.getParameter("dailyFraudReport");
+            //Customer Notification Mail
+            String customerTransactionSuccessfulMail=req.getParameter("customerTransactionSuccessfulMail");
+            String customerTransactionFailMail=req.getParameter("customerTransactionFailMail");
+            String customerTransactionPayoutSuccess=req.getParameter("customerTransactionPayoutSuccess");
+            String customerTransactionPayoutFail=req.getParameter("customerTransactionPayoutFail");
+            String customerRefundMail=req.getParameter("customerRefundMail");
+            String customerTokenizationMail=req.getParameter("customerTokenizationMail");
+            String isUniqueOrderIdRequired=req.getParameter("isUniqueOrderIdRequired");
+
+            res.setContentType("text/html");
+            PrintWriter out = res.getWriter();
+            int updRecs = 0;
+            Connection cn=null;
+            PreparedStatement pstmt=null;
+            PreparedStatement pstmt1=null;
+            PreparedStatement pstmt2=null;
+            ResultSet rs = null;
+            if (memberids != null)
+            {
+                try
+                {
+                    for (int i = 0; i < 1; i++)
+                    {
+                        GatewayAccount account = GatewayAccountService.getGatewayAccount(accountIds[i]);
+                        String reserve = "", aptprompt = "", fixamount = "", accountID = "";
+                        String chargeper = "",reversalCharge="",withdrawalCharge="",chargebackCharge="",taxPercentage="";
+                        String isValidEmail="N";
+                        String isCustEmail="N";
+                        String custrememail="N";
+                        aptprompt = getValidPercentage(aptprompts[i]);
+                        isValidEmail = isValidateEmail[i];
+                        custrememail = custremindermail[i];
+                        accountID =  Functions.checkStringNull (accountIds[i]);
+                        if(card_check_limit==null)
+                        {
+                            card_check_limit="0";
+                        }
+                        if(card_transaction_limit==null)
+                        {
+                            card_transaction_limit="0";
+                        }
+                        if(isrefund==null)
+                        {
+                            isrefund="N";
+                        }
+                        if(isMultipleRefund ==null)
+                        {
+                            isMultipleRefund = "N";
+                        }
+                        if(personalInfoDisplay==null)
+                        {
+                            personalInfoDisplay="Y";
+                        }
+                        if(personalInfoValidation==null)
+                        {
+                            personalInfoValidation="Y";
+                        }
+                        if(hostedPaymentPage==null)
+                        {
+                            hostedPaymentPage="N";
+                        }
+                        if(consent==null)
+                        {
+                            consent="Y";
+                        }
+                        if(refunddailylimit==null)
+                        {
+                            refunddailylimit="0";
+                        }
+                        if(isValidEmail==null)
+                        {
+                            isValidEmail="N";
+                        }
+                        if(custrememail==null)
+                        {
+                            custrememail="N";
+                        }
+                        if(active==null)
+                        {
+                            active="T";
+                        }
+                        if(haspaid==null)
+                        {
+                            haspaid="N";
+                        }
+                        if(isservice==null)
+                        {
+                            isservice="N";
+                        }
+                        if(icici==null)
+                        {
+                            icici="N";
+                        }
+                        if(hralertproof==null)
+                        {
+                            hralertproof="N";
+                        }
+                        if(autoredirect==null)
+                        {
+                            autoredirect="N";
+                        }
+                        if(isPODRequired==null)
+                        {
+                            isPODRequired="N";
+                        }
+                        if(vbv==null)
+                        {
+                            vbv="N";
+                        }
+                        if(hrparameterised==null)
+                        {
+                            hrparameterised="N";
+                        }
+                        if(invoicetemplate==null)
+                        {
+                            invoicetemplate="Y";
+                        }
+                        if(check_limit==null)
+                        {
+                            check_limit="0";
+                        }
+                        if(masterCardSupported==null)
+                        {
+                            masterCardSupported="N";
+                        }
+                        if(iswhitelisted==null)
+                        {
+                            iswhitelisted="N";
+                        }
+                        if (smsActivation == null)
+                        {
+                            smsActivation = "N";
+                        }
+                        if (cSmsActivation == null)
+                        {
+                            cSmsActivation = "N";
+                        }
+                        if (isEmailLilmitenabled == null)
+                        {
+                            isEmailLilmitenabled = "N";
+                        }
+                        if (ip_whitelist_invoice == null)
+                        {
+                            ip_whitelist_invoice = "Y";
+                        }
+                        if(!function.isValueNull(notificationUrl)){
+                            notificationUrl="";
+                        }
+                        if(!function.isValueNull(termsUrl)){
+                            termsUrl="";
+                        }
+                        if(!function.isValueNull(privacyPolicyUrl)){
+                            privacyPolicyUrl="";
+                        }
+                        if (isRefundEmailSent == null)
+                        {
+                            isRefundEmailSent = "Y";
+                        }
+                        if(isPartialRefund == null)
+                        {
+                            isPartialRefund = "N";
+                        }
+                        if (isSecurityLogo == null)
+                        {
+                            isSecurityLogo = "N";
+                        }
+                        if (card_velocity_check == null)
+                        {
+                            card_velocity_check = "N";
+                        }
+                        if (limitRouting == null)
+                        {
+                            limitRouting = "N";
+                        }
+                        if(merchant_order_details ==null)
+                        {
+                            merchant_order_details = "N";
+                        }
+
+                        if (chargebackMailSend == null)
+                        {
+                            chargebackMailSend = "Y";
+                        }
+
+                        if (checkoutTimer == null)
+                        {
+                            checkoutTimer="Y";
+                        }
+                        if (checkoutTimerTime == null)
+                        {
+                            checkoutTimerTime="10.00";
+                        }
+                        if (marketplace == null)
+                        {
+                            marketplace = "N";
+                        }
+                        if (rejected_transaction == null)
+                        {
+                            rejected_transaction = "N";
+                        }
+                        if (virtual_checkout == null)
+                        {
+                            virtual_checkout = "N";
+                        }
+                        if (isVirtualCheckoutAllowed == null)
+                        {
+                            isVirtualCheckoutAllowed = "N";
+                        }
+                        if (isMobileAllowedForVC == null)
+                        {
+                            isMobileAllowedForVC = "N";
+                        }
+                        if (isEmailAllowedForVC == null)
+                        {
+                            isEmailAllowedForVC = "N";
+                        }
+                        if (isCvvStore == null)
+                        {
+                            isCvvStore = "N";
+                        }if (ispurchase_inquiry_blacklist == null)
+                    {
+                        ispurchase_inquiry_blacklist = "N";
+                    }
+                        if (ispurchase_inquiry_refund == null)
+                        {
+                            ispurchase_inquiry_refund = "N";
+                        }
+                        if (isfraud_determined_refund == null)
+                        {
+                            isfraud_determined_refund = "N";
+                        }
+                        if (isfraud_determined_blacklist == null)
+                        {
+                            isfraud_determined_blacklist = "N";
+                        }
+                        if (isdispute_initiated_refund == null)
+                        {
+                            isdispute_initiated_refund = "N";
+                        }
+                        if (isdispute_initiated_blacklist == null)
+                        {
+                            isdispute_initiated_blacklist = "N";
+                        }
+                        if (isstop_payment_blacklist == null)
+                        {
+                            isstop_payment_blacklist = "N";
+                        }
+                        if (isexception_file_listing_blacklist == null)
+                        {
+                            isexception_file_listing_blacklist = "N";
+                        }
+                        if(accountID != null)
+                        {
+                            if (aptprompt== null)
+                                aptprompt = String.valueOf(account.getHighRiskAmount());
+                            if (daily_card_amount_limit== null) { daily_card_amount_limit = "1000.00";}
+                            if (weekly_card_amount_limit== null) { weekly_card_amount_limit = "5000.00";}
+                            if (monthly_card_amount_limit== null) { monthly_card_amount_limit = "10000.00";}
+
+                        }
+                        if(aptprompt==null)
+                        {
+                            aptprompt="0";
+                        }
+                        //Merchant Notification Settings flag
+                        if(merchantRegistrationMail==null)
+                            merchantRegistrationMail="N";
+
+                        if(merchantChangePassword==null)
+                            merchantChangePassword="N";
+
+                        if(merchantChangeProfile==null)
+                            merchantChangeProfile="N";
+
+                        if(transactionSuccessfulMail==null)
+                            transactionSuccessfulMail="N";
+
+                        if(transactionFailMail==null)
+                            transactionFailMail="N";
+
+                        if(transactionCapture==null)
+                            transactionCapture="N";
+
+                        if(transactionPayoutSuccess==null)
+                            transactionPayoutSuccess="N";
+
+                        if(transactionPayoutFail==null)
+                            transactionPayoutFail="N";
+
+                        if(refundMail==null)
+                            refundMail="N";
+
+                        if(chargebackMail==null)
+                            chargebackMail="N";
+
+                        if(transactionInvoice==null)
+                            transactionInvoice="N";
+
+                        if(cardRegistration==null)
+                            cardRegistration="N";
+
+                        if(payoutReport==null)
+                            payoutReport="N";
+
+                        if(monitoringAlertMail==null)
+                            monitoringAlertMail="N";
+
+                        if(monitoringSuspensionMail==null)
+                            monitoringSuspensionMail="N";
+
+                        if(highRiskRefunds==null)
+                            highRiskRefunds="N";
+
+                        if(fraudFailedTxn==null)
+                            fraudFailedTxn="N";
+
+                        if(dailyFraudReport==null)
+                            dailyFraudReport="N";
+
+                        if(customerTransactionSuccessfulMail==null)
+                            customerTransactionSuccessfulMail="N";
+
+                        if(customerTransactionFailMail==null)
+                            customerTransactionFailMail="N";
+
+                        if(customerTransactionPayoutSuccess==null)
+                            customerTransactionPayoutSuccess="N";
+
+                        if(customerTransactionPayoutFail==null)
+                            customerTransactionPayoutFail="N";
+
+                        if(customerRefundMail==null)
+                            customerRefundMail="N";
+
+                        if(customerTokenizationMail==null)
+                            customerTokenizationMail="N";
+
+                        if(isUniqueOrderIdRequired==null)
+                            isUniqueOrderIdRequired="N";
+
+
+                        String activation = function.getActivation(memberids[i]);
+                        cn= Database.getConnection();
+                        query.append("update members m JOIN merchant_configuration mc ON m.memberid=mc.memberid  set aptprompt= ?,accountid=?,isPharma=?,isValidateEmail=?,daily_amount_limit=?,monthly_amount_limit=?,daily_card_limit=?,weekly_card_limit=?,monthly_card_limit=?,custremindermail=?,activation=?,icici=?,haspaid=?,isservice=?,hralertproof=?,autoredirect=?,vbv=?,hrparameterised=?,partnerId=?,check_limit=?,masterCardSupported=?,invoicetemplate=?,isPoweredBy=?,template=?,iswhitelisted=?,card_transaction_limit=?,card_check_limit=?,daily_card_amount_limit=?,weekly_card_amount_limit=?,monthly_card_amount_limit=?,isrefund=?,refunddailylimit=? ,agentId=?, isIpWhitelisted=?,autoSelectTerminal=?,isPODRequired=?,maxScoreAllowed=?,maxScoreAutoReversal=?,weekly_amount_limit=?,isappmanageractivate=?,iscardregistrationallowed=?,is_recurring=?,isRestrictedTicket=?,isTokenizationAllowed=?,tokenvaliddays=?,isAddrDetailsRequired=?,blacklistTransaction=?,flightMode=?,emailSent=?,onlineFraudCheck=?,isSplitPayment=?,splitPaymentType=?,isExcessCaptureAllowed=?,refundallowed_days=?,chargebackallowed_days=?,isCardEncryptionEnable=?,is_rest_whitelisted=?,smsactivation=?,customersmsactivation=?,emailLimitEnabled=?,ip_whitelist_invoice=?, binService=?, expDateOffset = ?,supportSection = ?,card_whitelist_level = ?,multiCurrencySupport = ?,dashboard_access=?,accounting_access=?,setting_access=?,transactions_access=?,invoicing_access=?,virtualterminal_access=?,merchantmgt_access=?,settings_merchant_config_access=?,settings_fraudrule_config_access=?, accounts_account_summary_access=?,accounts_charges_summary_access=?,accounts_transaction_summary_access=?,accounts_reports_summary_access=?,settings_merchant_profile_access=?,settings_organisation_profile_access=?, settings_checkout_page_access=?,settings_generate_key_access=?,settings_invoice_config_access=?,transmgt_transaction_access=?,transmgt_capture_access=?,transmgt_reversal_access=?,transmgt_payout_access=?,invoice_generate_access=?,invoice_history_access=?,tokenmgt_registration_history_access=?,tokenmgt_register_card_access=?,merchantmgt_user_management_access=?,ispcilogo=?,notificationUrl=?,termsUrl=?,ip_validation_required=?,ispartnerlogo=?,ismerchantlogo=?,isRefundEmailSent=?,privacyPolicyUrl=?,binRouting=?,personal_info_display=?,personal_info_validation=?,hosted_payment_page=?,vbvLogo=?,masterSecureLogo=?,consent=?,chargebackEmail=?,isMultipleRefund=?,isSecurityLogo=?,settings_whitelist_details=?,settings_blacklist_details=?,emi_configuration=?,emiSupport=?,isPartialRefund=?,internalFraudCheck=?,card_velocity_check=?,merchant_order_details=?,limitRouting=?,checkoutTimer=?,checkoutTimerTime=?,marketplace=?,rejected_transaction=?,virtual_checkout=?,isVirtualCheckoutAllowed=?,isMobileAllowedForVC=?,isEmailAllowedForVC=?,isCvvStore=?,reconciliationNotification=?,transactionNotification=?,refundNotification=?,chargebackNotification=?,ispurchase_inquiry_blacklist=?,ispurchase_inquiry_refund=?,isfraud_determined_refund=?,isfraud_determined_blacklist=?,isdispute_initiated_refund=?,isdispute_initiated_blacklist=?,isstop_payment_blacklist=?,isexception_file_listing_blacklist=?,merchantRegistrationMail=?,merchantChangePassword=?,merchantChangeProfile=?,transactionSuccessfulMail=?,transactionFailMail=?,transactionCapture=?,transactionPayoutSuccess=?,transactionPayoutFail=?,refundMail=?,chargebackMail=?,transactionInvoice=?,cardRegistration=?,payoutReport=?,monitoringAlertMail=?,monitoringSuspensionMail=?,highRiskRefunds=?,fraudFailedTxn=?,dailyFraudReport=?,customerTransactionSuccessfulMail=?,customerTransactionFailMail=?,customerTransactionPayoutSuccess=?,customerTransactionPayoutFail=?,customerRefundMail=?,customerTokenizationMail=?,isUniqueOrderIdRequired=?");
+                        if (!activation.equals("Y") && active.equals("Y"))
+                        {
+                            query.append(" ,activation_date = ");
+                            query.append("UNIX_TIMESTAMP(NOW())");
+                        }
+                        query.append(" where m.memberid=?");
+                        pstmt= cn.prepareStatement(query.toString());
+                        pstmt.setString(1, aptprompt);
+                        pstmt.setString(2,accountID);
+                        pstmt.setString(3,ispharma);
+                        pstmt.setString(4,isValidEmail);
+                        pstmt.setString(5,daily_amount_limit);
+                        pstmt.setString(6,monthly_amount_limit);
+                        pstmt.setString(7,daily_card_limit);
+                        pstmt.setString(8,weekly_card_limit);
+                        pstmt.setString(9,monthly_card_limit);
+                        pstmt.setString(10,custrememail);
+                        pstmt.setString(11,active);
+                        pstmt.setString(12,icici);
+                        pstmt.setString(13,haspaid);
+                        pstmt.setString(14,isservice);
+                        pstmt.setString(15,hralertproof);
+                        pstmt.setString(16,autoredirect);
+                        pstmt.setString(17,vbv);
+                        pstmt.setString(18,hrparameterised);
+                        pstmt.setString(19,partnerId);
+                        pstmt.setString(20,check_limit);
+                        pstmt.setString(21,masterCardSupported);
+                        pstmt.setString(22,invoicetemplate);
+                        pstmt.setString(23,isPoweredBy);
+                        pstmt.setString(24,template);
+                        pstmt.setString(25,iswhitelisted);
+                        pstmt.setString(26,String.valueOf(card_transaction_limit));
+                        pstmt.setString(27,String.valueOf(card_check_limit));
+                        pstmt.setString(28,daily_card_amount_limit);
+                        pstmt.setString(29,weekly_card_amount_limit);
+                        pstmt.setString(30,monthly_card_amount_limit);
+                        pstmt.setString(31,isrefund);
+                        pstmt.setString(32,refunddailylimit);
+                        pstmt.setString(33,agentid);
+                        pstmt.setString(34,isipwhitelist);
+                        pstmt.setString(35,autoSelectTerminal);
+                        pstmt.setString(36,isPODRequired);
+                        pstmt.setString(37,maxScoreAllowed);
+                        pstmt.setString(38,maxScoreReversal);
+                        pstmt.setString(39,weekly_amount_limit);
+                        pstmt.setString(40,isappmanageractivate);
+                        pstmt.setString(41,iscardregistrationallowed);
+                        pstmt.setString(42,isRecurring);
+                        pstmt.setString(43,isRestrictedTicket);
+                        pstmt.setString(44,isTokenizationAllowed);
+                        pstmt.setString(45,tokenValidDays);
+                        pstmt.setString(46,isAddrDetailsRequired);
+                        pstmt.setString(47,blacklistTransaction);
+                        pstmt.setString(48,flightMode);
+                        pstmt.setString(49,emailSent);
+                        pstmt.setString(50,fraudCheck);
+                        pstmt.setString(51,splitPayment);
+                        pstmt.setString(52,splitPaymentType);
+                        pstmt.setString(53,isExcessCaptureAllowed);
+                        pstmt.setString(54,refundAllowedDays);
+                        pstmt.setString(55,chargebackAllowedDays);
+                        pstmt.setString(56,isCardEncryptionEnable);
+                        pstmt.setString(57,is_rest_whitelisted);
+                        pstmt.setString(58, smsActivation);
+                        pstmt.setString(59, cSmsActivation);
+                        pstmt.setString(60, isEmailLilmitenabled);
+                        pstmt.setString(61, ip_whitelist_invoice);
+                        pstmt.setString(62, binService);
+                        pstmt.setString(63, expDateOffset);
+                        pstmt.setString(64, supportSection);
+                        pstmt.setString(65, card_whitelist_level);
+                        pstmt.setString(66, multiCurrencySupport);
+                        pstmt.setString(67, dashBoard);
+                        pstmt.setString(68, accounting);
+                        pstmt.setString(69, settings);
+                        pstmt.setString(70, transactionManagement);
+                        pstmt.setString(71, invoicing);
+                        pstmt.setString(72, virtualTerminal);
+                        pstmt.setString(73, merchantManagement);
+                        pstmt.setString(74, settingsMerchantConfigAccess);
+                        pstmt.setString(75, settingsFraudRuleConfigAccess);
+                        pstmt.setString(76, accountsAccountSummaryAccess);
+                        pstmt.setString(77, accountsChargesSummaryAccess);
+                        pstmt.setString(78, accountsTransactionSummaryAccess);
+                        pstmt.setString(79, accountsReportSummaryAccess);
+                        pstmt.setString(80, settingsMerchantProfileAccess);
+                        pstmt.setString(81, settingsOrganisationProfileAccess);
+                        pstmt.setString(82, "N");
+                        pstmt.setString(83, settingsGenerateKeyAccess);
+                        pstmt.setString(84, settingsInvoiceConfigAccess);
+                        pstmt.setString(85, transMgtTransactionAccess);
+                        pstmt.setString(86, transMgtCaptureAccess);
+                        pstmt.setString(87, transMgtReversalAccess);
+                        pstmt.setString(88, transMgtPayoutAccess);
+                        pstmt.setString(89, invoiceGenerateAccess);
+                        pstmt.setString(90, invoiceHistoryAccess);
+                        pstmt.setString(91, tokenMgtRegistrationHistoryAccess);
+                        pstmt.setString(92, tokenMgtRegisterCardAccess);
+                        pstmt.setString(93,merchantMgtUserManagementAccess);
+                        pstmt.setString(94,ispcilogo);
+                        pstmt.setString(95,notificationUrl);
+                        pstmt.setString(96,termsUrl);
+                        pstmt.setString(97,ipValidationRequired);
+                        pstmt.setString(98,isPartnerLogo);
+                        pstmt.setString(99,ismerchantlogo);
+                        pstmt.setString(100,isRefundEmailSent);
+                        pstmt.setString(101,privacyPolicyUrl);
+                        pstmt.setString(102,binRouting);
+                        pstmt.setString(103,personalInfoDisplay);
+                        pstmt.setString(104,personalInfoValidation);
+                        pstmt.setString(105,hostedPaymentPage);
+                        pstmt.setString(106,vbvLogo);
+                        pstmt.setString(107,masterSecureLogo);
+                        pstmt.setString(108,consent);
+                        pstmt.setString(109,chargebackMailSend);
+                        pstmt.setString(110,isMultipleRefund);
+                        pstmt.setString(111,isSecurityLogo);
+                        pstmt.setString(112,settingsWhitelistDetails);
+                        pstmt.setString(113,settingsBlacklistDetails);
+                        pstmt.setString(114,emiConfiguration);
+                        pstmt.setString(115,emiSupport);
+                        pstmt.setString(116,isPartialRefund);
+                        pstmt.setString(117,internalFraudCheck);
+                        pstmt.setString(118,card_velocity_check);
+                        pstmt.setString(119,merchant_order_details);
+                        pstmt.setString(120,limitRouting);
+                        pstmt.setString(121,checkoutTimer);
+                        pstmt.setString(122,checkoutTimerTime);
+                        pstmt.setString(123, marketplace);
+                        pstmt.setString(124, rejected_transaction);
+                        pstmt.setString(125, virtual_checkout);
+                        pstmt.setString(126, isVirtualCheckoutAllowed);
+                        pstmt.setString(127, isMobileAllowedForVC);
+                        pstmt.setString(128, isEmailAllowedForVC);
+                        pstmt.setString(129, isCvvStore);
+                        pstmt.setString(130, reconciliationNotification);
+                        pstmt.setString(131, transactionNotification);
+                        pstmt.setString(132, refundNotification);
+                        pstmt.setString(133, chargebackNotification);
+                        pstmt.setString(134, ispurchase_inquiry_blacklist);
+                        pstmt.setString(135, ispurchase_inquiry_refund);
+                        pstmt.setString(136, isfraud_determined_refund);
+                        pstmt.setString(137, isfraud_determined_blacklist);
+                        pstmt.setString(138, isdispute_initiated_refund);
+                        pstmt.setString(139, isdispute_initiated_blacklist);
+                        pstmt.setString(140, isstop_payment_blacklist);
+                        pstmt.setString(141, isexception_file_listing_blacklist);
+                        pstmt.setString(142, merchantRegistrationMail);
+                        pstmt.setString(143, merchantChangePassword);
+                        pstmt.setString(144, merchantChangeProfile);
+                        pstmt.setString(145, transactionSuccessfulMail);
+                        pstmt.setString(146, transactionFailMail);
+                        pstmt.setString(147, transactionCapture);
+                        pstmt.setString(148, transactionPayoutSuccess);
+                        pstmt.setString(149, transactionPayoutFail);
+                        pstmt.setString(150, refundMail);
+                        pstmt.setString(151, chargebackMail);
+                        pstmt.setString(152, transactionInvoice);
+                        pstmt.setString(153, cardRegistration);
+                        pstmt.setString(154, payoutReport);
+                        pstmt.setString(155, monitoringAlertMail);
+                        pstmt.setString(156, monitoringSuspensionMail);
+                        pstmt.setString(157, highRiskRefunds);
+                        pstmt.setString(158, fraudFailedTxn);
+                        pstmt.setString(159, dailyFraudReport);
+                        pstmt.setString(160, customerTransactionSuccessfulMail);
+                        pstmt.setString(161, customerTransactionFailMail);
+                        pstmt.setString(162, customerTransactionPayoutSuccess);
+                        pstmt.setString(163, customerTransactionPayoutFail);
+                        pstmt.setString(164, customerRefundMail);
+                        pstmt.setString(165, customerTokenizationMail);
+                        pstmt.setString(166, isUniqueOrderIdRequired);
+                        pstmt.setString(167,memberids[i]);
+                        transactionLogger.error("Query::::"+pstmt);
+                        int result = pstmt.executeUpdate();
+                        if (result > 0)
+                        {
+                            updRecs++;
+                            FraudTransactionDAO.loadFraudTransactionThresholdForMerchant();
+                            transactionLogger.error("updRecs--->"+updRecs);
+                            transactionLogger.error("result--->"+result);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    transactionLogger.error("Error while set reserves :",e);
+                    req.setAttribute("error",errorMsg);
+                }
+                finally
+                {
+                    Database.closeResultSet(rs);
+                    Database.closePreparedStatement(pstmt);
+                    Database.closePreparedStatement(pstmt1);
+                    Database.closePreparedStatement(pstmt2);
+                    Database.closeConnection(cn);
+                }
+            }
+            sSuccessMessage.append(updRecs + " Records Updated");
+            StringBuilder chargeBackMessage = new StringBuilder();
+            chargeBackMessage.append(sSuccessMessage.toString());
+            chargeBackMessage.append("<BR/>");
+            chargeBackMessage.append(sErrorMessage.toString());
+
+            String redirectpage = "/memberpreference.jsp?ctoken="+user.getCSRFToken();
+            req.setAttribute("cbmessage", chargeBackMessage.toString());
+            RequestDispatcher rd = req.getRequestDispatcher(redirectpage);
+            rd.forward(req, res);
+        }
+    }
+    private String getValidPercentage(String paramValue)
+    {
+        String returnVal = getValidAmount(paramValue);
+        if(returnVal != null)
+        {
+            returnVal =  "" + new BigDecimal(returnVal).multiply(new BigDecimal("100"));
+        }
+        return returnVal;
+    }
+    private String getValidAmount(String paramValue)
+    {
+        if ("N/A".equals(paramValue))
+        {
+            return null;
+        }
+        String returnVal = Functions.checkStringNull(paramValue);
+        if(returnVal == null )
+        {
+            returnVal = "0";
+        }
+        else
+        {
+            try
+            {
+                returnVal = "" + new BigDecimal(returnVal);
+            }
+            catch(NumberFormatException ne)
+            {  transactionLogger.error("Number Formet Exception",ne);
+
+                returnVal = "0";
+            }
+        }
+        return returnVal;
+    }
+
+    private String validateParameters(HttpServletRequest req)
+    {
+        InputValidator inputValidator = new InputValidator();
+        String error = "";
+        String EOL = "<br>";
+        List<InputFields> inputFieldsListOptional = new ArrayList<InputFields>();
+
+        inputFieldsListOptional.add(InputFields.DAILY_AMT_LIMIT);
+        inputFieldsListOptional.add(InputFields.MONTHLY_AMT_LIMIT);
+        inputFieldsListOptional.add(InputFields.WEEKLY_AMT_LIMIT);
+
+        inputFieldsListOptional.add(InputFields.DAILY_CARD_LIMIT);
+        inputFieldsListOptional.add(InputFields.WEEKLY_CARD_LIMIT);
+        inputFieldsListOptional.add(InputFields.MONTHLY_CARD_LIMIT);
+
+        inputFieldsListOptional.add(InputFields.HIGH_RISK_AMT);
+
+        inputFieldsListOptional.add(InputFields.DAILY_CARD_AMT_LIMIT);
+        inputFieldsListOptional.add(InputFields.WEEKLY_CARD_AMT_LIMIT);
+        inputFieldsListOptional.add(InputFields.MONTHLY_CARD_AMT_LIMIT);
+
+        inputFieldsListOptional.add(InputFields.MAX_SCORE_ALLOWED);
+        inputFieldsListOptional.add(InputFields.MAX_SCORE_REVERSEL);
+        inputFieldsListOptional.add(InputFields.REFUND_DAILY_LIMIT);
+        inputFieldsListOptional.add(InputFields.TOKENVALIDDAYS);
+
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.InputValidations(req,inputFieldsListOptional,errorList,false);
+        if(!errorList.isEmpty())
+        {
+            for(InputFields inputFields :inputFieldsListOptional)
+            {
+                if(errorList.getError(inputFields.toString())!=null)
+                {
+                    transactionLogger.debug(errorList.getError(inputFields.toString()).getLogMessage());
+                    error = error+errorList.getError(inputFields.toString()).getMessage()+EOL;
+                }
+            }
+        }
+        return error;
+    }
+
+}

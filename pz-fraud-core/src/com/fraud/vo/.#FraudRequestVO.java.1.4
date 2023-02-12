@@ -1,0 +1,748 @@
+package com.fraud.vo;
+
+
+import com.fraud.vo.RestVO.RequestVO.AuthenticationVO;
+import com.fraud.vo.RestVO.RequestVO.PartnerVO;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
+/**
+ * Created by SurajT. on 3/1/2018.
+ */
+@XmlRootElement(name="fraudServiceRequestVO")
+@XmlAccessorType(XmlAccessType.FIELD)
+public class FraudRequestVO
+{
+    @XmlElement(name="firstName")
+    String firstName;
+
+    @XmlElement(name="lastName")
+    String lastName;
+
+    @XmlElement(name="emailId")
+    String emailId;
+
+    @XmlElement(name="countryCode")
+    String countryCode;
+
+    @XmlElement(name="phone")
+    String phone;
+
+    @XmlElement(name="customerRegDate")
+    String customerRegDate;
+
+    @XmlElement(name="customerIpAddress")
+    String customerIpAddress;
+
+    @XmlElement(name="website")
+    String website;
+
+    @XmlElement(name="id_type")
+    String id_type;
+
+    @XmlElement(name="id_value")
+    String id_value;
+
+  /*  @XmlElement(name="partnerId")
+    String partnerId;*/
+
+    @XmlElement(name="customer_registration_id")
+    String customer_registration_id;
+
+    @XmlElement(name="method")
+    String method;
+
+    @XmlElement(name="fileName")
+    String fileName;
+
+    @XmlElement(name="fileName2")
+    String fileName2;
+
+    @XmlElement(name="fileName3")
+    String fileName3;
+
+    @XmlElement(name="fileName4")
+    String fileName4;
+
+    @XmlElement(name="filePath")
+    String filePath;
+
+    @XmlElement(name="cust_request_id")
+    String cust_request_id;
+
+    @XmlElement(name="customerRegId")
+    String customerRegId;
+
+    @XmlElement(name="authentication")
+    AuthenticationVO authenticationVO;
+
+    @XmlElement(name="partner")
+    PartnerVO partnerVO;
+
+    @XmlElement(name="authToken")
+    String authToken;
+
+    @XmlElement(name="dob")
+    String dob;
+
+    @XmlElement(name="zip")
+    String zip;
+
+    @XmlElement(name="address1")
+    String address1;
+
+    @XmlElement(name="address2")
+    String address2;
+
+    @XmlElement(name="city")
+    String city;
+
+    @XmlElement(name="province")
+    String province;
+
+    @XmlElement(name="state")
+    String state;
+
+    @XmlElement(name="notificationUrl")
+    String notificationUrl;
+
+    @XmlElement(name="memberid")
+    String memberid;
+
+    @XmlElement(name="trackingId")
+    String trackingId;
+
+    @XmlElement(name="description")
+    String description;
+
+    @XmlElement(name="amount")
+    String amount;
+
+    @XmlElement(name="status")
+    String status;
+
+    @XmlElement(name="time")
+    String time;
+
+    @XmlElement(name="accountId")
+    String accountId;
+
+    @XmlElement(name = "currency")
+    String currency;
+
+    @XmlElement(name="payment_method_last_digits")
+    String payment_method_last_digits;
+
+    @XmlElement(name="deposit_limits_pay_method_type")
+    String deposit_limits_pay_method_type;
+
+    @XmlElement(name="deposit_limits_dl_min")
+    String deposit_limits_dl_min;
+
+    @XmlElement(name="deposit_limits_dl_daily")
+    String deposit_limits_dl_daily;
+
+    @XmlElement(name="deposit_limits_dl_weekly")
+    String deposit_limits_dl_weekly;
+
+    @XmlElement(name="deposit_limits_dl_monthly")
+    String deposit_limits_dl_monthly;
+
+    @XmlElement(name="ip")
+    String ip;
+
+    @XmlElement(name="user_number")
+    String user_number;
+
+    @XmlElement(name="user_name")
+    String user_name;
+
+    @XmlElement(name="customer_country")
+    String customer_country;
+
+    @XmlElement(name="payment_method_bin")
+    String payment_method_bin;
+
+    @XmlElement(name="merchant_id")
+    String merchant_id;
+
+    @XmlElement(name="paymenttype")
+    String paymenttype;
+
+    @XmlElement(name="street")
+    String street;
+
+    @XmlElement(name="countrycode")
+    String countrycode;
+
+    @XmlElement(name="firstsix")
+    String firstsix;
+
+    @XmlElement(name="billingfirstname")
+    String billingfirstname;
+
+    @XmlElement(name="billinglastname")
+    String billinglastname;
+
+    @XmlElement(name="billingemail")
+    String billingemail;
+
+    @XmlElement(name="billingaddress1")
+    String billingaddress1;
+
+    @XmlElement(name="billingaddress2")
+    String billingaddress2;
+
+    @XmlElement(name="billingcity")
+    String billingcity;
+
+    @XmlElement(name="billingprovince")
+    String billingprovince;
+
+    @XmlElement(name="billingcountry")
+    String billingcountry;
+
+    @XmlElement(name="billingpostalcode")
+    String billingpostalcode;
+
+    @XmlElement(name="billingphone1")
+    String billingphone1;
+
+    @XmlElement(name="billingphone2")
+    String billingphone2;
+
+
+
+
+    public String getFirstName() { return firstName; }
+
+    public void setFirstName(String firstName) { this.firstName = firstName;  }
+
+    public String getLastName() { return lastName; }
+
+    public void setLastName(String lastName) { this.lastName = lastName; }
+
+    public String getEmailId() {return emailId;}
+
+    public void setEmailId(String emailId) {this.emailId = emailId;}
+
+    public String getCountryCode() {return countryCode;}
+
+    public void setCountryCode(String countryCode) {this.countryCode = countryCode;}
+
+    public String getPhone() {return phone;}
+
+    public void setPhone(String phone) {this.phone = phone;}
+
+    public String getCustomerRegDate() {return customerRegDate;}
+
+    public void setCustomerRegDate(String customerRegDate) {this.customerRegDate = customerRegDate;}
+
+    public String getCustomerIpAddress() {return customerIpAddress;}
+
+    public void setCustomerIpAddress(String customerIpAddress) {this.customerIpAddress = customerIpAddress;}
+
+    public String getWebsite() {return website;}
+
+    public void setWebsite(String website) {this.website = website;}
+
+    public String getId_type() {return id_type;}
+
+    public void setId_type(String id_type) {this.id_type = id_type;}
+
+    public String getId_value() {return id_value;}
+
+    public void setId_value(String id_value) {this.id_value = id_value;}
+
+    /*public String getPartnerId()
+    {
+        return partnerId;
+    }
+
+    public void setPartnerId(String partnerId)
+    {
+        this.partnerId = partnerId;
+    }*/
+
+    public String getCustomer_registration_id() {return customer_registration_id;}
+
+    public void setCustomer_registration_id(String customer_registration_id) {this.customer_registration_id = customer_registration_id;}
+
+    public String getMethod() {return method;}
+
+    public void setMethod(String method) {this.method = method;}
+
+    public String getFileName() {return fileName;}
+
+    public void setFileName(String fileName) {this.fileName = fileName;}
+
+    public String getFileName2() {return fileName2;}
+
+    public void setFileName2(String fileName2) {this.fileName2 = fileName2;}
+
+    public String getFileName3()
+    {
+        return fileName3;
+    }
+
+    public void setFileName3(String fileName3)
+    {
+        this.fileName3 = fileName3;
+    }
+
+    public String getFileName4()
+    {
+        return fileName4;
+    }
+
+    public void setFileName4(String fileName4)
+    {
+        this.fileName4 = fileName4;
+    }
+
+    public String getFilePath()
+    {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath)
+    {
+        this.filePath = filePath;
+    }
+
+    public String getCust_request_id()
+    {
+        return cust_request_id;
+    }
+
+    public void setCust_request_id(String cust_request_id)
+    {
+        this.cust_request_id = cust_request_id;
+    }
+
+    public String getCustomerRegId()
+    {
+        return customerRegId;
+    }
+
+    public void setCustomerRegId(String customerRegId)
+    {
+        this.customerRegId = customerRegId;
+    }
+
+    public AuthenticationVO getAuthenticationVO()
+    {
+        return authenticationVO;
+    }
+
+    public void setAuthenticationVO(AuthenticationVO authenticationVO)
+    {
+        this.authenticationVO = authenticationVO;
+    }
+
+    public PartnerVO getPartnerVO()
+    {
+        return partnerVO;
+    }
+
+    public void setPartnerVO(PartnerVO partnerVO)
+    {
+        this.partnerVO = partnerVO;
+    }
+
+    public String getAuthToken()
+    {
+        return authToken;
+    }
+
+    public void setAuthToken(String authToken)
+    {
+        this.authToken = authToken;
+    }
+
+    public String getDob()
+    {
+        return dob;
+    }
+
+    public void setDob(String dob)
+    {
+        this.dob = dob;
+    }
+
+    public String getZip()
+    {
+        return zip;
+    }
+
+    public void setZip(String zip)
+    {
+        this.zip = zip;
+    }
+
+    public String getAddress1()
+    {
+        return address1;
+    }
+
+    public void setAddress1(String address1)
+    {
+        this.address1 = address1;
+    }
+
+    public String getAddress2()
+    {
+        return address2;
+    }
+
+    public void setAddress2(String address2)
+    {
+        this.address2 = address2;
+    }
+
+    public String getCity()
+    {
+        return city;
+    }
+
+    public void setCity(String city)
+    {
+        this.city = city;
+    }
+
+    public String getProvince()
+    {
+        return province;
+    }
+
+    public void setProvince(String province)
+    {
+        this.province = province;
+    }
+
+    public String getState()
+    {
+        return state;
+    }
+
+    public void setState(String state)
+    {
+        this.state = state;
+    }
+
+    public String getNotificationUrl()
+    {
+        return notificationUrl;
+    }
+
+    public void setNotificationUrl(String notificationUrl)
+    {
+        this.notificationUrl = notificationUrl;
+    }
+
+    public String getMemberid() { return memberid; }
+
+    public void setMemberid(String memberid) { this.memberid = memberid; }
+
+    public String getTrackingId() { return trackingId; }
+
+    public void setTrackingId(String trackingId) { this.trackingId = trackingId; }
+
+    public String getDescription() {return description;}
+
+    public void setDescription(String description) {this.description = description;}
+
+    public String getAmount() { return amount; }
+
+    public void setAmount(String amount) { this.amount = amount; }
+
+    public String getStatus() { return status; }
+
+    public void setStatus(String status) { this.status = status; }
+
+    public String getTime() {return time;}
+
+    public void setTime(String time) {this.time = time;}
+
+    public String getAccountId() {return accountId;}
+
+    public void setAccountId(String accountId) {this.accountId = accountId;}
+
+    public String getCurrency() {return currency;}
+
+    public void setCurrency(String currency) {this.currency = currency;}
+
+    public String getPayment_method_last_digits()
+    {
+        return payment_method_last_digits;
+    }
+
+    public void setPayment_method_last_digits(String payment_method_last_digits)
+    {
+        this.payment_method_last_digits = payment_method_last_digits;
+    }
+
+    public String getDeposit_limits_pay_method_type()
+    {
+        return deposit_limits_pay_method_type;
+    }
+
+    public void setDeposit_limits_pay_method_type(String deposit_limits_pay_method_type)
+    {
+        this.deposit_limits_pay_method_type = deposit_limits_pay_method_type;
+    }
+
+    public String getDeposit_limits_dl_min()
+    {
+        return deposit_limits_dl_min;
+    }
+
+    public void setDeposit_limits_dl_min(String deposit_limits_dl_min)
+    {
+        this.deposit_limits_dl_min = deposit_limits_dl_min;
+    }
+
+    public String getDeposit_limits_dl_daily()
+    {
+        return deposit_limits_dl_daily;
+    }
+
+    public void setDeposit_limits_dl_daily(String deposit_limits_dl_daily)
+    {
+        this.deposit_limits_dl_daily = deposit_limits_dl_daily;
+    }
+
+    public String getDeposit_limits_dl_weekly()
+    {
+        return deposit_limits_dl_weekly;
+    }
+
+    public void setDeposit_limits_dl_weekly(String deposit_limits_dl_weekly)
+    {
+        this.deposit_limits_dl_weekly = deposit_limits_dl_weekly;
+    }
+
+    public String getDeposit_limits_dl_monthly()
+    {
+        return deposit_limits_dl_monthly;
+    }
+
+    public void setDeposit_limits_dl_monthly(String deposit_limits_dl_monthly)
+    {
+        this.deposit_limits_dl_monthly = deposit_limits_dl_monthly;
+    }
+
+    public String getIp()
+    {
+        return ip;
+    }
+
+    public void setIp(String ip)
+    {
+        this.ip = ip;
+    }
+
+    public String getUser_number()
+    {
+        return user_number;
+    }
+
+    public void setUser_number(String user_number)
+    {
+        this.user_number = user_number;
+    }
+
+    public String getUser_name()
+    {
+        return user_name;
+    }
+
+    public void setUser_name(String user_name)
+    {
+        this.user_name = user_name;
+    }
+
+    public String getCustomer_country()
+    {
+        return customer_country;
+    }
+
+    public void setCustomer_country(String customer_country)
+    {
+        this.customer_country = customer_country;
+    }
+
+    public String getPayment_method_bin()
+    {
+        return payment_method_bin;
+    }
+
+    public void setPayment_method_bin(String payment_method_bin)
+    {
+        this.payment_method_bin = payment_method_bin;
+    }
+
+    public String getMerchant_id()
+    {
+        return merchant_id;
+    }
+
+    public void setMerchant_id(String merchant_id)
+    {
+        this.merchant_id = merchant_id;
+    }
+
+    public String getPaymenttype()
+    {
+        return paymenttype;
+    }
+
+    public void setPaymenttype(String paymenttype)
+    {
+        this.paymenttype = paymenttype;
+    }
+
+    public String getStreet()
+    {
+        return street;
+    }
+
+    public void setStreet(String street)
+    {
+        this.street = street;
+    }
+
+    public String getCountrycode()
+    {
+        return countrycode;
+    }
+
+    public void setCountrycode(String countrycode)
+    {
+        this.countrycode = countrycode;
+    }
+
+    public String getFirstsix()
+    {
+        return firstsix;
+    }
+
+    public void setFirstsix(String firstsix)
+    {
+        this.firstsix = firstsix;
+    }
+
+    public String getBillingfirstname()
+    {
+        return billingfirstname;
+    }
+
+    public void setBillingfirstname(String billingfirstname)
+    {
+        this.billingfirstname = billingfirstname;
+    }
+
+    public String getBillinglastname()
+    {
+        return billinglastname;
+    }
+
+    public void setBillinglastname(String billinglastname)
+    {
+        this.billinglastname = billinglastname;
+    }
+
+    public String getBillingemail()
+    {
+        return billingemail;
+    }
+
+    public void setBillingemail(String billingemail)
+    {
+        this.billingemail = billingemail;
+    }
+
+    public String getBillingaddress1()
+    {
+        return billingaddress1;
+    }
+
+    public void setBillingaddress1(String billingaddress1)
+    {
+        this.billingaddress1 = billingaddress1;
+    }
+
+    public String getBillingaddress2()
+    {
+        return billingaddress2;
+    }
+
+    public void setBillingaddress2(String billingaddress2)
+    {
+        this.billingaddress2 = billingaddress2;
+    }
+
+    public String getBillingcity()
+    {
+        return billingcity;
+    }
+
+    public void setBillingcity(String billingcity)
+    {
+        this.billingcity = billingcity;
+    }
+
+    public String getBillingprovince()
+    {
+        return billingprovince;
+    }
+
+    public void setBillingprovince(String billingprovince)
+    {
+        this.billingprovince = billingprovince;
+    }
+
+    public String getBillingcountry()
+    {
+        return billingcountry;
+    }
+
+    public void setBillingcountry(String billingcountry)
+    {
+        this.billingcountry = billingcountry;
+    }
+
+    public String getBillingpostalcode()
+    {
+        return billingpostalcode;
+    }
+
+    public void setBillingpostalcode(String billingpostalcode)
+    {
+        this.billingpostalcode = billingpostalcode;
+    }
+
+    public String getBillingphone1()
+    {
+        return billingphone1;
+    }
+
+    public void setBillingphone1(String billingphone1)
+    {
+        this.billingphone1 = billingphone1;
+    }
+
+    public String getBillingphone2()
+    {
+        return billingphone2;
+    }
+
+    public void setBillingphone2(String billingphone2)
+    {
+        this.billingphone2 = billingphone2;
+    }
+}
+

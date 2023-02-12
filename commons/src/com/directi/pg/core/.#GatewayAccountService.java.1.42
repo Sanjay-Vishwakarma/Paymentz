@@ -1,0 +1,887 @@
+package com.directi.pg.core;
+
+import com.directi.pg.Database;
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.SystemError;
+import com.logicboxes.util.Util;
+import com.payment.clearsettle.ClearSettleGatewayAccount;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: jignesh.r
+ * Date: Feb 27, 2007
+ * Time: 6:59:43 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class GatewayAccountService
+{
+    public static  Hashtable<String, GatewayAccount> gatewayAccounts;
+    private static Logger log = new Logger(GatewayAccountService.class.getName());
+    private static Hashtable<String, String> payment_modes;
+    private static Hashtable<String, String> paymode_id;
+    private static Hashtable<String, String> payment_type;
+    private static Hashtable<String, String> card_type;
+    private static Hashtable<String, String> cardtype_id;
+    private static Hashtable<String, String> currency_code = new Hashtable<String, String>();
+
+    static
+    {
+        try
+        {
+            loadGatewayAccounts();
+            loadPaymentModes();
+            loadCardTypes();
+        }
+        catch (Exception e)
+        {
+            log.error("Error while loading gateway accounts : ",e);
+            log.error("Error while loading gateway accounts : " + Util.getStackTrace(e));
+            throw new RuntimeException(e);
+        }
+    }
+
+    static
+       {
+
+           Connection conn = null;
+           String curencyCode = "";
+           try
+           {
+               conn = Database.getConnection();
+               ResultSet rs = Database.executeQuery("select * from currency_code ", conn);
+               while (rs.next())
+               {
+                   String currency = rs.getString("currency");
+                   String curr_code = rs.getString("currencycode");
+                   currency_code.put(currency,curr_code);
+               }
+           }
+           catch (Exception e)
+           {
+               log.error(" exception " + Functions.getStackTrace(e));
+               throw new RuntimeException(" exception " + Functions.getStackTrace(e));
+           }
+           finally
+           {
+               try
+               {
+                   if (conn != null)
+                       conn.close();
+               }
+               catch (SQLException e)
+               {
+                   log.error(" exception " + Functions.getStackTrace(e));
+                   throw new RuntimeException(" exception " + Functions.getStackTrace(e));
+               }
+           }
+       }
+
+
+    public static void main(String[] args) throws Exception
+    {
+
+        /*Connection conn=Database.getConnection();
+        Database.executeQuery("insert into gateway_accounts(merchantid,pgtypeid,aliasname,displayname,ismastercardsupported,creationdt)\n" +
+                "VALUES\n" +
+                "('sdfsdf',4,'sdfsdfsdf','sdfsfsdf',true,unix_timestamp(now()));",conn);
+
+        GatewayAccountService.loadGatewayAccounts();
+
+        Database.closeConnection(conn);*/
+    }
+
+    public static GatewayAccount getGatewayAccount(String accountId)
+    {
+        return gatewayAccounts.get(accountId);
+    }
+
+    public static String getCurrencyCode(String currCode)
+    {
+        return currency_code.get(currCode);
+    }
+
+    public static Hashtable<String, String> getMerchantDetails()
+    {
+        Hashtable<String, String> hash = new Hashtable<String, String>();
+
+        Enumeration enumr = gatewayAccounts.keys();
+        Connection conn=null;
+        try{
+            conn=Database.getConnection();
+         while (enumr.hasMoreElements())
+         {
+
+             String accid = (String) enumr.nextElement();
+
+             GatewayAccount account = gatewayAccounts.get(accid);
+             String currency = account.getCurrency();
+             String merchantId = account.getMerchantId();
+             String displayName = account.getDisplayName();
+             String gateway = account.getGateway().toUpperCase();
+             String value =accid+" - "+ currency + " - " + merchantId + " ( " + gateway + " - " + displayName + " ) ";
+
+            // Connection conn=null;
+
+
+                 ResultSet rs2=Database.executeQuery("select count(*) from member_account_mapping where accountid=\""+accid+"\"",conn);// 0.02
+                 rs2.next();
+                 value+=" ( "+rs2.getInt(1)+" )";
+
+
+
+             hash.put(accid, value);
+
+         }
+        }
+        catch(Exception e)
+        {
+            log.error("Exception occured",e);
+        }
+        finally{
+            Database.closeConnection(conn);
+        }
+
+        /*for (int i = 1; i <= gatewayAccounts.size(); i++)
+        {
+            GatewayAccount account = gatewayAccounts.get(i + "");
+            String currency = account.getCurrency();
+            String merchantId = account.getMerchantId();
+            String displayName = account.getDisplayName();
+            String gateway = account.getGateway().toUpperCase();
+            String value = currency + " - " + merchantId + " ( " + gateway + " - " + displayName + " ) ";
+            hash.put(String.valueOf(i), value);
+        }*/
+        return hash;
+    }
+
+    public static Hashtable<String, String> getMerchantsByPartner(String partnerId)
+    {
+        Hashtable<String, String> hash = new Hashtable<String, String>();
+
+        Enumeration enumr = gatewayAccounts.keys();
+
+        while (enumr.hasMoreElements())
+        {
+
+            String accid = (String) enumr.nextElement();
+
+            GatewayAccount account = gatewayAccounts.get(accid);
+
+           /* if(account.getPartnerId()!=null &&  (account.getPartnerId()).equals(partnerId))
+            {*/
+                String currency = account.getCurrency();
+                String merchantId = account.getMerchantId();
+                String displayName = account.getDisplayName();
+                String gateway = account.getGateway().toUpperCase();
+                String value =accid+" - "+ currency + " - " + merchantId + " ( " + gateway + " - " + displayName + " ) ";
+                Connection conn=null;
+
+                try
+                {
+                    conn=Database.getConnection();
+                    ResultSet rs2=Database.executeQuery("select count(*) from member_account_mapping where accountid=\""+accid+"\"",conn);
+                    rs2.next();
+                    value+=" ( "+rs2.getInt(1)+" )";
+                }
+                catch(Exception e)
+                {
+                    log.error("Exception occured",e);
+                }
+                finally{
+                    Database.closeConnection(conn);
+                }
+
+
+            hash.put(accid, value);
+
+            }
+
+        //}
+
+        /*for (int i = 1; i <= gatewayAccounts.size(); i++)
+        {
+            GatewayAccount account = gatewayAccounts.get(i + "");
+            String currency = account.getCurrency();
+            String merchantId = account.getMerchantId();
+            String displayName = account.getDisplayName();
+            String gateway = account.getGateway().toUpperCase();
+            String value = currency + " - " + merchantId + " ( " + gateway + " - " + displayName + " ) ";
+            hash.put(String.valueOf(i), value);
+        }*/
+        return hash;
+    }
+
+    public static Hashtable<String, GatewayAccount> getMerchants()
+    {
+        return new Hashtable<String, GatewayAccount>(gatewayAccounts);
+    }
+
+    public static void loadGatewayAccounts() throws Exception
+    {
+        log.info("Loading Gateway Accounts......");
+        gatewayAccounts = new Hashtable<String, GatewayAccount>();
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            ResultSet rs = Database.executeQuery("select * from gateway_accounts", conn);
+            while (rs.next())
+            {
+                GatewayAccount account = new GatewayAccount(rs);
+                gatewayAccounts.put(account.getAccountId() + "", account);
+            }
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+    }
+
+    public static void loadPaymentModes() throws Exception
+    {
+        log.info("Loading Payment Types......");
+        payment_type = new Hashtable<String, String>();
+        payment_modes = new Hashtable<String, String>();
+        paymode_id = new Hashtable<String, String>();
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            ResultSet rs = Database.executeQuery("select * from payment_type", conn);
+            while (rs.next())
+            {
+                int paymodeid = rs.getInt("paymodeid");
+                String paymentType = rs.getString("paymentType");
+                String paymode = rs.getString("paymode");
+                payment_type.put(paymodeid + "", paymentType);
+                payment_modes.put(paymodeid + "", paymode);
+                paymode_id.put(paymode + "", String.valueOf(paymodeid));
+            }
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+    }
+
+    public static String getPaymentMode(String paymentId)
+    {
+        return payment_modes.get(paymentId);
+    }
+
+    public static String getPaymentBrand(String cardTypeId)
+    {
+        return card_type.get(cardTypeId);
+    }
+
+    public static String getPaymentId(String paymentMode)
+    {
+        return paymode_id.get(paymentMode);
+    }
+
+    public static String getPaymentTypes(String paymentId)
+    {
+        return payment_type.get(paymentId);
+    }
+     public static void loadCardTypes() throws Exception
+    {
+        log.info("Loading Card Types......");
+        card_type = new Hashtable<String, String>();
+        cardtype_id = new Hashtable<String, String>();
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            ResultSet rs = Database.executeQuery("select * from card_type", conn);
+            while (rs.next())
+            {
+                card_type.put(rs.getInt("cardtypeid")+"", rs.getString("cardType"));
+                cardtype_id.put(rs.getString("cardType")+"", String.valueOf(rs.getInt("cardtypeid")));
+            }
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+    }
+
+    public static String getCardType(String cardId)
+    {
+        return card_type.get(cardId);
+    }
+
+    public static String getCardId(String cardType)
+    {
+        return cardtype_id.get(cardType);
+    }
+
+     public static Set<String> getAccountIdsFromPgTypeId(String pgTypeId)
+    {
+
+
+        Set<String> hash = new HashSet<String>();
+
+        Enumeration enumr = gatewayAccounts.keys();
+
+        while (enumr.hasMoreElements())
+        {
+            String accid = (String) enumr.nextElement();
+            GatewayAccount gatewayType = gatewayAccounts.get(accid);
+             if(gatewayType.getPgTypeId().equals(pgTypeId))
+            {
+               hash.add(accid);
+            }
+
+
+        }
+
+
+        return hash;
+    }
+
+    public static Set<String> getAccountIdsFromPgTypeIdandCurrency(String pgTypeId,String currency)
+    {
+
+
+        Set<String> hash = new HashSet<String>();
+
+        Enumeration enumr = gatewayAccounts.keys();
+
+        while (enumr.hasMoreElements())
+        {
+            String accid = (String) enumr.nextElement();
+            GatewayAccount gatewayType = gatewayAccounts.get(accid);
+            if(gatewayType.getPgTypeId().equals(pgTypeId) && GatewayTypeService.getGatewayType(pgTypeId).getCurrency().equalsIgnoreCase(currency))
+            {
+                hash.add(accid);
+            }
+
+
+        }
+
+
+        return hash;
+    }
+
+    public static Hashtable<String, String> getCommonAccountDetails()
+    {
+        Hashtable<String, String> hash = new Hashtable<String, String>();
+
+        Enumeration enumr = gatewayAccounts.keys();
+
+        while (enumr.hasMoreElements())
+        {
+            String accid = (String) enumr.nextElement();
+            GatewayAccount account = gatewayAccounts.get(accid);
+            if(Database.getTableName(account.getGateway()).equals("transaction_common"))
+            {
+                String currency = account.getCurrency();
+                String merchantId = account.getMerchantId();
+                String displayName = account.getDisplayName();
+                String gateway = account.getGateway().toUpperCase();
+                String value =accid+" - "+ currency + " - " + merchantId + " ( " + gateway + " - " + displayName + " ) ";
+                Connection conn=null;
+
+                try{ conn=Database.getConnection();
+                    ResultSet rs2=Database.executeQuery("select count(*) from member_account_mapping where accountid=\""+accid+"\"",conn);
+                    rs2.next();
+                    value+=" ( "+rs2.getInt(1)+" )";
+                }
+                catch(Exception e)
+                {
+                    log.error("Exception occured",e);
+                }
+                finally{
+                    Database.closeConnection(conn);
+                }
+
+
+                hash.put(accid, value);
+            }
+        }
+
+        /*for (int i = 1; i <= gatewayAccounts.size(); i++)
+        {
+            GatewayAccount account = gatewayAccounts.get(i + "");
+            String currency = account.getCurrency();
+            String merchantId = account.getMerchantId();
+            String displayName = account.getDisplayName();
+            String gateway = account.getGateway().toUpperCase();
+            String value = currency + " - " + merchantId + " ( " + gateway + " - " + displayName + " ) ";
+            hash.put(String.valueOf(i), value);
+        }*/
+        return hash;
+    }
+    public static TreeMap<Integer, GatewayAccount> getAccountDetails()
+    {
+        TreeMap<Integer, GatewayAccount> hash = new TreeMap();
+        for(String accountId : gatewayAccounts.keySet()){
+            GatewayAccount account = gatewayAccounts.get(accountId);
+            hash.put(account.getAccountId(), account);
+        }
+        return hash;
+    }
+    public boolean isGatewayAccountIDMapped(String pgtypeid, String accountid)
+    {
+        for(String accountId : gatewayAccounts.keySet()){
+            GatewayAccount account = gatewayAccounts.get(accountId);
+
+                if (account.getAccountId() == Integer.parseInt(accountid) && account.getPgTypeId().equals(pgtypeid))
+                {
+                    return true;
+                }
+            }
+        return false;
+    }
+
+    public static TreeMap<Integer, GatewayAccount> getAccountsDetails( String gatewayid)
+    {
+        Functions functions = new Functions();
+        if(functions.isEmptyOrNull(gatewayid))
+        {
+            return getAccountDetails();
+        }
+        TreeMap<Integer, GatewayAccount> hash = new TreeMap();
+        for(String accountId : gatewayAccounts.keySet()){
+            GatewayAccount account = gatewayAccounts.get(accountId);
+            if(account.getPgTypeId().equals(gatewayid))
+                hash.put(account.getAccountId(), account);
+        }
+        return hash;
+    }
+
+    public static TreeMap<String, String> getAccountsDetailsPartner( String gatewayid, String partnerid)
+    {
+        Connection con = null;
+        PreparedStatement psmt = null;
+        Functions functions = new Functions();
+        TreeMap<String, String> hash = new TreeMap();
+
+        StringBuffer query = new StringBuffer("SELECT gapm.accountid,ga.merchantid,ga.pgtypeid,gt.currency FROM gateway_account_partner_mapping AS gapm, gateway_accounts AS ga, gateway_type AS gt WHERE gapm.accountid=ga.accountid AND ga.pgtypeid = gt.pgtypeid AND gapm.partnerid="+partnerid);
+        try
+        {
+            con = Database.getConnection();
+            if (functions.isValueNull(gatewayid))
+            {
+                query.append(" and ga.pgtypeid="+gatewayid);
+                log.debug("gateway inside IF::::::::"+gatewayid);
+            }
+            psmt = con.prepareStatement(query.toString());
+            ResultSet rs = psmt.executeQuery();
+            log.debug("Query::::::::::::::::"+psmt.toString());
+            while (rs.next())
+            {
+                hash.put(rs.getString("accountid"),rs.getString("accountid")+"-"+rs.getString("merchantid")+"-"+rs.getString("currency"));
+            }
+
+        }
+        catch (SystemError s)
+        {
+            log.error("System error while performing select query",s);
+            Functions.ShowMessage("Error", "Internal System Error while getting list of Transactions");
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL error",e);
+            Functions.ShowMessage("Error", "Internal System Error while getting list of Transactions");
+        }
+        finally
+        {
+            Database.closeConnection(con);
+        }
+        return hash;
+    }
+
+
+    public static TreeMap<Integer, String> getPaymentModes()
+    {
+        TreeMap<Integer, String> hash = new TreeMap<Integer, String>();
+
+        for(String paymodeId : payment_type.keySet())
+        {
+            String paymentType = payment_type.get(paymodeId);
+            hash.put(Integer.valueOf(paymodeId), paymentType);
+        }
+
+        return hash;
+    }
+
+    public static TreeMap<Integer, String> getCardTypes()
+    {
+        TreeMap<Integer, String> hash = new TreeMap<Integer, String>();
+
+        for(String cardTypeid : card_type.keySet())
+        {
+            String cardType = card_type.get(cardTypeid);
+            hash.put(Integer.valueOf(cardTypeid), cardType);
+        }
+
+        return hash;
+    }
+
+    public static Hashtable<Integer, GatewayAccount> getCommonAccountDetail()
+    {
+        Hashtable<Integer, GatewayAccount> hash = new Hashtable<Integer, GatewayAccount>();
+
+        Enumeration enumr = gatewayAccounts.keys();
+
+        while (enumr.hasMoreElements())
+        {
+            String accid = (String) enumr.nextElement();
+            GatewayAccount account = gatewayAccounts.get(accid);
+            hash.put(account.getAccountId(), account);
+        }
+        return hash;
+    }
+    public static Hashtable<String, String> getCurrencyDetails()
+    {
+        Hashtable<String, String> hash2 = new Hashtable<String, String>();
+
+        Enumeration enumr2 = gatewayAccounts.keys();
+
+        while (enumr2.hasMoreElements())
+        {
+            String accid = (String) enumr2.nextElement();
+            GatewayAccount account = gatewayAccounts.get(accid);
+            if (Database.getTableName(account.getGateway()).equals("transaction_common"))
+            {
+                String currency = account.getCurrency();
+                String merchantId = account.getMerchantId();
+                String displayName = account.getDisplayName();
+                String gateway = account.getGateway().toUpperCase();
+                String value =accid+" - "+ currency + " - "  + " ( " + gateway + " ) ";
+                Connection conn = null;
+
+                try
+                {
+                    conn = Database.getConnection();
+                    ResultSet rs2 = Database.executeQuery("select count(*) from member_account_mapping where accountid=\"" + accid + "\"", conn);
+                    rs2.next();
+                    value += " ( " + rs2.getInt(1) + " )";
+                }
+                catch (Exception e)
+                {
+                    log.error("Exception occured", e);
+                }
+                finally
+                {
+                    Database.closeConnection(conn);
+                }
+
+
+                hash2.put(accid, value);
+            }
+        }
+            return hash2;
+        }
+
+
+    public static List<String> loadAccountFromGatewayAndCurrency(String gateway,String currency)
+    {
+        List<String> gatewayAccountList = new ArrayList<String>();
+
+        Connection connection = null;
+
+        try
+        {
+            connection = Database.getConnection();
+            String query = "SELECT accountid FROM gateway_accounts WHERE pgtypeid =(SELECT pgtypeid FROM gateway_type WHERE gateway=? AND currency=?)";
+            PreparedStatement p = connection.prepareStatement(query);
+            p.setString(1,gateway);
+            p.setString(2,currency);
+
+            ResultSet rs = p.executeQuery();
+
+            while (rs.next())
+            {
+                String accountid = rs.getString("accountid");
+                gatewayAccountList.add(accountid);
+            }
+        }
+        catch (SystemError systemError)
+        {
+            log.error("SystemError---" +systemError);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQLException---"+e);
+        }
+        finally
+        {
+            Database.closeConnection(connection);
+        }
+
+        return gatewayAccountList;
+    }
+
+    public static ClearSettleGatewayAccount getClearSettleAccount(String accountId)
+    {
+        Connection conn = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet rs = null;
+        ClearSettleGatewayAccount clearSettleGatewayAccount = null;
+        try
+        {
+            conn = Database.getConnection();
+            StringBuffer qry = new StringBuffer("SELECT 3d_secure_account,only3d_secure_account FROM gateway_accounts_clearsettle where accountid=?");
+            preparedStatement = conn.prepareStatement(qry.toString());
+            preparedStatement.setString(1, accountId);
+            rs = preparedStatement.executeQuery();
+            if (rs.next())
+            {
+                clearSettleGatewayAccount = new ClearSettleGatewayAccount();
+                clearSettleGatewayAccount.setIs3dSecureAccount(rs.getString("3d_secure_account"));
+                clearSettleGatewayAccount.setIsOnly3DSecureAccount(rs.getString("only3d_secure_account"));
+            }
+        }
+        catch (SystemError se)
+        {
+            log.error("SystemError::::::", se);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQLException::::::", e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return clearSettleGatewayAccount;
+    }
+    public String getGateway(String merchantId)
+    {
+        String gateway="";
+        Connection conn = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet rs = null;
+        try
+        {
+            conn = Database.getConnection();
+            StringBuffer qry = new StringBuffer("select gateway from gateway_type where pgtypeid in (select pgtypeid from gateway_accounts where merchantid=?)");
+            preparedStatement = conn.prepareStatement(qry.toString());
+            preparedStatement.setString(1, merchantId);
+            rs = preparedStatement.executeQuery();
+            if (rs.next())
+            {
+                gateway=rs.getString("gateway");
+                log.error("gateway--->"+gateway);
+            }
+        }
+        catch (SystemError se)
+        {
+            log.error("SystemError::::::", se);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQLException::::::", e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+
+        return gateway;
+    }
+    public String getGatewayCountry(String accountId)
+    {
+        String country="";
+        Connection conn = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet rs = null;
+        try
+        {
+            conn = Database.getConnection();
+            StringBuffer qry = new StringBuffer("select country from gateway_type where pgtypeid in (select pgtypeid from gateway_accounts where accountId=?)");
+            preparedStatement = conn.prepareStatement(qry.toString());
+            preparedStatement.setString(1, accountId);
+            rs = preparedStatement.executeQuery();
+            if (rs.next())
+            {
+                country=rs.getString("country");
+            }
+        }
+        catch (SystemError se)
+        {
+            log.error("SystemError::::::", se);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQLException::::::", e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+
+        return country;
+    }
+
+    public static TreeMap<String, String> getPaymodeIdGateway(String gatewayid)
+    {
+        Connection con = null;
+        PreparedStatement psmt = null;
+        Functions functions = new Functions();
+        TreeMap<String, String> hash = new TreeMap();
+
+        StringBuffer query = new StringBuffer("SELECT DISTINCT mam.paymodeid,p.paymentType FROM member_account_mapping AS mam, gateway_accounts AS ga, gateway_type AS gt,payment_type AS p WHERE mam.accountid=ga.accountid AND ga.pgtypeid=gt.pgtypeid AND p.paymodeid=mam.paymodeid");
+        try
+        {
+            con = Database.getConnection();
+            if (functions.isValueNull(gatewayid))
+            {
+                query.append(" and ga.pgtypeid=" + gatewayid);
+                        log.debug("gateway inside IF::::::::" + gatewayid);
+            }
+            query.append(" ORDER BY mam.paymodeid ASC");
+            psmt = con.prepareStatement(query.toString());
+            ResultSet rs = psmt.executeQuery();
+            log.debug("Query::::::::::::::::"+psmt.toString());
+            while (rs.next())
+            {
+                hash.put(rs.getString("paymodeid"),rs.getString("paymentType"));
+            }
+
+        }
+        catch (SystemError s)
+        {
+            log.error("System error while performing select query",s);
+            Functions.ShowMessage("Error", "Internal System Error while getting list of Transactions");
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL error",e);
+            Functions.ShowMessage("Error", "Internal System Error while getting list of Transactions");
+        }
+        finally
+        {
+            Database.closeConnection(con);
+        }
+        return hash;
+    }
+
+    public static TreeMap<String, String> getCardtypeIdGateway(String gatewayid)
+    {
+        Connection con = null;
+        PreparedStatement psmt = null;
+        Functions functions = new Functions();
+        TreeMap<String, String> hash = new TreeMap();
+
+        StringBuffer query = new StringBuffer("SELECT DISTINCT mam.cardtypeid,p.cardType FROM member_account_mapping AS mam, gateway_accounts AS ga, gateway_type AS gt,card_type AS p WHERE mam.accountid=ga.accountid AND ga.pgtypeid=gt.pgtypeid AND p.cardtypeid=mam.cardtypeid");
+        try
+        {
+            con = Database.getConnection();
+            if (functions.isValueNull(gatewayid))
+            {
+                query.append(" and ga.pgtypeid=" + gatewayid);
+                log.debug("gateway inside IF::::::::" + gatewayid);
+            }
+            query.append(" ORDER BY mam.cardtypeid ASC");
+            psmt = con.prepareStatement(query.toString());
+            ResultSet rs = psmt.executeQuery();
+            log.debug("Query::::::::::::::::"+psmt.toString());
+            while (rs.next())
+            {
+                hash.put(rs.getString("cardtypeid"),rs.getString("cardType"));
+            }
+
+        }
+        catch (SystemError s)
+        {
+            log.error("System error while performing select query",s);
+            Functions.ShowMessage("Error", "Internal System Error while getting list of Transactions");
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL error",e);
+            Functions.ShowMessage("Error", "Internal System Error while getting list of Transactions");
+        }
+        finally
+        {
+            Database.closeConnection(con);
+        }
+        return hash;
+    }
+    public TreeMap<String, String> getParent_BankWireIdList(String accountid, String gatewayid)
+    {
+        String[] gatewayId = gatewayid.split("-");
+        TreeMap treeMap = new TreeMap();
+        Connection conn = null;
+        PreparedStatement pstmt=null;
+        Functions functions = new Functions();
+        try {
+            conn = Database.getConnection();
+            StringBuffer query= new StringBuffer("SELECT * FROM bank_wiremanager WHERE parent_bankwireid>0 ");
+
+            if (functions.isValueNull(accountid) && functions.isValueNull(gatewayid))
+            {
+                log.error("INSIDE IF");
+               query.append(" AND pgtypeId=? AND accountId =?");
+            }
+            else
+            {
+                log.error("Inside else condition");
+            }
+            pstmt= conn.prepareStatement(query.toString());
+            if(functions.isValueNull(accountid) && functions.isValueNull(gatewayId[2]))
+            {
+                pstmt.setInt(1,Integer.parseInt(gatewayId[2]));
+                pstmt.setInt(2,Integer.parseInt(accountid));
+            }
+
+            ResultSet rs = pstmt.executeQuery();
+            log.error("query======>" + pstmt);
+            while (rs.next()) {
+
+                    treeMap.put(String.valueOf(rs.getInt("parent_bankwireid")), String.valueOf(rs.getInt("parent_bankwireid")) + "-" + rs.getString("accountId") + "-" + rs.getString("mid"));
+            }
+
+        }   catch (SQLException se) {
+            log.error("SQLException ::::::: Leaving AutoCompleteUtils ", se);
+        } catch (SystemError se) {
+            log.error("System Error ", se);
+        } finally {
+            Database.closeConnection(conn);
+        }
+        return  treeMap;
+    }
+
+    public TreeMap<String, String> getBankWireIdList()
+    {
+        TreeMap bankwirelist= new TreeMap();
+        Connection connection= null;
+
+       try
+       {
+           connection= Database.getConnection();
+           String query= "select bankwiremanagerId,accountId,pgtypeId from bank_wiremanager order by bankwiremanagerId asc";
+           PreparedStatement preparedStatement= connection.prepareStatement(query);
+           log.error("Query for list of BankwireId::: "+query);
+           ResultSet rs= preparedStatement.executeQuery();
+           while (rs.next())
+           {
+               bankwirelist.put(String.valueOf(rs.getInt("bankwiremanagerId")),String.valueOf(rs.getInt("bankwiremanagerId"))+"-"+String.valueOf(rs.getInt("accountId"))+"-"+String.valueOf(rs.getInt("pgtypeId")));
+           }
+
+       }
+       catch (SystemError systemError)
+       {
+           log.error("System Error ", systemError);
+       }
+       catch (SQLException e)
+       {
+           log.error("SQLException :::::::", e);
+       }
+        finally
+       {
+           Database.closeConnection(connection);
+       }
+        return bankwirelist;
+    }
+}

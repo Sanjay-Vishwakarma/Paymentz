@@ -1,0 +1,609 @@
+<%@ page import="com.directi.pg.Functions" %>
+<%@ page import="com.directi.pg.LoadProperties" %>
+<%@ page import="com.directi.pg.Logger" %>
+<%@ page import="com.manager.ApplicationManager" %>
+<%@ page import="com.manager.vo.ActionVO" %>
+<%@ page import="com.vo.applicationManagerVOs.BankTypeVO" %>
+<%@ page import="org.owasp.esapi.ValidationErrorList" %>
+<%@ page import="org.owasp.esapi.errors.ValidationException" %>
+<%@ page import="java.util.LinkedHashMap" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.ResourceBundle" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: NIKET
+  Date: 25/08/2015
+  Time: 21:01
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ include file="top.jsp"%>
+
+<html>
+<head>
+  <%--<script type="text/javascript" src="/partner/javascript/jquery.min.js?ver=1"></script>
+  <script src="/partner/NewCss/js/jquery-ui.min.js"></script>--%>
+  <script src="/partner/javascript/autocomplete_partner_memberid.js"></script>
+  <title>Merchant Mapping</title>
+
+  <style type="text/css">
+    @media(max-width: 991px) {
+      .additional-btn {
+        float: left;
+        margin-left: 30px;
+        margin-top: 10px;
+        position: inherit!important;
+      }
+    }
+  </style>
+  <script type="application/javascript">
+    $(function ()
+    {
+      $('#partnerid').on('change', function (request, response)
+      {
+        var partner_id =$('#partnerid').val();
+        if($('#partnerid').val()==""){
+          partner_id = $('#partnerSid').val()
+        }
+        $.ajax({
+          url: "/partner/net/GetDetails",
+          dataType: "json",
+          data: {
+            partnerid: partner_id,
+            ctoken: $('#ctoken').val(),
+            method: "patnersmember",
+            term: request.term
+
+          },
+          success: function (data)
+          {
+            $('#memberid').find('option').not(':first').remove();
+            $.each(data.aaData, function (i, data)
+            {
+              var div_data = "<option value=" + data.value + ">" + data.value + data.text + "</option>";
+              $(div_data).appendTo('#memberid');
+            });
+          }
+        });
+        minLength: 0
+
+
+      });
+    });
+
+  </script>
+  <script>
+
+    $(document).ready(function(){
+
+      var w = $(window).width();
+
+      //alert(w);
+
+      if(w > 990){
+        //alert("It's greater than 990px");
+        $("body").removeClass("smallscreen").addClass("widescreen");
+        $("#wrapper").removeClass("enlarged");
+      }
+      else{
+        //alert("It's less than 990px");
+        $("body").removeClass("widescreen").addClass("smallscreen");
+        $("#wrapper").addClass("enlarged");
+        $(".left ul").removeAttr("style");
+      }
+    });
+
+  </script>
+
+  <script language="javascript">
+    function Update()
+    {
+      var checkboxes = document.getElementsByName("pgTypeId");
+      var checked=[];
+      var total_boxes = checkboxes.length;
+      flag = false;
+      for(i=0; i<total_boxes; i++ )
+      {
+        if(checkboxes[i].checked)
+        {
+          flag= true;
+          checked.push(checkboxes[i].value);
+          checked.join(',');
+        }
+      }
+/*
+      document.getElementById("pgTypeId").value=checked;
+*/
+      if(!flag)
+      {
+        alert("Select at least one record");
+        return false;
+      }
+      if (confirm("Do you really want to Update all selected Data."))
+      {
+        document.update.submit();
+      }
+    }
+  </script></head>
+
+</head>
+<body>
+
+<%!
+  Logger logger =new Logger("test.jsp");
+  private ApplicationManager applicationManager = new ApplicationManager();
+  private Functions functions = new Functions();
+%>
+<%
+  String Config = "style = display:none";
+  logger.debug("Inside MerchantMappingBank");
+  session.setAttribute("submit","merchantmappingbank");
+  ActionVO actionVO=null;
+  String memberid=nullToStr(request.getParameter("memberid"));
+  LinkedHashMap memberidDetails=null;
+  java.util.TreeMap<String,String> partneriddetails =null;
+  partneriddetails=partner.getPartnerDetailsForUI(String.valueOf(session.getAttribute("merchantid")));
+  String Roles = partner.getRoleofPartner(String.valueOf(session.getAttribute("merchantid")));
+  String Style1= "";
+  String Style2= "";
+  String dISABLED_Id="";
+
+  if(Roles.contains("superpartner")){
+    Style1= "style=\"display: none\"";
+    Config = "style=\"display: block\"";
+  }else{
+    dISABLED_Id=String.valueOf(session.getAttribute("merchantid"));
+    Style2= "style=\"display: none\"";
+  }
+
+  Functions function = new Functions();
+  String partnerid =nullToStr(request.getParameter("partnerid"));
+  String partner_id = session.getAttribute("merchantid").toString();
+   if(function.isValueNull(partnerid)){
+    memberidDetails=partner.getPartnerMembersDetail(partnerid);
+  }
+  else{
+    memberidDetails = partner.getSuperPartnerMembersDetail(partner_id);
+  }
+
+  ResourceBundle rb1 = null;
+  String language_property1 = (String)session.getAttribute("language_property");
+  rb1 = LoadProperties.getProperty(language_property1);
+
+  String merchantmappingbank_Partner_Bank_Mapping = rb1.getString("merchantmappingbank_Partner_Bank_Mapping");
+  String merchantmappingbank_Default_Gatway_Setting = rb1.getString("merchantmappingbank_Default_Gatway_Setting");
+  String merchantmappingbank_Search_Merchant_ID = rb1.getString("merchantmappingbank_Search_Merchant_ID");
+  String merchantmappingbank_Partner_ID = rb1.getString("merchantmappingbank_Partner_ID");
+  String merchantmappingbank_Select_Partner_Id = rb1.getString("merchantmappingbank_Select_Partner_Id");
+  String merchantmappingbank_Member_ID = rb1.getString("merchantmappingbank_Member_ID");
+  String merchantmappingbank_Select_Member_ID = rb1.getString("merchantmappingbank_Select_Member_ID");
+  String merchantmappingbank_Search = rb1.getString("merchantmappingbank_Search");
+  String merchantmappingbank_Merchant_Bank_Mapping = rb1.getString("merchantmappingbank_Merchant_Bank_Mapping");
+  String merchantmappingbank_Merchant_Id = rb1.getString("merchantmappingbank_Merchant_Id");
+  String merchantmappingbank_PartnerId = rb1.getString("merchantmappingbank_PartnerId");
+  String merchantmappingbank_Selected = rb1.getString("merchantmappingbank_Selected");
+  String merchantmappingbank_Gateway_Name = rb1.getString("merchantmappingbank_Gateway_Name");
+  String merchantmappingbank_Update = rb1.getString("merchantmappingbank_Update");
+  String merchantmappingbank_Add = rb1.getString("merchantmappingbank_Add");
+  String merchantmappingbank_Sorry = rb1.getString("merchantmappingbank_Sorry");
+  String merchantmappingbank_No = rb1.getString("merchantmappingbank_No");
+  String merchantmappingbank_Filter = rb1.getString("merchantmappingbank_Filter");
+  String merchantmappingbank_Please = rb1.getString("merchantmappingbank_Please");
+
+
+%>
+
+<div class="content-page">
+  <div class="content">
+    <div class="page-heading">
+      <div class="pull-right" <%=Config%>>
+        <div class="btn-group">
+          <form action="/partner/partnerbankmapping.jsp?ctoken=<%=ctoken%>" method="POST">
+            <button  class="btn-xs" type="submit" name="submit" name="B1" value="merchantmappingbank"
+                     style="background-color: #98A3A3; border-radius: 29px;color: white;padding: 8px 21px;font-size: 10px;cursor: pointer;">
+              <%=merchantmappingbank_Partner_Bank_Mapping%> &nbsp; <i class ="fa fa-map-marker" style="font-size: small; color: white;"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <%--<div class="pull-right" <%=Config%>>
+        <div class="btn-group">
+          <form action="/partner/addNewBank.jsp?ctoken=<%=ctoken%>" method="POST">
+            <button  class="btn-xs" type="submit" name="submit" name="B1"
+                     style="background-color: #98A3A3; border-radius: 29px;color: white;padding: 8px 21px;font-size: 10px;cursor: pointer;">
+              Add New Bank Template &nbsp; <i class ="fa fa-file-pdf-o" style="font-size: small; color: white;"></i>
+            </button>
+          </form>
+        </div>
+      </div>--%>
+
+      <div class="pull-right">
+        <div class="btn-group">
+          <form action="/partner/defaultGatwaySetting.jsp?ctoken=<%=ctoken%>" method="POST">
+            <button  class="btn-xs" type="submit" name="submit" name="B1" value="merchantmappingbank"
+                     style="background-color: #98A3A3; border-radius: 29px;color: white;padding: 8px 21px;font-size: 10px;cursor: pointer;">
+              <%=merchantmappingbank_Default_Gatway_Setting%> &nbsp; <i class ="fa fa-cogs" style="font-size: small; color: white;"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      <br><br>
+      <div class="row">
+        <div class="col-sm-12 portlets ui-sortable">
+          <div class="widget">
+
+            <div class="widget-header transparent">
+              <h2><strong><i class="fa fa-th-large"></i>&nbsp;&nbsp;<%=merchantmappingbank_Search_Merchant_ID%></strong></h2>
+            </div>
+            <div class="additional-btn">
+              <%--<form action="/partner/net/SingleMerchantBankMapping?ctoken=<%=ctoken%>" method="post" name="forms">
+                <button type="submit" value="1_Update" name="action" class="btn btn-default" style="width:250px; font-size:14px">
+                  <i class="fa fa-cog"></i>
+                  &nbsp;&nbsp;Default Gateway Setting
+                </button>
+              </form>--%>
+              <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+              <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+              <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+            </div>
+            <form action="/partner/net/SingleMerchantBankMapping?ctoken=<%=ctoken%>" method="post" name="forms" class="form-horizontal">
+              <%
+                // Map<String,MerchantDetailsVO> merchantDetailsVOList=merchantDAO.getALLMerchantForPartner((String)session.getAttribute("merchantid"));
+              %>
+
+              <div class="widget-content padding">
+                <div id="horizontal-form">
+
+                  <%
+                    if(request.getAttribute("error")!=null)
+                    {
+                      ValidationErrorList error = (ValidationErrorList) request.getAttribute("error");
+
+                      out.println("<h5 class=\"bg-infoorange\" style=\"text-align: center;\"><i class=\"fa fa-exclamation-triangle\"></i>&nbsp;&nbsp;");
+                      for (ValidationException errorList : error.errors())
+                      {
+                        //out.println("<tr><td colspan=2><center><font class=\"textb\">" + errorList.getMessage() + "</font></center></td></tr>");
+                        out.println(errorList.getMessage());
+                        out.println("<br>");
+                      }
+
+                      out.println("</h5>");
+                    }
+                    if(request.getAttribute("catchError")!=null)
+                    {
+                      //out.println("<center><font class=\"form-control\" style=\"text-align: center; margin-bottom: 15px; background-color: #d0f1e4;\">" + request.getAttribute("catchError") + "</font></center>");
+                      out.println("<h5 class=\"bg-infoorange\" style=\"text-align: center;\"><i class=\"fa fa-exclamation-triangle\"></i>&nbsp;&nbsp;"+request.getAttribute("catchError")+"</h5>");
+                    }
+                    if(request.getAttribute("success")!=null)
+                    {
+                      //out.println("<center><font class=\"form-control\" style=\"text-align: center; margin-bottom: 15px; background-color: #d0f1e4;\">" + request.getAttribute("catchError") + "</font></center>");
+                      out.println("<h5 class=\"bg-info\" style=\"text-align: center;\"><i class=\"fa fa-info-circle\"></i>&nbsp;&nbsp;"+request.getAttribute("success")+"</h5>");
+                    }
+                    if(request.getAttribute("DELETED")!=null)
+                    {
+                      //out.println("<center><font class=\"form-control\" style=\"text-align: center; margin-bottom: 15px; background-color: #d0f1e4;\">Deleted Successfully</font></center>");
+                      out.println("<h5 class=\"bg-info\" style=\"text-align: center;\"><i class=\"fa fa-info-circle\"></i>&nbsp;&nbsp;Deleted Successfully</h5>");
+                    }
+                    if(request.getAttribute("update")!=null)
+                    {
+                      //out.println("<center><font class=\"form-control\" style=\"text-align: center; margin-bottom: 15px; background-color: #d0f1e4;\">Updated Successfully</font></center>");
+                      out.println("<h5 class=\"bg-info\" style=\"text-align: center;\"><i class=\"fa fa-info-circle\"></i>&nbsp;&nbsp;Updated Successfully</h5>");
+                    }
+
+                  %>
+                  <input type="hidden" id="ctoken" value="<%=ctoken%>" name="ctoken">
+                  <input type="hidden" id="partnerSid" value="<%=partner_id%>" name="partnerSid">
+                  <input type="hidden" id="partnerid" value="<%=partner_id%>" >
+
+                  <div class="form-group col-md-4 has-feedback" <%=Style2%>>
+                    <label class="col-sm-4 control-label"><%=merchantmappingbank_Partner_ID%></label>
+                    <div class="col-sm-8">
+                      <select class="form-control" name="partnerid" id="pid">
+                        <option value="" default><%=merchantmappingbank_Select_Partner_Id%></option>
+                        <%
+                          String Selected = "";
+                          for(String pid : partneriddetails.keySet())
+                          {
+                            if(pid.toString().equals(partnerid))
+                            {
+                              Selected="selected";
+                            }
+                            else
+                            {
+                              Selected="";
+                            }
+                        %>
+                        <option value="<%=pid%>" <%=Selected%>><%=partneriddetails.get(pid)%></option>
+                        <%
+                          }
+                        %>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group col-md-4 has-feedback" <%=Style1%>>
+                    <label class="col-sm-4 control-label"><%=merchantmappingbank_Partner_ID%></label>
+                    <div class="col-sm-8">
+                      <input  class="form-control" value="<%=dISABLED_Id%>" disabled>
+                      <input type="hidden" class="form-control" value="<%=dISABLED_Id%>" disabled>
+                    </div>
+                  </div>
+
+
+                  <div class="form-group col-md-8">
+                    <label class="col-sm-3 control-label">&nbsp;&nbsp;<%=merchantmappingbank_Member_ID%></label>
+                    <div class="col-sm-6">
+                     <%-- <input name="memberid" id="member" value="<%=ESAPI.encoder().encodeForHTMLAttribute(memberid)%>" class="form-control" autocomplete="on">--%>
+                       <select name="memberid" id="memberid" class="form-control">
+                         <option value="">Select Member ID</option>
+                         <%
+                           String isSelected="";
+                           for(Object mid : memberidDetails.keySet())
+                           {
+                             if(mid.toString().equals(memberid))
+                             {
+                               isSelected="selected";
+                             }
+                             else
+                             {
+                               isSelected="";
+                             }
+                         %>
+                         <option value="<%=mid%>" <%=isSelected%>><%=mid+"-"+memberidDetails.get(mid)%></option>
+                         <%
+                           }
+                         %>
+                       </select>
+                    </div>
+                  </div>
+
+
+                  <%--<div class="form-group col-md-3 has-feedback">&nbsp;</div>--%>
+                  <div class="form-group col-md-3">
+                    <div class="col-sm-offset-2 col-sm-3">
+                      <button type="submit" class="btn btn-default" name="action" value="1_Edit"><i class="fa fa-clock-o"></i>
+                        &nbsp;&nbsp;<%=merchantmappingbank_Search%></button>
+                    </div>
+                  </div>
+
+
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+
+
+
+
+      <div class="row reporttable">
+
+        <%
+          try
+          {
+            Map<String,BankTypeVO> memberMappedBank= (Map<String, BankTypeVO>) request.getAttribute("memberBankMap");
+            List<BankTypeVO> partnerMappedGateway = applicationManager.getAllGatewayMappedToPartner(String.valueOf(String.valueOf(request.getAttribute("partnerId"))));
+            if(request.getAttribute("actionVO")!=null)
+            {
+              actionVO= (ActionVO) request.getAttribute("actionVO");
+            }
+            if(actionVO!=null)
+            {
+              if(actionVO.isAdd() || actionVO.isEdit() || actionVO.isUpdate())
+              {
+        %>
+        <form action="/partner/net/AddOrUpdateMemberBankMapping?ctoken=<%=ctoken%>" method="post" name="myForm">
+          <div class="col-md-12">
+            <div class="widget">
+              <div class="widget-header">
+                <%--<h2><i class="fa fa-table"></i>&nbsp;&nbsp;<strong>Report Table</strong></h2>--%>
+
+                <%
+                  if(!actionVO.isUpdate())
+                  {
+                %>
+                <h2><i class="fa fa-table"></i>&nbsp;&nbsp;<strong><%=merchantmappingbank_Merchant_Bank_Mapping%></strong></h2>
+                <%
+                }
+                else
+                {
+                %>
+                <%--<h2><i class="fa fa-table"></i>&nbsp;&nbsp;<strong>Default Gateway Mapping</strong></h2>--%>
+                <%
+                  }
+                %>
+
+                <div class="additional-btn">
+                  <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                  <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                  <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+                </div>
+              </div>
+
+              <br>
+              <center>
+                <%--<%
+                  if(!actionVO.isUpdate())
+                  {
+                %>
+                <div align="center" class="textb"><h5><b><u>Member Bank Mapping</u></b></h5></div>
+                <%
+                }
+                else
+                {
+                %>
+                <div align="center" class="textb"><h5><b><u>Default Gateway Mapping</u></b></h5></div>
+                <%
+                  }
+                %>--%>
+                <div class="widget-content" style="overflow-y: auto;">
+
+                  <table align="center" id="smalltable" border="0" style="font-family:Open Sans;font-size: 13px;font-weight: 600;width: 50%;">
+
+                    <%
+                      if(!actionVO.isUpdate())
+                      {
+                    %>
+
+                    <tr>
+                      <td valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                        <center><font class="textb" style="color: #ffffff;font-family: Open Sans;font-size: 13px;font-weight: 700;"><%=merchantmappingbank_Merchant_Id%></font></center>
+                      </td>
+                      <td valign="middle" align="center">
+                        <center><font class="textb"><input name="memberid" type="text" class="form-control" value="<%=request.getParameter("memberid")%>" readonly/></font></center>
+                      </td>
+
+                    </tr>
+
+                    <%
+                    }
+                    else
+                    {
+                    %>
+
+                    <tr>
+
+                      <td valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                        <center><font class="textb" style="color: #ffffff;font-family: Open Sans;font-size: 13px;font-weight: 700;"><%=merchantmappingbank_PartnerId%></font></center>
+                      </td>
+                      <td valign="middle" align="center">
+                        <center><font class="textb"><input name="partnerid" type="text" class="form-control"id="pid" value="<%=session.getAttribute("merchantid")%>" readonly/></font></center>
+                      </td>
+
+                    </tr>
+
+                    <%
+                      }
+                    %>
+                  </table>
+                  <table align=center width="50%" id="smalltable" class="display table table table-striped table-bordered table-hover dataTable" style="font-family:Open Sans;font-size: 13px;font-weight: 600;width: 50%;">
+
+                    <thead>
+                    <tr>
+                      <td  valign="middle" data-label="Selected" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b><%=merchantmappingbank_Selected%></b></td>
+                      <td  valign="middle" data-label="Gateway Name" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b><%=merchantmappingbank_Gateway_Name%></b></td>
+                    </tr>
+                    </thead>
+                    <%
+                      for(BankTypeVO bankTypeVO : partnerMappedGateway)
+                      {
+                    %>
+                    <tbody>
+                    <tr>
+                      <td valign="middle" data-label="Selected" align="center"><input type=checkbox class="form-control" name='pgTypeId' id="pgTypeId" value="<%=bankTypeVO.getBankId()%>" <%=memberMappedBank!=null && memberMappedBank.containsKey(bankTypeVO.getBankId())?"checked":""%>/></td>
+
+                      <td valign="middle" data-label="Gateway Name" align="center"><%--<input type=text maxlength="7" class="form-control" size=10 name='maxscoreautoreversal' value="<%=ESAPI.encoder().encodeForHTMLAttribute((String)temphash.get("maxScoreAutoReversal"))%>">--%>
+                        <%=functions.isValueNull(bankTypeVO.getBankName())?bankTypeVO.getBankName():""%></td>
+                    </tr>
+                    </tbody>
+                    <%
+                      }
+                    %>
+                  </table>
+
+
+                  <table align="center" id="smalltable" border="0" style="font-family:Open Sans;font-size: 13px;font-weight: 600;width: 50%;">
+
+                    <%
+                      if(actionVO.isEdit())
+                      {
+                    %>
+
+                    <tr style="background-color: transparent;">
+                      <td align="center" colspan="2">
+                        <button type="submit" class="btn btn-default" name="action" value="<%=request.getParameter("memberid")%>_Edit" onclick="return Update();"><%=merchantmappingbank_Update%></button>
+                      </td>
+                    </tr>
+
+                    <%
+                    }
+                    else if(actionVO.isAdd())
+                    {
+                    %>
+
+                    <tr style="background-color: transparent;">
+                      <td align="center" colspan="2">
+                        <button type="submit" class="btn btn-default" name="action"  value="1_Add"><%=merchantmappingbank_Add%></button>
+                      </td>
+                    </tr>
+
+                    <%
+                    }
+                    else if(actionVO.isUpdate())
+                    {
+                    %>
+
+                    <tr style="background-color: transparent;">
+                      <td align="center" colspan="2">
+                        <button type="submit" class="btn btn-default" name="action"  value="1_Update" onclick="return Update();"></button>
+                      </td>
+                    </tr>
+
+                    <%
+                      }
+                    %>
+
+                  </table>
+
+
+                </div>
+              </center>
+            </div>
+          </div>
+        </form>
+      </div>
+      <br>
+      <%
+            }
+            else
+            {
+              out.println(Functions.NewShowConfirmation1(merchantmappingbank_Sorry,merchantmappingbank_No));
+            }
+          }
+          else
+          {
+            //out.println(Functions.NewShowConfirmation1("Filter","Please Fill the Data for Merchant Bank Mapping Details"));
+
+
+            out.println("<div class=\"col-md-12\">\n" +
+                    "    <div class=\"widget\">\n" +
+                    "      <div class=\"widget-header\">\n" +
+                    "        <h2><i class=\"fa fa-table\"></i>&nbsp;&nbsp;<strong>Report Table</strong></h2>\n" +
+                    "        <div class=\"additional-btn\">\n" +
+                    "          <a href=\"#\" class=\"hidden reload\"><i class=\"icon-ccw-1\"></i></a>\n" +
+                    "          <a href=\"#\" class=\"widget-toggle\"><i class=\"icon-down-open-2\"></i></a>\n" +
+                    "          <a href=\"#\" class=\"widget-close\"><i class=\"icon-cancel-3\"></i></a>\n" +
+                    "        </div>\n" +
+                    "      </div>\n" +
+                    "      <div class=\"widget-content padding\">");
+            out.println(Functions.NewShowConfirmation1(merchantmappingbank_Filter,merchantmappingbank_Please));
+            out.println("</div>");
+            out.println("</div>\n" +
+                    "  </div>");
+
+
+          }
+        }
+        catch (Exception e)
+        {
+          e.printStackTrace();
+        }
+      %>
+      <%!
+        public static String nullToStr(String str)
+        {
+          if(str == null)
+            return "";
+          return str;
+        }
+      %>
+    </div>
+  </div>
+</div>
+</div>
+
+</body>
+</html>

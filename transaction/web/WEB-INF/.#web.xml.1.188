@@ -1,0 +1,2210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
+		  http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+         version="2.5">
+-->
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+                      http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+    <filter>
+        <filter-name>UTF8Filter</filter-name>
+        <filter-class>com.directi.pg.filters.UTF8Filter</filter-class>
+        <init-param>
+            <param-name>requestEncoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+    </filter>
+
+    <filter>
+        <filter-name>ESAPITransactionFilter</filter-name>
+        <filter-class>com.directi.pg.filters.ESAPITransactionFilter</filter-class>
+
+    </filter>
+
+    <filter>
+        <filter-name>SecurityWrapperDefault</filter-name>
+        <filter-class>org.owasp.esapi.filters.SecurityWrapper</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>UTF8Filter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>UTF8Filter</filter-name>
+        <url-pattern>*.jsp</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>ESAPITransactionFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>ESAPITransactionFilter</filter-name>
+        <url-pattern>*.jsp</url-pattern>
+    </filter-mapping>
+
+    <!--  Start Servlets for Common Flow     -->
+    <servlet>
+        <servlet-name>PayProcessController</servlet-name>
+        <servlet-class>payment.PayProcessController</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>AuxpayFrontendNotification</servlet-name>
+        <servlet-class>payment.AuxpayFrontendNotification</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AuxpayBackendNotification</servlet-name>
+        <servlet-class>payment.AuxpayBackendNotification</servlet-class>
+
+    </servlet>
+
+
+    <!--  End Servlets for Common Flow     -->
+    <!--  Start Servlets for ECORE     -->
+
+
+
+
+    <!--  End Servlets for ECORE     -->
+    <!--  Start Servlets for QWIPI     -->
+
+    <!--  End Servlets for QWIPI     -->
+    <!--  Start Servlets for PayDollar     -->
+    <servlet>
+        <servlet-name>PayDRProcess</servlet-name>
+        <servlet-class>payment.PayDRProcess</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PayDRServlet</servlet-name>
+        <servlet-class>payment.PayDRServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PayDRWaitServlet</servlet-name>
+        <servlet-class>payment.PayDRWaitServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PayDRPostFail</servlet-name>
+        <servlet-class>payment.PayDRPostFail</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PayDRPostSuccess</servlet-name>
+        <servlet-class>payment.PayDRPostSuccess</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PayDRPostError</servlet-name>
+        <servlet-class>payment.PayDRPostError</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PayDRPostWait</servlet-name>
+        <servlet-class>payment.PayDRPostWait</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PayDRWait</servlet-name>
+        <servlet-class>payment.PayDRWait</servlet-class>
+
+    </servlet>
+    <!--  End Servlets for PayDollar     -->
+    <!--  Start Servlets for PayVoucher     -->
+    <servlet>
+        <servlet-name>PayVoucherProcess</servlet-name>
+        <servlet-class>payment.PayVoucherProcess</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PayVoucherServlet</servlet-name>
+        <servlet-class>payment.PayVoucherServlet</servlet-class>
+
+    </servlet>
+
+    <!--  End Servlets for PayVoucher     -->
+    <!--  Start Servlets for UGSPay     -->
+    <servlet>
+        <servlet-name>PayUGProcess</servlet-name>
+        <servlet-class>payment.PayUGProcess</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PayUGServlet</servlet-name>
+        <servlet-class>payment.PayUGServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PayUGWaitServlet</servlet-name>
+        <servlet-class>payment.PayUGWaitServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PayUGPostWait</servlet-name>
+        <servlet-class>payment.PayUGPostWait</servlet-class>
+
+    </servlet>
+    <!--  End Servlets for UGSPay     -->
+    <!--  Start Servlets for MyMonedero     -->
+    <servlet>
+        <servlet-name>MyMonederoProcess</servlet-name>
+        <servlet-class>payment.MyMonederoProcess</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>MyMonederoWaitServlet</servlet-name>
+        <servlet-class>payment.MyMonederoWaitServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>MyMonederoWait</servlet-name>
+        <servlet-class>payment.MyMonederoWait</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>MyMonederoPost</servlet-name>
+        <servlet-class>payment.MyMonederoPost</servlet-class>
+
+    </servlet>
+    <!--  End Servlets for MyMonedero     -->
+    <!--  Start Servlets for CUP/PFS/Reitumu PaymentGateway     -->
+
+
+    <servlet>
+        <servlet-name>CupBackendServlet</servlet-name>
+        <servlet-class>payment.CupBackendServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PfsBackendServlet</servlet-name>
+        <servlet-class>payment.PfsBackendServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>PfsRecurringNotification</servlet-name>
+        <servlet-class>payment.PfsRecurringNotification</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>PfsCaptureBackendNotification</servlet-name>
+        <servlet-class>payment.PfsCaptureBackendNotification</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>RBFrontendNotification</servlet-name>
+        <servlet-class>payment.RBFrontendNotification</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>PBSFrontendServlet</servlet-name>
+        <servlet-class>payment.PBSFrontendServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>RBBackendNotification</servlet-name>
+        <servlet-class>payment.RBBackendNotification</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>EmaxCBNotification</servlet-name>
+        <servlet-class>payment.EmaxCBNotification</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>QwipiCBNotification</servlet-name>
+        <servlet-class>payment.QwipiCBNotification</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>CupFrontendServlet</servlet-name>
+        <servlet-class>payment.CupFrontendServlet</servlet-class>
+    </servlet>
+    <!--  End Servlets for CUP PaymentGateway     -->
+    <!--  Start Servlets for InPay     -->
+
+
+    <servlet>
+        <servlet-name>InPayFrontEndServlet</servlet-name>
+        <servlet-class>payment.InPayFrontEndServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>InPayBackEndServlet</servlet-name>
+        <servlet-class>payment.InPayBackEndServlet</servlet-class>
+
+    </servlet>
+    <!--  End Servlets for InPay     -->
+    <!--  Start Servlets for Direct Kit     -->
+    <servlet>
+        <servlet-name>SingleCallGenericServlet</servlet-name>
+        <servlet-class>payment.SingleCallGenericServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>SingleCallGenericReverse</servlet-name>
+        <servlet-class>payment.SingleCallGenericReverse</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>SingleCallGenericStatus</servlet-name>
+        <servlet-class>payment.SingleCallGenericStatus</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>SingleCallGenericCaptureServlet</servlet-name>
+        <servlet-class>payment.SingleCallGenericCaptureServlet</servlet-class>
+
+    </servlet>
+    <!--  End Servlets for Direct Kit     -->
+    <!--servlet for ErrorServlet-->
+    <servlet>
+        <servlet-name>ErrorServlet</servlet-name>
+        <servlet-class>payment.ErrorServlet</servlet-class>
+
+    </servlet>
+    <!--  End Servlets for ErrorServlet     -->
+    <!--servlet for PayInvoice   -->
+    <servlet>
+        <servlet-name>PayInvoice</servlet-name>
+        <servlet-class>payment.PayInvoice</servlet-class>
+
+    </servlet>
+
+    <!--Servlet for Invoice Direct kit-->
+    <servlet>
+        <servlet-name>InvoiceAPIController</servlet-name>
+        <servlet-class>payment.InvoiceAPIController</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>Process3DConfirmation</servlet-name>
+        <servlet-class>payment.Process3DConfirmation</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PaySafeCardBackEndServlet</servlet-name>
+        <servlet-class>payment.PaySafeCardBackEndServlet</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>PaySafeCardFrontEndServlet</servlet-name>
+        <servlet-class>payment.PaySafeCardFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>NexiFrontEndServlet</servlet-name>
+        <servlet-class>payment.NexiFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>SingleCallGenericVoid</servlet-name>
+        <servlet-class>payment.SingleCallGenericVoid</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>SingleCallPayment</servlet-name>
+        <servlet-class>payment.SingleCallPayment</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>SingleCallCheckout</servlet-name>
+        <servlet-class>payment.SingleCallCheckout</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>SingleCallVirtualCheckout</servlet-name>
+        <servlet-class>payment.SingleCallVirtualCheckout</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>SingleCallCheckoutSplit</servlet-name>
+        <servlet-class>payment.SingleCallCheckoutSplit</servlet-class>
+    </servlet>
+<!--    <servlet>
+        <servlet-name>SingleCallButtonCheckout</servlet-name>
+        <servlet-class>payment.SingleCallButtonCheckout</servlet-class>
+    </servlet>-->
+    <servlet>
+        <servlet-name>PaysecFrontendNotification</servlet-name>
+        <servlet-class>payment.PaysecFrontendNotification</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>PaySecFrontEndServlet</servlet-name>
+        <servlet-class>payment.PaySecFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>PaySecBackendNotification</servlet-name>
+        <servlet-class>payment.PaySecBackendNotification</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>P4FrontEndServlet</servlet-name>
+        <servlet-class>payment.P4FrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>P4BackEndServlet</servlet-name>
+        <servlet-class>payment.P4BackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ApcoPayFrontEndServlet</servlet-name>
+        <servlet-class>payment.ApcoPayFrontEndServlet</servlet-class>
+
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ApcoPayFrontEndServlet</servlet-name>
+        <url-pattern>/ApcoPayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ApcoPayBackEndServlet</servlet-name>
+        <servlet-class>payment.ApcoPayBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>SkrillFrontEndServlet</servlet-name>
+        <servlet-class>payment.SkrillFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>SingleCallCardRegistration</servlet-name>
+        <servlet-class>payment.SingleCallCardRegistration</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>SingleCallCardRegistration</servlet-name>
+        <url-pattern>/SingleCallCardRegistration</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>SkrillBackendServlet</servlet-name>
+        <servlet-class>payment.SkrillBackendServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>SkrillBackendServlet</servlet-name>
+        <url-pattern>/SkrillBackendServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PerfectMoneyFrontEndServlet</servlet-name>
+        <servlet-class>payment.PerfectMoneyFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>PerfectMoneyFrontEndServlet</servlet-name>
+        <url-pattern>/PerfectMoneyFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    
+    <servlet>
+        <servlet-name>PaySpaceFrontEndServlet</servlet-name>
+        <servlet-class>payment.PaySpaceFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>PaySpaceFrontEndServlet</servlet-name>
+        <url-pattern>/PaySpaceFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SkrillFrontEndServlet</servlet-name>
+        <url-pattern>/SkrillFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PerfectMoneyBackEndServlet</servlet-name>
+        <servlet-class>payment.PerfectMoneyBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>PerfectMoneyBackEndServlet</servlet-name>
+        <url-pattern>/PerfectMoneyBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ClearSettleFrontEndServlet</servlet-name>
+        <servlet-class>payment.ClearSettleFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ClearSettleHPPFrontEndServlet</servlet-name>
+        <servlet-class>payment.ClearSettleHPPFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>SCFrontEndServlet</servlet-name>
+        <servlet-class>payment.SCFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>RVFrontEndServlet</servlet-name>
+        <servlet-class>payment.RVFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>PyncsFrontEndServlet</servlet-name>
+        <servlet-class>payment.PyncsFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>RSPFrontEndServlet</servlet-name>
+        <servlet-class>payment.RSPFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>NPOFrontEndServlet</servlet-name>
+        <servlet-class>payment.NPOFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ClearSettleVoucherFrontEndServlet</servlet-name>
+        <servlet-class>payment.ClearSettleVoucherFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>DCFrontendNotification</servlet-name>
+        <servlet-class>payment.DCFrontendNotification</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>DCBackendNotification</servlet-name>
+        <servlet-class>payment.DCBackendNotification</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>CommINFrontEndServlet</servlet-name>
+        <servlet-class>payment.CommINFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>BOFrontEndServlet</servlet-name>
+        <servlet-class>payment.BOFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>BDBackendServlet</servlet-name>
+        <servlet-class>payment.BDBackendServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>UnicreditFrontEndServlet</servlet-name>
+        <servlet-class>payment.UnicreditFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>UnicreditFrontEndServlet</servlet-name>
+        <url-pattern>/UnicreditFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>TRANSCTMFrontEndServlet</servlet-name>
+        <servlet-class>payment.TRANSCTMFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>TRANSCTMFrontEndServlet</servlet-name>
+        <url-pattern>/TRANSCTMFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>CDNITYFrontEndServlet</servlet-name>
+        <servlet-class>payment.CDNITYFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>CDNITYFrontEndServlet</servlet-name>
+        <url-pattern>/CDNITYFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AWFrontEndServlet</servlet-name>
+        <servlet-class>payment.AWFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>AWFrontEndServlet</servlet-name>
+        <url-pattern>/AWFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ClearSettleFrontEndServlet</servlet-name>
+        <url-pattern>/ClearSettleFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ClearSettleHPPFrontEndServlet</servlet-name>
+        <url-pattern>/ClearSettleHPPFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ClearSettleVoucherFrontEndServlet</servlet-name>
+        <url-pattern>/ClearSettleVoucherFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SCFrontEndServlet</servlet-name>
+        <url-pattern>/SCFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>RVFrontEndServlet</servlet-name>
+        <url-pattern>/RVFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PyncsFrontEndServlet</servlet-name>
+        <url-pattern>/PyncsFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>RSPFrontEndServlet</servlet-name>
+        <url-pattern>/RSPFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>NPOFrontEndServlet</servlet-name>
+        <url-pattern>/NPOFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>DCFrontendNotification</servlet-name>
+        <url-pattern>/DCFrontendNotification</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>DCBackendNotification</servlet-name>
+        <url-pattern>/DCBackendNotification</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CommINFrontEndServlet</servlet-name>
+        <url-pattern>/CommINFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BOFrontEndServlet</servlet-name>
+        <url-pattern>/BOFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BDBackendServlet</servlet-name>
+        <url-pattern>/BDBackendServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ApcoPayBackEndServlet</servlet-name>
+        <url-pattern>/ApcoPayBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>KotakFrontEndNotification</servlet-name>
+        <servlet-class>payment.KotakFrontEndNotification</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>KotakFrontEndNotification</servlet-name>
+        <url-pattern>/KotakFrontEndNotification</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PaySafeCardBackEndServlet</servlet-name>
+        <url-pattern>/PaySafeCardBackEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PaySafeCardFrontEndServlet</servlet-name>
+        <url-pattern>/PaySafeCardFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>NexiFrontEndServlet</servlet-name>
+        <url-pattern>/NexiFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>P4FrontEndServlet</servlet-name>
+        <url-pattern>/P4FrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>P4BackEndServlet</servlet-name>
+        <url-pattern>/P4BackEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SingleCallGenericVoid</servlet-name>
+        <url-pattern>/SingleCallGenericVoid</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>Process3DConfirmation</servlet-name>
+        <url-pattern>/Process3DConfirmation</url-pattern>
+    </servlet-mapping>
+    <!--<servlet>
+        <servlet-name>PaymentController</servlet-name>
+        <servlet-class>payment.PayProcessController</servlet-class>
+    </servlet>-->
+    <!--End servlet for Invoice Direct kit-->
+
+    <!--  End Servlets for PayInvoice     -->
+
+    <servlet-mapping>
+        <servlet-name>SingleCallPayment</servlet-name>
+        <url-pattern>/SingleCallPayment</url-pattern>
+    </servlet-mapping>
+
+<!--<servlet-mapping>
+        <servlet-name>SingleCallButtonCheckout</servlet-name>
+        <url-pattern>/SingleCallButtonCheckout</url-pattern>
+    </servlet-mapping>-->
+
+    <servlet-mapping>
+        <servlet-name>SingleCallCheckout</servlet-name>
+        <url-pattern>/SingleCallCheckout</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SingleCallVirtualCheckout</servlet-name>
+        <url-pattern>/SingleCallVirtualCheckout</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SingleCallCheckoutSplit</servlet-name>
+        <url-pattern>/SingleCallCheckoutSplit</url-pattern>
+    </servlet-mapping>
+
+    <!--  Start Servlet-mapping for Common Flow     -->
+    <!--<servlet-mapping>
+        <servlet-name>PaymentController</servlet-name>
+        <url-pattern>/PaymentController</url-pattern>
+    </servlet-mapping>-->
+    <servlet-mapping>
+        <servlet-name>PayProcessController</servlet-name>
+        <url-pattern>/PayProcessController</url-pattern>
+    </servlet-mapping>
+
+    <!--  End Servlet-mapping for Common Flow     -->
+
+    <!--  Start Servlet-mapping for Sofort     -->
+    <servlet>
+        <servlet-name>SofortBackEndServlet</servlet-name>
+        <servlet-class>payment.SofortBackEndServlet</servlet-class>
+
+    </servlet>
+
+
+    <servlet>
+        <servlet-name>SofortFrontEndServlet</servlet-name>
+        <servlet-class>payment.SofortFrontEndServlet</servlet-class>
+
+    </servlet>
+
+
+    <servlet>
+        <servlet-name>IdealBackEndServlet</servlet-name>
+        <servlet-class>payment.IdealBackEndServlet</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>SingleCallTokenTransaction</servlet-name>
+        <servlet-class>payment.SingleCallTokenTransaction</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>IdealFrontEndServlet</servlet-name>
+        <servlet-class>payment.IdealFrontEndServlet</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>PayProcess3DController</servlet-name>
+        <servlet-class>payment.PayProcess3DController</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>SingleCallTokenServlet</servlet-name>
+        <servlet-class>payment.SingleCallTokenServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>SingleCallManualRebill</servlet-name>
+        <servlet-class>payment.SingleCallManualRebill</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>SingleCallCustomerSignup</servlet-name>
+        <servlet-class>payment.SingleCallCustomerSignup</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>SingleCallMerchantSignup</servlet-name>
+        <servlet-class>payment.SingleCallMerchantSignup</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>SingleCallFetchCard</servlet-name>
+        <servlet-class>payment.SingleCallFetchCard</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>SingleCallInvalidateToken</servlet-name>
+        <servlet-class>payment.SingleCallInvalidateToken</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>StandardProcessController</servlet-name>
+        <servlet-class>payment.StandardProcessController</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ProcessingFrontEndServlet</servlet-name>
+        <servlet-class>payment.ProcessingFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>FourStopBackEndNotification</servlet-name>
+        <servlet-class>payment.FourStopBackEndNotification</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>LpbFrontEndServlet</servlet-name>
+        <servlet-class>payment.LpbFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>StandardProcessController</servlet-name>
+        <url-pattern>/StandardProcessController</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SingleCallInvalidateToken</servlet-name>
+        <url-pattern>/SingleCallInvalidateToken</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SingleCallFetchCard</servlet-name>
+        <url-pattern>/SingleCallFetchCard</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SingleCallMerchantSignup</servlet-name>
+        <url-pattern>/SingleCallMerchantSignup</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SingleCallCustomerSignup</servlet-name>
+        <url-pattern>/SingleCallCustomerSignup</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SingleCallTokenServlet</servlet-name>
+        <url-pattern>/SingleCallTokenServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SingleCallTokenTransaction</servlet-name>
+        <url-pattern>/SingleCallTokenTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>IdealFrontEndServlet</servlet-name>
+        <url-pattern>/IdealFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>IdealBackEndServlet</servlet-name>
+        <url-pattern>/IdealBackEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SofortBackEndServlet</servlet-name>
+        <url-pattern>/SofortBackEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SofortFrontEndServlet</servlet-name>
+        <url-pattern>/SofortFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <!--  End Servlet-mapping for Sofort     -->
+
+
+    <!--  Start Servlet-mapping for ECORE     -->
+
+
+
+
+    <!--End Servlet-mapping for ECORE-->
+    <!--Start Servlet-mapping for QWIPI     -->
+
+    <!--End Servlet-mapping for QWIPI     -->
+    <!--Start Servlet-mapping for PayDollar     -->
+    <servlet-mapping>
+        <servlet-name>PayDRProcess</servlet-name>
+        <url-pattern>/PayDRProcess</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PayDRServlet</servlet-name>
+        <url-pattern>/PayDRServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PayDRWaitServlet</servlet-name>
+        <url-pattern>/PayDRWaitServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PayDRPostWait</servlet-name>
+        <url-pattern>/PayDRPostWait</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PayDRPostFail</servlet-name>
+        <url-pattern>/PayDRPostFail</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PayDRPostSuccess</servlet-name>
+        <url-pattern>/PayDRPostSuccess</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PayDRPostError</servlet-name>
+        <url-pattern>/PayDRPostError</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PayDRWait</servlet-name>
+        <url-pattern>/PayDRWait</url-pattern>
+    </servlet-mapping>
+    <!--End Servlet-mapping for PayDollar     -->
+    <!--Start Servlet-mapping for PayVoucher     -->
+    <servlet-mapping>
+        <servlet-name>PayVoucherProcess</servlet-name>
+        <url-pattern>/PayVoucherProcess</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PayVoucherServlet</servlet-name>
+        <url-pattern>/PayVoucherServlet</url-pattern>
+    </servlet-mapping>
+
+    <!--End Servlet-mapping for PayVoucher     -->
+    <!--Start Servlet-mapping for UGSPay     -->
+    <servlet-mapping>
+        <servlet-name>PayUGProcess</servlet-name>
+        <url-pattern>/PayUGProcess</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PayUGServlet</servlet-name>
+        <url-pattern>/PayUGServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PayUGWaitServlet</servlet-name>
+        <url-pattern>/PayUGWaitServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PayUGPostWait</servlet-name>
+        <url-pattern>/PayUGPostWait</url-pattern>
+    </servlet-mapping>
+    <!--End Servlet-mapping for UGSPay     -->
+    <!--Start Servlet-mapping for MyMonedero     -->
+    <servlet-mapping>
+        <servlet-name>MyMonederoProcess</servlet-name>
+        <url-pattern>/MyMonederoProcess</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>MyMonederoWaitServlet</servlet-name>
+        <url-pattern>/MyMonederoWaitServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>MyMonederoWait</servlet-name>
+        <url-pattern>/MyMonederoWait</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>MyMonederoPost</servlet-name>
+        <url-pattern>/MyMonederoPost</url-pattern>
+    </servlet-mapping>
+    <!--End Servlet-mapping for MyMonedero     -->
+    <!--Start Servlet-mapping for InPay     -->
+
+
+    <servlet-mapping>
+        <servlet-name>InPayFrontEndServlet</servlet-name>
+        <url-pattern>/InPayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>InPayBackEndServlet</servlet-name>
+        <url-pattern>/InPayBackEndServlet</url-pattern>
+    </servlet-mapping>
+    <!--End Servlet-mapping for InPay     -->
+    <!--start servlet-mapping for Cup Payment Gateway-->
+
+
+    <servlet-mapping>
+        <servlet-name>CupBackendServlet</servlet-name>
+        <url-pattern>/CupBackendServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PfsBackendServlet</servlet-name>
+        <url-pattern>/PfsBackendServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PfsRecurringNotification</servlet-name>
+        <url-pattern>/PfsRecurringNotification</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PfsCaptureBackendNotification</servlet-name>
+        <url-pattern>/PfsCaptureBackendNotification</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>RBFrontendNotification</servlet-name>
+        <url-pattern>/RBFrontendNotification</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PBSFrontendServlet</servlet-name>
+        <url-pattern>/PBSFrontendServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>RBBackendNotification</servlet-name>
+        <url-pattern>/RBBackendNotification</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>EmaxCBNotification</servlet-name>
+        <url-pattern>/EmaxCBNotification</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>QwipiCBNotification</servlet-name>
+        <url-pattern>/QwipiCBNotification</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>CupFrontendServlet</servlet-name>
+        <url-pattern>/CupFrontendServlet</url-pattern>
+    </servlet-mapping>
+    <!--end servlet-mapping for Cup Payment Gateway-->
+    <!--start servlet-mapping for ErrorServlet-->
+    <servlet-mapping>
+        <servlet-name>ErrorServlet</servlet-name>
+        <url-pattern>/ErrorServlet</url-pattern>
+    </servlet-mapping>
+    <!--End servlet-mapping for Error Servlet-->
+    <!--Start servlet-mapping for Direct Kit-->
+    <servlet-mapping>
+        <servlet-name>SingleCallGenericServlet</servlet-name>
+        <url-pattern>/SingleCallGenericServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SingleCallGenericReverse</servlet-name>
+        <url-pattern>/SingleCallGenericReverse</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SingleCallGenericStatus</servlet-name>
+        <url-pattern>/SingleCallGenericStatus</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SingleCallGenericCaptureServlet</servlet-name>
+        <url-pattern>/SingleCallGenericCaptureServlet</url-pattern>
+    </servlet-mapping>
+    <!--End Servlet-mapping for Direct Kit     -->
+    <!--start servlet-mapping for PayInvoice-->
+    <servlet-mapping>
+        <servlet-name>PayInvoice</servlet-name>
+        <url-pattern>/PayInvoice</url-pattern>
+    </servlet-mapping>
+    <!--End servlet-mapping for PayInvoice-->
+    <!--Start servlet-mapping for SingleCallInvoiceServlet-->
+    <servlet-mapping>
+        <servlet-name>InvoiceAPIController</servlet-name>
+        <url-pattern>/InvoiceAPIController</url-pattern>
+    </servlet-mapping>
+    <!--End servlet-mapping for SingleCallInvoiceServlet-->
+    <servlet-mapping>
+        <servlet-name>PayProcess3DController</servlet-name>
+        <url-pattern>/PayProcess3DController</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet-mapping>
+        <servlet-name>SingleCallManualRebill</servlet-name>
+        <url-pattern>/SingleCallManualRebill</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>JetonFrontEndServlet</servlet-name>
+        <servlet-class>payment.JetonFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>JetonFrontEndServlet</servlet-name>
+        <url-pattern>/JetonFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>BitcoinPaygateFrontEndServlet</servlet-name>
+        <servlet-class>payment.BitcoinPaygateFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>BitcoinPaygateFrontEndServlet</servlet-name>
+        <url-pattern>/BitcoinPaygateFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AuxpayFrontendNotification</servlet-name>
+        <url-pattern>/AuxpayFrontendNotification</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AuxpayBackendNotification</servlet-name>
+        <url-pattern>/AuxpayBackendNotification</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PaysecFrontendNotification</servlet-name>
+        <url-pattern>/PaysecFrontendNotification</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PaySecBackendNotification</servlet-name>
+        <url-pattern>/PaySecBackendNotification</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PaySecFrontEndServlet</servlet-name>
+        <url-pattern>/PaySecFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>NetellerBackEndServlet</servlet-name>
+        <servlet-class>payment.NetellerBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>NetellerBackEndServlet</servlet-name>
+        <url-pattern>/NetellerBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>NetellerFrontEndServlet</servlet-name>
+        <servlet-class>payment.NetellerFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>NetellerFrontEndServlet</servlet-name>
+        <url-pattern>/NetellerFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>VoucherMoneyFrontEndServlet</servlet-name>
+        <servlet-class>payment.VoucherMoneyFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>VoucherMoneyFrontEndServlet</servlet-name>
+        <url-pattern>/VoucherMoneyFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>EpayFrontEndServlet</servlet-name>
+        <servlet-class>payment.EpayFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>EpayFrontEndServlet</servlet-name>
+        <url-pattern>/EpayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>EpayBackEndServlet</servlet-name>
+        <servlet-class>payment.EpayBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>EpayBackEndServlet</servlet-name>
+        <url-pattern>/EpayBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>WCFrontEndServlet</servlet-name>
+        <servlet-class>payment.WCFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>WCFrontEndServlet</servlet-name>
+        <url-pattern>/WCFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PVFrontEndServlet</servlet-name>
+        <servlet-class>payment.PVFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>PVFrontEndServlet</servlet-name>
+        <url-pattern>/PVFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>EMXPFrontEndServlet</servlet-name>
+        <servlet-class>payment.EMXPFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>EMXPFrontEndServlet</servlet-name>
+        <url-pattern>/EMXPFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>EMSFrontEndServlet</servlet-name>
+        <servlet-class>payment.EMSFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>EMSFrontEndServlet</servlet-name>
+        <url-pattern>/EMSFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>TrustlyFrontEndServlet</servlet-name>
+        <servlet-class>payment.TrustlyFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>TrustlyFrontEndServlet</servlet-name>
+        <url-pattern>/TrustlyFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>TrustlyBackEndServlet</servlet-name>
+        <servlet-class>payment.TrustlyBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>TrustlyBackEndServlet</servlet-name>
+        <url-pattern>/TrustlyBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>TestBENotification</servlet-name>
+        <servlet-class>payment.TestBENotification</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>TestBENotification</servlet-name>
+        <url-pattern>/TestBENotification</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ProcessingFrontEndServlet</servlet-name>
+        <url-pattern>/ProcessingFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>FourStopBackEndNotification</servlet-name>
+        <url-pattern>/FourStopBackEndNotification</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>LpbFrontEndServlet</servlet-name>
+        <url-pattern>/LpbFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>ApcoPayFrontEndServlet3D</servlet-name>
+        <servlet-class>payment.ApcoPayFrontEndServlet3D</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ApcoPayFrontEndServlet3D</servlet-name>
+        <url-pattern>/ApcoPayFrontEndServlet3D</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>VoucherMoneyBackEndServlet</servlet-name>
+        <servlet-class>payment.VoucherMoneyBackEndServlet</servlet-class>
+    </servlet>
+
+    <!--<servlet-mapping>
+        <servlet-name>VoucherMoneyBackEndServlet</servlet-name>
+        <url-pattern>/VoucherMoneyBackEndServlet</url-pattern>
+    </servlet-mapping>-->
+
+    <servlet-mapping>
+        <servlet-name>VoucherMoneyBackEndServlet</servlet-name>
+        <url-pattern>/VoucherMoneyBackEndServlet/confirm-payment</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>VMWithdrawalBackEndServlet</servlet-name>
+        <servlet-class>payment.VMWithdrawalBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>VMWithdrawalBackEndServlet</servlet-name>
+        <url-pattern>/VoucherMoneyBackEndServlet/withdrawal-confirm</url-pattern>
+    </servlet-mapping>
+
+<!--    <servlet>
+        <servlet-name>ButtonCheckout</servlet-name>
+        <servlet-class>payment.ButtonCheckout</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ButtonCheckout</servlet-name>
+        <url-pattern>/ButtonCheckout</url-pattern>
+    </servlet-mapping>-->
+
+    <servlet>
+        <servlet-name>Checkout</servlet-name>
+        <servlet-class>payment.Checkout</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>Checkout</servlet-name>
+        <url-pattern>/Checkout</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>VirtualCheckout</servlet-name>
+        <servlet-class>payment.VirtualCheckout</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>VirtualCheckout</servlet-name>
+        <url-pattern>/VirtualCheckout</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>SafexPayFrontEndServlet</servlet-name>
+        <servlet-class>payment.SafexPayFrontEndServlet</servlet-class>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>SafexPayFrontEndServlet</servlet-name>
+        <url-pattern>/SafexPayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>NestPayFrontEndServlet</servlet-name>
+        <servlet-class>payment.NestPayFrontEndServlet</servlet-class>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>NestPayFrontEndServlet</servlet-name>
+        <url-pattern>/NestPayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ZotapayFrontEndServlet</servlet-name>
+        <servlet-class>payment.ZotapayFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ZotapayFrontEndServlet</servlet-name>
+        <url-pattern>/ZotapayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ZotaPayBackEndServlet</servlet-name>
+        <servlet-class>payment.ZotaPayBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ZotaPayBackEndServlet</servlet-name>
+        <url-pattern>/ZotaPayBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>SabadellFrontEndServlet</servlet-name>
+        <servlet-class>payment.SabadellFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>SabadellFrontEndServlet</servlet-name>
+        <url-pattern>/SabadellFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>SabadellBackEndServlet</servlet-name>
+        <servlet-class>payment.SabadellBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>SabadellBackEndServlet</servlet-name>
+        <url-pattern>/SabadellBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>CPFrontEndServlet</servlet-name>
+        <servlet-class>payment.CPFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>CPFrontEndServlet</servlet-name>
+        <url-pattern>/CPFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>Common3DFrontEndServlet</servlet-name>
+        <servlet-class>payment.Common3DFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>Common3DFrontEndServlet</servlet-name>
+        <url-pattern>/Common3DFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    
+    <servlet>
+        <servlet-name>JetonBackEndServlet</servlet-name>
+        <servlet-class>payment.JetonBackEndServlet</servlet-class>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>JetonBackEndServlet</servlet-name>
+        <url-pattern>/JetonBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>CommonBackEndServlet</servlet-name>
+        <servlet-class>payment.CommonBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>CommonBackEndServlet</servlet-name>
+        <url-pattern>/CommonBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>EmiServlet</servlet-name>
+        <servlet-class>payment.EmiServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>EmiServlet</servlet-name>
+        <url-pattern>/EmiServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>CardRegistration</servlet-name>
+        <servlet-class>payment.CardRegistration</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>CardRegistration</servlet-name>
+        <url-pattern>/CardRegistration</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>RomCardFrontEndServlet</servlet-name>
+        <servlet-class>payment.RomCardFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>RomCardFrontEndServlet</servlet-name>
+        <url-pattern>/RomCardFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>ElegroFrontEndServlet</servlet-name>
+        <servlet-class>payment.ElegroFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ElegroFrontEndServlet</servlet-name>
+        <url-pattern>/ElegroFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ElegroBackEndServlet</servlet-name>
+        <servlet-class>payment.ElegroBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ElegroBackEndServlet</servlet-name>
+        <url-pattern>/ElegroBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>TojikaFrontEndServlet</servlet-name>
+        <servlet-class>payment.TojikaFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>TojikaFrontEndServlet</servlet-name>
+        <url-pattern>/TojikaFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>FlutterWaveFrontEndServlet</servlet-name>
+        <servlet-class>payment.FlutterWaveFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>FlutterWaveFrontEndServlet</servlet-name>
+        <url-pattern>/FlutterWaveFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>FlutterWaveBackEndServlet</servlet-name>
+        <servlet-class>payment.FlutterWaveBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>FlutterWaveBackEndServlet</servlet-name>
+        <url-pattern>/FlutterWaveBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>FlutterWaveBarterFrontEndServlet</servlet-name>
+        <servlet-class>payment.FlutterWaveBarterFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>FlutterWaveBarterFrontEndServlet</servlet-name>
+        <url-pattern>/FlutterWaveBarterFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>FlutterWaveBarterInquiryServlet</servlet-name>
+        <servlet-class>payment.FlutterWaveBarterInquiryServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>FlutterWaveBarterInquiryServlet</servlet-name>
+        <url-pattern>/FlutterWaveBarterInquiryServlet</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>UnionPayInternationalFrontEndServlet</servlet-name>
+        <servlet-class>payment.UnionPayInternationalFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>UnionPayInternationalFrontEndServlet</servlet-name>
+        <url-pattern>/UnionPayInternationalFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UnionPayInternationalBackEndServlet</servlet-name>
+        <servlet-class>payment.UnionPayInternationalBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>UnionPayInternationalBackEndServlet</servlet-name>
+        <url-pattern>/UnionPayInternationalBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>OneRoadFrontEndServlet</servlet-name>
+        <servlet-class>payment.OneRoadFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>OneRoadFrontEndServlet</servlet-name>
+        <url-pattern>/OneRoadFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>VoguePayFrontEndServlet</servlet-name>
+        <servlet-class>payment.VoguePayFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>VoguePayFrontEndServlet</servlet-name>
+        <url-pattern>/VoguePayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+
+
+    <servlet>
+        <servlet-name>checkConfirmation</servlet-name>
+        <servlet-class>payment.checkConfirmation</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>checkConfirmation</servlet-name>
+        <url-pattern>/checkConfirmation</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ICardFrontEndServlet</servlet-name>
+        <servlet-class>payment.ICardFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ICardFrontEndServlet</servlet-name>
+        <url-pattern>/ICardFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>DectaNewFrontEndServlet</servlet-name>
+        <servlet-class>payment.DectaNewFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>DectaNewFrontEndServlet</servlet-name>
+        <url-pattern>/DectaNewFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>DectaNewBackEndServlet</servlet-name>
+        <servlet-class>payment.DectaNewBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>DectaNewBackEndServlet</servlet-name>
+        <url-pattern>/DectaNewBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>DokuFrontEndServlet</servlet-name>
+        <servlet-class>payment.DokuFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>DokuFrontEndServlet</servlet-name>
+        <url-pattern>/DokuFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>DokuBackEndServlet</servlet-name>
+        <servlet-class>payment.DokuBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>DokuBackEndServlet</servlet-name>
+        <url-pattern>/DokuBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+
+
+    <servlet>
+        <servlet-name>PaySendFrontEndServletSuccess</servlet-name>
+        <servlet-class>payment.PaySendFrontEndServletSuccess</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>PaySendFrontEndServletSuccess</servlet-name>
+        <url-pattern>/PaySendFrontEndServletSuccess</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PaySendFrontEndServletFail</servlet-name>
+        <servlet-class>payment.PaySendFrontEndServletFail</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>PaySendFrontEndServletFail</servlet-name>
+        <url-pattern>/PaySendFrontEndServletFail</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PaySendBackEndServlet</servlet-name>
+        <servlet-class>payment.PaySendBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>PaySendBackEndServlet</servlet-name>
+        <url-pattern>/PaySendBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>NinjaWalletFrontEndServlet</servlet-name>
+        <servlet-class>payment.NinjaWalletFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>NinjaWalletFrontEndServlet</servlet-name>
+        <url-pattern>/NinjaWalletFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>OnlinePayFrontEndServlet</servlet-name>
+        <servlet-class>payment.OnlinePayFrontEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>OnlinePayFrontEndServlet</servlet-name>
+        <url-pattern>/OnlinePayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>CupUpiSMS</servlet-name>
+        <servlet-class>payment.CupUpiSMS</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>CupUpiSMS</servlet-name>
+        <url-pattern>/CupUpiSMS</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>OnlinePayBackEndServlet</servlet-name>
+        <servlet-class>payment.OnlinePayBackEndServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>OnlinePayBackEndServlet</servlet-name>
+        <url-pattern>/OnlinePayBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ECPBackEndServlet</servlet-name>
+        <servlet-class>payment.ECPBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ECPBackEndServlet</servlet-name>
+        <url-pattern>/ECPBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ECPFrontEndServlet</servlet-name>
+        <servlet-class>payment.ECPFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ECPFrontEndServlet</servlet-name>
+        <url-pattern>/ECPFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>XPateFrontEndServlet</servlet-name>
+        <servlet-class>payment.XPateFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>XPateFrontEndServlet</servlet-name>
+        <url-pattern>/XPateFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>SBMFrontEndServlet</servlet-name>
+        <servlet-class>payment.SBMFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SBMFrontEndServlet</servlet-name>
+        <url-pattern>/SBMFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PayBoutiqueFrontEndServlet</servlet-name>
+        <servlet-class>payment.PayBoutiqueFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PayBoutiqueFrontEndServlet</servlet-name>
+        <url-pattern>/PayBoutiqueFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PayBoutiqueBackendServlet</servlet-name>
+        <servlet-class>payment.PayBoutiqueBackendServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PayBoutiqueBackendServlet</servlet-name>
+        <url-pattern>/PayBoutiqueBackendServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PhoneixFrontEndServlet</servlet-name>
+        <servlet-class>payment.PhoneixFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PhoneixFrontEndServlet</servlet-name>
+        <url-pattern>/PhoneixFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>CuroFrontEndServlet</servlet-name>
+        <servlet-class>payment.CuroFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CuroFrontEndServlet</servlet-name>
+        <url-pattern>/CuroFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>EMerchantPayFrontEndServlet</servlet-name>
+        <servlet-class>payment.EMerchantPayFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>EMerchantPayFrontEndServlet</servlet-name>
+        <url-pattern>/EMerchantPayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>InvoiceAppFrontEndServlet</servlet-name>
+        <servlet-class>payment.InvoiceAppFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>InvoiceAppFrontEndServlet</servlet-name>
+        <url-pattern>/InvoiceAppFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>BhartiPayFrontEndServlet</servlet-name>
+        <servlet-class>payment.BhartiPayFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>BhartiPayFrontEndServlet</servlet-name>
+        <url-pattern>/BhartiPayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ZotaBackEndServlet</servlet-name>
+        <servlet-class>payment.ZotaBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ZotaBackEndServlet</servlet-name>
+        <url-pattern>/ZotaBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ZotaFrontEndServlet</servlet-name>
+        <servlet-class>payment.ZotaFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ZotaFrontEndServlet</servlet-name>
+        <url-pattern>/ZotaFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>JetonCardBackEndServlet</servlet-name>
+        <servlet-class>payment.JetonCardBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>JetonCardBackEndServlet</servlet-name>
+        <url-pattern>/JetonCardBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>JetonCardFrontEndServlet</servlet-name>
+        <servlet-class>payment.JetonCardFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>JetonCardFrontEndServlet</servlet-name>
+        <url-pattern>/JetonCardFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>rubixpayfrontendservlet</servlet-name>
+        <servlet-class>payment.rubixpayfrontendservlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>rubixpayfrontendservlet</servlet-name>
+        <url-pattern>/rubixpayfrontendservlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>TapMioFrontEndServlet</servlet-name>
+        <servlet-class>payment.TapMioFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TapMioFrontEndServlet</servlet-name>
+        <url-pattern>/TapMioFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>EcommpayBackEndServlet</servlet-name>
+        <servlet-class>payment.EcommpayBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>EcommpayBackEndServlet</servlet-name>
+        <url-pattern>/EcommpayBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>SafexPayBackEndServlet</servlet-name>
+        <servlet-class>payment.SafexPayBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SafexPayBackEndServlet</servlet-name>
+        <url-pattern>/SafexPayBackEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>CBCGBackEndServlet</servlet-name>
+        <servlet-class>payment.CBCGBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CBCGBackEndServlet</servlet-name>
+        <url-pattern>/CBCGBackEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>SafeChargeV2FrontEndServlet</servlet-name>
+        <servlet-class>payment.SafeChargeV2FrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SafeChargeV2FrontEndServlet</servlet-name>
+        <url-pattern>/SafeChargeV2FrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>SafeChargeV2BackEndServlet</servlet-name>
+        <servlet-class>payment.SafeChargeV2BackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SafeChargeV2BackEndServlet</servlet-name>
+        <url-pattern>/SafeChargeV2BackEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>vervepayfrontendservlet</servlet-name>
+        <servlet-class>payment.vervepayfrontendservlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>vervepayfrontendservlet</servlet-name>
+        <url-pattern>/vervepayfrontendservlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>JPBankTransferBackEndServlet</servlet-name>
+        <servlet-class>payment.JPBankTransferBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>JPBankTransferBackEndServlet</servlet-name>
+        <url-pattern>/JPBankTransferBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>IppoPayBackEndServlet</servlet-name>
+        <servlet-class>payment.IppoPayBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>IppoPayBackEndServlet</servlet-name>
+        <url-pattern>/IppoPayBackEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>IppoPayFrontEndServlet</servlet-name>
+        <servlet-class>payment.IppoPayFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>IppoPayFrontEndServlet</servlet-name>
+        <url-pattern>/IppoPayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ThreedacsRedirect</servlet-name>
+        <servlet-class>payment.ThreedacsRedirect</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ThreedacsRedirect</servlet-name>
+        <url-pattern>/ThreedacsRedirect</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>AlweaveFrontEndServlet</servlet-name>
+        <servlet-class>payment.AlweaveFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AlweaveFrontEndServlet</servlet-name>
+        <url-pattern>/AlweaveFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>AlweaveBackEndServlet</servlet-name>
+        <servlet-class>payment.AlweaveBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AlweaveBackEndServlet</servlet-name>
+        <url-pattern>/AlweaveBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ZhixinfuFrontEndServlet</servlet-name>
+        <servlet-class>payment.ZhixinfuFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ZhixinfuFrontEndServlet</servlet-name>
+        <url-pattern>/ZhixinfuFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>ZhixinfuBackEndServlet</servlet-name>
+        <servlet-class>payment.ZhixinfuBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ZhixinfuBackEndServlet</servlet-name>
+        <url-pattern>/ZhixinfuBackEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>OctapayFrontEndServlet</servlet-name>
+        <servlet-class>payment.OctapayFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>OctapayFrontEndServlet</servlet-name>
+        <url-pattern>/OctapayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>OctapayBackEndServlet</servlet-name>
+        <servlet-class>payment.OctapayBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>OctapayBackEndServlet</servlet-name>
+        <url-pattern>/OctapayBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PayFluidFrontEndServlet</servlet-name>
+        <servlet-class>payment.PayFluidFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PayFluidFrontEndServlet</servlet-name>
+        <url-pattern>/PayFluidFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PayClubFrontEndServlet</servlet-name>
+        <servlet-class>payment.PayClubFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PayClubFrontEndServlet</servlet-name>
+        <url-pattern>/PayClubFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>PayClubBackEndServlet</servlet-name>
+        <servlet-class>payment.PayClubBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PayClubBackEndServlet</servlet-name>
+        <url-pattern>/PayClubBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>TWDTaiwanFrontEndServlet</servlet-name>
+        <servlet-class>payment.TWDTaiwanFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TWDTaiwanFrontEndServlet</servlet-name>
+        <url-pattern>/TWDTaiwanFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>TWDTaiwanBackEndServlet</servlet-name>
+        <servlet-class>payment.TWDTaiwanBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TWDTaiwanBackEndServlet</servlet-name>
+        <url-pattern>/TWDTaiwanBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>GlobalPayFrontEndServlet</servlet-name>
+        <servlet-class>payment.GlobalPayFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>GlobalPayFrontEndServlet</servlet-name>
+        <url-pattern>/GlobalPayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>vervepaybackendservlet</servlet-name>
+        <servlet-class>payment.vervepaybackendservlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>vervepaybackendservlet</servlet-name>
+        <url-pattern>/vervepaybackendservlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>QikPayFrontEndServlet</servlet-name>
+        <servlet-class>payment.QikPayFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>QikPayFrontEndServlet</servlet-name>
+        <url-pattern>/QikPayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>LetzPayFrontEndServlet</servlet-name>
+        <servlet-class>payment.LetzPayFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>LetzPayFrontEndServlet</servlet-name>
+        <url-pattern>/LetzPayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>GiftPayFrontEndServlet</servlet-name>
+        <servlet-class>payment.GiftPayFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>GiftPayFrontEndServlet</servlet-name>
+        <url-pattern>/GiftPayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <!--
+    <servlet>
+        <servlet-name>BhartiPayS2SFrontEndServlet</servlet-name>
+        <servlet-class>payment.BhartiPayS2SFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>BhartiPayS2SFrontEndServlet</servlet-name>
+        <url-pattern>/BhartiPayS2SFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>BamboraAcquiringFrontEndServlet</servlet-name>
+        <servlet-class>payment.BamboraAcquiringFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>BamboraAcquiringFrontEndServlet</servlet-name>
+        <url-pattern>/BamboraAcquiringFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    -->
+
+    <servlet>
+        <servlet-name>SecureTradingBackEndServlet</servlet-name>
+        <servlet-class>payment.SecureTradingBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SecureTradingBackEndServlet</servlet-name>
+        <url-pattern>/SecureTradingBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+
+
+    <servlet>
+        <servlet-name>QikPayBackEndServlet</servlet-name>
+        <servlet-class>payment.QikPayBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>QikPayBackEndServlet</servlet-name>
+        <url-pattern>/QikPayBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>QuickPaymentsBackEndServlet</servlet-name>
+        <servlet-class>payment.QuickPaymentsBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>QuickPaymentsBackEndServlet</servlet-name>
+        <url-pattern>/QuickPaymentsBackEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>PayEasyWorldFrontEndServlet</servlet-name>
+        <servlet-class>payment.PayEasyWorldFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PayEasyWorldFrontEndServlet</servlet-name>
+        <url-pattern>/PayEasyWorldFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>PayEasyWorldBackEndServlet</servlet-name>
+        <servlet-class>payment.PayEasyWorldBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PayEasyWorldBackEndServlet</servlet-name>
+        <url-pattern>/PayEasyWorldBackEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>BennupayBackEndServlet</servlet-name>
+        <servlet-class>payment.BennupayBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>BennupayBackEndServlet</servlet-name>
+        <url-pattern>/BennupayBackEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>PayneteasyBackEndServlet</servlet-name>
+        <servlet-class>payment.PayneteasyBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PayneteasyBackEndServlet</servlet-name>
+        <url-pattern>/PayneteasyBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>EPaymentzFrontEndServlet</servlet-name>
+        <servlet-class>payment.EPaymentzFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>EPaymentzFrontEndServlet</servlet-name>
+        <url-pattern>/EPaymentzFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>AsianCheckoutFrontEndServlet</servlet-name>
+        <servlet-class>payment.AsianCheckoutFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AsianCheckoutFrontEndServlet</servlet-name>
+        <url-pattern>/AsianCheckoutFrontEndServlet</url-pattern>
+    </servlet-mapping>
+   <servlet>
+        <servlet-name>OculusFrontEndServlet</servlet-name>
+        <servlet-class>payment.OculusFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>OculusFrontEndServlet</servlet-name>
+        <url-pattern>/OculusFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>OculusBackEndServlet</servlet-name>
+        <servlet-class>payment.OculusBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>OculusBackEndServlet</servlet-name>
+        <url-pattern>/OculusBackEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>IMoneyPayFrontEndServlet</servlet-name>
+        <servlet-class>payment.IMoneyPayFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>IMoneyPayFrontEndServlet</servlet-name>
+        <url-pattern>/IMoneyPayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>WealthPayFrontEndServlet</servlet-name>
+        <servlet-class>payment.WealthPayFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>WealthPayFrontEndServlet</servlet-name>
+        <url-pattern>/WealthPayFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>AppletreeBackentServlet</servlet-name>
+        <servlet-class>payment.AppletreeBackentServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AppletreeBackentServlet</servlet-name>
+        <url-pattern>/AppletreeBackentServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>GlobalGateFrontEndServlet</servlet-name>
+        <servlet-class>payment.GlobalGateFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>GlobalGateFrontEndServlet</servlet-name>
+        <url-pattern>/GlobalGateFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>PayUPaymentFrontEndServlet</servlet-name>
+        <servlet-class>payment.PayUPaymentFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PayUPaymentFrontEndServlet</servlet-name>
+        <url-pattern>/PayUPaymentFrontEndServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>CashFreeFrontEndServlet</servlet-name>
+        <servlet-class>payment.CashFreeFrontEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CashFreeFrontEndServlet</servlet-name>
+        <url-pattern>/CashFreeFrontEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>LetzPayBackEndServlet</servlet-name>
+        <servlet-class>payment.LetzPayBackEndServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>LetzPayBackEndServlet</servlet-name>
+        <url-pattern>/LetzPayBackEndServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>EcospendProcess</servlet-name>
+        <servlet-class>payment.EcospendProcess</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>EcospendProcess</servlet-name>
+        <url-pattern>/EcospendProcess</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>EcospendBackentServlet</servlet-name>
+        <servlet-class>payment.EcospendBackentServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>EcospendBackentServlet</servlet-name>
+        <url-pattern>/EcospendBackentServlet</url-pattern>
+    </servlet-mapping>
+
+
+</web-app>

@@ -1,0 +1,508 @@
+package com.payment.paySafeCard;
+
+import com.directi.pg.Functions;
+import com.directi.pg.LoadProperties;
+import com.directi.pg.Logger;
+import com.directi.pg.TransactionLogger;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.GenericAddressDetailsVO;
+import com.directi.pg.core.valueObjects.GenericRequestVO;
+import com.directi.pg.core.valueObjects.GenericResponseVO;
+import com.directi.pg.core.valueObjects.GenericTransDetailsVO;
+import com.manager.PaymentManager;
+import com.payment.common.core.CommAddressDetailsVO;
+import com.payment.common.core.CommRequestVO;
+import com.payment.common.core.CommResponseVO;
+import com.payment.common.core.CommTransactionDetailsVO;
+import com.payment.exceptionHandler.*;
+import com.payment.exceptionHandler.constraint.PZGenericConstraint;
+import com.payment.exceptionHandler.constraintType.PZConstraintExceptionEnum;
+import com.payment.exceptionHandler.constraintType.PZTechnicalExceptionEnum;
+import com.payment.exceptionHandler.operations.PZOperations;
+import com.payment.paySafeCard.pscservice.CustomerIdType;
+
+import java.net.URLEncoder;
+import java.rmi.RemoteException;
+import java.security.NoSuchAlgorithmException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.ResourceBundle;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: admin
+ * Date: 12/18/14
+ * Time: 7:36 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class PaySafeCardPaymentGateway extends AbstractPaymentGateway
+{
+    public static final String GATEWAY_TYPE = "paysafecar";
+    final static ResourceBundle paysafecard = LoadProperties.getProperty("com.directi.pg.paysafecard");
+    private static final String TEST_URL = "https://soatest.paysafecard.com/psc/services/PscService?wsdl";
+    private static final String PRODUCTIVE_URL = "https://soa.paysafecard.com/psc/services/PscService?wsdl";
+    private static Logger log = new Logger(PaySafeCardPaymentGateway.class.getName());
+    private static TransactionLogger transactionLogger = new TransactionLogger(PaySafeCardPaymentGateway.class.getName());
+    private  PaySafeCardUtils paySafeCardUtils=null;
+    public PaySafeCardPaymentGateway(String accountId)
+    {
+        this.accountId = accountId;
+    }
+
+    @Override
+    public String getMaxWaitDays()
+    {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public GenericResponseVO processAuthentication(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException, PZConstraintViolationException
+    {
+        transactionLogger.error("-----enter's into processAuthentication-----");
+        String userName=null;
+        String passWord=null;
+        String mtId=null;
+        String amount=null;
+        String currency=null;
+        String oKurl=null;
+        String nOkurl=null;
+        String merchantClientId=null;
+        String shopId=null;
+        String shopLabel=null;
+        String ipAddress=null;
+        String pNURL=null;
+        validateForDisposition(trackingID, requestVO);
+        CommRequestVO commRequestVO  = (CommRequestVO)requestVO;
+        CommResponseVO commResponseVO = new CommResponseVO();
+        GenericTransDetailsVO genericTransDetailsVO = commRequestVO.getTransDetailsVO();
+        GenericAddressDetailsVO genericAddressDetailsVO = commRequestVO.getAddressDetailsVO();
+        PaymentManager paymentManager=new PaymentManager();
+
+        GatewayAccount account = GatewayAccountService.getGatewayAccount(accountId);
+        userName=commRequestVO.getCommMerchantVO().getMerchantUsername();
+        passWord=commRequestVO.getCommMerchantVO().getPassword();
+        mtId = trackingID;
+        amount = genericTransDetailsVO.getAmount();
+        currency = commRequestVO.getTransDetailsVO().getCurrency();
+        oKurl= URLEncoder.encode(paysafecard.getString("OKURL") + "trackingid=" + trackingID + "&amount=" + amount + "&currency=" + currency + "&orderid1=" + genericTransDetailsVO.getOrderDesc() + "&orderdesc=" + genericTransDetailsVO.getOrderDesc() + "&toid=" + commRequestVO.getCommMerchantVO().getDisplayName() + "&redirecturl=" + commRequestVO.getTransDetailsVO().getRedirectUrl())/*"https%3A%2F%2Fsecure.<hostname>.com%2Ftransaction%2Ferror.jsp"*/;
+        nOkurl=URLEncoder.encode(paysafecard.getString("NOKURL")+"trackingid="+trackingID+"&amount="+amount+"&currency="+currency+"&orderid1="+genericTransDetailsVO.getOrderDesc()+"&orderdesc="+genericTransDetailsVO.getOrderDesc()+"&toid="+commRequestVO.getCommMerchantVO().getDisplayName()+"&redirecturl="+commRequestVO.getTransDetailsVO().getRedirectUrl());
+        try
+        {
+            merchantClientId = Functions.generateMD5Checksum(genericAddressDetailsVO.getEmail());
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            log.error("error",e);
+            transactionLogger.error("error",e);
+        }
+        shopId=commRequestVO.getCommMerchantVO().getDisplayName();
+        shopLabel=commRequestVO.getCommMerchantVO().getAliasName();
+        ipAddress=genericAddressDetailsVO.getCardHolderIpAddress();
+        pNURL= URLEncoder.encode(paysafecard.getString("PNURL"));
+        com.payment.paySafeCard.pscservice.PscSoapBindingStub binding;
+        try {
+            binding = (com.payment.paySafeCard.pscservice.PscSoapBindingStub)
+                    new com.payment.paySafeCard.pscservice.PscServiceLocator().getPsc();
+        }
+        catch (javax.xml.rpc.ServiceException jre) {
+            transactionLogger.error("ServiceException--->",jre.getLinkedCause());
+            throw new junit.framework.AssertionFailedError("JAX-RPC ServiceException caught: " + jre);
+        }
+        binding.setTimeout(60000);
+
+        com.payment.paySafeCard.pscservice.CreateDispositionReturn value = null;
+        try
+        {
+            value = binding.createDisposition(userName,passWord,mtId, new String[0],Double.parseDouble(amount),currency,oKurl,nOkurl,merchantClientId, pNURL,ipAddress,null, null,shopId,shopLabel, new String[0], new Boolean(false));
+
+            if(value!=null)
+            {
+                if(value.getErrorCode()==0 && value.getResultCode()==0)
+                {
+                    commResponseVO.setStatus("pending");
+                    commResponseVO.setDescription("Success");
+                    String redirectUrl = paysafecard.getString("CUSTOMER_CPANEL") + "mid=" + commRequestVO.getCommMerchantVO().getMerchantId() + "&mtid=" + trackingID + "&amount=" + amount + "&currency=" + currency;
+                    commResponseVO.setRedirectUrl(redirectUrl);
+                }
+                else
+                {
+                    commResponseVO.setStatus("fail");
+                    commResponseVO.setDescription(paymentManager.getErrorCodeDescription(account.getGateway(),String.valueOf(value.getErrorCode())));
+                    commResponseVO.setDescription(paymentManager.getErrorCodeDescription(account.getGateway(),String.valueOf(value.getErrorCode())));
+                }
+                commResponseVO.setErrorCode(String.valueOf(value.getResultCode())+","+String.valueOf(value.getErrorCode()));
+
+            }
+        }
+        catch (RemoteException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException("PaySafePaymentGateway.class","processAuthentication",null,"Common","There was an Error while posting data to bank. Please contact your merchant.", PZTechnicalExceptionEnum.REMOTE_EXCEPTION,null,e.getMessage(),e.getCause());
+        }
+        catch (PZDBViolationException e)
+        {
+            log.error("There was an Error while posting data to bank. Please contact your merchant", e);
+            transactionLogger.error("There was an Error while posting data to bank. Please contact your merchant", e);
+            PZExceptionHandler.handleDBCVEException(e, null, PZOperations.PAYSAFECARD_AUTH);
+        }
+
+        return commResponseVO;   //To change body of overridden methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public GenericResponseVO processCapture(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+        transactionLogger.error("-----enter's into processCapture-----");
+        String userName=null;
+        String passWord=null;
+        String mtId=null;
+        String amount=null;
+        String currency=null;
+
+        CommResponseVO commResponseVO = new CommResponseVO();
+        GatewayAccount account = GatewayAccountService.getGatewayAccount(accountId);
+        CommRequestVO commRequestVO  = (CommRequestVO)requestVO;
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        PaymentManager paymentManager=new PaymentManager();
+        userName=account.getFRAUD_FTP_USERNAME();
+        passWord=account.getFRAUD_FTP_PASSWORD();
+        mtId = trackingID;
+        amount = commTransactionDetailsVO.getAmount();
+        currency = account.getCurrency();
+        String temp= commTransactionDetailsVO.getPreviousTransactionId()+";0";
+        String[] subId=temp.split(";");
+
+        com.payment.paySafeCard.pscservice.PscSoapBindingStub binding;
+        try {
+            binding = (com.payment.paySafeCard.pscservice.PscSoapBindingStub)
+                    new com.payment.paySafeCard.pscservice.PscServiceLocator().getPsc();
+        }
+        catch (javax.xml.rpc.ServiceException jre) {
+            transactionLogger.error("ServiceException--->",jre.getLinkedCause());
+            throw new junit.framework.AssertionFailedError("JAX-RPC ServiceException caught: " + jre);
+        }
+        // Time out after a minute
+        binding.setTimeout(60000);
+
+        // Test operation
+        com.payment.paySafeCard.pscservice.ExecuteDebitReturn value = null;
+        try
+        {
+            log.error(userName+"---"+passWord+"---"+mtId+"---"+subId+"---"+Double.parseDouble(amount)+"---"+currency+"---"+1);
+            transactionLogger.error(userName+"---"+passWord+"---"+mtId+"---"+subId+"---"+Double.parseDouble(amount)+"---"+currency+"---"+1);
+            value = binding.executeDebit(userName, passWord, mtId,subId, Double.parseDouble(amount), currency, 1, "");
+            if(value!=null)
+            {
+
+                log.error(value.getErrorCode() + "   " + value.getResultCode());
+                transactionLogger.error(value.getErrorCode() + "   " + value.getResultCode());
+                if(value.getErrorCode()==0 && value.getResultCode()==0)
+                {
+                    commResponseVO.setStatus("success");
+                    commResponseVO.setDescription("Success");
+                    commResponseVO.setDescriptor(account.getDisplayName());
+                }
+                else
+                {
+                    commResponseVO.setStatus("failed");
+                    commResponseVO.setDescription(paymentManager.getErrorCodeDescription(account.getGateway(),String.valueOf(value.getErrorCode())));
+                }
+                commResponseVO.setErrorCode(String.valueOf(value.getResultCode()) + "," + String.valueOf(value.getErrorCode()));
+            }
+        }
+        catch (RemoteException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(PaySafeCardPaymentGateway.class.getName(),"processCapture()",null,"Common","There was an Error while posting data to bank. Please contact your merchant.", PZTechnicalExceptionEnum.REMOTE_EXCEPTION,null,e.getMessage(),e.getCause());
+        }
+        catch (PZDBViolationException e)
+        {
+           PZExceptionHandler.handleDBCVEException(e, null, PZOperations.PAYSAFECARD_CAPTURE);
+
+        }
+
+        return commResponseVO;    //To change body of overridden methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public GenericResponseVO processQuery(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+        transactionLogger.error("----enter's into paysafecard processQuery-----");
+        String userName=null;
+        String passWord=null;
+        String mtId=null;
+        String currency=null;
+
+        CommResponseVO commResponseVO = new CommResponseVO();
+        GatewayAccount account = GatewayAccountService.getGatewayAccount(accountId);
+        userName=account.getFRAUD_FTP_USERNAME();
+        passWord=account.getFRAUD_FTP_PASSWORD();
+        mtId = trackingID;
+        currency = account.getCurrency();
+
+        com.payment.paySafeCard.pscservice.PscSoapBindingStub binding;
+        try {
+            binding = (com.payment.paySafeCard.pscservice.PscSoapBindingStub)
+                    new com.payment.paySafeCard.pscservice.PscServiceLocator().getPsc();
+        }
+        catch (javax.xml.rpc.ServiceException jre) {
+            transactionLogger.error("ServiceException--->",jre.getLinkedCause());
+            throw new junit.framework.AssertionFailedError("JAX-RPC ServiceException caught: " + jre);
+        }
+        // Time out after a minute
+        binding.setTimeout(60000);
+
+        // Test operation
+        com.payment.paySafeCard.pscservice.GetSerialNumbersReturn value = null;
+        try
+        {   value = binding.getSerialNumbers(userName, passWord, mtId, new String[]{"0"}, currency, null);
+            DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+            Date date = new Date();
+            if(value!=null)
+            {
+                if(value.getErrorCode()==0 && value.getResultCode()==0)
+                {
+                    transactionLogger.debug("ErrorCode---"+value.getErrorCode()+"----ResultCode---"+value.getResultCode());
+                    commResponseVO.setStatus("success");
+                    commResponseVO.setTransactionStatus(value.getDispositionState());
+                    String[] serialnum= value.getSerialNumbers().split(";");
+                    commResponseVO.setTransactionId(serialnum[0]);
+                    commResponseVO.setResponseTime(String.valueOf(dateFormat.format(date)));
+
+                }
+                else
+                {
+                    commResponseVO.setStatus("fail");
+                    commResponseVO.setRemark(String.valueOf(value.getErrorCode()));
+                    commResponseVO.setErrorCode(String.valueOf(value.getResultCode()));
+                    commResponseVO.setResponseTime(String.valueOf(dateFormat.format(date)));
+                }
+            }else{
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark("Transaction fail");
+                commResponseVO.setTransactionStatus("failed");
+                commResponseVO.setResponseTime(String.valueOf(dateFormat.format(date)));
+            }
+
+
+        }
+        catch (RemoteException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(PaySafeCardPaymentGateway.class.getName(),"processQuery()",null,"Common","There was an Error while posting data to bank. Please contact your merchant.", PZTechnicalExceptionEnum.REMOTE_EXCEPTION,null,e.getMessage(),e.getCause());
+
+        }
+
+        return commResponseVO;
+    }
+
+    @Override
+    public GenericResponseVO processRefund(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+        CommResponseVO commResponseVO=new CommResponseVO();
+        GatewayAccount account = GatewayAccountService.getGatewayAccount(accountId);
+        CommRequestVO commRequestVO  = (CommRequestVO)requestVO;
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        CommAddressDetailsVO commAddressDetailsVO= commRequestVO.getAddressDetailsVO();
+        Date today = new Date();
+        DateFormat format = new SimpleDateFormat("ddMMyyyy");
+        String merchantClientId=null;
+        try
+        {
+            merchantClientId = Functions.generateMD5Checksum(commAddressDetailsVO.getEmail());
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            log.error("error",e);
+            transactionLogger.error("error",e);
+        }
+        String rTId="refund_"+format.format(today)+"_"+((int) (Math.random() * 9999 + 1));
+
+        com.payment.paySafeCard.pscservice.PscSoapBindingStub binding;
+        try {
+            binding = (com.payment.paySafeCard.pscservice.PscSoapBindingStub)
+                    new com.payment.paySafeCard.pscservice.PscServiceLocator().getPsc();
+        }
+        catch (javax.xml.rpc.ServiceException jre) {
+            transactionLogger.error("ServiceException--->",jre.getLinkedCause());
+            throw new junit.framework.AssertionFailedError("JAX-RPC ServiceException caught: " + jre);
+        }
+        // Time out after a minute
+        binding.setTimeout(60000);
+
+        // Test operation
+        com.payment.paySafeCard.pscservice.RefundRequestReturnType value = null;
+        try
+        {
+            value = binding.refund(account.getFRAUD_FTP_USERNAME(),account.getFRAUD_FTP_PASSWORD(), rTId, trackingID, Double.parseDouble(commTransactionDetailsVO.getAmount()), account.getCurrency(), CustomerIdType.EMAIL, commAddressDetailsVO.getEmail(), merchantClientId, new String(), new Boolean(false), new String(), new String(), "+05:30", new String(), new String());
+            if(value!=null)
+            {
+                log.error(value.getErrorCode()+"  ====  "+value.getResultCode());
+                transactionLogger.error(value.getErrorCode()+"  ====  "+value.getResultCode());
+                if(value.getErrorCode()==0 && value.getResultCode()==0)
+                {
+                    log.error(value.getErrorCode()+"  ==1==  "+value.getResultCode());
+                    transactionLogger.error(value.getErrorCode()+"  ==1==  "+value.getResultCode());
+                    commResponseVO.setStatus("success");
+                }
+                else
+                {
+                    transactionLogger.error(value.getErrorCode()+"  ==2==  "+value.getResultCode());
+                    commResponseVO.setStatus("fail");
+                    commResponseVO.setDescription(value.getErrorCodeDescription());
+                }
+                commResponseVO.setResponseHashInfo(rTId);
+                commResponseVO.setRemark(String.valueOf(value.getErrorCode()));
+                commResponseVO.setErrorCode(String.valueOf(value.getResultCode()));
+                log.error(value.getErrorCode()+"  ====  "+commResponseVO.getStatus());
+                transactionLogger.error(value.getErrorCode()+"  ====  "+commResponseVO.getStatus());
+            }
+        }
+        catch (RemoteException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(PaySafeCardPaymentGateway.class.getName(),"processRefund()",null,"Common","There was an Error while posting data to bank. Please contact your merchant.", PZTechnicalExceptionEnum.REMOTE_EXCEPTION,null,e.getMessage(),e.getCause());
+        }
+
+
+        return commResponseVO;
+    }
+
+    public GenericResponseVO processRebilling(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        PZGenericConstraint genConstraint = new PZGenericConstraint("AlliedWalletPaymentGateway","processAuthentication",null,"common","This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",null);
+        throw new PZGenericConstraintViolationException(genConstraint,"This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",null);
+    }
+
+    private void validateForDisposition(String trackingID, GenericRequestVO requestVO) throws PZConstraintViolationException
+    {
+        if(trackingID ==null || trackingID.equals(""))
+        {
+            PZExceptionHandler.raiseConstraintViolationException(PaySafeCardPaymentGateway.class.getName(),"validateForDisposition()",null,"common","Tracking Id not provided while placing transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING,null,"Tracking Id not provided while placing transaction",new Throwable("Tracking Id not provided while placing transaction"));
+        }
+
+        if(requestVO ==null)
+        {
+            PZExceptionHandler.raiseConstraintViolationException(PaySafeCardPaymentGateway.class.getName(),"validateForDisposition()",null,"common","Request  not provided while placing transaction", PZConstraintExceptionEnum.VO_MISSING,null,"Request  not provided while placing transaction",new Throwable("Request  not provided while placing transaction"));
+        }
+
+        CommRequestVO commRequestVO  =    (CommRequestVO)requestVO;
+        GenericTransDetailsVO genericTransDetailsVO = commRequestVO.getTransDetailsVO();
+
+        if(genericTransDetailsVO ==null)
+        {
+            PZExceptionHandler.raiseConstraintViolationException(PaySafeCardPaymentGateway.class.getName(),"validateForDisposition()",null,"common","TransactionDetails  not provided while placing transaction", PZConstraintExceptionEnum.VO_MISSING,null,"TransactionDetails  not provided while placing transaction",new Throwable("TransactionDetails  not provided while placing transaction"));
+        }
+        if(genericTransDetailsVO.getAmount() == null || genericTransDetailsVO.getAmount().equals(""))
+        {
+            PZExceptionHandler.raiseConstraintViolationException(PaySafeCardPaymentGateway.class.getName(),"validateForDisposition()",null,"common","Amount not provided while placing transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING,null,"Amount not provided while placing transaction",new Throwable("Amount not provided while placing transaction"));
+        }
+        if(genericTransDetailsVO.getOrderId() == null || genericTransDetailsVO.getOrderId().equals(""))
+        {
+            PZExceptionHandler.raiseConstraintViolationException(PaySafeCardPaymentGateway.class.getName(),"validateForDisposition()",null,"common","Order Id not provided while placing transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING,null,"Order Id not provided while placing transaction",new Throwable("Order Id not provided while placing transaction"));
+        }
+
+        GenericAddressDetailsVO genericAddressDetailsVO= commRequestVO.getAddressDetailsVO();
+        if(genericAddressDetailsVO ==null)
+        {
+            PZExceptionHandler.raiseConstraintViolationException(PaySafeCardPaymentGateway.class.getName(),"validateForDisposition()",null,"common","Addressdetails  not provided while placing transaction", PZConstraintExceptionEnum.VO_MISSING,null,"Addressdetails  not provided while placing transaction",new Throwable("Addressdetails  not provided while placing transaction"));
+        }
+        if(genericAddressDetailsVO.getEmail()==null || genericAddressDetailsVO.getEmail().equals(""))
+        {
+            PZExceptionHandler.raiseConstraintViolationException(PaySafeCardPaymentGateway.class.getName(),"validateForDisposition()",null,"common","Email Id not provided while placing transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING,null,"Email Id not provided while placing transaction",new Throwable("Email Id not provided while placing transaction"));
+        }
+    }
+
+    public GenericResponseVO processPayout(String trackingId,GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+
+        transactionLogger.debug("=========Enter processPayout method========== ");
+        paySafeCardUtils = new PaySafeCardUtils();
+        CommResponseVO commResponseVO=new CommResponseVO();
+        GatewayAccount account = GatewayAccountService.getGatewayAccount(accountId);
+        CommRequestVO commRequestVO  = (CommRequestVO)requestVO;
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        CommAddressDetailsVO commAddressDetailsVO= commRequestVO.getAddressDetailsVO();
+        //CustomerDetailsBasic CustomerDetailsBasic =new CustomerDetailsBasic();
+        Date today = new Date();
+        DateFormat format = new SimpleDateFormat("ddMMyyyy");
+        String merchantClientId=null;
+        try
+        {
+            merchantClientId = Functions.generateMD5Checksum(commAddressDetailsVO.getEmail());
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            log.error("error",e);
+            transactionLogger.error("error",e);
+        }
+
+        com.payment.paySafeCard.pscservice.PscSoapBindingStub binding;
+        try {
+            binding = (com.payment.paySafeCard.pscservice.PscSoapBindingStub)
+                    new com.payment.paySafeCard.pscservice.PscServiceLocator().getPsc();
+        }
+        catch (javax.xml.rpc.ServiceException jre) {
+            transactionLogger.error("ServiceException--->",jre.getLinkedCause());
+            throw new junit.framework.AssertionFailedError("JAX-RPC ServiceException caught: " + jre);
+        }
+        // Time out after a minute
+        binding.setTimeout(60000);
+
+        com.payment.paySafeCard.pscservice.CustomerDetailsBasic customerDetailsBasic = new com.payment.paySafeCard.pscservice.CustomerDetailsBasic();
+        HashMap detailsMap = paySafeCardUtils.getRequestDataForPayout(commTransactionDetailsVO.getPreviousTransactionId());
+
+        String yyyy = "";
+        String mm = "";
+        String dd = "";
+        String bDate = (String)detailsMap.get("birthdate");
+        if(bDate != null)
+        {
+            yyyy = bDate.substring(0, 4);
+            mm = bDate.substring(4, 6);
+            dd = bDate.substring(6, 8);
+            //System.out.println("---"+yyyy+"-"+mm+"-"+dd);
+        }
+        customerDetailsBasic.setDateOfBirth(yyyy+"-"+mm+"-"+dd);
+        customerDetailsBasic.setFirstName((String) detailsMap.get("firstname"));
+        customerDetailsBasic.setLastName((String) detailsMap.get("lastname"));
+
+        // Test operation
+        com.payment.paySafeCard.pscservice.PayoutReturn value = null;
+        try
+        {
+
+
+            value = binding.payout(account.getFRAUD_FTP_USERNAME(),account.getFRAUD_FTP_PASSWORD(),trackingId,Double.parseDouble(commTransactionDetailsVO.getAmount()),account.getCurrency(),CustomerIdType.EMAIL,(String)detailsMap.get("emailid"),"hjadhjgh","",false,"","","+05:30","","",customerDetailsBasic);
+
+            //System.out.println("Value======"+value);
+            if(value!=null)
+            {
+                log.error(value.getErrorCode()+"  ====  "+value.getResultCode());
+                transactionLogger.error(value.getErrorCode()+"  ====  "+value.getResultCode());
+                if(value.getErrorCode()==0 && value.getResultCode()==0)
+                {
+                    log.error(value.getErrorCode()+"  ==1==  "+value.getResultCode());
+                    transactionLogger.error(value.getErrorCode()+"  ==1==  "+value.getResultCode());
+                    commResponseVO.setStatus("success");
+                }
+                else
+                {
+                    transactionLogger.error(value.getErrorCode()+"  ==2==  "+value.getResultCode());
+                    commResponseVO.setStatus("fail");
+                    commResponseVO.setDescription(value.getErrorCodeDescription());
+                }
+                commResponseVO.setRemark(String.valueOf(value.getErrorCode()));
+                commResponseVO.setErrorCode(String.valueOf(value.getResultCode()));
+
+                log.error(value.getErrorCode()+"  ====  "+commResponseVO.getStatus());
+            }
+        }
+        catch (RemoteException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(PaySafeCardPaymentGateway.class.getName(),"processRefund()",null,"Common","There was an Error while posting data to bank. Please contact your merchant.", PZTechnicalExceptionEnum.REMOTE_EXCEPTION,null,e.getMessage(),e.getCause());
+        }
+
+        return commResponseVO;
+    }
+}

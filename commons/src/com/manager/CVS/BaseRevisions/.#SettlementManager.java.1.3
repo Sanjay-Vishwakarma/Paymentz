@@ -1,0 +1,135 @@
+package com.manager;
+
+import com.directi.pg.core.GatewayAccount;
+import com.manager.dao.SettlementDAO;
+import com.manager.vo.SettlementDateVO;
+import com.manager.vo.TransactionSummaryVO;
+import com.manager.vo.payoutVOs.SettlementCycleVO;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.response.PZSettlementRecord;
+
+import java.util.Hashtable;
+import java.util.List;
+
+/**
+ * Created by sandip on 4/19/2017.
+ */
+public class SettlementManager
+{
+    SettlementDAO settlementDAO = new SettlementDAO();
+
+    public String settleTheTransaction(String trackingId) throws PZDBViolationException
+    {
+        return settlementDAO.settleTheTransaction(trackingId);
+    }
+
+    public String captureTheTransaction(String trackingId, String paymentId, String captureAmount) throws PZDBViolationException
+    {
+        return settlementDAO.captureTheTransaction(trackingId, paymentId, captureAmount);
+    }
+
+    public String declineTheTransaction(String trackingId, String paymentId) throws PZDBViolationException
+    {
+        return settlementDAO.declineTheTransaction(trackingId, paymentId);
+    }
+
+    public int addSettlementCycleStep1(String accountId, String startDate, String endDate, String partnerId, String isTransactionFileAvailable) throws PZDBViolationException
+    {
+        return settlementDAO.addSettlementCycleStep1(accountId, startDate, endDate, partnerId, isTransactionFileAvailable);
+    }
+
+    public boolean insertDataIntoTemp(PZSettlementRecord pzSettlementRecord, String settlementCycleId) throws PZDBViolationException
+    {
+        return settlementDAO.insertDataIntoTemp(pzSettlementRecord, settlementCycleId);
+    }
+
+    public SettlementDateVO getSettlementPeriodFromExcel(String settlementCycleId) throws PZDBViolationException
+    {
+        return settlementDAO.getSettlementPeriodFromExcel(settlementCycleId);
+    }
+
+    public Hashtable getGatewayAccountProcessingAmount(GatewayAccount gatewayAccount, String startDate, String endDate, String tableName, String partnerId)
+    {
+        return settlementDAO.getGatewGayAccountProcessingAmount(gatewayAccount, startDate, endDate, tableName, partnerId);
+    }
+
+    public Hashtable getGatewayAccountProcessingAmount(String startDate, String endDate, String settlementCycleId)
+    {
+        return settlementDAO.getGatewayAccountProcessingAmount(startDate, endDate, settlementCycleId);
+    }
+
+    public Hashtable getGatewayAccountProcessingAmountFromTempTable(String startDate, String endDate, String settlementCycleId)
+    {
+        return settlementDAO.getGatewayAccountProcessingAmountFromTempTable(startDate, endDate, settlementCycleId);
+    }
+
+    public TransactionSummaryVO getGatewayAccountProcessingAmountFromTempTable(String settlementCycleId)
+    {
+        return settlementDAO.getGatewayAccountProcessingAmountFromTempTable(settlementCycleId);
+    }
+
+    public int removeTempTransactions(String settlementCycleId)
+    {
+        return settlementDAO.removeTempTransactions(settlementCycleId);
+    }
+
+    public int removeSettlementCycle(String settlementCycleId)
+    {
+        return settlementDAO.removeSettlementCycle(settlementCycleId);
+    }
+
+    public SettlementCycleVO getSettlementCycleInfo(String settlementCycleId, String status)
+    {
+        return settlementDAO.getSettlementCycleInfo(settlementCycleId, status);
+    }
+
+    public boolean checkForPendingSettlementCycle(String accountId, String partnerId)
+    {
+        return settlementDAO.checkForPendingSettlementCycle(accountId, partnerId);
+    }
+
+    public SettlementCycleVO getRecentSettlementInfo(String accountId, String partnerId)
+    {
+        return settlementDAO.getRecentSettlementInfo(accountId, partnerId);
+    }
+
+    public boolean checkSettlementDateRange(String accountId, String partnerId, String startDate, String endDate)
+    {
+        return settlementDAO.checkSettlementDateRange(accountId, partnerId, startDate, endDate);
+    }
+
+    public boolean isFirstSettlementCycle(String accountId, String partnerId)
+    {
+        return settlementDAO.isFirstSettlementCycle(accountId, partnerId);
+    }
+
+    public boolean checkForPendingTransactions(String accountId, String partnerId, String startDate, String endDate)
+    {
+        return settlementDAO.checkForPendingTransactions(accountId, partnerId, startDate, endDate);
+    }
+
+    public String getFirstTransactionDate(String accountId, String toType)
+    {
+        return settlementDAO.getFirstTransactionDate(accountId, toType);
+    }
+
+    public boolean checkForCoverTransactions(String accountId, String partnerId, String startDate, String endDate)
+    {
+        return settlementDAO.checkForCoverTransactions(accountId, partnerId, startDate, endDate);
+    }
+
+    public Hashtable getSettlementTransactions1(GatewayAccount gatewayAccount, String startDate, String endDate, String tableName, String partnerId)
+    {
+        return settlementDAO.getSettlementTransactions1(gatewayAccount, startDate, endDate, tableName, partnerId);
+    }
+
+    public TransactionSummaryVO getSettlementTransactions2(GatewayAccount gatewayAccount, String startDate, String endDate, String tableName)
+    {
+        return settlementDAO.getSettlementTransactions2(gatewayAccount, startDate, endDate, tableName);
+    }
+
+    public List<PZSettlementRecord> getSettlementTransactions3(GatewayAccount gatewayAccount, String startDate, String endDate, String tableName)
+    {
+        return settlementDAO.getSettlementTransactions3(gatewayAccount, startDate, endDate, tableName);
+    }
+}

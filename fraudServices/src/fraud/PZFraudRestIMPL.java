@@ -1,0 +1,686 @@
+package fraud;
+
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.TransactionLogger;
+import com.fraud.FraudChecker;
+import com.fraud.manager.RestFraudManager;
+import com.fraud.utils.ReadFraudServiceRequest;
+import com.fraud.utils.WriteFraudServiceResponse;
+import com.fraud.validators.FraudServiceInputValidator;
+import com.fraud.vo.*;
+import com.fraud.vo.RestVO.RequestVO.AuthenticationVO;
+import com.logicboxes.util.ApplicationProperties;
+import com.manager.dao.PartnerDAO;
+import com.manager.vo.DirectKitResponseVO;
+import com.payment.exceptionHandler.PZConstraintViolationException;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorName;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeListVO;
+import com.payment.response.PZResponseStatus;
+import com.payment.validators.RestCommonInputValidator;
+import com.payment.validators.vo.CommonValidatorVO;
+import com.sun.jersey.api.core.InjectParam;
+import com.sun.jersey.core.header.FormDataContentDisposition;
+import com.sun.jersey.multipart.FormDataParam;
+import com.sun.jersey.spi.resource.Singleton;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Context;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by SurajT. on 3/1/2018.
+ */
+
+@Singleton
+@Path("v1")
+public class PZFraudRestIMPL implements PZFraudRESTService
+{
+    FraudServiceInputValidator fraudServiceInputValidator=new FraudServiceInputValidator();
+    ReadFraudServiceRequest readFraudServiceRequest=new ReadFraudServiceRequest();
+    WriteFraudServiceResponse writeFraudServiceResponse=new WriteFraudServiceResponse();
+    String DOCUMENT_FILE_PATH = ApplicationProperties.getProperty("DOCUMENT_FILE_PATH");
+    Functions functions=new Functions();
+
+    @Context
+    HttpServletRequest request1;
+    @Context
+    HttpServletResponse response;
+
+    private Logger logger = new Logger(PZFraudRestIMPL.class.getName());
+    private TransactionLogger transactionLogger = new TransactionLogger(PZFraudRestIMPL.class.getName());
+    private RestFraudManager restFraudManager = new RestFraudManager();
+    private RestCommonInputValidator restCommonInputValidator = new RestCommonInputValidator();
+
+    @Override
+    public RestFraudResponse customerRegistration(@InjectParam RestFraudRequest restFraudRequest) {
+        if(request1.getQueryString()!=null){
+            RestFraudResponse restFraudResponse=new RestFraudResponse();
+            Result result = new Result();
+
+            result.setDescription("Query String request is not supported ,Kindly pass the request in the body");
+            restFraudResponse.setResult(result);
+
+            return restFraudResponse;
+        }
+        FraudRequestVO fraudRequestVO=new FraudRequestVO();
+        RestFraudResponse restFraudResponse=new RestFraudResponse();
+        readFraudServiceRequest.readRequestForRestFraudService(restFraudRequest, fraudRequestVO);
+        restFraudResponse=customerRegistrationJSON(fraudRequestVO);
+        return restFraudResponse;
+    }
+
+    @Override
+    public RestFraudResponse customerRegistrationJSON(FraudRequestVO fraudRequestVO) {
+        RestFraudResponse restFraudResponse=new RestFraudResponse();
+        CommonValidatorVO directKitValidatorVO = null;
+        List errorList=new ArrayList();
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        try{
+            String authResponse = request1.getAttribute("authfail").toString();
+            if (authResponse==null || authResponse.equals(""))
+            {
+                writeFraudServiceResponse.setFailAuthTokenResponse(restFraudResponse);
+                return restFraudResponse;
+            }
+            else if(authResponse.equals("false"))
+            {
+                writeFraudServiceResponse.setFailAuthTokenResponse(restFraudResponse);
+                return restFraudResponse;
+            }
+
+            String username= (String) request1.getAttribute("userName");
+            logger.error("username in impl : "+username);
+            PartnerDAO partnerDAO=new PartnerDAO();
+            String partnerId= String.valueOf(partnerDAO.getPartnerId(username));
+            logger.error("partnerid from username: "+partnerId);
+            PZFraudCustRegRequestVO pzFraudCustRegRequestVO =new PZFraudCustRegRequestVO();
+
+            readFraudServiceRequest.readRequestForRestCustomerRegistration(fraudRequestVO,pzFraudCustRegRequestVO);
+
+            logger.error("request partnerId : "+pzFraudCustRegRequestVO.getPartnerId());
+
+            if (!partnerId.equals(pzFraudCustRegRequestVO.getPartnerId())){
+                Result result=new Result();
+                result.setResultCode("-1");
+                result.setDescription("token mismatch");
+                restFraudResponse.setResult(result);
+                restFraudResponse.setRecommendation("Failed");
+                return restFraudResponse;
+            }
+
+            fraudServiceInputValidator.performRestCustRegValidation(errorList, pzFraudCustRegRequestVO);
+            if(errorList.size()>0)
+            {
+                Result result=new Result();
+                result.setResultCode("-1");
+                // result.setStatus("Failed");
+                result.setDescription("invalid inputs");
+                result.setErrorList(errorList);
+                restFraudResponse.setResult(result);
+                restFraudResponse.setRecommendation("Failed");
+                return restFraudResponse;
+            }
+
+            FraudChecker fraudChecker=new FraudChecker();
+            PZFraudCustRegResponseVO pzFraudCustRegResponseVO=fraudChecker.verifyCustomer(pzFraudCustRegRequestVO);
+
+            writeFraudServiceResponse.setFraudResponseParamenters(pzFraudCustRegResponseVO,restFraudResponse);
+
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            logger.error("exception in customer registration : ", e);
+            //errorList.add(e.getMessage());
+            // logger.error("exception in customer registration : "+e.getMessage());
+            writeFraudServiceResponse.setRestFraudResponseForError(restFraudResponse, errorList);
+        }
+       /* catch (PZConstraintViolationException e)
+        {
+            logger.error("PZConstraint Violation Exception while placing transaction via Rest", e);
+            transactionLogger.error("PZConstraint Violation Exception while placing transaction via WebService", e);
+            writeFraudServiceResponse.setRestFraudResponseForError(restFraudResponse, directKitValidatorVO, e.getPzConstraint().getErrorCodeListVO(), PZResponseStatus.ERROR, e.getPzConstraint().getMessage());
+        }
+        catch (PZDBViolationException e)
+        {
+            logger.error("PZ DBViolation exception while placing transaction via Rest", e);
+            transactionLogger.error("PZ Technical exception while placing transaction via WebService", e);
+            writeFraudServiceResponse.setRestFraudResponseForError(restFraudResponse, directKitValidatorVO, e.getPzdbConstraint().getErrorCodeListVO(), PZResponseStatus.ERROR, "Internal Error occurred,Please contact support for more information");
+        }
+        catch (PZGenericConstraintViolationException e)
+        {
+            logger.error("PZ GenericConstraintViolation exception while placing transaction via Rest", e);
+            transactionLogger.error("PZ Technical exception while placing transaction via WebService", e);
+            writeFraudServiceResponse.setRestFraudResponseForError(restFraudResponse, directKitValidatorVO, e.getPzGenericConstraint().getErrorCodeListVO(), PZResponseStatus.ERROR, e.getPzGenericConstraint().getMessage());
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            logger.error("SystemError while placing transaction via Rest", e);
+            transactionLogger.error("SystemError while placing transaction via Rest", e);
+            writeFraudServiceResponse.setRestFraudResponseForError(restFraudResponse, directKitValidatorVO, null, PZResponseStatus.ERROR, "Internal Error occurred,Please contact support for more information");
+        }*/
+
+        return restFraudResponse;
+
+    }
+
+    @Override
+    public RestFraudResponse docIdVerify(@InjectParam RestFraudRequest restFraudRequest) {
+        if(request1.getQueryString()!=null){
+            RestFraudResponse restFraudResponse=new RestFraudResponse();
+            Result result = new Result();
+
+            result.setDescription("Query String request is not supported ,Kindly pass the request in the body");
+            restFraudResponse.setResult(result);
+
+            return restFraudResponse;
+        }
+        RestFraudResponse restFraudResponse=new RestFraudResponse();
+        FraudRequestVO fraudRequestVO = new FraudRequestVO();
+        readFraudServiceRequest.readRequestForRestFraudService(restFraudRequest, fraudRequestVO);
+        restFraudResponse = docIdVerifyJSON(fraudRequestVO);
+
+        return restFraudResponse;
+    }
+
+    @Override
+    public RestFraudResponse docIdVerifyJSON(FraudRequestVO fraudRequestVO) {
+        RestFraudResponse restFraudResponse=new RestFraudResponse();
+        List errorList = new ArrayList();
+
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        try {
+            String authResponse = request1.getAttribute("authfail").toString();
+            if (authResponse == null || authResponse.equals(""))
+            {
+                writeFraudServiceResponse.setFailAuthTokenResponse(restFraudResponse);
+                return restFraudResponse;
+            }
+            else if (authResponse.equals("false"))
+            {
+                writeFraudServiceResponse.setFailAuthTokenResponse(restFraudResponse);
+                return restFraudResponse;
+            }
+
+
+            //RestFraudDocVerifyResponse restFraudDocVerifyResponse = new RestFraudDocVerifyResponse();
+            PZFraudDocVerifyRequestVO pzFraudDocVerifyRequestVO = new PZFraudDocVerifyRequestVO();
+            readFraudServiceRequest.readRequestForRestDocVerify(fraudRequestVO, pzFraudDocVerifyRequestVO);
+
+
+            fraudServiceInputValidator.performRestDocVerifyValidation(errorList, pzFraudDocVerifyRequestVO);
+            if (errorList.size() > 0)
+            {
+                Result result = new Result();
+                result.setResultCode("-1");
+                result.setStatus("failed");
+                result.setDescription("invalid inputs");
+                result.setErrorList(errorList);
+                restFraudResponse.setResult(result);
+                return restFraudResponse;
+            }
+
+            FraudChecker fraudChecker = new FraudChecker();
+            PZFraudDocVerifyResponseVO pzFraudDocVerifyResponseVO = fraudChecker.documentIdVerify(pzFraudDocVerifyRequestVO);
+
+            writeFraudServiceResponse.setFraudDocVerifyRespParameters(pzFraudDocVerifyResponseVO, restFraudResponse);
+        }
+        catch (Exception e){
+            errorList.add(e.getMessage());
+            //e.printStackTrace();
+            writeFraudServiceResponse.setRestFraudResponseForDocError(restFraudResponse, errorList);
+        }
+        return restFraudResponse;
+    }
+
+
+    @Override
+    public RestFraudResponse docIdVerifyUpload(@FormDataParam("file") InputStream is,
+                                               @FormDataParam("file") FormDataContentDisposition file,
+                                               @FormDataParam("file2") InputStream is2,
+                                               @FormDataParam("file2") FormDataContentDisposition file2,
+                                               @FormDataParam("file3") InputStream is3,
+                                               @FormDataParam("file3") FormDataContentDisposition file3,
+                                               @FormDataParam("file4") InputStream is4,
+                                               @FormDataParam("file4") FormDataContentDisposition file4,
+                                               @FormDataParam("customerRegId") String customerRegId,
+                                               @FormDataParam("method") String method,
+                                               @FormDataParam("partnerId") String partnerId,
+                                               @FormDataParam("notificationUrl") String notificationUrl)
+    {
+        RestFraudResponse restFraudResponse=new RestFraudResponse();
+        FraudRequestVO fraudRequestVO=new FraudRequestVO();
+        List errorList = new ArrayList();
+        String documentPath=DOCUMENT_FILE_PATH;
+        logger.error("file path : " + documentPath);
+        try
+        {
+            File docFilePath=new File(documentPath);
+
+            if (!docFilePath.exists()){
+                docFilePath.mkdir();
+            }
+            String path=documentPath+"/partner_"+partnerId+"_customer_"+customerRegId+"/";
+            File docsFile=new File(path);
+
+            if (!docsFile.exists()){
+                boolean dir=new File(path).mkdir();
+                logger.error("is directory created :"+dir);
+            }
+
+            logger.error("Directory Path : : "+path);
+            logger.error("notificationUrl : "+notificationUrl);
+
+            if (file!=null)
+            {
+                if (functions.isValueNull(file.getFileName()))
+                {
+                    String uploadFile = path + file.getFileName();
+                    writeToFile(is, uploadFile);
+                    logger.error("uploadFile 1 in Rest: " + uploadFile);
+                    File docFile = new File(uploadFile);
+                    String fileName = docFile.getName();
+                    fraudRequestVO.setFileName(fileName);
+                }
+                else{
+                    errorList.add("Image or image name is required");
+                }
+            }
+            else{
+                errorList.add("Image or image name is required");
+            }
+
+            String uploadFile2 = "";
+            String uploadFile3 = "";
+            String uploadFile4 = "";
+            if (file2!=null)
+            {
+                if (functions.isValueNull(file2.getFileName()))
+                {
+                    uploadFile2 = path + file2.getFileName();
+                    writeToFile(is2, uploadFile2);
+                    logger.error("uploadFile 2 in Rest: " + uploadFile2);
+                    File docFile2 = new File(uploadFile2);
+                    String fileName2 = docFile2.getName();
+                    fraudRequestVO.setFileName2(fileName2);
+                }
+            }
+            if (file3!=null)
+            {
+                if (functions.isValueNull(file3.getFileName()))
+                {
+                    uploadFile3 = path + file3.getFileName();
+                    writeToFile(is3, uploadFile3);
+                    logger.error("uploadFile 3 in Rest: " + uploadFile3);
+                    File docFile3 = new File(uploadFile3);
+                    String fileName3 = docFile3.getName();
+                    fraudRequestVO.setFileName3(fileName3);
+                }
+            }
+            if (file4!=null)
+            {
+                if (functions.isValueNull(file4.getFileName()))
+                {
+                    uploadFile4 = path + file4.getFileName();
+                    writeToFile(is4, uploadFile4);
+                    logger.error("uploadFile4 in Rest: " + uploadFile4);
+                    File docFile4 = new File(uploadFile4);
+                    String fileName4 = docFile4.getName();
+                    fraudRequestVO.setFileName4(fileName4);
+                }
+            }
+            fraudRequestVO.setCustomerRegId(customerRegId);
+            fraudRequestVO.setMethod(method);
+            fraudRequestVO.setFilePath(path);
+            fraudRequestVO.setNotificationUrl(notificationUrl);
+            AuthenticationVO authenticationVO=new AuthenticationVO();
+            authenticationVO.setPartnerId(partnerId);
+            fraudRequestVO.setAuthenticationVO(authenticationVO);
+
+            response.addHeader("Access-Control-Allow-Origin", "*");
+         /*String authResponse = request1.getAttribute("authfail").toString();
+
+            System.out.println("authResponse 1 :"+authResponse);
+            if (authResponse == null || authResponse.equals(""))
+            {
+                writeFraudServiceResponse.setFailAuthTokenResponse(restFraudResponse);
+                return restFraudResponse;
+            }
+            else if (authResponse.equals("false"))
+            {
+                writeFraudServiceResponse.setFailAuthTokenResponse(restFraudResponse);
+                return restFraudResponse;
+            }*/
+
+            PZFraudDocVerifyRequestVO pzFraudDocVerifyRequestVO = new PZFraudDocVerifyRequestVO();
+            readFraudServiceRequest.readRequestForRestDocVerify(fraudRequestVO, pzFraudDocVerifyRequestVO);
+            fraudServiceInputValidator.performRestDocVerifyValidation(errorList, pzFraudDocVerifyRequestVO);
+            if (errorList.size() > 0)
+            {
+                Result result = new Result();
+                result.setResultCode("-1");
+                result.setStatus("failed");
+                result.setDescription("invalid inputs");
+                result.setErrorList(errorList);
+                restFraudResponse.setResult(result);
+                return restFraudResponse;
+            }
+
+            FraudChecker fraudChecker = new FraudChecker();
+            PZFraudDocVerifyResponseVO pzFraudDocVerifyResponseVO = fraudChecker.documentIdVerify(pzFraudDocVerifyRequestVO);
+            writeFraudServiceResponse.setFraudDocVerifyRespParameters(pzFraudDocVerifyResponseVO, restFraudResponse);
+        }
+        catch (Exception e){
+            errorList.add(e.getMessage());
+            //e.printStackTrace();
+            writeFraudServiceResponse.setRestFraudResponseForDocError(restFraudResponse, errorList);
+        }
+        return restFraudResponse;
+    }
+
+    @Override
+    public RestFraudResponse generateAuthToken(@InjectParam RestFraudRequest restFraudRequest)
+    {
+        if(request1.getQueryString()!=null){
+            RestFraudResponse restFraudResponse=new RestFraudResponse();
+            Result result = new Result();
+
+            result.setDescription("Query String request is not supported ,Kindly pass the request in the body");
+            restFraudResponse.setResult(result);
+
+            return restFraudResponse;
+        }
+        RestFraudResponse restFraudResponse=new RestFraudResponse();
+
+        FraudRequestVO fraudRequestVO=new FraudRequestVO();
+
+        //FraudDocVerifyRequestVO fraudDocVerifyRequestVO= new FraudDocVerifyRequestVO();
+
+        fraudRequestVO=readFraudServiceRequest.getAuthTokenRequest(restFraudRequest);
+
+        restFraudResponse=generateAuthTokenJSON(fraudRequestVO);
+
+
+        return restFraudResponse;
+    }
+
+    @Override
+    public RestFraudResponse generateAuthTokenJSON(FraudRequestVO fraudRequestVO)
+    {
+        RestFraudResponse restFraudResponse = new RestFraudResponse();
+        CommonValidatorVO commonValidatorVO = null;
+        ErrorCodeListVO errorCodeListVO     = new ErrorCodeListVO();
+        List errorList                      = new ArrayList();
+        String IpAddress                    = request1.getRemoteAddr();
+        DirectKitResponseVO directKitResponseVO = new DirectKitResponseVO();
+        Functions functions                     = new Functions();
+        try
+        {
+
+            commonValidatorVO = readFraudServiceRequest.readRequstForPartnerLogin(fraudRequestVO);
+            logger.error("from commonValidatorVO login PZFraudRestIMPL---"+commonValidatorVO.getMerchantDetailsVO().getLogin());
+            logger.error("from commonValidatorVO partnerid PZFraudRestIMPL---"+commonValidatorVO.getParetnerId());
+            logger.error("from commonValidatorVO partnerid PZFraudRestIMPL---"+commonValidatorVO.getMerchantDetailsVO().getKey());
+
+            if (commonValidatorVO == null)
+            {
+                errorList.add("Invalid Request provided.");
+                errorCodeListVO.addListOfError(writeFraudServiceResponse.formSystemErrorCodeVO(ErrorName.VALIDATION_REQUEST_NULL, "Invalid Request provided."));
+                restFraudResponse.setErrorList(errorList);
+                return restFraudResponse;
+            }
+
+            commonValidatorVO.setErrorCodeListVO(errorCodeListVO);
+            //commonValidatorVO = restCommonInputValidator.performRestPartnerLoginValidation(commonValidatorVO);
+            commonValidatorVO = restCommonInputValidator.performRestPartnerAuthTokenValidation(commonValidatorVO);
+            if (!commonValidatorVO.getErrorCodeListVO().getListOfError().isEmpty() || functions.isValueNull(commonValidatorVO.getErrorMsg()))
+            {
+                writeFraudServiceResponse.setLoginResponseForError(restFraudResponse, commonValidatorVO, commonValidatorVO.getErrorCodeListVO(), PZResponseStatus.ERROR, commonValidatorVO.getErrorMsg());
+                //restFraudResponse.setResponseCode("-1");
+                return restFraudResponse;
+            }
+
+            request1.setAttribute("username",commonValidatorVO.getMerchantDetailsVO().getLogin());
+            request1.setAttribute("password",commonValidatorVO.getMerchantDetailsVO().getPassword());
+            request1.setAttribute("role","partner");
+            request1.setAttribute("key",commonValidatorVO.getMerchantDetailsVO().getKey());
+            logger.error("login before getAuthToken---"+commonValidatorVO.getMerchantDetailsVO().getLogin());
+            logger.error("partnerid before getAuthToken---"+commonValidatorVO.getParetnerId());
+
+            directKitResponseVO = restFraudManager.getAuthToken(commonValidatorVO, request1, response);
+
+            writeFraudServiceResponse.setSuccessAuthTokenResponse(restFraudResponse, directKitResponseVO, commonValidatorVO);
+
+        }
+        catch (PZConstraintViolationException e)
+        {
+            logger.error("PZ PZConstraintViolationException exception while Generating Token", e);
+            transactionLogger.error("PZ PZConstraintViolationException exception while Generating Token", e);
+            writeFraudServiceResponse.setLoginResponseForError(restFraudResponse, commonValidatorVO, e.getPzConstraint().getErrorCodeListVO(), PZResponseStatus.ERROR, commonValidatorVO.getErrorMsg());
+
+        }
+        catch (PZDBViolationException e)
+        {
+            logger.error("PZ PZConstraintViolationException exception while Generating Token", e);
+            transactionLogger.error("PZ PZConstraintViolationException exception while Generating Token", e);
+            writeFraudServiceResponse.setLoginResponseForError(restFraudResponse, commonValidatorVO, e.getPzdbConstraint().getErrorCodeListVO(), PZResponseStatus.ERROR, commonValidatorVO.getErrorMsg());
+
+        }
+
+        return restFraudResponse;
+    }
+
+    @Override
+    public RestFraudResponse getAuthToken(@InjectParam RestFraudRequest loginRequest)
+    {
+        if(request1.getQueryString() != null){
+            RestFraudResponse restFraudResponse = new RestFraudResponse();
+            Result result                       = new Result();
+
+            result.setDescription("Query String request is not supported ,Kindly pass the request in the body");
+            restFraudResponse.setResult(result);
+
+            return restFraudResponse;
+        }
+        RestFraudResponse restFraudResponse = new RestFraudResponse();
+        FraudRequestVO fraudRequestVO       = new FraudRequestVO();
+        fraudRequestVO                      = readFraudServiceRequest.getNewAuthTokenRequest(loginRequest);
+        restFraudResponse                   = getAuthTokenJSON(fraudRequestVO);
+        return restFraudResponse;
+
+    }
+
+    @Override
+    public RestFraudResponse getAuthTokenJSON(FraudRequestVO fraudRequestVO)
+    {
+        RestFraudResponse restFraudResponse=new RestFraudResponse();
+        CommonValidatorVO commonValidatorVO = null;
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        List errorList=new ArrayList();
+        String IpAddress=request1.getRemoteAddr();
+        DirectKitResponseVO directKitResponseVO = new DirectKitResponseVO();
+        Functions functions = new Functions();
+        try
+        {
+            commonValidatorVO = readFraudServiceRequest.readRequestForgetNewAuthToken(fraudRequestVO);
+            if (commonValidatorVO == null)
+            {
+                errorList.add("Invalid Request provided.");
+                //  errorCodeListVO.addListOfError(writeFraudServiceResponse.formSystemErrorCodeVO(ErrorName.VALIDATION_REQUEST_NULL, "Invalid Request provided."));
+                restFraudResponse.setErrorList(errorList);
+                return restFraudResponse;
+            }
+            else
+            {
+                commonValidatorVO.setErrorCodeListVO(errorCodeListVO);
+                commonValidatorVO = restCommonInputValidator.performFraudGetNewAuthTokenValidation(commonValidatorVO);
+                if (!commonValidatorVO.getErrorCodeListVO().getListOfError().isEmpty() || functions.isValueNull(commonValidatorVO.getErrorMsg()))
+                {
+                    writeFraudServiceResponse.setLoginResponseForError(restFraudResponse, commonValidatorVO, commonValidatorVO.getErrorCodeListVO(), PZResponseStatus.ERROR, commonValidatorVO.getErrorMsg());
+                    restFraudResponse.setResponseCode("-1");
+                    return restFraudResponse;
+                }
+                request1.setAttribute("username", commonValidatorVO.getMerchantDetailsVO().getLogin());
+                //request1.setAttribute("password", commonValidatorVO.getMerchantDetailsVO().getPassword());
+                request1.setAttribute("role", "partner");
+                directKitResponseVO = restFraudManager.regenerateAuthToken(commonValidatorVO, request1, response);
+                writeFraudServiceResponse.setSuccessAuthTokenResponse(restFraudResponse, directKitResponseVO, commonValidatorVO);
+            }
+
+        }
+        catch (PZConstraintViolationException e)
+        {
+            //e.printStackTrace();
+            logger.error("PZ PZConstraintViolationException exception while Generating Token", e);
+            transactionLogger.error("PZ PZConstraintViolationException exception while Generating Token", e);
+            writeFraudServiceResponse.setLoginResponseForError(restFraudResponse, commonValidatorVO, e.getPzConstraint().getErrorCodeListVO(), PZResponseStatus.ERROR, commonValidatorVO.getErrorMsg());
+
+        }
+        catch (PZDBViolationException e)
+        {
+            //e.printStackTrace();
+            logger.error("PZ PZConstraintViolationException exception while Generating Token", e);
+            transactionLogger.error("PZ PZConstraintViolationException exception while Generating Token", e);
+            writeFraudServiceResponse.setLoginResponseForError(restFraudResponse, commonValidatorVO, e.getPzdbConstraint().getErrorCodeListVO(), PZResponseStatus.ERROR, commonValidatorVO.getErrorMsg());
+
+        }
+        return restFraudResponse;
+    }
+
+    @Override
+    public RestFraudResponse newTransaction(@InjectParam RestFraudRequest restFraudRequest)
+    {
+        if(request1.getQueryString()!=null){
+            RestFraudResponse restFraudResponse=new RestFraudResponse();
+            Result result = new Result();
+
+            result.setDescription("Query String request is not supported ,Kindly pass the request in the body");
+            restFraudResponse.setResult(result);
+
+            return restFraudResponse;
+        }
+        FraudRequestVO fraudRequestVO=new FraudRequestVO();
+        RestFraudResponse restFraudResponse=new RestFraudResponse();
+        readFraudServiceRequest.readRequestForRestNewFraudService(restFraudRequest, fraudRequestVO);
+        restFraudResponse=newTransactionJSON(fraudRequestVO);
+        return restFraudResponse;
+    }
+
+    @Override
+    public RestFraudResponse newTransactionJSON(FraudRequestVO fraudRequestVO)
+    {
+
+        RestFraudResponse restFraudResponse=new RestFraudResponse();
+        List errorList=new ArrayList();
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        try{
+            String authResponse = request1.getAttribute("authfail").toString();
+            if (authResponse==null || authResponse.equals(""))
+            {
+                writeFraudServiceResponse.setFailAuthTokenResponse(restFraudResponse);
+                return restFraudResponse;
+            }
+            else if(authResponse.equals("false"))
+            {
+                writeFraudServiceResponse.setFailAuthTokenResponse(restFraudResponse);
+                return restFraudResponse;
+            }
+
+            String username= (String) request1.getAttribute("userName");
+            logger.error("username in impl : "+username);
+            PartnerDAO partnerDAO=new PartnerDAO();
+            String partnerId= String.valueOf(partnerDAO.getPartnerId(username));
+            logger.error("partnerid from username: "+partnerId);
+            PZFraudRequestVO pzFraudRequestVO=new PZFraudRequestVO();
+
+            readFraudServiceRequest.readRequestForRestNewTransaction(fraudRequestVO, pzFraudRequestVO);
+
+            logger.error("request partnerId : "+pzFraudRequestVO.getPartnerid());
+
+            if (!partnerId.equals(pzFraudRequestVO.getPartnerid()))
+            {
+                Result result=new Result();
+                result.setResultCode("-1");
+                result.setDescription("token mismatch");
+                restFraudResponse.setResult(result);
+                restFraudResponse.setRecommendation("Failed");
+                return restFraudResponse;
+            }
+
+            fraudServiceInputValidator.performNewTransacValidation(errorList, pzFraudRequestVO);
+            if(errorList.size()>0)
+            {
+                Result result=new Result();
+                result.setResultCode("-1");
+                // result.setStatus("Failed");
+                result.setDescription("Invalid inputs");
+                result.setErrorList(errorList);
+                restFraudResponse.setResult(result);
+                restFraudResponse.setRecommendation("Failed");
+                return restFraudResponse;
+            }
+
+            FraudChecker fraudChecker=new FraudChecker();
+            PZFraudResponseVO pzFraudResponseVO=fraudChecker.newTransaction(pzFraudRequestVO);
+
+            writeFraudServiceResponse.setFraudResponseNewTransaction(pzFraudResponseVO, restFraudResponse);
+
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            logger.error("exception in new transaction : ", e);
+
+            writeFraudServiceResponse.setRestFraudResponseForError(restFraudResponse, errorList);
+        }
+        return restFraudResponse;
+    }
+
+
+
+    // save uploaded file to new location
+    private void writeToFile(InputStream uploadedInputStream,
+                             String uploadedFileLocation) {
+
+        try {
+            OutputStream out = new FileOutputStream(new File(
+                    uploadedFileLocation));
+            int read = 0;
+            byte[] bytes = new byte[1024];
+
+            out = new FileOutputStream(new File(uploadedFileLocation));
+            while ((read = uploadedInputStream.read(bytes)) != -1) {
+                out.write(bytes, 0, read);
+            }
+            out.flush();
+            out.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+
+    }
+
+}
+
+
+    /*@Override
+    public RestFraudDocVerifyResponse docIdVerifyUpload(FormDataMultiPart form)
+    {
+        System.out.println("inside api");
+        FormDataBodyPart bodyMember = form.getField("memberId");
+        FormDataBodyPart bodyChecksum = form.getField("checksum");
+        FormDataBodyPart bodyRandom = form.getField("random");
+        FormDataBodyPart bodyMode = form.getField("mode");
+
+
+
+
+        return null;
+    }*/
+

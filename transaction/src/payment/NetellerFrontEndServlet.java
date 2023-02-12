@@ -1,0 +1,385 @@
+package payment;
+
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.valueObjects.GenericAddressDetailsVO;
+import com.directi.pg.core.valueObjects.GenericTransDetailsVO;
+import com.manager.PaymentManager;
+import com.manager.TransactionManager;
+import com.manager.dao.MerchantDAO;
+import com.manager.vo.MerchantDetailsVO;
+import com.manager.vo.TransactionDetailsVO;
+import com.payment.Mail.AsynchronousMailService;
+import com.payment.Mail.MailEventEnum;
+import com.payment.PZTransactionStatus;
+import com.payment.common.core.CommRequestVO;
+import com.payment.common.core.CommResponseVO;
+import com.payment.common.core.CommTransactionDetailsVO;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.PZGenericConstraintViolationException;
+import com.payment.exceptionHandler.operations.PZOperations;
+import com.payment.neteller.NetellerPaymentGateway;
+import com.payment.neteller.NetellerUtils;
+import com.payment.neteller.response.NetellerResponse;
+import com.payment.validators.vo.CommonValidatorVO;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.codecs.Codec;
+import org.owasp.esapi.codecs.MySQLCodec;
+import org.owasp.esapi.reference.DefaultEncoder;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.sql.Connection;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+/**
+ * Created by Sneha on 2/27/2017.
+ */
+public class NetellerFrontEndServlet extends PzServlet
+{
+    private static TransactionLogger transactionLogger = new TransactionLogger(NetellerFrontEndServlet.class.getName());
+    String ctoken = ESAPI.randomizer().getRandomString(32, DefaultEncoder.CHAR_ALPHANUMERICS);
+    public NetellerFrontEndServlet()
+    {
+        super();
+    }
+
+    public void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        doService(req, res);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        doService(req, res);
+    }
+
+    public void doService(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        transactionLogger.error("-----Inside NetellerFrontEndServlet------");
+
+        PaymentManager paymentManager = new PaymentManager();
+        AuditTrailVO auditTrailVO = new AuditTrailVO();
+        ActionEntry entry = new ActionEntry();
+        NetellerResponse netellerResponse = new NetellerResponse();
+        CommonValidatorVO commonValidatorVO = new CommonValidatorVO();
+        GenericTransDetailsVO genericTransDetailsVO = new GenericTransDetailsVO();
+        GenericAddressDetailsVO addressDetailsVO = new GenericAddressDetailsVO();
+        MerchantDetailsVO merchantDetailsVO = new MerchantDetailsVO();
+        MerchantDAO merchantDAO = new MerchantDAO();
+        Merchants merchants = new Merchants();
+        //Hashtable details = null;
+        Functions functions = new Functions();
+        NetellerUtils netellerUtils = new NetellerUtils();
+        Connection con = null;
+
+        HttpSession session = req.getSession(true);
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+
+        if (!req.getParameterMap().isEmpty())
+        {
+            String trackingId = ESAPI.encoder().encodeForSQL(me, req.getParameter("trackingId"));
+            String status = ESAPI.encoder().encodeForSQL(me, req.getParameter("status"));
+
+            String paymentId = null;
+            String currency = null;
+            String amount = null;
+            String toid = "";
+            String dbStatus = "";
+            String description = "";
+            String redirectUrl = "";
+            String accountId = "";
+            String orderDesc = "";
+            String clkey = "";
+            String checksumAlgo = "";
+            String checksumNew = "";
+            String autoredirect = "";
+            String displayName = "";
+            String logoName = "";
+            String partnerName = "";
+            String email = "";
+            String tmpl_amt = "";
+            String tmpl_currency = "";
+            String paymodeid = "";
+            String cardtypeid = "";
+            String customerId="";
+            String customerEmail = "";
+            String customerVerificationLevel="";
+            String paymentResponse = "";
+            String custBankId = "";
+            String respStatus = "";
+            String billingDesc = "";
+            String message="";
+            NetellerPaymentGateway netellerPaymentGateway = null;
+            TransactionManager transactionManager = new TransactionManager();
+            CommRequestVO commRequestVO = new CommRequestVO();
+            CommResponseVO commResponseVO = new CommResponseVO();
+
+            TransactionDetailsVO transactionDetailsVO = transactionManager.getTransDetailFromCommon(trackingId);
+            try
+            {
+                //details = paymentManager.getTransactionDetailsForCommon(trackingId);
+                if (transactionDetailsVO != null)
+                {
+                    accountId = transactionDetailsVO.getAccountId();
+                    paymentId = transactionDetailsVO.getPaymentId();
+                    amount = transactionDetailsVO.getAmount();
+                    currency = transactionDetailsVO.getCurrency();
+                    toid = transactionDetailsVO.getToid();
+                    dbStatus = transactionDetailsVO.getStatus();
+                    description = transactionDetailsVO.getDescription();
+                    orderDesc = transactionDetailsVO.getOrderDescription();
+                    redirectUrl = transactionDetailsVO.getRedirectURL();
+                    email = transactionDetailsVO.getEmailaddr();
+                    tmpl_amt = transactionDetailsVO.getTemplateamount();
+                    tmpl_currency = transactionDetailsVO.getTemplatecurrency();
+                    paymodeid = transactionDetailsVO.getPaymodeId();
+                    cardtypeid = transactionDetailsVO.getCardTypeId();
+                    customerId = transactionDetailsVO.getCustomerId();
+
+                    transactionLogger.debug("dbStatus----"+dbStatus);
+                    if(PZTransactionStatus.AUTH_STARTED.toString().equals(dbStatus))
+                    {
+                        if (functions.isValueNull(paymentId))
+                        {
+                            netellerPaymentGateway = new NetellerPaymentGateway(accountId);
+
+                            CommTransactionDetailsVO commTransactionDetailsVO = new CommTransactionDetailsVO();
+                            commTransactionDetailsVO.setPreviousTransactionId(paymentId);
+
+                            commRequestVO.setTransDetailsVO(commTransactionDetailsVO);
+                            netellerResponse = (NetellerResponse) netellerPaymentGateway.processQuery(trackingId, commRequestVO);
+                            transactionLogger.error("customerURL in NetellerFrontEnd---" + netellerResponse.getRedirectUrl());
+                            if (functions.isValueNull(netellerResponse.getRedirectUrl()) && netellerResponse.getStatus().equalsIgnoreCase("capturesuccess"))
+                            {
+                                paymentResponse = netellerPaymentGateway.getNetellerCustomerDetails(netellerResponse.getRedirectUrl(), accountId);
+
+                                transactionLogger.error("paymentResponse-----" + paymentResponse);
+
+                                JSONObject jsonObject = new JSONObject(paymentResponse);
+                                if (jsonObject.getJSONObject("customer").getJSONObject("accountProfile").has("email"))
+                                {
+                                    customerEmail = jsonObject.getJSONObject("customer").getJSONObject("accountProfile").getString("email");
+                                }
+                                if (jsonObject.getJSONObject("customer").has("verificationLevel"))
+                                {
+                                    customerVerificationLevel = jsonObject.getJSONObject("customer").getString("verificationLevel");
+                                }
+                                if (jsonObject.getJSONObject("customer").has("customerId"))
+                                {
+                                    custBankId = jsonObject.getJSONObject("customer").getString("customerId");
+                                }
+
+                                transactionLogger.error("customer  object----customerEmail--" + customerEmail + "--customerVerificationLevel--" + customerVerificationLevel + "--custBankId---" + custBankId);
+
+                                commonValidatorVO.setTrackingid(trackingId);
+                                commonValidatorVO.setCustomerBankId(custBankId);
+                                commonValidatorVO.setCustomerId(customerId);
+                                addressDetailsVO.setEmail(customerEmail);
+                                commonValidatorVO.setAddressDetailsVO(addressDetailsVO);
+                                paymentManager.insertNetellerDetailEntry(commonValidatorVO, customerVerificationLevel);
+                            }
+                            transactionLogger.error("customerEmail in NetellerFrontEnd---" + customerEmail);
+                        }
+
+                        displayName = GatewayAccountService.getGatewayAccount(accountId).getDisplayName();
+
+                        merchantDetailsVO = merchantDAO.getMemberDetails(toid);
+                        transactionLogger.debug("Front End Auto Redirect----"+merchantDetailsVO.getAutoRedirect());
+
+                        if(merchantDetailsVO!=null){
+                            autoredirect=merchantDetailsVO.getAutoRedirect();
+                            logoName=merchantDetailsVO.getLogoName();
+                            partnerName=merchantDetailsVO.getPartnerName();
+                            clkey=merchantDetailsVO.getKey();
+                            checksumAlgo=merchantDetailsVO.getChecksumAlgo();
+                        }
+
+                        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                        Date date = new Date();
+                        netellerResponse.setResponseTime(String.valueOf(dateFormat.format(date)));
+                        netellerResponse.setRemark(status);
+                        netellerResponse.setTransactionId(paymentId);
+                        netellerResponse.setDescriptor(displayName);
+                        netellerResponse.setAmount(amount);
+                        netellerResponse.setTransactionType("sale");
+
+                        auditTrailVO.setActionExecutorName("Customer");
+                        auditTrailVO.setActionExecutorId(toid);
+
+                        StringBuffer dbBuffer = new StringBuffer();
+                        try
+                        {
+                            con = Database.getConnection();
+                            if (netellerResponse != null)
+                            {
+                                if ("Success".equalsIgnoreCase(status))
+                                {
+                                    dbStatus = "Successful";
+                                    respStatus = "Successful";
+                                    billingDesc = displayName;
+                                    dbBuffer.append("update transaction_common set captureamount='" + amount + "', status='capturesuccess', paymentid='" + paymentId + "', remark='" + status + "', emailaddr='" + customerEmail + "' where trackingid='" + trackingId + "'");
+                                    transactionLogger.error("Update query in NetellerFrontEndServlet----" + dbBuffer);
+                                    Database.executeUpdate(dbBuffer.toString(), con);
+                                    netellerResponse.setTransactionStatus(dbStatus);
+                                    netellerResponse.setStatus(status);
+                                    netellerResponse.setResponseHashInfo(customerVerificationLevel);
+                                    entry.actionEntryForCommon(trackingId, amount, ActionEntry.ACTION_CAPTURE_SUCCESSFUL, ActionEntry.STATUS_CAPTURE_SUCCESSFUL, netellerResponse, auditTrailVO, null);
+
+                                    //    paymentManager.updateTransactionForCommon(netellerResponse, ActionEntry.STATUS_CAPTURE_SUCCESSFUL, trackingId, auditTrailVO, "transaction_common", "", paymentId, netellerResponse.getResponseTime(), netellerResponse.getRemark());
+                                }
+                                else if ("AuthFailed".equalsIgnoreCase(status))
+                                {
+                                    dbStatus = "AuthFailed";
+                                    respStatus = "AuthFailed";
+                                    dbBuffer.append("update transaction_common set status='authfailed', remark='" + status + "', emailaddr='" + customerEmail + "' where trackingid='" + trackingId + "'");
+                                    transactionLogger.error("Update query in NetellerFrontEndServlet----" + dbBuffer);
+                                    Database.executeUpdate(dbBuffer.toString(), con);
+                                    netellerResponse.setTransactionStatus(dbStatus);
+                                    netellerResponse.setStatus(status);
+                                    netellerResponse.setResponseHashInfo(customerVerificationLevel);
+                                    entry.actionEntryForCommon(trackingId, amount, ActionEntry.ACTION_AUTHORISTION_FAILED, ActionEntry.STATUS_AUTHORISTION_FAILED, netellerResponse, auditTrailVO, null);
+
+                                    // paymentManager.updateTransactionForCommon(netellerResponse, ActionEntry.STATUS_AUTHORISTION_FAILED, trackingId, auditTrailVO, "transaction_common", "", paymentId, netellerResponse.getResponseTime(), netellerResponse.getRemark());
+                                }
+                                else
+                                {
+                                    dbStatus = "Failed";
+                                    respStatus = "Failed";
+                                    dbBuffer.append("update transaction_common set status='failed', remark='" + status + "',emailaddr='" + customerEmail + "' where trackingid='" + trackingId + "'");
+                                    transactionLogger.error("Update query in NetellerFrontEndServlet----" + dbBuffer);
+                                    netellerResponse.setTransactionStatus(dbStatus);
+                                    netellerResponse.setStatus(status);
+                                    netellerResponse.setResponseHashInfo(customerVerificationLevel);
+                                    entry.actionEntryForCommon(trackingId, amount, ActionEntry.ACTION_FAILED, ActionEntry.STATUS_FAILED, netellerResponse, auditTrailVO, null);
+                                    Database.executeUpdate(dbBuffer.toString(), con);
+
+                                    // paymentManager.updateTransactionForCommon(netellerResponse, ActionEntry.STATUS_FAILED, trackingId, auditTrailVO, "transaction_common", "", paymentId, netellerResponse.getResponseTime(), netellerResponse.getRemark());
+                                }
+                            }
+                            if (con != null)
+                            {
+                                Database.closeConnection(con);
+                            }
+                        }
+                        catch (SystemError se)
+                        {
+                            transactionLogger.error("SystemError------", se);
+                        }
+
+                        checksumNew = Checksum.generateChecksumV2(description, String.valueOf(amount), status, clkey, checksumAlgo);
+                        transactionLogger.error("checksumNew in NetellerFrontEndServlet----" + checksumNew);
+
+                        AsynchronousMailService asynchronousMailService = new AsynchronousMailService();
+                        asynchronousMailService.sendEmail(MailEventEnum.PARTNERS_MERCHANT_SALE_TRANSACTION, String.valueOf(trackingId), status, null, displayName);
+
+
+                    }else{
+                        if (PZTransactionStatus.CAPTURE_SUCCESS.toString().equals(dbStatus) || PZTransactionStatus.AUTH_SUCCESS.toString().equals(dbStatus))
+                        {
+                            billingDesc = GatewayAccountService.getGatewayAccount(accountId).getDisplayName();
+                            status = "success";
+                            message = "Transaction Successful";
+                            respStatus = "Successful";
+                        }
+                        else
+                        {
+                            status = "fail";
+                            message = "Transaction Declined";
+                            respStatus = "Failed";
+                        }
+                    }
+                    transactionLogger.debug("ResponseStatus-----"+respStatus);
+                    commonValidatorVO.setTrackingid(trackingId);
+                    genericTransDetailsVO.setOrderId(description);
+                    genericTransDetailsVO.setAmount(amount);
+                    genericTransDetailsVO.setCurrency(currency);
+                    genericTransDetailsVO.setOrderDesc(orderDesc);
+                    genericTransDetailsVO.setRedirectUrl(redirectUrl);
+                    commonValidatorVO.setLogoName(logoName);
+                    commonValidatorVO.setPartnerName(partnerName);
+                    commonValidatorVO.setTransDetailsVO(genericTransDetailsVO);
+                    addressDetailsVO.setTmpl_amount(tmpl_amt);
+                    addressDetailsVO.setTmpl_currency(tmpl_currency);
+                    commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+                    commonValidatorVO.setPaymentType(paymodeid);
+                    commonValidatorVO.setCardType(cardtypeid);
+                    if (functions.isValueNull(customerEmail))
+                        addressDetailsVO.setEmail(customerEmail);
+                    else
+                        addressDetailsVO.setEmail(email);
+                    commonValidatorVO.setPaymentType(paymodeid);
+                    commonValidatorVO.setCardType(cardtypeid);
+
+                    commonValidatorVO.setCustomerId(customerId);
+                    commonValidatorVO.setCustomerBankId(custBankId);
+
+                    commonValidatorVO.setAddressDetailsVO(addressDetailsVO);
+
+                    transactionLogger.debug("Auto Redirect-----"+autoredirect);
+                    if ("Y".equalsIgnoreCase(autoredirect))
+                    {
+                        TransactionUtility transactionUtility = new TransactionUtility();
+                        transactionLogger.error("respStatus in Y---" + respStatus);
+                        transactionUtility.doAutoRedirect(commonValidatorVO, res, respStatus, billingDesc);
+                    }
+                    else
+                    {
+
+                        session.setAttribute("ctoken", ctoken);
+                        req.setAttribute("transDetail", commonValidatorVO);
+                        req.setAttribute("responceStatus", respStatus);
+                        req.setAttribute("displayName", GatewayAccountService.getGatewayAccount(accountId).getDisplayName());
+                        String confirmationPage = "";
+                        String version = (String)session.getAttribute("version");
+                        if(functions.isValueNull(version) && version.equalsIgnoreCase("2"))
+                            confirmationPage = "/confirmationCheckout.jsp?ctoken=";
+                        else
+                            confirmationPage = "/confirmationpage.jsp?ctoken=";
+
+                        RequestDispatcher rd = req.getRequestDispatcher(confirmationPage + ctoken);
+                        rd.forward(req, res);
+                        session.invalidate();
+                    }
+
+                }
+            }catch (SystemError se){
+                transactionLogger.error("System Error in NetellerFrontEndServlet---", se);
+            }
+            catch (PZDBViolationException s)
+            {
+                transactionLogger.error("SQL Exception in NetellerFrontEndServlet---", s);
+                PZExceptionHandler.handleDBCVEException(s, null, PZOperations.NETELLER_NOTIFICATION);
+            }
+            catch (PZGenericConstraintViolationException e)
+            {
+                transactionLogger.error("System Error in NetellerFrontEndServlet---", e);
+                PZExceptionHandler.handleGenericCVEException(e, toid, "NetellerFrontEndServlet");
+            }
+            catch (NoSuchAlgorithmException e)
+            {
+                transactionLogger.error("NoSuchAlgorithmException in NetellerFrontEndServlet---", e);
+            }
+            catch (JSONException e)
+            {
+                transactionLogger.error("JSONException in NetellerFrontEndServlet---", e);            }
+            finally
+            {
+                Database.closeConnection(con);
+            }
+
+        }
+    }
+
+
+}

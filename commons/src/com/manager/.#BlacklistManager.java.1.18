@@ -1,0 +1,294 @@
+package com.manager;
+
+import com.directi.pg.Functions;
+import com.directi.pg.PaymentzEncryptor;
+import com.manager.dao.BlacklistDAO;
+import com.manager.vo.BlacklistVO;
+import com.manager.vo.PaginationVO;
+import com.manager.vo.TransactionDetailsVO;
+import com.payment.exceptionHandler.PZDBViolationException;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Created by 123 on 5/5/2015.
+ */
+public class BlacklistManager
+{
+    BlacklistDAO blacklistDAO = new BlacklistDAO();
+
+
+    public int insertBlacklistedCards(String firstSix, String lastFour) throws PZDBViolationException
+    {
+        int count = blacklistDAO.insertBlackListCard(firstSix, lastFour);
+        return count;
+    }
+
+    //Block IP
+    public List<BlacklistVO> getBlockedip(String ip) throws PZDBViolationException
+    {
+        return blacklistDAO.getBlockedIp(ip);
+    }
+
+    public int insertBlockedIpAddress(String ip) throws PZDBViolationException
+    {
+        List<BlacklistVO> listVO = new ArrayList<BlacklistVO>();
+        listVO = blacklistDAO.getBlockedIp(ip);
+        int count = 0;
+        if (listVO.size() == 1)
+        {
+            return count;
+        }
+        else if (listVO.size() == 0)
+        {
+            count = blacklistDAO.insertBlockedIp(ip);
+        }
+        return count;
+    }
+
+    public void unblockIpAddress(String ipAddress) throws PZDBViolationException
+    {
+        blacklistDAO.unblockIpAddress(ipAddress);
+    }
+
+    //Block Email
+    public List<BlacklistVO> getBlockedEmail(String email, PaginationVO paginationVO) throws PZDBViolationException
+    {
+        return blacklistDAO.getBlockedEmailAddress(email, paginationVO);
+    }
+
+    public int insertBlockedEmailAddress(String email) throws PZDBViolationException
+    {
+        List<BlacklistVO> listVO = new ArrayList<BlacklistVO>();
+        PaginationVO paginationVO = new PaginationVO();
+        listVO = blacklistDAO.getBlockedEmailAddress(email, paginationVO);
+        int count = 0;
+        if (listVO.size() == 1)
+        {
+            return count;
+        }
+        else
+        {
+            count = blacklistDAO.insertBlockedEmail(email);
+        }
+        return count;
+    }
+
+    public void unblockEmailAddress(String id) throws PZDBViolationException
+    {
+        blacklistDAO.unblockEmailAddress(id);
+    }
+
+    //block names
+    public List<BlacklistVO> getBlockedName(String name, PaginationVO paginationVO) throws PZDBViolationException
+    {
+        return blacklistDAO.getBlockedName(name, paginationVO);
+    }
+
+    public int insertBlockedName(String name) throws PZDBViolationException
+    {
+        List<BlacklistVO> listVO = new ArrayList<BlacklistVO>();
+        PaginationVO paginationVO = new PaginationVO();
+        listVO = blacklistDAO.getBlockedName(name, paginationVO);
+        int count = 0;
+        if (listVO.size() == 1)
+        {
+            return count;
+        }
+        else
+        {
+            count = blacklistDAO.insertBlockedName(name);
+        }
+        return count;
+    }
+
+    public void unblockName(String id) throws PZDBViolationException
+    {
+        blacklistDAO.unblockName(id);
+    }
+
+    //block country
+    public List<BlacklistVO> getBlockedCountryPage(String country, String accountId, String memberId, PaginationVO paginationVO) throws PZDBViolationException
+    {
+        return blacklistDAO.getBlockedCountryPage(country, accountId, memberId, paginationVO);
+    }
+
+    public List<BlacklistVO> getBlockedCountryPartner(String country, String accountId, String memberId, int records, int pageno, HttpServletRequest req) throws PZDBViolationException
+    {
+        return blacklistDAO.getBlockedCountryPartner(country, accountId, memberId, records, pageno, req);
+    }
+
+    public int insertBlockedCountry(String country, String code, String telCc, String three_digit_country_code, String accountId, String memberId) throws PZDBViolationException
+    {
+        List<BlacklistVO> listVO = new ArrayList();
+        PaginationVO paginationVO = new PaginationVO();
+        listVO = blacklistDAO.getBlockedCountry(country, accountId, memberId);
+        int count = 0;
+        if (listVO.size() == 1)
+        {
+            return count;
+        }
+        else
+        {
+            count = blacklistDAO.insertBlockedCountry(country, code, telCc, three_digit_country_code, accountId, memberId);
+        }
+        return count;
+    }
+
+    public void unblockCountry(String Id) throws PZDBViolationException
+    {
+        blacklistDAO.unblockCountry(Id);
+    }
+
+    public List<BlacklistVO> getBlockedBin(String startBin, String endBin, String accountId, String memberId) throws PZDBViolationException
+    {
+        return blacklistDAO.getBlockedBin(startBin, endBin, accountId, memberId);
+    }
+
+    public List<BlacklistVO> getBlockedBinPage(String startBin, String endBin, String accountId, String memberId, PaginationVO paginationVO) throws PZDBViolationException
+    {
+        return blacklistDAO.getBlockedBinPage(startBin, endBin, accountId, memberId, paginationVO);
+    }
+
+    public int addBin(String startBin, String endBin, String accountId, String memberId) throws PZDBViolationException
+    {
+        List<BlacklistVO> listVO = new ArrayList();
+        listVO = blacklistDAO.getBlockedBin(startBin, endBin, accountId, memberId);
+        int count = 0;
+        if (listVO.size() == 1)
+        {
+            return count;
+        }
+        else
+        {
+            count = blacklistDAO.addBin(startBin, endBin, accountId, memberId);
+        }
+        return count;
+    }
+
+    public void unblockBin(String Id) throws PZDBViolationException
+    {
+        blacklistDAO.unblockBin(Id);
+    }
+
+    public void addCustomerNameBatch(Set<String> nameList, String reason) throws PZDBViolationException
+    {
+        blacklistDAO.addCustomerNameBatch(nameList, reason);
+    }
+
+    public void addCustomerCardBatch(Set<String> cardList, String reason) throws PZDBViolationException
+    {
+        blacklistDAO.addCustomerCardBatch(cardList, reason);
+    }
+
+    public void addCustomerEmailBatch(Set<String> emailList, String reason) throws PZDBViolationException
+    {
+        blacklistDAO.addCustomerEmailBatch(emailList, reason);
+    }
+
+    public void addCustomerNameBatch(String customerName, String reason) throws PZDBViolationException
+    {
+        blacklistDAO.addCustomerNameBatch(customerName, reason);
+    }
+
+    public void addCustomerCardBatch(String cardNumber, String reason) throws PZDBViolationException
+    {
+        blacklistDAO.addCustomerCardBatch(cardNumber, reason);
+    }
+
+    public void addCustomerEmailBatch(String cardHolderEmail, String reason) throws PZDBViolationException
+    {
+        blacklistDAO.addCustomerEmailBatch(cardHolderEmail, reason);
+    }
+
+    public void blacklistEntities(String trackingId, String reason) throws PZDBViolationException
+    {
+        TransactionManager transactionManager = new TransactionManager();
+        Functions functions=new Functions();
+        TransactionDetailsVO transactionDetailsVO = transactionManager.getTransDetailFromCommon(trackingId);
+
+        String customerName = transactionDetailsVO.getName();
+        String customerEmail = transactionDetailsVO.getEmailaddr();
+        String cardNumber = PaymentzEncryptor.decryptPAN(transactionDetailsVO.getCcnum());
+        if (functions.isValueNull(customerName))
+            addCustomerNameBatch(customerName, reason);
+        if (functions.isValueNull(customerEmail))
+            addCustomerEmailBatch(customerEmail, reason);
+        addCustomerCardBatch(cardNumber, reason);
+    }
+
+    public void blacklistEntitiesBatch(String trackingId, String reason) throws PZDBViolationException
+    {
+        TransactionManager transactionManager = new TransactionManager();
+        TransactionDetailsVO transactionDetailsVO = transactionManager.getTransDetailFromCommon(trackingId);
+
+        String customerName = transactionDetailsVO.getName();
+        String customerEmail = transactionDetailsVO.getEmailaddr();
+        String cardNumber = PaymentzEncryptor.decryptPAN(transactionDetailsVO.getCcnum());
+
+        addCustomerNameBatch(customerName, reason);
+        addCustomerEmailBatch(customerEmail, reason);
+        addCustomerCardBatch(cardNumber, reason);
+    }
+
+    public int uploadBins(List<String> queryBatch) throws PZDBViolationException
+    {
+        return blacklistDAO.uploadBins(queryBatch);
+    }
+
+
+    //Block Ip Address // Method Start
+    public boolean chackmemberId(String memberId) throws PZDBViolationException
+    {
+        return blacklistDAO.chackmemberId(memberId);
+    }
+
+    public List<BlacklistVO> getBlockedip(String memberId,String AllIp,String selectIpVersion , PaginationVO paginationVO) throws PZDBViolationException
+    {
+        return blacklistDAO.getBlockedip(memberId,AllIp,selectIpVersion ,paginationVO);
+    }
+
+    public List<BlacklistVO> getBlockedipOne(String memberId,String AllIp,String selectIpVersion , PaginationVO paginationVO) throws PZDBViolationException
+    {
+        return blacklistDAO.getBlockedipOne(memberId, AllIp, selectIpVersion, paginationVO);
+    }
+
+    public List<BlacklistVO> getBlockedipForPartner(String memberId,String AllIp,String selectIpVersion , PaginationVO paginationVO) throws PZDBViolationException
+    {
+        return blacklistDAO.getBlockedipForPartner(memberId, AllIp, selectIpVersion, paginationVO);
+    }
+
+    public List<BlacklistVO> getBlockedAllIP(String AllIp,String memberId, String selectIpVersion, PaginationVO paginationVO) throws PZDBViolationException
+    {
+        return blacklistDAO.getBlockedAllIP(AllIp, memberId, selectIpVersion, paginationVO);
+    }
+
+    public Hashtable retrievIPForMerchant(String memberId, String AllIp, String selectIpVersion, PaginationVO paginationVO, boolean isLimit) throws PZDBViolationException
+    {
+        return blacklistDAO.retrievIPForMerchant( memberId, AllIp,  selectIpVersion, paginationVO, isLimit);
+    }
+
+    public boolean insertIPForMerchant(String memberId, String AllIp, String selectIpVersion) throws PZDBViolationException
+    {
+        return blacklistDAO.insertIPForMerchant(memberId, AllIp, selectIpVersion);
+    }
+    public boolean insertIPForMerchant( String AllIp, String selectIpVersion) throws PZDBViolationException
+    {
+        return blacklistDAO.insertIPForMerchant( AllIp, selectIpVersion);
+    }
+
+    public boolean deleteIPForMerchant(String id) throws PZDBViolationException
+    {
+        return blacklistDAO.deleteIPForMerchant(id);
+    }
+
+    public boolean checkForGlobal(String allIP ) throws PZDBViolationException
+    {
+        return blacklistDAO.checkForGlobal(allIP);
+    }
+    //Block Ip address Method End //Sanjay
+}

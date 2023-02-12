@@ -1,0 +1,36 @@
+package com.payment.phoneix;
+
+import com.directi.pg.Logger;
+import com.directi.pg.TransactionLogger;
+import com.manager.TransactionManager;
+import com.manager.vo.TransactionDetailsVO;
+import com.payment.common.core.CommAddressDetailsVO;
+import com.payment.common.core.CommRequestVO;
+import com.payment.common.core.CommTransactionDetailsVO;
+import com.payment.common.core.CommonPaymentProcess;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.request.PZRefundRequest;
+
+/**
+ * Created by Vivek on 9/12/2019.
+ */
+public class PhoneixPaymentProcess extends CommonPaymentProcess
+{
+    private static Logger log = new Logger(PhoneixPaymentProcess.class.getName());
+    private static TransactionLogger transactionLogger = new TransactionLogger(PhoneixPaymentProcess.class.getName());
+    @Override
+    public void setRefundVOParamsextension(CommRequestVO requestVO, PZRefundRequest refundRequest) throws PZDBViolationException
+    {
+
+        int trackingid=refundRequest.getTrackingId();
+        CommAddressDetailsVO commAddressDetailsVO=requestVO.getAddressDetailsVO();
+        TransactionManager transactionManager= new TransactionManager();
+        TransactionDetailsVO transactionVO =transactionManager.getTransDetailFromCommon(String.valueOf(trackingid));
+        transactionLogger.debug("Street-----"+transactionVO.getStreet());
+        transactionLogger.debug("Country-----"+transactionVO.getCountry());
+        commAddressDetailsVO.setStreet(transactionVO.getStreet());
+        commAddressDetailsVO.setCountry(transactionVO.getCountry());
+        requestVO.setAddressDetailsVO(commAddressDetailsVO);
+
+    }
+}

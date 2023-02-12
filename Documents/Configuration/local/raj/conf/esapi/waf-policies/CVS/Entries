@@ -1,0 +1,17 @@
+/add-header-policy.xml/1.1/Wed Jun 26 12:54:28 2013//
+/add-httponly-policy.xml/1.1/Wed Jun 26 12:54:29 2013//
+/add-secure-policy.xml/1.1/Wed Jun 26 12:54:29 2013//
+/authentication-policy.xml/1.1/Wed Jun 26 12:54:29 2013//
+/bean-shell-policy.xml/1.1/Wed Jun 26 12:54:29 2013//
+/bean-shell-rule.bsh/1.1/Wed Jun 26 12:54:29 2013//
+/detect-outbound-policy.xml/1.1/Wed Jun 26 12:54:29 2013//
+/dynamic-insertion-policy.xml/1.1/Wed Jun 26 12:54:29 2013//
+/enforce-https-policy.xml/1.1/Wed Jun 26 12:54:29 2013//
+/must-match-policy.xml/1.1/Wed Jun 26 12:54:29 2013//
+/replace-outbound-policy.xml/1.1/Wed Jun 26 12:54:29 2013//
+/restrict-content-type-policy.xml/1.1/Wed Jun 26 12:54:30 2013//
+/restrict-extension-policy.xml/1.1/Wed Jun 26 12:54:30 2013//
+/restrict-method-policy.xml/1.1/Wed Jun 26 12:54:30 2013//
+/restrict-source-ip-policy.xml/1.1/Wed Jun 26 12:54:30 2013//
+/restrict-user-agent-policy.xml/1.1/Wed Jun 26 12:54:30 2013//
+/virtual-patch-policy.xml/1.1/Wed Jun 26 12:54:30 2013//

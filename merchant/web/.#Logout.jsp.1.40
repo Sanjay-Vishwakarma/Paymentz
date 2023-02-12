@@ -1,0 +1,346 @@
+<%@ page import="com.directi.pg.TransactionEntry" %>
+<%@ page import="org.owasp.esapi.ESAPI" %>
+<%@ page import="com.directi.pg.Functions" %>
+<%@ page import="java.util.ResourceBundle" %>
+<%@ page import="com.directi.pg.LoadProperties" %>
+<%--<%@ include file="ietest.jsp" %>--%>
+<%
+    TransactionEntry transactionentry = (TransactionEntry) session.getAttribute("transactionentry");
+    if (transactionentry != null)
+    {
+        transactionentry.closeConnection();
+    }
+    String logo=(String)session.getAttribute("logo");
+    String com=(String) session.getAttribute("company");
+    String partnerid=(String) session.getAttribute("partnerid");
+    String partnerIcon = (String) session.getAttribute("icon");
+
+    String currentTheme=(String) session.getAttribute("currenttheme");
+    String defaultTheme=(String) session.getAttribute("defaulttheme");
+    response.setHeader("X-Frame-Options", "ALLOWALL");
+    session.setAttribute("X-Frame-Options", "ALLOWALL");
+
+    Functions functions = new Functions();
+    ResourceBundle rb1 = null;
+    String language_property1 = (String)session.getAttribute("language_property");
+    rb1 = LoadProperties.getProperty(language_property1);
+    String Logout_Mer_Admin_Module = rb1.getString("Logout_Mer_Admin_Module");
+    String Logout_Thank_you = rb1.getString("Logout_Thank_you");
+    String Logout_MerAdmin = rb1.getString("Logout_MerAdmin");
+    String Logout_Click_here = rb1.getString("Logout_Click_here");
+    String Logout_to_go_back = rb1.getString("Logout_to_go_back");
+    String Logout_Merchant_Login_Page = rb1.getString("Logout_Merchant_Login_Page");
+
+    session.invalidate();
+    ESAPI.authenticator().logout();
+%>
+<html>
+<head>
+    <title>Merchant Administration Logout</title>
+
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+    <!-- CSS INCLUDE -->
+    <%--<link href="/merchant/NewCss/css/style.css" rel="stylesheet" type="text/css" />--%>
+    <link rel="stylesheet" type="text/css" id="theme" href="/merchant/NewCss/theme-default.css"/>
+    <link rel="stylesheet" type="text/css"  href="/merchant/NewCss/bootstrap.min.css"/>
+    <%--    <link rel="stylesheet" type="text/css"  href="/merchant/NewCss/fontawesome/font-awesome.min.css"/>
+        <link rel="stylesheet" type="text/css"  href="/merchant/NewCss/fonts/fontawesome-webfont.eot"/>
+        <link rel="stylesheet" type="text/css"  href="/merchant/NewCss/fonts/fontawesome-webfont.svg"/>
+        <link rel="stylesheet" type="text/css"  href="/merchant/NewCss/fonts/fontawesome-webfont.woff"/>--%>
+    <%--    <link rel="stylesheet" type="text/css"  href="/merchant/NewCss/fonts/glyphicons-halflings-regular.eot"/>
+        <link rel="stylesheet" type="text/css"  href="/merchant/NewCss/fonts/glyphicons-halflings-regular.svg"/>
+        <link rel="stylesheet" type="text/css"  href="/merchant/NewCss/fonts/glyphicons-halflings-regular"/>
+        <link rel="stylesheet" type="text/css"  href="/merchant/NewCss/fonts/glyphicons-halflings-regular.woff"/>--%>
+    <!-- EOF CSS INCLUDE -->
+    <script src="/merchant/NewCss/js/init.js"></script>
+    <script type="text/javascript" src="/merchant/javascript/jquery.min.js?ver=1"></script>
+    <script type="text/javascript" src="/icici/javascript/jquery.jcryption.js?ver=1"></script>
+
+    <%
+        if(functions.isEmptyOrNull(defaultTheme) && functions.isEmptyOrNull(currentTheme))
+        {
+    %>
+    <link href="/merchant/NewCss/css/pz.css" rel="stylesheet" type="text/css" />
+    <%
+    }
+    else if(functions.isEmptyOrNull(currentTheme) && functions.isValueNull(defaultTheme))
+    {
+    %>
+    <link href="/merchant/NewCss/css/<%=defaultTheme%>.css" rel="stylesheet" type="text/css" />
+
+    <%
+    }
+    else if(functions.isValueNull(currentTheme) && functions.isValueNull(defaultTheme))
+    {
+    %>
+    <link href="/merchant/NewCss/css/<%=currentTheme%>.css" rel="stylesheet" type="text/css" />
+    <%
+    }
+    else if(functions.isValueNull(currentTheme) && functions.isEmptyOrNull(defaultTheme))
+    {
+    %>
+    <link href="/merchant/NewCss/css/<%=currentTheme%>.css" rel="stylesheet" type="text/css" />
+    <%
+        }
+    %>
+
+    <style type="text/css">
+        .login-subtitle{
+            font-size: 15px!important;
+            text-align: center!important;
+        }
+
+        hr {
+            margin-top: 0!important;
+            margin-bottom: 0!important;
+            border: 1!important;
+            border-top: 1px solid rgba(238, 238, 238, 0)!important;
+        }
+
+        .login-container .login-box .login-body .login-title{font-size: 22px!important;text-align: center;}
+
+        @-moz-document url-prefix() {
+            .login-container.lightmode {
+                position: fixed;
+            }
+        }
+        /*Header Styling*/
+        .main-topheader {
+            position: fixed;
+            top: 0;
+            padding-top: 15px;
+            width: 100%;
+            z-index: 9;
+            transition: all 0.3s ease;
+            color: #fff;
+            height:70px;
+        }
+
+        .main-topheader.colorize {
+            color: #8e8e8e;
+            background-color: transparent;
+        }
+
+
+        .main-topheader.fixed .top-nav a {
+            color: inherit
+        }
+
+        .main-topheader.fixed .top-nav li:last-child .right-arr #right-arr {
+            fill: #8e8e8e
+        }
+
+        .main-topheader.fixed .main-logo {
+            color: #43c6ac
+        }
+
+        .main-topheader .main-logo {
+            color: inherit
+        }
+
+        @-webkit-keyframes shine {
+            from {
+                -webkit-mask-position: 150%
+            }
+            to {
+                -webkit-mask-position: -50%
+            }
+        }
+
+        .main-topheader .top-nav {
+            float: right;
+            margin-bottom: 0
+        }
+
+        .main-topheader .top-nav li {
+            padding-left: 11px;
+            padding-right: 11px;
+            vertical-align: middle
+        }
+
+        .NewPlatformLabel
+        {
+            display: inline;
+        }
+
+        @media (max-width: 991px) {
+            .main-topheader .top-nav li {
+                padding-right: 8px;
+                padding-left: 8px
+            }
+        }
+
+        @media (max-width: 767px) {
+            .main-topheader {
+                padding-top: 15px
+            }
+
+            .main-topheader.colorize .top-nav .ghost-btn {
+                -webkit-box-shadow: none;
+                box-shadow: none;
+                background-color: transparent
+            }
+
+            .main-topheader.colorize .top-nav .ghost-btn.filled {
+                background-color: transparent;
+                border-color: transparent
+            }
+            .main-topheader.fixed .top-nav li:nth-last-child(2) {
+                display: none
+            }
+            .main-topheader.fixed .top-nav li:nth-last-child(3) {
+                display: block
+            }
+            .main-logo {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                margin-top: -14px;
+                margin-left: -60px
+            }
+            .main-logo img {
+                width: 140px !important;
+            }
+            .NewPlatformLabel
+            {
+                display: none;
+            }
+        }
+        .login-body {
+
+            margin-top: 55px;
+        }
+
+    </style>
+
+</head>
+
+<body >
+
+<form action="/merchant/index.jsp" method=post>
+
+    <div class="login-container lightmode">
+        <div class="widget-header transparent">
+            <div class="main-topheader colorize">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-md-12 clearfix">
+
+                            <%
+                                if((functions.isEmptyOrNull(currentTheme) && functions.isValueNull(defaultTheme)) && (currentTheme.equalsIgnoreCase("indiaProcessing") || defaultTheme.equalsIgnoreCase("indiaProcessing")))
+                                {
+                            %>
+                            <a href="#" title="<%=session.getAttribute("company")%>" class="main-logo" ><img src="/merchant/images/pay1.png" style="width: 140px;height: 38px;object-fit: contain;"></a>
+                            <%}else{
+                            %>
+                            <a href="#" title="" class="main-logo" ><img src="/images/merchant/<%=logo%>" style="width: 140px;height: 38px;object-fit: contain;"></a>
+                            <%}%>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="login-box animated fadeInDown">
+
+             <%--please do not delete it below comment if condition keeping for future reference --%>
+            <%--<%--%>
+                <%--if(functions.isValueNull(partnerIcon))--%>
+                <%--{--%>
+
+            <%--%>--%>
+
+            <%--<div class="login-logo-icon" style="--%>
+                    <%--background: url(/images/merchant/<%=partnerIcon%>) contain top center no-repeat;--%>
+                    <%--/*width: 100%;*/--%>
+                    <%--/*height: 70px;*/--%>
+                    <%--/*float: left;*/--%>
+                    <%--/*background-size: contain;*/--%>
+                    <%--/*margin-bottom: 10px*/--%>
+                    <%--">--%>
+            <%--</div>--%>
+
+            <%--<div class="login-logo" style="--%>
+                    <%--background: url(/images/merchant/<%=logo%>) contain top center no-repeat;--%>
+                    <%--/*background-size: contain!important;*/--%>
+                    <%--">--%>
+            <%--</div>--%>
+            <%--<%--%>
+            <%--}--%>
+            <%--else--%>
+            <%--{--%>
+            <%--%>--%>
+
+            <%--<div class="login-logo" style="--%>
+                    <%--background: url(/images/merchant/<%=logo%>) top center no-repeat;--%>
+                    <%--background-size: contain!important;--%>
+                    <%--">--%>
+            <%--</div>--%>
+            <%--<%--%>
+                <%--}--%>
+
+            <%--%>--%>
+
+
+
+               <%--  <%
+                     if(functions.isValueNull(partnerIcon))
+                     {
+                 %>
+                 <div class="login-logo-icon">
+                     <img src="/images/merchant/<%=partnerIcon%>" alt="<%=partnerIcon%>"/>
+                 </div>
+
+                 <%
+                     }
+                 %>
+
+
+                 <div class="login-logo">
+                     <img src="/images/merchant/<%=logo%>" alt="<%=logo%>"/>
+                 </div>--%>
+
+
+
+
+            <div class="login-body">
+                <div class="login-title" style="text-align: center;"><strong><%=Logout_Mer_Admin_Module%></strong></div>
+
+
+                <div class="form-group">
+                    <div class="login-subtitle" style="line-height: 35px;">
+                        <div class="col-md-12">
+                            <p><%=Logout_Thank_you%> <strong><%=com%><%=Logout_MerAdmin%></strong></p>
+                        </div>
+                    </div>
+                    <%--                    <div class="col-md-6">
+                                            <button id="submit" type=submit class="btn btn-info btn-block" style="font-family: 'Open Sans', sans-serif;font-size: 12px;background-color: #29AAA1;border-color:#29AAA1; ">Log In</button>
+                                        </div>--%>
+                </div>
+
+
+                <hr>
+
+
+                <div class="login-subtitle" style="line-height: 35px;">
+
+                    <p> <%=Logout_Click_here%></p>
+                    <form action="/merchant/index.jsp" method="post"><input type="hidden"  value="<%=partnerid%>" name="partnerid"><input type="hidden" value="<%=com%>" name="fromtype">
+                        <input type="submit" value="LOGIN" name="submit" class="btn btn-info btn-block" style="font-family: 'Open Sans', sans-serif;font-size: 12px; background-color: #29AAA1; border-color: #29AAA1;">
+                    </form> <p> <%=Logout_to_go_back%> <strong><%=Logout_Merchant_Login_Page%></strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</form>
+
+</body>
+</html>
+
+

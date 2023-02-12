@@ -1,0 +1,258 @@
+package net.partner;
+
+import com.directi.pg.Database;
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.SystemError;
+import com.manager.ChargeManager;
+import com.manager.WiresManager;
+import com.manager.utils.CommonFunctionUtil;
+import com.manager.vo.ChargeVO;
+import com.manager.vo.TerminalVO;
+import com.manager.vo.payoutVOs.MerchantWireVO;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.User;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+/**
+ * Created by Roshan on 3/20/2018.
+ */
+public class ActionPartnerAccountCharges extends HttpServlet
+{
+    private Logger logger = new Logger(ActionPartnerAccountCharges.class.getName());
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doProcess(request, response);
+    }
+
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doProcess(request, response);
+    }
+
+    public void doProcess(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+
+        HttpSession session = request.getSession();
+        PartnerFunctions partner = new PartnerFunctions();
+        Functions functions = new Functions();
+        if (!partner.isLoggedInPartner(session))
+        {
+            response.sendRedirect("/partner/Logout.jsp");
+            return;
+        }
+
+        User user = (User) session.getAttribute("ESAPIUserSessionKey");
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String errorMsg = "";
+        //String success1 = "";
+
+
+        try
+        {
+            //validateOptionalParameter(request);
+            InputValidator inputValidator = new InputValidator();
+            List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+            inputFieldsListMandatory.add(InputFields.MAPPINGID);
+            inputFieldsListMandatory.add(InputFields.ACTION);
+            inputValidator.InputValidations(request, inputFieldsListMandatory, false);
+        }
+        catch (ValidationException e)
+        {
+            logger.error("Enter valid input", e);
+            request.setAttribute("message", "Invalid inputs");
+            RequestDispatcher rd = request.getRequestDispatcher("/actionPartnerAccountCharges.jsp?ctoken=" + user.getCSRFToken());
+            rd.forward(request, response);
+            return;
+        }
+
+        String action = request.getParameter("action");
+        String mappingid = request.getParameter("mappingid");
+        ResultSet rs2 = null;
+        try
+        {
+            conn = Database.getConnection();
+            String qry = "";
+            HashMap rsDetails = new HashMap();
+
+            if ("history".equalsIgnoreCase(action))
+            {
+                qry = "SELECT m.terminalid,m.accountid,m.memberid,m.mappingid,h.* FROM ChargeVersionMemberMaster AS h, member_accounts_charges_mapping AS m WHERE m.mappingid=h.member_accounts_charges_mapping_id AND m.mappingid=?";
+                pstmt = conn.prepareStatement(qry);
+                pstmt.setString(1, mappingid);
+                rs = pstmt.executeQuery();
+                int i = 1;
+                while (rs.next())
+                {
+                    HashMap record = new HashMap();
+                    record.put("terminalid", rs.getString("terminalid"));
+                    record.put("accountid", rs.getString("accountid"));
+                    record.put("memberid", rs.getString("memberid"));
+                    record.put("mappingid", rs.getString("mappingid"));
+                    record.put("merchantChargeValue", rs.getString("merchantChargeValue"));
+                    record.put("agentCommision", rs.getString("agentCommision"));
+                    record.put("partnerCommision", rs.getString("partnerCommision"));
+                    record.put("effectiveStartDate", rs.getString("effectiveStartDate"));
+                    record.put("effectiveEndDate", rs.getString("effectiveEndDate"));
+                    rsDetails.put(i, record);
+                    i = i + 1;
+                }
+            }
+
+            /*if("delete".equalsIgnoreCase(action))
+            {
+                int j=0;
+                qry="DELETE FROM member_accounts_charges_mapping WHERE mappingid=?";
+                pstmt = conn.prepareStatement(qry);
+                pstmt.setString(1,mappingid);
+                j=pstmt.executeUpdate();
+                if(j==1)
+                {
+                    success1 = "Deleted Successfully";
+                    logger.debug("Deleted::" +success1);
+                }
+                request.setAttribute("success1",success1);
+                //RequestDispatcher requestDispatcher=request.getRequestDispatcher("/partnerMerchantCharges.jsp?ctoken=" + user.getCSRFToken());
+               // requestDispatcher.forward(request,response);
+               // return;
+
+            }*/
+            else if ("modify".equalsIgnoreCase(action))
+            {
+                qry = "SELECT cm.chargename,mc.memberid,mc.accountid,mc.terminalid,mc.chargevalue,mc.agentchargevalue,mc.partnerchargevalue,mc.sequencenum,mc.isinput_required FROM member_accounts_charges_mapping AS mc JOIN charge_master AS cm ON mc.chargeid=cm.chargeid WHERE mc.mappingid=?";
+                pstmt = conn.prepareStatement(qry);
+                pstmt.setString(1, mappingid);
+                rs2 = pstmt.executeQuery();
+                if (rs2.next())
+                {
+                    rsDetails.put("memberid", rs2.getString("memberid"));
+                    rsDetails.put("accountid", rs2.getString("accountid"));
+                    rsDetails.put("terminalid", rs2.getString("terminalid"));
+                    rsDetails.put("chargevalue", rs2.getString("chargevalue"));//merchat rate
+                    rsDetails.put("agentchargevalue", rs2.getString("agentchargevalue"));
+                    rsDetails.put("partnerchargevalue", rs2.getString("partnerchargevalue"));
+                    rsDetails.put("sequencenum", rs2.getString("sequencenum"));
+                    rsDetails.put("isinput_required", rs2.getString("isinput_required"));
+                    rsDetails.put("chargename", rs2.getString("chargename"));
+                }
+                qry = "SELECT effectiveStartDate,effectiveEndDate FROM ChargeVersionMemberMaster WHERE chargeversionId=(SELECT MAX(chargeversionId) FROM ChargeVersionMemberMaster WHERE member_accounts_charges_mapping_id=?)";
+                pstmt = conn.prepareStatement(qry);
+                pstmt.setString(1, mappingid);
+                rs2 = pstmt.executeQuery();
+                //int i = 0;
+                if (rs2.next())
+                {
+                    rsDetails.put("lastupdateDate", rs2.getString("effectiveEndDate"));
+                    rsDetails.put("effectiveStartDate", rs2.getString("effectiveStartDate"));
+                }
+                rsDetails.put("mappingid", mappingid);
+
+                try
+                {
+                    ChargeManager chargeManager = new ChargeManager();
+                    WiresManager wiresManager = new WiresManager();
+                    ChargeVO chargeVO = null;
+                    MerchantWireVO merchantWireVO = null;
+                    TerminalVO terminalVO = null;
+
+                    chargeVO = chargeManager.getMerchantChargeDetails(mappingid);
+                    if (chargeVO != null)
+                    {
+                        terminalVO = new TerminalVO();
+                        terminalVO.setMemberId(chargeVO.getMemberid());
+                        terminalVO.setTerminalId(chargeVO.getTerminalid());
+                        terminalVO.setAccountId(chargeVO.getAccountId());
+                        merchantWireVO = wiresManager.getMerchantRecentWire(terminalVO);
+                    }
+                    if (merchantWireVO == null)
+                    {
+                        rsDetails.put("version", "false");
+                    }
+                    else
+                    {
+                        String endDate = merchantWireVO.getSettlementEndDate();
+                        CommonFunctionUtil commonFunctionUtil = new CommonFunctionUtil();
+                        String errorMsg1 = commonFunctionUtil.newValidateDateWithNewFormat(endDate, rs2.getString("effectiveEndDate"), null, null);
+
+                        if (functions.isValueNull(errorMsg1))
+                        {
+                            rsDetails.put("lastupdateDate", endDate);
+                        }
+                    }
+                }
+                catch (PZDBViolationException e)
+                {
+                    logger.error("PZDBViolationException::::::" + e);
+                    errorMsg = "<center><font class=\"text\" face=\"arial\"><b>Internal error while processing your request</b></font></center>";
+                }
+            }
+            else
+            {
+                errorMsg = "<center><font class=\"text\" face=\"arial\"><b> Action is not defined</b></font></center>";
+            }
+            request.setAttribute("action", action);
+            request.setAttribute("chargedetails", rsDetails);
+        }
+        catch (SystemError systemError)
+        {
+            logger.error("SystemError:::::::", systemError);
+            errorMsg = "<center><font class=\"text\" face=\"arial\"><b>Internal error while processing your request</b></font></center>";
+        }
+        catch (SQLException e)
+        {
+            logger.error("SQLException:::::::", e);
+            errorMsg = "<center><font class=\"text\" face=\"arial\"><b>Internal error while processing your request</b></font></center>";
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closeResultSet(rs2);
+            Database.closePreparedStatement(pstmt);
+            Database.closeConnection(conn);
+        }
+        request.setAttribute("errormessage", errorMsg);
+        RequestDispatcher rd = request.getRequestDispatcher("/actionPartnerAccountCharges.jsp?ctoken=" + user.getCSRFToken());
+        rd.forward(request, response);
+        return;
+    }
+        /*if (functions.isValueNull(success1))
+        {
+            RequestDispatcher requestDispatcher=request.getRequestDispatcher("/partnerMerchantCharges.jsp?ctoken=" + user.getCSRFToken());
+            requestDispatcher.forward(request,response);
+            return;
+        }*/
+
+
+
+   /* private void validateOptionalParameter(HttpServletRequest req) throws ValidationException
+    {
+        InputValidator inputValidator = new InputValidator();
+        List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+        inputFieldsListMandatory.add(InputFields.MAPPINGID);
+        inputFieldsListMandatory.add(InputFields.ACTION);
+        inputValidator.InputValidations(req, inputFieldsListMandatory, false);
+    }*/
+}
+
+
+

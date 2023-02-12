@@ -1,0 +1,1023 @@
+package com.directi.pg;
+
+
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.GatewayType;
+import com.directi.pg.core.GatewayTypeService;
+import com.directi.pg.core.paymentgateway.EcorePaymentGateway;
+import com.directi.pg.core.paymentgateway.PayVTPaymentGateway;
+import com.directi.pg.core.paymentgateway.QwipiPaymentGateway;
+import com.directi.pg.core.paymentgateway.SBMPaymentGateway;
+import com.logicboxes.util.ApplicationProperties;
+import com.payment.ecomprocessing.ECPCPPaymentGateway;
+import com.payment.ecomprocessing.ECPPaymentGateway;
+
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
+import java.sql.*;
+import java.util.*;
+
+public class Database
+{
+    static Logger cat = new Logger(Database.class.getName());
+    private static final ResourceBundle RB = LoadProperties.getProperty("com.directi.pg.database");
+    private static final String DB_DRIVER = RB.getString("DB_DRIVER");
+    private static final String DB_URL = RB.getString("DB_URL");
+    private static String USER = RB.getString("USER");
+    private static String PASSWORD = RB.getString("PASSWORD");
+
+    private static DataSource ds = null;
+    private static String transactionTableFromDesription;
+
+    //Read Only DB
+    private static final String DB_URL_RDB = RB.getString("DB_URL_RDB");
+    private static String USER_RDB = RB.getString("USER_RDB");
+    private static String PASSWORD_RDB = RB.getString("PASSWORD_RDB");
+    private static DataSource ds_rdb = null;
+
+    private static final String DB_URL_BIN = RB.getString("DB_URL_BIN");
+    private static String USER_BIN = RB.getString("USER_BIN");
+    private static String PASSWORD_BIN = RB.getString("PASSWORD_BIN");
+    private static DataSource ds_bin = null;
+
+    static
+    {
+        try
+        {
+            initDataSource();
+        }
+        catch (NamingException e)
+        {
+            cat.error("Exception ", e);
+
+        }
+    }
+    public static Connection getConnection() throws SystemError
+    {
+        String enablePool = ApplicationProperties.getProperty("dbpooling");
+        if (Boolean.parseBoolean(enablePool))
+        {
+            try
+            {
+                return getPooledConnection();
+            }
+            catch (Exception e)
+            {
+                cat.error("Exception ", e);
+                throw new SystemError(e.toString());
+            }
+
+        }
+        else
+        {
+            Connection dbConn = null;
+            cat.debug("begin of get conn");
+
+
+            try
+            {
+                    Class.forName(DB_DRIVER);
+                if (USER == null)
+                    USER = "";
+                if (PASSWORD == null)
+                    PASSWORD = "";
+
+                dbConn = DriverManager.getConnection(DB_URL, USER, PASSWORD);
+                //cat.debug("da_url---"+DB_URL);
+                //cat.debug("USER---"+USER);
+                //cat.debug("PASSWORD---"+PASSWORD);
+            }
+            catch (SQLException ex)
+            {
+                String error = "Error Message : " + ex.getMessage() + "SQL State : " + ex.getSQLState() + "Error Code : " + ex.getErrorCode();
+                cat.error("SQL Exception ", ex);
+                throw new SystemError("Database Problem");
+            }
+            catch (Exception ex)
+            {
+                String error = "Error Message : " + ex.getMessage();
+                cat.error("Exception ", ex);
+                ex.printStackTrace();
+                throw new SystemError(ex.toString());
+            }
+            cat.debug("end of getconnection");
+
+            return dbConn;
+        }
+    }
+
+    public static Connection getRDBConnection() throws SystemError
+    {
+
+        String enablePool = ApplicationProperties.getProperty("dbpoolingRDB");
+        if (Boolean.parseBoolean(enablePool))
+        {
+            try
+            {
+                return getPooledConnectionRDB();
+            }
+            catch (Exception e)
+            {
+                cat.error("Exception ", e);
+                throw new SystemError(e.toString());
+            }
+
+        }
+        else
+        {
+            Connection dbConn = null;
+            cat.debug("begin of get RDBConn");
+
+            try
+            {
+                Class.forName(DB_DRIVER);
+                if (USER_RDB == null)
+                    USER_RDB = "";
+                if (PASSWORD_RDB == null)
+                    PASSWORD_RDB = "";
+
+               // System.out.println(USER_RDB+"-"+PASSWORD_RDB);
+                dbConn = DriverManager.getConnection(DB_URL_RDB, USER_RDB, PASSWORD_RDB);
+            }
+            catch (SQLException ex)
+            {
+                String error = "Error Message : " + ex.getMessage() + "SQL State : " + ex.getSQLState() + "Error Code : " + ex.getErrorCode();
+                cat.error("SQL Exception ", ex);
+                throw new SystemError("Database Problem");
+            }
+            catch (Exception ex)
+            {
+                String error = "Error Message : " + ex.getMessage();
+                cat.error("Exception ", ex);
+                ex.printStackTrace();
+                throw new SystemError(ex.toString());
+            }
+            cat.debug("end of getRDBConnection");
+
+            return dbConn;
+        }
+    }
+
+    public static Connection getBinConnection() throws SystemError
+    {
+
+        String enablePool = ApplicationProperties.getProperty("dbpoolingBin");
+        if (Boolean.parseBoolean(enablePool))
+        {
+            try
+            {
+                return getPooledConnectionBin();
+            }
+            catch (Exception e)
+            {
+                cat.error("Exception ", e);
+                throw new SystemError(e.toString());
+            }
+
+        }
+        else
+        {
+            Connection dbConn = null;
+            cat.debug("begin of get BinConn");
+
+            try
+            {
+                Class.forName(DB_DRIVER);
+                if (USER_BIN == null)
+                    USER_BIN = "";
+                if (PASSWORD_BIN == null)
+                    PASSWORD_BIN = "";
+
+                // System.out.println(USER_RDB+"-"+PASSWORD_RDB);
+                dbConn = DriverManager.getConnection(DB_URL_BIN, USER_BIN, PASSWORD_BIN);
+            }
+            catch (SQLException ex)
+            {
+                String error = "Error Message : " + ex.getMessage() + "SQL State : " + ex.getSQLState() + "Error Code : " + ex.getErrorCode();
+                cat.error("SQL Exception ", ex);
+                throw new SystemError("Database Problem");
+            }
+            catch (Exception ex)
+            {
+                String error = "Error Message : " + ex.getMessage();
+                cat.error("Exception ", ex);
+                ex.printStackTrace();
+                throw new SystemError(ex.toString());
+            }
+            cat.debug("end of getBinConnection");
+
+            return dbConn;
+        }
+    }
+
+    public static ResultSet executeQuery(String query, Connection conn) throws SystemError
+    {
+        Statement stmt = null;
+        ResultSet rs = null;
+
+        try
+        {
+            stmt = conn.createStatement();
+            //cat.debug("Inside executeQuery method of Database class:::::");
+            rs = stmt.executeQuery(query);
+        }
+        catch (SQLException ex)
+        {
+            cat.error("SQL Exception : " + ex.getMessage() + "SQL State : " + ex.getSQLState() + "Error Code : " + ex.getErrorCode(), ex);
+            throw new SystemError(ex.getMessage());
+        }
+        return rs;
+    }
+
+    public static int executeUpdate(String query, Connection conn) throws SystemError
+    {
+        Statement stmt = null;
+        int result = -999999;
+        try
+        {
+            stmt = conn.createStatement();
+            cat.debug("NON SELECT QUERY : ");
+            result = stmt.executeUpdate(query);
+        }
+        catch (SQLException ex)
+        {
+            cat.error("SQL Exception : " + ex.getMessage() + "SQL State : " + ex.getSQLState() + "Error Code : " + ex.getErrorCode(), ex);
+            Mail.sendAdminMail("Exception while Update", "\r\n\r\nException has occured while execute update \r\n\r\n" + query);
+            throw new SystemError(ex.getMessage());
+        }
+        return result;
+    }
+
+
+    public static Hashtable getHashFromResultSet(ResultSet rs) throws SQLException
+    {
+        int j = 0;
+        if (rs == null)
+            throw new SQLException("Empty ResultSet in getHashFromResultSet as parameter");
+
+        Hashtable outerHash = new Hashtable();
+        ResultSetMetaData rsMetaData = rs.getMetaData();
+        int count = rsMetaData.getColumnCount();
+
+        int i = 0;
+        while (rs.next())
+        {
+            Hashtable innerHash = new Hashtable();
+            for (i = 1; i <= count; i++)
+            {
+                if (rs.getString(i) != null)
+                {
+
+                    innerHash.put(rsMetaData.getColumnLabel(i), rs.getString(i));
+
+                }
+                //cat.error("refund "+rsMetaData.getColumnLabel(i)+"="+ rs.getString(i));
+            }
+            j++;
+            outerHash.put("" + j, innerHash);
+        }
+        return outerHash;
+    }
+
+    public static HashMap getHashMapFromResultSet(ResultSet rs) throws SQLException
+    {
+        int j = 0;
+        if (rs == null)
+            throw new SQLException("Empty ResultSet in getHashFromResultSet as parameter");
+
+        HashMap outerHash = new HashMap();
+        ResultSetMetaData rsMetaData = rs.getMetaData();
+        int count = rsMetaData.getColumnCount();
+
+        int i = 0;
+        while (rs.next())
+        {
+            HashMap innerHash = new HashMap();
+            for (i = 1; i <= count; i++)
+            {
+                if (rs.getString(i) != null)
+                {
+
+                    innerHash.put(rsMetaData.getColumnLabel(i), rs.getString(i));
+
+                }
+                //cat.error("refund "+rsMetaData.getColumnLabel(i)+"="+ rs.getString(i));
+            }
+            j++;
+            outerHash.put("" + j, innerHash);
+        }
+        return outerHash;
+    }
+
+    public static Hashtable getHashFromResultSetForOrder(ResultSet rs, String ccnum, String expdate) throws SQLException
+    {
+        int j = 0;
+        if (rs == null)
+            throw new SQLException("Empty ResultSet in getHashFromResultSet as parameter");
+
+        Hashtable outerHash = new Hashtable();
+        ResultSetMetaData rsMetaData = rs.getMetaData();
+        int count = rsMetaData.getColumnCount();
+
+        int i = 0;
+        while (rs.next())
+        {
+
+            if (expdate.equals(PzEncryptor.decryptExpiryDate(rs.getString("expdate"))))
+            {
+
+
+                Hashtable innerHash = new Hashtable();
+
+
+                for (i = 1; i <= count; i++)
+                {
+                    if (rs.getString(i) != null)
+                    {
+
+                        innerHash.put(rsMetaData.getColumnLabel(i), rs.getString(i));
+
+                    }
+                }
+                j++;
+                outerHash.put("" + j, innerHash);
+            }
+        }
+        ccnum = null;
+        expdate = null;
+        return outerHash;
+    }
+
+
+    public static Hashtable getHashFromResultSetForExceptionalTrans(ResultSet rs, Hashtable isoCode) throws SQLException
+    {
+        int j = 0;
+        if (rs == null)
+            throw new SQLException("Empty ResultSet in getHashFromResultSet as parameter");
+
+        Hashtable outerHash = new Hashtable();
+        ResultSetMetaData rsMetaData = rs.getMetaData();
+        int count = rsMetaData.getColumnCount();
+
+        int i = 0;
+        while (rs.next())
+        {
+            Hashtable innerHash = new Hashtable();
+
+            String isoCodeDescription = null;
+
+            for (i = 1; i <= count; i++)
+            {
+                if (rs.getString(i) != null)
+                {
+                    if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("authqsiresponsecode") && !rs.getString(i).equals("") && rs.getString(i) != null)
+                    {
+                        if (isoCode.keySet().contains(rs.getString(i)))
+                        {
+
+
+                            isoCodeDescription = (String) isoCode.get(rs.getString(i));
+
+
+                        }
+
+                    }
+                    if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("cb_reason") && !rs.getString(i).equals("") && rs.getString(i) != null)
+                    {
+                        if (isoCode.keySet().contains(rs.getString(i)))
+                        {
+
+
+                            isoCodeDescription = (String) isoCode.get(rs.getString(i));
+
+
+                        }
+
+                    }
+                    if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("authqsiresponsedesc") && !rs.getString(i).equals("") && rs.getString(i) != null && isoCodeDescription != null)
+                    {
+
+                        innerHash.put(rsMetaData.getColumnLabel(i), isoCodeDescription);
+                        isoCodeDescription = null;
+                    }
+                    if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("cb_reason") && !rs.getString(i).equals("") && rs.getString(i) != null && isoCodeDescription != null)
+                    {
+
+                        innerHash.put(rsMetaData.getColumnLabel(i), isoCodeDescription);
+                        isoCodeDescription = null;
+                    }
+                    else
+                    {
+
+                        innerHash.put(rsMetaData.getColumnLabel(i), rs.getString(i));
+
+                    }
+
+                }
+
+            }
+            j++;
+            outerHash.put("" + j, innerHash);
+        }
+        return outerHash;
+    }
+
+
+    public static Hashtable getHashFromResultSetForTransactionEntry(ResultSet rs) throws SQLException
+    {
+        int j = 0;
+        if (rs == null)
+            throw new SQLException("Empty ResultSet in getHashFromResultSet as parameter");
+
+        Hashtable outerHash = new Hashtable();
+        Functions functions = new Functions();
+        ResultSetMetaData rsMetaData = rs.getMetaData();
+        int count = rsMetaData.getColumnCount();
+
+        int i = 0;
+
+        while (rs.next())
+        {
+            Hashtable innerHash = new Hashtable();
+
+            for (i = 1; i <= count; i++)
+            {
+                if (rs.getString(i) != null)
+                {
+
+
+                    if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("Expiry date") && functions.isValueNull(rs.getString(i)))
+                    {
+                        innerHash.put(rsMetaData.getColumnLabel(i), PzEncryptor.decryptExpiryDate(rs.getString(i)));
+                    }
+                    else if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("expdate") && functions.isValueNull(rs.getString(i)))
+                    {
+                        innerHash.put(rsMetaData.getColumnLabel(i), PzEncryptor.decryptExpiryDate(rs.getString(i)));
+                    }
+
+                    //paymodeid
+                    else if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("paymodeid") && functions.isValueNull(rs.getString(i)) && !rs.getString(i).equals("0"))
+                    {
+                        String payMode = GatewayAccountService.getPaymentMode(rs.getString(i));
+
+                        if(functions.isValueNull(payMode))
+                            innerHash.put(rsMetaData.getColumnLabel(i), GatewayAccountService.getPaymentMode(rs.getString(i)));
+                        else
+                            innerHash.put(rsMetaData.getColumnLabel(i), "-");
+                    }
+
+                    /*if(rsMetaData.getColumnLabel(i).equalsIgnoreCase("cardtype") && !rs.getString(i).equals("") && rs.getString(i)!=null )
+                    {     //System.out.println(""+GatewayAccountService.getCardType(rs.getString(i)));
+                          innerHash.put(rsMetaData.getColumnLabel(i),GatewayAccountService.getCardType(rs.getString(i)));
+                    }*/
+
+
+                    else if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("ccnum") && functions.isValueNull(rs.getString(i)))
+                    {
+                        // do nothing
+                        innerHash.put(rsMetaData.getColumnLabel(i), PzEncryptor.decryptPAN(rs.getString(i)));
+                    }
+                    else if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("transactionReceiptImg") && functions.isValueNull(rs.getString(i)))
+                    {
+                        // do nothing
+                        innerHash.put(rsMetaData.getColumnLabel(i), rs.getBytes(i));
+                    }
+
+                    /*else if(rsMetaData.getColumnLabel(i).equalsIgnoreCase("firstfourofccnum") && !rs.getString(i).equals("") && rs.getString(i)!=null)
+                    {
+                        // do nothing
+                    }
+                    else if(rsMetaData.getColumnLabel(i).equalsIgnoreCase("lastfourofccnum") && !rs.getString(i).equals("") && rs.getString(i)!=null)
+                    {
+                        // do nothing
+                    }*/
+                    else
+                    {
+
+                        innerHash.put(rsMetaData.getColumnLabel(i), rs.getString(i));
+                    }
+                    //cat.error("--->   "+rsMetaData.getColumnLabel(i)+"="+rs.getString(i));
+                }
+            }
+            j++;
+            outerHash.put("" + j, innerHash);
+        }
+        return outerHash;
+    }
+
+    public static HashMap getHashMapFromResultSetForTransactionEntry(ResultSet rs) throws SQLException
+    {
+        int j = 0;
+        if (rs == null)
+            throw new SQLException("Empty ResultSet in getHashFromResultSet as parameter");
+
+        HashMap outerHash = new HashMap();
+        Functions functions = new Functions();
+        ResultSetMetaData rsMetaData = rs.getMetaData();
+        int count = rsMetaData.getColumnCount();
+
+        int i = 0;
+
+        while (rs.next())
+        {
+            HashMap innerHash = new HashMap();
+
+            for (i = 1; i <= count; i++)
+            {
+                if (rs.getString(i) != null)
+                {
+
+
+                    if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("Expiry date") && functions.isValueNull(rs.getString(i)))
+                    {
+                        innerHash.put(rsMetaData.getColumnLabel(i), PzEncryptor.decryptExpiryDate(rs.getString(i)));
+                    }
+                    else if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("expdate") && functions.isValueNull(rs.getString(i)))
+                    {
+                        innerHash.put(rsMetaData.getColumnLabel(i), PzEncryptor.decryptExpiryDate(rs.getString(i)));
+                    }
+
+                    //paymodeid
+                    else if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("paymodeid") && functions.isValueNull(rs.getString(i)) && !rs.getString(i).equals("0"))
+                    {
+                        String payMode = GatewayAccountService.getPaymentMode(rs.getString(i));
+
+                        if(functions.isValueNull(payMode))
+                            innerHash.put(rsMetaData.getColumnLabel(i), GatewayAccountService.getPaymentMode(rs.getString(i)));
+                        else
+                            innerHash.put(rsMetaData.getColumnLabel(i), "-");
+                    }
+
+                    /*if(rsMetaData.getColumnLabel(i).equalsIgnoreCase("cardtype") && !rs.getString(i).equals("") && rs.getString(i)!=null )
+                    {     //System.out.println(""+GatewayAccountService.getCardType(rs.getString(i)));
+                          innerHash.put(rsMetaData.getColumnLabel(i),GatewayAccountService.getCardType(rs.getString(i)));
+                    }*/
+
+
+                    else if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("ccnum") && functions.isValueNull(rs.getString(i)))
+                    {
+                        // do nothing
+                        innerHash.put(rsMetaData.getColumnLabel(i), PzEncryptor.decryptPAN(rs.getString(i)));
+                    }
+                    else if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("transactionReceiptImg") && functions.isValueNull(rs.getString(i)))
+                    {
+                        // do nothing
+                        innerHash.put(rsMetaData.getColumnLabel(i), rs.getBytes(i));
+                    }
+
+                    /*else if(rsMetaData.getColumnLabel(i).equalsIgnoreCase("firstfourofccnum") && !rs.getString(i).equals("") && rs.getString(i)!=null)
+                    {
+                        // do nothing
+                    }
+                    else if(rsMetaData.getColumnLabel(i).equalsIgnoreCase("lastfourofccnum") && !rs.getString(i).equals("") && rs.getString(i)!=null)
+                    {
+                        // do nothing
+                    }*/
+                    else
+                    {
+
+                        innerHash.put(rsMetaData.getColumnLabel(i), rs.getString(i));
+                    }
+                    //cat.error("--->   "+rsMetaData.getColumnLabel(i)+"="+rs.getString(i));
+                }
+            }
+            j++;
+            outerHash.put("" + j, innerHash);
+        }
+        return outerHash;
+    }
+
+    public static Hashtable getHashFromResultSetForTransactionEntryNew(ResultSet rs) throws SQLException
+    {
+        int j = 0;
+        if (rs == null)
+            throw new SQLException("Empty ResultSet in getHashFromResultSet as parameter");
+
+        Hashtable outerHash = new Hashtable();
+        ResultSetMetaData rsMetaData = rs.getMetaData();
+        int count = rsMetaData.getColumnCount();
+
+        int i = 0;
+
+        while (rs.next())
+        {
+            Hashtable innerHash = new Hashtable();
+
+            for (i = 1; i <= count; i++)
+            {
+                if (rs.getString(i) != null)
+                {
+                    if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("Expiry date") && !rs.getString(i).equals("") && rs.getString(i) != null)
+                    {
+                        innerHash.put(rsMetaData.getColumnLabel(i), PzEncryptor.decryptExpiryDate(rs.getString(i)));
+                    }
+                    else if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("expdate") && !rs.getString(i).equals("") && rs.getString(i) != null)
+                    {
+                        innerHash.put(rsMetaData.getColumnLabel(i), PzEncryptor.decryptExpiryDate(rs.getString(i)));
+                    }
+                    //paymodeid
+                    else if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("paymodeid") && !rs.getString(i).equals("") && rs.getString(i) != null)
+                    {     //System.out.println(""+GatewayAccountService.getPaymentMode(rs.getString(i)));
+                        innerHash.put(rsMetaData.getColumnLabel(i), GatewayAccountService.getPaymentMode(rs.getString(i)));
+                    }
+                    else if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("cardtypeid") && !rs.getString(i).equals("") && rs.getString(i) != null)
+                    {     //System.out.println(""+GatewayAccountService.getCardType(rs.getString(i)));
+                        innerHash.put(rsMetaData.getColumnLabel(i), GatewayAccountService.getCardType(rs.getString(i)));
+                    }
+                    else if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("ccnum") && !rs.getString(i).equals("") && rs.getString(i) != null)
+                    {
+                        // do nothing
+                    }
+
+                    /*else if(rsMetaData.getColumnLabel(i).equalsIgnoreCase("firstfourofccnum") && !rs.getString(i).equals("") && rs.getString(i)!=null)
+                    {
+                        // do nothing
+                    }
+                    else if(rsMetaData.getColumnLabel(i).equalsIgnoreCase("lastfourofccnum") && !rs.getString(i).equals("") && rs.getString(i)!=null)
+                    {
+                        // do nothing
+                    }*/
+                    else
+                    {
+
+                        innerHash.put(rsMetaData.getColumnLabel(i), rs.getString(i));
+                    }
+                    //cat.error("--->   "+rsMetaData.getColumnLabel(i)+"="+rs.getString(i));
+                }
+            }
+            j++;
+            outerHash.put("" + j, innerHash);
+        }
+        return outerHash;
+    }
+
+    public static Hashtable getHashFromResultSetForInvoiceEntry(ResultSet rs) throws SQLException
+    {
+        int j = 0;
+        if (rs == null)
+            throw new SQLException("Empty ResultSet in getHashFromResultSet as parameter");
+
+        Hashtable outerHash = new Hashtable();
+        ResultSetMetaData rsMetaData = rs.getMetaData();
+        int count = rsMetaData.getColumnCount();
+
+        int i = 0;
+
+        while (rs.next())
+        {
+            Hashtable innerHash = new Hashtable();
+
+            for (i = 1; i <= count; i++)
+            {
+                if (rs.getString(i) != null)
+                {
+
+
+                    innerHash.put(rsMetaData.getColumnLabel(i), rs.getString(i));
+
+                }
+            }
+            j++;
+            outerHash.put("" + j, innerHash);
+        }
+        return outerHash;
+    }
+
+
+    public static Hashtable getHashFromResultSetForTransactionE(ResultSet rs) throws SQLException
+    {
+        int j = 0;
+        if (rs == null)
+            throw new SQLException("Empty ResultSet in getHashFromResultSet as parameter");
+
+        Hashtable outerHash = new Hashtable();
+        ResultSetMetaData rsMetaData = rs.getMetaData();
+        int count = rsMetaData.getColumnCount();
+
+        int i = 0;
+
+        while (rs.next())
+        {
+            Hashtable innerHash = new Hashtable();
+
+            for (i = 1; i <= count; i++)
+            {
+                if (rs.getString(i) != null)
+                {
+
+                    if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("name") && !rs.getString(i).equals("") && rs.getString(i) != null)
+                    {
+                        innerHash.put(rsMetaData.getColumnLabel(i), Functions.decryptString(rs.getString(i)));
+                    }
+
+
+                    else if (rsMetaData.getColumnLabel(i).equalsIgnoreCase("Cardholder's Name") && !rs.getString(i).equals("") && rs.getString(i) != null)
+                    {
+                        innerHash.put(rsMetaData.getColumnLabel(i), Functions.decryptString(rs.getString(i)));
+                    }
+                    else
+                    {
+
+                        innerHash.put(rsMetaData.getColumnLabel(i), rs.getString(i));
+                    }
+                }
+            }
+            j++;
+            outerHash.put("" + j, innerHash);
+        }
+        return outerHash;
+    }
+
+    public static Hashtable getNameValueHashFromResultSet(ResultSet rs) throws SQLException
+    {
+        int j = 0;
+        if (rs == null)
+            throw new SQLException("Empty ResultSet in getHashFromResultSet as parameter");
+
+        Hashtable outerHash = new Hashtable();
+        while (rs.next())
+        {
+            outerHash.put(rs.getString(1), rs.getString(2));
+        }
+        return outerHash;
+    }
+
+
+    public static void closeConnection(Connection connection)
+    {
+        try
+        {
+            if (connection != null)
+            {
+                connection.close();
+                connection = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            cat.error("Exception in closeConnection : ", ex);
+        }
+    }
+
+    public static void closePreparedStatement(PreparedStatement ps)
+    {
+        try
+        {
+            if (ps != null)
+            {
+                ps.close();
+            }
+        }
+        catch (Exception ex)
+        {
+            cat.error("Exception in closePreparedStatement : ", ex);
+        }
+    }
+
+    public static void closeResultSet(ResultSet rs)
+    {
+        try
+        {
+            if (rs != null)
+            {
+                rs.close();
+            }
+        }
+        catch (Exception ex)
+        {
+            cat.error("Exception in closeResultSet : ", ex);
+        }
+    }
+
+    public static void setAutoCommit(Connection conn, boolean autoCommit)
+    {
+        try
+        {
+            conn.setAutoCommit(autoCommit);
+        }
+        catch (SQLException ex)
+        {
+            cat.error("Exception in commit : ", ex);
+        }
+
+    }
+
+    public static void commit(Connection conn)
+    {
+        try
+        {
+            conn.commit();
+        }
+        catch (SQLException ex)
+        {
+            cat.error("Exception in commit : ", ex);
+        }
+    }
+
+    public static void rollback(Connection conn)
+    {
+        try
+        {
+            conn.rollback();
+        }
+        catch (SQLException ex)
+        {
+            cat.error("Exception in rollback : ", ex);
+        }
+    }
+    public static String getTableName(String gatewayType)
+    {
+
+        /*switch (gatewayType)
+        {
+            case QwipiPaymentGateway.GATEWAY_TYPE:
+                return "transaction_qwipi";
+            case EcorePaymentGateway.GATEWAY_TYPE:
+                return "transaction_ecore";
+            default:
+                return "transaction_common";
+        }*/
+        if (QwipiPaymentGateway.GATEWAY_TYPE.equalsIgnoreCase(gatewayType))
+        {
+            return "transaction_qwipi";
+        }
+        /*if((ECPPaymentGateway.GATEWAY_TYPE.equalsIgnoreCase(gatewayType)))
+        {
+            return "transaction_card_present";
+        }*/
+
+        /*else if (EcorePaymentGateway.GATEWAY_TYPE.equalsIgnoreCase(gatewayType))
+        {
+            return "transaction_ecore";
+        }*/
+        else
+        {
+            return "transaction_common";
+        }
+
+    }
+    public static String getTableNameForSettlement(String gatewayType)
+    {
+
+        /*switch (gatewayType)
+        {
+            case QwipiPaymentGateway.GATEWAY_TYPE:
+                return "transaction_qwipi";
+            case EcorePaymentGateway.GATEWAY_TYPE:
+                return "transaction_ecore";
+            default:
+                return "transaction_common";
+        }*/
+        if (QwipiPaymentGateway.GATEWAY_TYPE.equalsIgnoreCase(gatewayType))
+        {
+            return "transaction_qwipi";
+        }
+        if((ECPCPPaymentGateway.GATEWAY_TYPE.equalsIgnoreCase(gatewayType)))
+        {
+            return "transaction_card_present";
+        }
+
+        /*else if (EcorePaymentGateway.GATEWAY_TYPE.equalsIgnoreCase(gatewayType))
+        {
+            return "transaction_ecore";
+        }*/
+        else
+        {
+            return "transaction_common";
+        }
+
+    }
+
+    public static Set<String> getTableSet(Set<String> gatewayTypes)
+    {
+        Set<String> hash = new HashSet<String>();
+
+        for (String gatewayType : gatewayTypes)
+        {
+            hash.add(getTableName(gatewayType)) ;
+        }
+
+        return hash;
+ 
+
+    }
+
+    public static String getDetailsTableName(String gatewayType)
+    {
+        if (SBMPaymentGateway.GATEWAY_TYPE.equals(gatewayType))
+        {
+            return "action_history";
+        }
+        else if (PayVTPaymentGateway.GATEWAY_TYPE.equals(gatewayType))
+        {
+            return "transaction_payvt_details";
+        }
+
+        else if (QwipiPaymentGateway.GATEWAY_TYPE.equals(gatewayType))
+        {
+            return "transaction_qwipi_details";
+        }
+
+
+        else if (EcorePaymentGateway.GATEWAY_TYPE.equals(gatewayType))
+        {
+            return "transaction_ecore_details";
+        }
+
+
+        else
+        {
+            return "transaction_common_details";
+        }
+
+    }
+
+
+    public static void initDataSource() throws NamingException
+    {
+        Context initContext = new InitialContext();
+        Context envContext = (Context) initContext.lookup("java:/comp/env");
+        ds = (DataSource) envContext.lookup("jdbc/dbpool");
+        cat.debug("da_url---"+DB_URL);
+        cat.debug("USER---"+USER);
+        cat.debug("PASSWORD---"+PASSWORD);
+        cat.debug("ds---"+ds);
+        ds_rdb = (DataSource) envContext.lookup("jdbc/dbpoolrdb");
+        ds_bin = (DataSource) envContext.lookup("jdbc/dbpoolbin");
+    }
+
+    public static Connection getPooledConnection() throws SQLException
+    {
+        return ds.getConnection();
+    }
+
+    public static Connection getPooledConnectionRDB() throws SQLException
+    {
+        return ds_rdb.getConnection();
+    }
+
+    public static Connection getPooledConnectionBin() throws SQLException
+    {
+        return ds_bin.getConnection();
+    }
+
+
+    public static String getTransactionTableFromTrackingId(String memberId, String trackingId) throws SystemError
+    {
+
+        Connection dbConn = Database.getConnection();
+        try
+        {
+
+            String accountList = "select accountid from member_account_mapping where memberid=? ";
+            PreparedStatement preparedStatementaccountList = dbConn.prepareStatement(accountList);
+            preparedStatementaccountList.setInt(1, Integer.parseInt(memberId));
+
+
+            ResultSet memberAccountResultSet = preparedStatementaccountList.executeQuery();
+
+            while (memberAccountResultSet.next())
+            {
+
+                int accountId = memberAccountResultSet.getInt("accountid");
+
+                GatewayAccount account = GatewayAccountService.getGatewayAccount(String.valueOf(accountId));
+                String pgtypeid = account.getPgTypeId();
+                GatewayType gatewayType = GatewayTypeService.getGatewayType(pgtypeid);
+                String tableName = Database.getTableName(gatewayType.getGateway());
+
+                String transactionExistsQuery = "select * from " + tableName + " where trackingid = ? and accountid = ? and dtstamp > ?  and status in ('capturesuccess','settled')";
+                Connection dbTransConn = Database.getConnection();
+                try
+                {
+                    PreparedStatement transactionPreparedStatement = dbTransConn.prepareStatement(transactionExistsQuery);
+                    transactionPreparedStatement.setString(1, trackingId);
+                    transactionPreparedStatement.setString(2, String.valueOf(accountId));
+                    ResultSet transactionExistsResultSet = transactionPreparedStatement.executeQuery();
+                    if (transactionExistsResultSet.next())
+                    {
+                        return tableName;
+                    }
+                }
+                finally
+                {
+                    Database.closeConnection(dbTransConn);
+                }
+
+            }
+        }
+        catch (SQLException e)
+        {
+            throw new SystemError(e.getMessage());
+        }
+        finally
+        {
+            Database.closeConnection(dbConn);
+        }
+        return null;
+
+    }
+}

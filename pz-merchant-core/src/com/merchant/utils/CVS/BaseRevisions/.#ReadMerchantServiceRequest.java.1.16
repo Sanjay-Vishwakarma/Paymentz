@@ -1,0 +1,410 @@
+package com.merchant.utils;
+
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.core.valueObjects.GenericAddressDetailsVO;
+import com.directi.pg.core.valueObjects.GenericTransDetailsVO;
+import com.manager.vo.MerchantDetailsVO;
+import com.manager.vo.PartnerDetailsVO;
+import com.merchant.vo.requestVOs.*;
+import com.payment.validators.vo.CommonValidatorVO;
+
+/**
+ * Created by Sneha on 9/1/2016.
+ */
+public class ReadMerchantServiceRequest
+{
+    private Functions functions = new Functions();
+    private static Logger log = new Logger(ReadMerchantServiceRequest.class.getName());
+
+    public CommonValidatorVO readRequestForMerchantLogin(MerchantServiceRequestVO request)
+{
+    CommonValidatorVO commonValidatorVO = new CommonValidatorVO();
+    MerchantDetailsVO merchantDetailsVO = new MerchantDetailsVO();
+    merchantDetailsVO.setLogin(request.getMerchant().getLoginName());
+    if (functions.isValueNull(request.getMerchant().getNewPassword()))
+        merchantDetailsVO.setPassword(request.getMerchant().getNewPassword());
+    commonValidatorVO.setParetnerId(request.getAuthentication().getPartnerId());
+    if (functions.isValueNull(request.getAuthentication().getsKey()))
+        merchantDetailsVO.setKey(request.getAuthentication().getsKey());
+    commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+    return commonValidatorVO;
+}
+    public CommonValidatorVO readRequestForverifymail(MerchantServiceRequestVO request)
+    {
+        CommonValidatorVO commonValidatorVO = new CommonValidatorVO();
+        MerchantDetailsVO merchantDetailsVO = new MerchantDetailsVO();
+        merchantDetailsVO.setLogin(request.getMerchant().getLoginName());
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        return commonValidatorVO;
+    }
+
+    public MerchantServiceRequestVO getLoginFormURLRequest(MerchantServiceRequest merchantServiceRequest)
+    {
+        MerchantServiceRequestVO merchantServiceRequestVO = new MerchantServiceRequestVO();
+
+        merchantServiceRequestVO.setMerchant(getMerchantVO(merchantServiceRequest.getMerchant()));
+        merchantServiceRequestVO.setAuthentication(getAuthenticationVO(merchantServiceRequest.getAuthentication()));
+
+        return merchantServiceRequestVO;
+    }
+
+    public CommonValidatorVO readRequestForMerchantSignUp(MerchantServiceRequestVO request)
+    {
+        CommonValidatorVO commonValidatorVO = new CommonValidatorVO();
+        GenericAddressDetailsVO genericAddressDetailsVO = new GenericAddressDetailsVO();
+
+        commonValidatorVO = populateAuthenticationDetails(commonValidatorVO, request);
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+
+        //Authentication Details
+        merchantDetailsVO.setPartnerId(commonValidatorVO.getPartnerDetailsVO().getPartnerId());
+        merchantDetailsVO.setLogin(request.getMerchant().getLoginName());
+        merchantDetailsVO.setNewPassword(request.getMerchant().getNewPassword());
+        merchantDetailsVO.setConPassword(request.getMerchant().getConPassword());
+        merchantDetailsVO.setCompany_name(request.getMerchant().getCompanyName());
+        merchantDetailsVO.setWebsite(request.getMerchant().getWebsite());
+        merchantDetailsVO.setOtp(request.getMerchant().getOtp());
+        merchantDetailsVO.setEtoken(request.getMerchant().getEtoken());
+        genericAddressDetailsVO.setFirstname(request.getMerchant().getGivenName());
+        genericAddressDetailsVO.setLastname(request.getMerchant().getSurname());
+        genericAddressDetailsVO.setSex(request.getMerchant().getSex());
+
+        genericAddressDetailsVO.setEmail(request.getMerchant().getEmail());
+        genericAddressDetailsVO.setPhone(request.getMerchant().getPhone());
+        genericAddressDetailsVO.setTelnocc(request.getMerchant().getTelcc());
+        genericAddressDetailsVO.setCountry(request.getMerchant().getCountry());
+        genericAddressDetailsVO.setZipCode(request.getMerchant().getPostcode());
+        genericAddressDetailsVO.setBirthdate(request.getMerchant().getBirthDate());
+       // genericAddressDetailsVO.setTelnocc(request.getMerchant().getMobilecountrycode());
+        //genericAddressDetailsVO.setPhone(request.getMerchant().getMobilenumber());
+        merchantDetailsVO.setContact_persons(request.getMerchant().getContactName());
+        if (functions.isValueNull(request.getMerchant().getIsMobileVerified()))
+            merchantDetailsVO.setIsMobileVerified(request.getMerchant().getIsMobileVerified());
+
+        commonValidatorVO.setAddressDetailsVO(genericAddressDetailsVO);
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+       // System.out.println("telcc---"+commonValidatorVO.getAddressDetailsVO().getTelnocc());
+
+        return commonValidatorVO;
+    }
+
+    public CommonValidatorVO readRequestGenerateAppOTP(MerchantServiceRequestVO request)
+    {
+
+        CommonValidatorVO commonValidatorVO = new CommonValidatorVO();
+        GenericAddressDetailsVO genericAddressDetailsVO = new GenericAddressDetailsVO();
+
+        commonValidatorVO = populateAuthenticationDetails(commonValidatorVO, request);
+
+        genericAddressDetailsVO.setCountry(request.getMerchant().getCountry());
+      //  genericAddressDetailsVO.setTelnocc(request.getMerchant().getMobilecountrycode());
+        genericAddressDetailsVO.setPhone(request.getMerchant().getPhone());
+        genericAddressDetailsVO.setEmail(request.getMerchant().getEmail());
+        log.debug("request-----"+request.getMerchant().getPhone());
+        log.debug("checksum-----"+request.getAuthentication().getChecksum());
+
+        commonValidatorVO.setAddressDetailsVO(genericAddressDetailsVO);
+
+        return commonValidatorVO;
+    }
+
+    public MerchantServiceRequestVO getGenerateOTPRequest(MerchantServiceRequest merchantServiceRequest)
+    {
+        MerchantServiceRequestVO merchantServiceRequestVO = new MerchantServiceRequestVO();
+        merchantServiceRequestVO.setAuthentication(getAuthenticationVO(merchantServiceRequest.getAuthentication()));
+        merchantServiceRequestVO.setMerchant(getMerchantVO(merchantServiceRequest.getMerchant()));
+
+        return merchantServiceRequestVO;
+    }
+
+    public CommonValidatorVO readVerifyGenerateAppOTP(MerchantServiceRequestVO request)
+    {
+
+        CommonValidatorVO commonValidatorVO = new CommonValidatorVO();
+        GenericAddressDetailsVO genericAddressDetailsVO = new GenericAddressDetailsVO();
+        MerchantDetailsVO merchantDetailsVO = new MerchantDetailsVO();
+
+        commonValidatorVO = populateAuthenticationDetails(commonValidatorVO, request);
+
+        genericAddressDetailsVO.setCountry(request.getMerchant().getCountry());
+      //  genericAddressDetailsVO.setTelnocc(request.getMerchant().getMobilecountrycode());
+        genericAddressDetailsVO.setPhone(request.getMerchant().getPhone());
+        merchantDetailsVO.setOtp(request.getMerchant().getOtp());
+        commonValidatorVO.setAddressDetailsVO(genericAddressDetailsVO);
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        return commonValidatorVO;
+    }
+
+    public MerchantServiceRequestVO getMerchantVerifyOTPRequest(MerchantServiceRequest merchantServiceRequest)
+    {
+        MerchantServiceRequestVO merchantServiceRequestVO = new MerchantServiceRequestVO();
+        merchantServiceRequestVO.setAuthentication(getAuthenticationVO(merchantServiceRequest.getAuthentication()));
+        merchantServiceRequestVO.setMerchant(getMerchantVO(merchantServiceRequest.getMerchant()));
+
+        return merchantServiceRequestVO;
+    }
+
+    public CommonValidatorVO readRequestForCustomerSignUp(MerchantServiceRequestVO request)
+    {
+        CommonValidatorVO commonValidatorVO = new CommonValidatorVO();
+        GenericAddressDetailsVO genericAddressDetailsVO = new GenericAddressDetailsVO();
+
+        commonValidatorVO = populateAuthenticationDetails(commonValidatorVO, request);
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+
+        //Authentication Details
+        merchantDetailsVO.setPartnerId(commonValidatorVO.getPartnerDetailsVO().getPartnerId());
+
+        genericAddressDetailsVO.setFirstname(request.getCustomer().getGivenName());
+        genericAddressDetailsVO.setLastname(request.getCustomer().getSurname());
+        genericAddressDetailsVO.setSex(request.getCustomer().getSex());
+        genericAddressDetailsVO.setEmail(request.getCustomer().getEmail());
+        genericAddressDetailsVO.setPhone(request.getCustomer().getPhone());
+        genericAddressDetailsVO.setCountry(request.getCustomer().getCountry());
+        genericAddressDetailsVO.setZipCode(request.getCustomer().getPostcode());
+        genericAddressDetailsVO.setBirthdate(request.getCustomer().getBirthDate());
+
+        commonValidatorVO.setAddressDetailsVO(genericAddressDetailsVO);
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+
+        return commonValidatorVO;
+    }
+
+    public MerchantServiceRequestVO getNewAuthTokenRequest(MerchantServiceRequest request)
+    {
+        MerchantServiceRequestVO requestVO = new MerchantServiceRequestVO();
+        AuthenticationVO authenticationVO = new AuthenticationVO();
+        requestVO.setAuthToken(request.getAuthToken());
+        authenticationVO.setPartnerId(request.getAuthentication().getPartnerId());
+        requestVO.setAuthentication(authenticationVO);
+
+        return requestVO;
+    }
+
+    public CommonValidatorVO readRequestForgetNewAuthToken(MerchantServiceRequestVO requestVO)
+    {
+        CommonValidatorVO commonValidatorVO = new CommonValidatorVO();
+        commonValidatorVO.setAuthToken(requestVO.getAuthToken());
+        commonValidatorVO.setParetnerId(requestVO.getAuthentication().getPartnerId());
+
+        return commonValidatorVO;
+    }
+
+    public MerchantServiceRequestVO readCustomerSignupRequest(MerchantServiceRequest merchantServiceRequest)
+    {
+        MerchantServiceRequestVO merchantServiceRequestVO = new MerchantServiceRequestVO();
+
+        merchantServiceRequestVO.setAuthentication(getAuthenticationVO(merchantServiceRequest.getAuthentication()));
+        merchantServiceRequestVO.setMerchant(getMerchantVO(merchantServiceRequest.getMerchant()));
+        merchantServiceRequestVO.setCustomer(getCustomerVO(merchantServiceRequest.getCustomer()));
+
+        return merchantServiceRequestVO;
+    }
+
+    private CustomerVO getCustomerVO(Customer customer)
+    {
+        CustomerVO customerVO = new CustomerVO();
+        customerVO.setGivenName(customer.getGivenName());
+        customerVO.setSurname(customer.getSurname());
+        customerVO.setSex(customer.getSex());
+        customerVO.setEmail(customer.getEmail());
+        customerVO.setPhone(customer.getPhone());
+        customerVO.setCountry(customer.getCountry());
+        customerVO.setPostcode(customer.getPostcode());
+        customerVO.setBirthDate(customer.getBirthDate());
+        return customerVO;
+    }
+
+    public CommonValidatorVO readRequestToGetMerchantCurrencies(MerchantServiceRequestVO request)
+    {
+        CommonValidatorVO commonValidatorVO = new CommonValidatorVO();
+        MerchantDetailsVO merchantDetailsVO = new MerchantDetailsVO();
+        GenericTransDetailsVO transDetailsVO = new GenericTransDetailsVO();
+        if(request.getAuthentication() != null)
+        {
+            merchantDetailsVO.setMemberId(request.getAuthentication().getMemberId());
+            transDetailsVO.setChecksum(request.getAuthentication().getChecksum());
+        }
+        if(request.getMerchant()!=null)
+        {
+            merchantDetailsVO.setLogin(request.getMerchant().getLoginName());
+        }
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        commonValidatorVO.setTransDetailsVO(transDetailsVO);
+        return commonValidatorVO;
+    }
+
+    public CommonValidatorVO readRequestUpdateMerchantAddress(MerchantServiceRequestVO request)
+    {
+
+        CommonValidatorVO commonValidatorVO = new CommonValidatorVO();
+        MerchantDetailsVO merchantDetailsVO = new MerchantDetailsVO();
+        GenericAddressDetailsVO addressDetailsVO = new GenericAddressDetailsVO();
+        GenericTransDetailsVO transDetailsVO = new GenericTransDetailsVO();
+        if(request.getAuthentication() != null)
+        {
+            merchantDetailsVO.setMemberId(request.getAuthentication().getMemberId());
+            transDetailsVO.setChecksum(request.getAuthentication().getChecksum());
+        }
+        if(request.getBillingAddressVO() != null)
+        {
+            addressDetailsVO.setStreet(request.getBillingAddressVO().getStreet());
+            addressDetailsVO.setCity(request.getBillingAddressVO().getCity());
+            addressDetailsVO.setState(request.getBillingAddressVO().getState());
+            addressDetailsVO.setZipCode(request.getBillingAddressVO().getPostcode());
+        }
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        commonValidatorVO.setAddressDetailsVO(addressDetailsVO);
+        commonValidatorVO.setTransDetailsVO(transDetailsVO);
+        return commonValidatorVO;
+    }
+
+    public MerchantServiceRequestVO getParamsForMerchantCurrencies(MerchantServiceRequest merchantServiceRequest)
+    {
+        MerchantServiceRequestVO merchantServiceRequestVO = new MerchantServiceRequestVO();
+        merchantServiceRequestVO.setAuthentication(getAuthenticationVO(merchantServiceRequest.getAuthentication()));
+        merchantServiceRequestVO.setMerchant(getMerchantVO(merchantServiceRequest.getMerchant()));
+
+        return merchantServiceRequestVO;
+    }
+
+    public CommonValidatorVO readRequestForChangePassword(MerchantServiceRequestVO request)
+    {
+        CommonValidatorVO commonValidatorVO = new CommonValidatorVO();
+        MerchantDetailsVO merchantDetailsVO = new MerchantDetailsVO();
+        GenericTransDetailsVO transDetailsVO = new GenericTransDetailsVO();
+        merchantDetailsVO.setMemberId(request.getAuthentication().getMemberId());
+        transDetailsVO.setChecksum(request.getAuthentication().getChecksum());
+        merchantDetailsVO.setPassword(request.getMerchant().getNewPassword());
+        merchantDetailsVO.setNewPassword(request.getMerchant().getConPassword());
+        merchantDetailsVO.setLogin(request.getMerchant().getLoginName());
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        commonValidatorVO.setTransDetailsVO(transDetailsVO);
+        return commonValidatorVO;
+    }
+
+    public MerchantServiceRequestVO readMerchantChangePasswordRequest(MerchantServiceRequest merchantServiceRequest)
+    {
+        MerchantServiceRequestVO merchantServiceRequestVO = new MerchantServiceRequestVO();
+        merchantServiceRequestVO.setAuthentication(getAuthenticationVO(merchantServiceRequest.getAuthentication()));
+        merchantServiceRequestVO.setMerchant(getMerchantVO(merchantServiceRequest.getMerchant()));
+        return merchantServiceRequestVO;
+    }
+
+    public CommonValidatorVO readRequestForForgetPassword(MerchantServiceRequestVO request)
+    {
+        CommonValidatorVO commonValidatorVO = new CommonValidatorVO();
+        MerchantDetailsVO merchantDetailsVO = new MerchantDetailsVO();
+        merchantDetailsVO.setLogin(request.getMerchant().getLoginName());
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+
+        return commonValidatorVO;
+    }
+
+    public MerchantServiceRequestVO getForgotPasswordParamsAPI(MerchantServiceRequest merchantServiceRequest)
+    {
+        MerchantServiceRequestVO merchantServiceRequestVO = new MerchantServiceRequestVO();
+        merchantServiceRequestVO.setAuthentication(getAuthenticationVO(merchantServiceRequest.getAuthentication()));
+        merchantServiceRequestVO.setMerchant(getMerchantVO(merchantServiceRequest.getMerchant()));
+
+        return merchantServiceRequestVO;
+    }
+
+
+    private CommonValidatorVO populateAuthenticationDetails(CommonValidatorVO commonValidatorVO,MerchantServiceRequestVO merchantServiceRequestVO)
+    {
+        MerchantDetailsVO genericMerchantDetailsVO = new MerchantDetailsVO();
+        PartnerDetailsVO partnerDetailsVO = new PartnerDetailsVO();
+        GenericTransDetailsVO transDetailsVO = new GenericTransDetailsVO();
+
+        if(functions.isValueNull(merchantServiceRequestVO.getAuthentication().getMemberId()))
+            genericMerchantDetailsVO.setMemberId(merchantServiceRequestVO.getAuthentication().getMemberId());
+        if(functions.isValueNull(merchantServiceRequestVO.getAuthentication().getPartnerId()))
+            partnerDetailsVO.setPartnerId(merchantServiceRequestVO.getAuthentication().getPartnerId());
+        commonValidatorVO.setParetnerId(merchantServiceRequestVO.getAuthentication().getPartnerId());
+        if(functions.isValueNull(merchantServiceRequestVO.getAuthentication().getChecksum()))
+            transDetailsVO.setChecksum(merchantServiceRequestVO.getAuthentication().getChecksum());
+        if (functions.isValueNull(merchantServiceRequestVO.getAuthentication().getTerminalId()))
+            commonValidatorVO.setTerminalId(merchantServiceRequestVO.getAuthentication().getTerminalId());
+
+        commonValidatorVO.setMerchantDetailsVO(genericMerchantDetailsVO);
+        commonValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+        commonValidatorVO.setTransDetailsVO(transDetailsVO);
+
+        return commonValidatorVO;
+    }
+
+
+    public MerchantServiceRequestVO getMerchantServiceRequestVO(MerchantServiceRequest merchantServiceRequest)
+    {
+        MerchantServiceRequestVO merchantServiceRequestVO = new MerchantServiceRequestVO();
+
+        merchantServiceRequestVO.setAuthentication(getAuthenticationVO(merchantServiceRequest.getAuthentication()));
+        merchantServiceRequestVO.setMerchant(getMerchantVO(merchantServiceRequest.getMerchant()));
+
+
+
+        return merchantServiceRequestVO;
+    }
+
+    private AuthenticationVO getAuthenticationVO(Authentication authentication)
+    {
+        AuthenticationVO authenticationVO = new AuthenticationVO();
+        authenticationVO.setPartnerId(authentication.getPartnerId());
+        authenticationVO.setChecksum(authentication.getChecksum());
+        authenticationVO.setTerminalId(authentication.getTerminalId());
+        authenticationVO.setMemberId(authentication.getMemberId());
+        authenticationVO.setPassword(authentication.getPassword());
+        authenticationVO.setsKey(authentication.getsKey());
+
+        return authenticationVO;
+    }
+
+    private MerchantVO getMerchantVO(Merchant merchant)
+    {
+
+        MerchantVO merchantVO = new MerchantVO();
+
+        merchantVO.setLoginName(merchant.getLoginName());
+        merchantVO.setNewPassword(merchant.getNewPassword());
+        merchantVO.setConPassword(merchant.getConPassword());
+        merchantVO.setBirthDate(merchant.getBirthDate());
+        merchantVO.setEmail(merchant.getEmail());
+        merchantVO.setCompanyName(merchant.getCompanyName());
+        merchantVO.setContactName(merchant.getContactName());
+        merchantVO.setGivenName(merchant.getGivenName());
+        merchantVO.setCountry(merchant.getCountry());
+        merchantVO.setMobilecountrycode(merchant.getMobilecountrycode());
+        merchantVO.setOtp(merchant.getOtp());
+        merchantVO.setTelcc(merchant.getTelcc());
+        merchantVO.setWebsite(merchant.getWebsite());
+        merchantVO.setSurname(merchant.getSurname());
+        merchantVO.setPostcode(merchant.getPostcode());
+        merchantVO.setSex(merchant.getSex());
+        merchantVO.setPhone(merchant.getPhone());
+        merchantVO.setEtoken(merchant.getEtoken());
+        if (functions.isValueNull(merchant.getIsMobileVerified()))
+            merchantVO.setIsMobileVerified(merchant.getIsMobileVerified());
+
+
+        return merchantVO;
+    }
+    public MerchantServiceRequestVO readMerchantLogoutRequest(MerchantServiceRequest merchantServiceRequest)
+    {
+        MerchantServiceRequestVO merchantServiceRequestVO = new MerchantServiceRequestVO();
+        merchantServiceRequestVO.setAuthentication(getAuthenticationVO(merchantServiceRequest.getAuthentication()));
+        merchantServiceRequestVO.setAuthToken(merchantServiceRequest.getAuthToken());
+        return merchantServiceRequestVO;
+    }
+    public CommonValidatorVO readMerchantLogoutRequestJSON(MerchantServiceRequestVO request)
+    {
+        CommonValidatorVO commonValidatorVO = new CommonValidatorVO();
+        commonValidatorVO.setAuthToken(request.getAuthToken());
+        if(request.getAuthentication() != null)
+        commonValidatorVO.setParetnerId(request.getAuthentication().getPartnerId());
+        return commonValidatorVO;
+    }
+
+
+}

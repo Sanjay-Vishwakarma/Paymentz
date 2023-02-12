@@ -1,0 +1,407 @@
+package com.manager.vo.payoutVOs;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Sandip
+ * Date: 12/17/14
+ * Time: 4:32 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class MerchantWireVO
+{
+    String settledId;
+    String settleDate;
+    String settlementStartDate;
+    String settlementEndDate;
+    Double amount;
+    Double balanceAmount;
+    Double netFinalAmount;
+    Double unpaidAmount;
+    String currency;
+    String status;
+    String reportFileName;
+    String transactionFileName;
+    String markedForDeletion;
+    String timestamp;
+    String memberId;
+    String terminalId;
+    String accountId;
+    String payModeId;
+    String cardTypeId;
+    String isRollingReserveIncluded;
+    String rollingReserveReleaseDateUpTo;
+    String settlementCycleNO;
+    String declinedCoverDateUpTo;
+    String reversedCoverDateUpTo;
+    String chargebackCoverDateUpTo;
+    String wireCreationDate;
+    boolean isCreated;
+    boolean isUpdated;
+    String remark;
+    String wiretransferConfirmationImage;
+    double payoutAmount;
+    String payoutCurrency;
+    String payerBankDetails;
+    String receiverBankDetails;
+    String paymentConfirmation;
+    String paymentReceiptDate;
+    String conversionRate;
+
+    public String getSettledId()
+    {
+        return settledId;
+    }
+
+    public void setSettledId(String settledId)
+    {
+        this.settledId = settledId;
+    }
+
+    public String getSettleDate()
+    {
+        return settleDate;
+    }
+
+    public void setSettleDate(String settleDate)
+    {
+        this.settleDate = settleDate;
+    }
+
+    public String getSettlementStartDate()
+    {
+        return settlementStartDate;
+    }
+
+    public void setSettlementStartDate(String settlementStartDate)
+    {
+        this.settlementStartDate = settlementStartDate;
+    }
+
+    public String getSettlementEndDate()
+    {
+        return settlementEndDate;
+    }
+
+    public void setSettlementEndDate(String settlementEndDate)
+    {
+        this.settlementEndDate = settlementEndDate;
+    }
+
+    public Double getAmount()
+    {
+        return amount;
+    }
+
+    public void setAmount(Double amount)
+    {
+        this.amount = amount;
+    }
+
+    public Double getBalanceAmount()
+    {
+        return balanceAmount;
+    }
+
+    public void setBalanceAmount(Double balanceAmount)
+    {
+        this.balanceAmount = balanceAmount;
+    }
+
+    public Double getNetFinalAmount()
+    {
+        return netFinalAmount;
+    }
+
+    public void setNetFinalAmount(Double netFinalAmount)
+    {
+        this.netFinalAmount = netFinalAmount;
+    }
+
+    public String getCurrency()
+    {
+        return currency;
+    }
+
+    public void setCurrency(String currency)
+    {
+        this.currency = currency;
+    }
+
+    public Double getUnpaidAmount()
+    {
+        return unpaidAmount;
+    }
+
+    public void setUnpaidAmount(Double unpaidAmount)
+    {
+        this.unpaidAmount = unpaidAmount;
+    }
+
+    public String getStatus()
+    {
+        return status;
+    }
+
+    public void setStatus(String status)
+    {
+        this.status = status;
+    }
+
+    public String getReportFileName()
+    {
+        return reportFileName;
+    }
+
+    public void setReportFileName(String reportFileName)
+    {
+        this.reportFileName = reportFileName;
+    }
+
+    public String getTransactionFileName()
+    {
+        return transactionFileName;
+    }
+
+    public void setTransactionFileName(String transactionFileName)
+    {
+        this.transactionFileName = transactionFileName;
+    }
+
+    public String getMarkedForDeletion()
+    {
+        return markedForDeletion;
+    }
+
+    public void setMarkedForDeletion(String markedForDeletion)
+    {
+        this.markedForDeletion = markedForDeletion;
+    }
+
+    public String getTimestamp()
+    {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp)
+    {
+        this.timestamp = timestamp;
+    }
+
+    public String getMemberId()
+    {
+        return memberId;
+    }
+
+    public void setMemberId(String memberId)
+    {
+        this.memberId = memberId;
+    }
+
+    public String getTerminalId()
+    {
+        return terminalId;
+    }
+
+    public void setTerminalId(String terminalId)
+    {
+        this.terminalId = terminalId;
+    }
+
+    public String getAccountId()
+    {
+        return accountId;
+    }
+
+    public void setAccountId(String accountId)
+    {
+        this.accountId = accountId;
+    }
+
+    public String getPayModeId()
+    {
+        return payModeId;
+    }
+
+    public void setPayModeId(String payModeId)
+    {
+        this.payModeId = payModeId;
+    }
+
+    public String getCardTypeId()
+    {
+        return cardTypeId;
+    }
+
+    public void setCardTypeId(String cardTypeId)
+    {
+        this.cardTypeId = cardTypeId;
+    }
+
+    public String getRollingReserveIncluded()
+    {
+        return isRollingReserveIncluded;
+    }
+
+    public void setRollingReserveIncluded(String rollingReserveIncluded)
+    {
+        isRollingReserveIncluded = rollingReserveIncluded;
+    }
+
+    public String getRollingReserveReleaseDateUpTo()
+    {
+        return rollingReserveReleaseDateUpTo;
+    }
+
+    public void setRollingReserveReleaseDateUpTo(String rollingReserveReleaseDateUpTo)
+    {
+        this.rollingReserveReleaseDateUpTo = rollingReserveReleaseDateUpTo;
+    }
+
+    public String getSettlementCycleNO()
+    {
+        return settlementCycleNO;
+    }
+
+    public void setSettlementCycleNO(String settlementCycleNO)
+    {
+        this.settlementCycleNO = settlementCycleNO;
+    }
+
+    public String getDeclinedCoverDateUpTo()
+    {
+        return declinedCoverDateUpTo;
+    }
+
+    public void setDeclinedCoverDateUpTo(String declinedCoverDateUpTo)
+    {
+        this.declinedCoverDateUpTo = declinedCoverDateUpTo;
+    }
+
+    public String getReversedCoverDateUpTo()
+    {
+        return reversedCoverDateUpTo;
+    }
+
+    public void setReversedCoverDateUpTo(String reversedCoverDateUpTo)
+    {
+        this.reversedCoverDateUpTo = reversedCoverDateUpTo;
+    }
+
+    public String getChargebackCoverDateUpTo()
+    {
+        return chargebackCoverDateUpTo;
+    }
+
+    public void setChargebackCoverDateUpTo(String chargebackCoverDateUpTo)
+    {
+        this.chargebackCoverDateUpTo = chargebackCoverDateUpTo;
+    }
+
+    public String getWireCreationDate()
+    {
+        return wireCreationDate;
+    }
+
+    public void setWireCreationDate(String wireCreationDate)
+    {
+        this.wireCreationDate = wireCreationDate;
+    }
+
+    public boolean isCreated()
+    {
+        return isCreated;
+    }
+
+    public void setCreated(boolean created)
+    {
+        isCreated = created;
+    }
+
+    public boolean isUpdated()
+    {
+        return isUpdated;
+    }
+
+    public void setUpdated(boolean updated)
+    {
+        isUpdated = updated;
+    }
+
+    public String getRemark()
+    {
+        return remark;
+    }
+
+    public void setRemark(String remark)
+    {
+        this.remark = remark;
+    }
+
+    public String getWiretransferConfirmationImage()
+    {
+        return wiretransferConfirmationImage;
+    }
+
+    public void setWiretransferConfirmationImage(String wiretransferConfirmationImage)
+    {
+        this.wiretransferConfirmationImage = wiretransferConfirmationImage;
+    }
+
+    public double getPayoutAmount()
+    {
+        return payoutAmount;
+    }
+
+    public void setPayoutAmount(double payoutAmount)
+    {
+        this.payoutAmount = payoutAmount;
+    }
+
+    public String getPayoutCurrency()
+    {
+        return payoutCurrency;
+    }
+
+    public void setPayoutCurrency(String payoutCurrency)
+    {
+        this.payoutCurrency = payoutCurrency;
+    }
+
+    public String getPayerBankDetails()
+    {
+        return payerBankDetails;
+    }
+
+    public void setPayerBankDetails(String payerBankDetails)
+    {
+        this.payerBankDetails = payerBankDetails;
+    }
+
+    public String getReceiverBankDetails()
+    {
+        return receiverBankDetails;
+    }
+
+    public void setReceiverBankDetails(String receiverBankDetails)
+    {
+        this.receiverBankDetails = receiverBankDetails;
+    }
+
+    public String getPaymentConfirmation()
+    {
+        return paymentConfirmation;
+    }
+
+    public void setPaymentConfirmation(String paymentConfirmation)
+    {
+        this.paymentConfirmation = paymentConfirmation;
+    }
+
+    public String getPaymentReceiptDate() {return paymentReceiptDate;}
+
+    public void setPaymentReceiptDate(String paymentReceiptDate) {this.paymentReceiptDate = paymentReceiptDate;}
+
+    public String getConversionRate() {return conversionRate;}
+
+    public void setConversionRate(String conversionRate) {this.conversionRate = conversionRate;}
+}

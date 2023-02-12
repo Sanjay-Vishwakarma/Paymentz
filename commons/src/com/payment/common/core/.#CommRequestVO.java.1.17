@@ -1,0 +1,252 @@
+package com.payment.common.core;
+
+import com.directi.pg.core.valueObjects.GenericRequestVO;
+import com.manager.vo.RecurringBillingVO;
+import com.manager.vo.ReserveField2VO;
+import com.payment.endeavourmpi.ParesDecodeResponseVO;
+
+import java.util.Hashtable;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Jignesh
+ * Date: 4/4/13
+ * Time: 12:27 AM
+ * To change this template use File | Settings | File Templates.
+ */
+public class CommRequestVO extends GenericRequestVO
+{
+    private CommMerchantVO commMerchantVO;
+    private CommTransactionDetailsVO transDetailsVO;
+    private CommCardDetailsVO cardDetailsVO;
+    private CommAddressDetailsVO addressDetailsVO;
+    private RecurringBillingVO recurringBillingVO;
+    private CommAccountInfoVO commAccountInfoVO;
+    private CommDeviceDetailsVO commDeviceDetailsVO;
+    private ParesDecodeResponseVO paresDecodeResponseVO;
+    private Hashtable additioanlParams;
+    private ReserveField2VO reserveField2VO;
+    private String isPSTProcessingRequest;
+    private String PANEntryType;
+    private String reject3DCard;
+    private String customerId;
+    private String currencyConversion;
+    private String conversionCurrency;
+    private String attemptThreeD;
+    private String consentStmnt;
+    private String count; //Used for setting refund count
+    private String deviceId; //Used for wlandpay
+    private String uniqueId; //Used for wlandpay
+
+    public CommMerchantVO getCommMerchantVO()
+
+    {
+        return commMerchantVO;
+    }
+
+    public void setCommMerchantVO(CommMerchantVO commMerchantVO)
+
+    {
+        this.commMerchantVO = commMerchantVO;
+    }
+
+    public CommTransactionDetailsVO getTransDetailsVO()
+    {
+        return transDetailsVO;
+    }
+
+    public void setTransDetailsVO(CommTransactionDetailsVO transDetailsVO)
+    {
+        this.transDetailsVO = transDetailsVO;
+    }
+
+    public CommCardDetailsVO getCardDetailsVO()
+    {
+        return cardDetailsVO;
+    }
+
+    public void setCardDetailsVO(CommCardDetailsVO cardDetailsVO)
+    {
+        this.cardDetailsVO = cardDetailsVO;
+    }
+
+    public CommAddressDetailsVO getAddressDetailsVO()
+    {
+        return addressDetailsVO;
+    }
+
+    public void setAddressDetailsVO(CommAddressDetailsVO addressDetailsVO)
+    {
+        this.addressDetailsVO = addressDetailsVO;
+    }
+
+    public Hashtable getAdditioanlParams()
+    {
+        return additioanlParams;
+    }
+
+    public void setAdditioanlParams(Hashtable additioanlParams)
+    {
+        this.additioanlParams = additioanlParams;
+    }
+
+    public RecurringBillingVO getRecurringBillingVO()
+    {
+        return recurringBillingVO;
+    }
+
+    public void setRecurringBillingVO(RecurringBillingVO recurringBillingVO)
+    {
+        this.recurringBillingVO = recurringBillingVO;
+    }
+
+    public ReserveField2VO getReserveField2VO()
+    {
+        return reserveField2VO;
+    }
+
+    public void setReserveField2VO(ReserveField2VO reserveField2VO)
+    {
+        this.reserveField2VO = reserveField2VO;
+    }
+
+    public String getIsPSTProcessingRequest()
+    {
+        return isPSTProcessingRequest;
+    }
+
+    public void setIsPSTProcessingRequest(String isPSTProcessingRequest)
+    {
+        this.isPSTProcessingRequest = isPSTProcessingRequest;
+    }
+
+    public String getPANEntryType()
+    {
+        return PANEntryType;
+    }
+
+    public void setPANEntryType(String PANEntryType)
+
+    {
+        this.PANEntryType = PANEntryType;
+    }
+
+    public String getReject3DCard()
+    {
+        return reject3DCard;
+    }
+    public void setReject3DCard(String reject3DCard)
+    {
+        this.reject3DCard = reject3DCard;
+    }
+
+    public String getCustomerId()
+    {
+        return customerId;
+    }
+
+    public void setCustomerId(String customerId)
+    {
+        this.customerId = customerId;
+    }
+
+    public String getCurrencyConversion()
+    {
+        return currencyConversion;
+    }
+
+    public void setCurrencyConversion(String currencyConversion)
+    {
+        this.currencyConversion = currencyConversion;
+    }
+
+    public String getConversionCurrency()
+    {
+        return conversionCurrency;
+    }
+
+    public void setConversionCurrency(String conversionCurrency)
+    {
+        this.conversionCurrency = conversionCurrency;
+    }
+
+    public String getAttemptThreeD()
+    {
+        return attemptThreeD;
+    }
+
+    public void setAttemptThreeD(String attemptThreeD)
+    {
+        this.attemptThreeD = attemptThreeD;
+    }
+
+    public String getConsentStmnt()
+    {
+        return consentStmnt;
+    }
+
+    public void setConsentStmnt(String consentStmnt)
+    {
+        this.consentStmnt = consentStmnt;
+    }
+
+    public String getCount()
+    {
+        return count;
+    }
+
+    public void setCount(String count)
+    {
+        this.count = count;
+    }
+
+    public CommAccountInfoVO getCommAccountInfoVO()
+    {
+        return commAccountInfoVO;
+    }
+
+    public void setCommAccountInfoVO(CommAccountInfoVO commAccountInfoVO)
+    {
+        this.commAccountInfoVO = commAccountInfoVO;
+    }
+
+    public String getDeviceId()
+    {
+        return deviceId;
+    }
+
+    public void setDeviceId(String deviceId)
+    {
+        this.deviceId = deviceId;
+    }
+
+    public String getUniqueId()
+    {
+        return uniqueId;
+    }
+
+    public void setUniqueId(String uniqueId)
+    {
+        this.uniqueId = uniqueId;
+    }
+
+    public CommDeviceDetailsVO getCommDeviceDetailsVO()
+    {
+        return commDeviceDetailsVO;
+    }
+
+    public void setCommDeviceDetailsVO(CommDeviceDetailsVO commDeviceDetailsVO)
+    {
+        this.commDeviceDetailsVO = commDeviceDetailsVO;
+    }
+
+    public ParesDecodeResponseVO getParesDecodeResponseVO()
+    {
+        return paresDecodeResponseVO;
+    }
+
+    public void setParesDecodeResponseVO(ParesDecodeResponseVO paresDecodeResponseVO)
+    {
+        this.paresDecodeResponseVO = paresDecodeResponseVO;
+    }
+}

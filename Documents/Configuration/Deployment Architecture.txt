@@ -1,0 +1,14 @@
+How to Install SFA library
+
+# copy sfa.jar,cryptix32.jar,jsse.jar,jcert.jar and jnet.jar in lib directory of tomcat
+# import certificate provided by epg paymentgateway provider using below command on server
+
+cd <#java home#>/bin
+./keytool -import -trustcacerts -alias epgcert -keyalg "RSA" -file <#certificate path on server#>/epgcert.cer -keystore <#java home#>/jre/lib/security/cacerts -storepass changeit
+
+check whether certificate has been installed properly or not by listing all certificate and checking entry for epgcert
+
+./keytool -list -keystore <#java home#>/jre/lib/security/cacerts -storepass changeit
+
+# put key file at same place as written in sfa.properties file which is inside sfa.jar
+

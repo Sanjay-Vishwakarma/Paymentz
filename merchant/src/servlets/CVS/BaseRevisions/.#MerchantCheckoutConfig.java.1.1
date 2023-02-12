@@ -1,0 +1,244 @@
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.Merchants;
+import com.manager.MerchantConfigManager;
+import com.manager.enums.TemplatePreference;
+import com.manager.vo.ActivityTrackerVOs;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Created by Sanjay on 2/19/2022.
+ */
+public class MerchantCheckoutConfig extends HttpServlet
+{
+
+    public void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException
+    {
+        doPost(req, res);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException
+    {
+
+        Logger log = new Logger(MerchantCheckoutConfig.class.getName());
+        log.error("inside MerchantCheckoutConfig :::::");
+        HttpSession session = req.getSession();
+        User user = (User) session.getAttribute("ESAPIUserSessionKey");
+
+        RequestDispatcher rd = req.getRequestDispatcher("/merchantCheckoutConfig.jsp?ctoken=" + user.getCSRFToken());
+        Merchants merchants = new Merchants();
+        if (!merchants.isLoggedIn(session))
+        {
+            log.error("merchant logout===");
+            res.sendRedirect("/merchant/Logout.jsp");
+            return;
+        }
+        Functions functions = new Functions();
+        MerchantConfigManager merchantConfigManager = new MerchantConfigManager();
+
+        int updateRecords = 0;
+        String errorMsg = "";
+        String EOL = "<br>";
+        String memberid = (String) session.getAttribute("merchantid");
+        System.out.println("memberid :::" + memberid);
+        String NEW_CHECKOUT_BODYNFOOTER_COLOR = "";
+        String NEW_CHECKOUT_HEADERBACKGROUND_COLOR = "";
+        String NEW_CHECKOUT_NAVIGATIONBAR_COLOR = "";
+        String NEW_CHECKOUT_BUTTON_FONT_COLOR = "";
+        String NEW_CHECKOUT_HEADER_FONT_COLOR = "";
+        String NEW_CHECKOUT_FULLBACKGROUND_COLOR = "";
+        String NEW_CHECKOUT_LABEL_FONT_COLOR = "";
+        String NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR = "";
+        String NEW_CHECKOUT_BUTTON_COLOR = "";
+        String NEW_CHECKOUT_ICON_COLOR = "";
+        String NEW_CHECKOUT_TIMER_COLOR = "";
+        String NEW_CHECKOUT_BOX_SHADOW = "";
+
+
+
+        try
+        {
+
+            if (functions.isValueNull(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR))) && !ESAPI.validator().isValidInput(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR)),req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR)),"colorcode", 8, false))
+            {
+                errorMsg = errorMsg + "Invalid Body & Footer Color" + EOL;
+            }
+            else
+                NEW_CHECKOUT_BODYNFOOTER_COLOR = req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR));
+
+            if (functions.isValueNull(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR))) && !ESAPI.validator().isValidInput(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR)),req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR)),"colorcode", 8, false))
+                errorMsg = errorMsg + "Invalid Header Background Color" + EOL;
+            else
+                NEW_CHECKOUT_HEADERBACKGROUND_COLOR = req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR));
+
+            if (functions.isValueNull(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR))) && !ESAPI.validator().isValidInput(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR)),req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR)),"colorcode", 8, false))
+                errorMsg = errorMsg + "Invalid NavigationBar Color" + EOL;
+            else
+                NEW_CHECKOUT_NAVIGATIONBAR_COLOR = req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR));
+
+            if (functions.isValueNull(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR))) && !ESAPI.validator().isValidInput(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR)), req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR)), "colorcode", 8, false))
+                errorMsg = errorMsg + "Invalid Button Font Color" + EOL;
+            else
+                NEW_CHECKOUT_BUTTON_FONT_COLOR = req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR));
+
+            if (functions.isValueNull(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR))) && !ESAPI.validator().isValidInput(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR)), req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR)), "colorcode", 8, false))
+                errorMsg = errorMsg + "Invalid Header Font Color" + EOL;
+            else
+                NEW_CHECKOUT_HEADER_FONT_COLOR = req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR));
+
+            if (functions.isValueNull(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR))) && !ESAPI.validator().isValidInput(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR)), req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR)), "colorcode", 8, false))
+                errorMsg = errorMsg + "Invalid Full Background Color" + EOL;
+            else
+                NEW_CHECKOUT_FULLBACKGROUND_COLOR = req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR));
+
+            if (functions.isValueNull(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR))) && !ESAPI.validator().isValidInput(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR)), req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR)), "colorcode", 8, false))
+                errorMsg = errorMsg + "Invalid Label Font Color" + EOL;
+            else
+                NEW_CHECKOUT_LABEL_FONT_COLOR = req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR));
+
+            if (functions.isValueNull(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR))) && !ESAPI.validator().isValidInput(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR)), req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR)), "colorcode", 8, false))
+                errorMsg = errorMsg + "Invalid NavigationBar Font Color" + EOL;
+            else
+                NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR = req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR));
+
+            if (functions.isValueNull(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR))) && !ESAPI.validator().isValidInput(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR)), req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR)), "colorcode", 8, false))
+                errorMsg = errorMsg + "Invalid Botton Color" + EOL;
+            else
+                NEW_CHECKOUT_BUTTON_COLOR = req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR));
+
+            if (functions.isValueNull(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_ICON_COLOR))) && !ESAPI.validator().isValidInput(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_ICON_COLOR)), req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_ICON_COLOR)), "colorcode", 8, false))
+                errorMsg = errorMsg + "Invalid Icon Color" + EOL;
+            else
+                NEW_CHECKOUT_ICON_COLOR = req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_ICON_COLOR));
+
+            if (functions.isValueNull(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_TIMER_COLOR))) && !ESAPI.validator().isValidInput(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_TIMER_COLOR)), req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_TIMER_COLOR)), "colorcode", 8, false))
+                errorMsg = errorMsg + "Invalid Timer Color" + EOL;
+            else
+                NEW_CHECKOUT_TIMER_COLOR = req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_TIMER_COLOR));
+
+            if (functions.isValueNull(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BOX_SHADOW))) && !ESAPI.validator().isValidInput(req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BOX_SHADOW)), req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BOX_SHADOW)), "colorcode", 8, false))
+                errorMsg = errorMsg + "Invalid Box Shadow" + EOL;
+            else
+                NEW_CHECKOUT_BOX_SHADOW = req.getParameter(String.valueOf(TemplatePreference.NEW_CHECKOUT_BOX_SHADOW));
+
+            StringBuilder sSuccessMessage = new StringBuilder();
+            StringBuilder sErrorMessage = new StringBuilder();
+            Map<String, Object> merchantTemplateInformationInsert = new HashMap<String, Object>();
+            Map<String, Object> merchantTemplateInformationUpdate = new HashMap<String, Object>();
+            boolean isMerchantSaved = false;
+            boolean isMerchantUpdated = false;
+
+
+            try
+            {
+
+                if (functions.isValueNull(memberid))
+                {
+                    Map<String, Object> merchantPresentTemplateDetails = merchantConfigManager.getSavedMemberTemplateDetails(memberid);
+
+                    if (NEW_CHECKOUT_BODYNFOOTER_COLOR != null && merchantPresentTemplateDetails.containsKey(TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.name()))
+                        merchantTemplateInformationUpdate.put(TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.name(), NEW_CHECKOUT_BODYNFOOTER_COLOR);
+                    else if (NEW_CHECKOUT_BODYNFOOTER_COLOR != null)
+                        merchantTemplateInformationInsert.put(TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.name(), NEW_CHECKOUT_BODYNFOOTER_COLOR);
+
+                    if (NEW_CHECKOUT_HEADERBACKGROUND_COLOR != null && merchantPresentTemplateDetails.containsKey(TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.name()))
+                        merchantTemplateInformationUpdate.put(TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.name(), NEW_CHECKOUT_HEADERBACKGROUND_COLOR);
+                    else if (functions.isValueNull(NEW_CHECKOUT_HEADERBACKGROUND_COLOR))
+                        merchantTemplateInformationInsert.put(TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.name(), NEW_CHECKOUT_HEADERBACKGROUND_COLOR);
+
+                    if (NEW_CHECKOUT_NAVIGATIONBAR_COLOR != null && merchantPresentTemplateDetails.containsKey(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.name()))
+                        merchantTemplateInformationUpdate.put(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.name(), NEW_CHECKOUT_NAVIGATIONBAR_COLOR);
+                    else if (NEW_CHECKOUT_NAVIGATIONBAR_COLOR != null)
+                        merchantTemplateInformationInsert.put(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.name(), NEW_CHECKOUT_NAVIGATIONBAR_COLOR);
+
+                    if (NEW_CHECKOUT_BUTTON_FONT_COLOR != null && merchantPresentTemplateDetails.containsKey(TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.name()))
+                        merchantTemplateInformationUpdate.put(TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.name(), NEW_CHECKOUT_BUTTON_FONT_COLOR);
+                    else if (NEW_CHECKOUT_BUTTON_FONT_COLOR != null)
+                        merchantTemplateInformationInsert.put(TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.name(), NEW_CHECKOUT_BUTTON_FONT_COLOR);
+
+                    if (NEW_CHECKOUT_HEADER_FONT_COLOR != null && merchantPresentTemplateDetails.containsKey(TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.name()))
+                        merchantTemplateInformationUpdate.put(TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.name(), NEW_CHECKOUT_HEADER_FONT_COLOR);
+                    else if (NEW_CHECKOUT_HEADER_FONT_COLOR != null)
+                        merchantTemplateInformationInsert.put(TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.name(), NEW_CHECKOUT_HEADER_FONT_COLOR);
+
+                    if (NEW_CHECKOUT_FULLBACKGROUND_COLOR != null && merchantPresentTemplateDetails.containsKey(TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.name()))
+                        merchantTemplateInformationUpdate.put(TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.name(), NEW_CHECKOUT_FULLBACKGROUND_COLOR);
+                    else if (NEW_CHECKOUT_FULLBACKGROUND_COLOR != null)
+                        merchantTemplateInformationInsert.put(TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.name(), NEW_CHECKOUT_FULLBACKGROUND_COLOR);
+
+                    if (NEW_CHECKOUT_LABEL_FONT_COLOR != null && merchantPresentTemplateDetails.containsKey(TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.name()))
+                        merchantTemplateInformationUpdate.put(TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.name(), NEW_CHECKOUT_LABEL_FONT_COLOR);
+                    else if (NEW_CHECKOUT_LABEL_FONT_COLOR != null)
+                        merchantTemplateInformationInsert.put(TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.name(), NEW_CHECKOUT_LABEL_FONT_COLOR);
+
+                    if (NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR != null && merchantPresentTemplateDetails.containsKey(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.name()))
+                        merchantTemplateInformationUpdate.put(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.name(), NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR);
+                    else if (NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR != null)
+                        merchantTemplateInformationInsert.put(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.name(), NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR);
+
+                    if (NEW_CHECKOUT_BUTTON_COLOR != null && merchantPresentTemplateDetails.containsKey(TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.name()))
+                        merchantTemplateInformationUpdate.put(TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.name(), NEW_CHECKOUT_BUTTON_COLOR);
+                    else if (NEW_CHECKOUT_BUTTON_COLOR != null)
+                        merchantTemplateInformationInsert.put(TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.name(), NEW_CHECKOUT_BUTTON_COLOR);
+
+                    if (NEW_CHECKOUT_ICON_COLOR != null && merchantPresentTemplateDetails.containsKey(TemplatePreference.NEW_CHECKOUT_ICON_COLOR.name()))
+                        merchantTemplateInformationUpdate.put(TemplatePreference.NEW_CHECKOUT_ICON_COLOR.name(), NEW_CHECKOUT_ICON_COLOR);
+                    else if (NEW_CHECKOUT_ICON_COLOR != null)
+                        merchantTemplateInformationInsert.put(TemplatePreference.NEW_CHECKOUT_ICON_COLOR.name(), NEW_CHECKOUT_ICON_COLOR);
+
+                    if (NEW_CHECKOUT_TIMER_COLOR != null && merchantPresentTemplateDetails.containsKey(TemplatePreference.NEW_CHECKOUT_TIMER_COLOR.name()))
+                        merchantTemplateInformationUpdate.put(TemplatePreference.NEW_CHECKOUT_TIMER_COLOR.name(), NEW_CHECKOUT_TIMER_COLOR);
+                    else if (NEW_CHECKOUT_TIMER_COLOR != null)
+                        merchantTemplateInformationInsert.put(TemplatePreference.NEW_CHECKOUT_TIMER_COLOR.name(), NEW_CHECKOUT_TIMER_COLOR);
+
+                    if (NEW_CHECKOUT_BOX_SHADOW != null && merchantPresentTemplateDetails.containsKey(TemplatePreference.NEW_CHECKOUT_BOX_SHADOW.name()))
+                        merchantTemplateInformationUpdate.put(TemplatePreference.NEW_CHECKOUT_BOX_SHADOW.name(), NEW_CHECKOUT_BOX_SHADOW);
+                    else if (NEW_CHECKOUT_BOX_SHADOW != null)
+                        merchantTemplateInformationInsert.put(TemplatePreference.NEW_CHECKOUT_BOX_SHADOW.name(), NEW_CHECKOUT_BOX_SHADOW);
+
+
+                    isMerchantSaved = merchantConfigManager.insertMemberTemplateDetails(merchantTemplateInformationInsert, memberid);
+                    isMerchantUpdated = merchantConfigManager.updateMemberTemplateDetails(merchantTemplateInformationUpdate, memberid);
+                    log.debug("isMerchantTemplateSaved::::: " + isMerchantSaved + " // isMerchantTemplateUpdated::::: " + isMerchantUpdated);
+
+                }
+            }
+            catch (Exception e)
+            {
+                log.error("Exception ::::" + e);
+                e.printStackTrace();
+            }
+            sSuccessMessage.append(updateRecords + "Records Updated");
+            StringBuilder chargeBackMessage = new StringBuilder();
+            chargeBackMessage.append(sSuccessMessage);
+            chargeBackMessage.append("<BR/>");
+            chargeBackMessage.append(sErrorMessage);
+
+            req.setAttribute("errormessage", errorMsg);
+            String redirectpage = "/merchantCheckoutConfig.jsp?ctoken=" + user.getCSRFToken();
+            req.setAttribute("cbmessage", sSuccessMessage.toString());
+            RequestDispatcher rd1 = req.getRequestDispatcher(redirectpage);
+            rd1.forward(req, res);
+            return;
+        }
+        catch (Exception e)
+        {
+            log.error("catch block exception error"+e);
+            e.printStackTrace();
+        }
+
+    }
+
+
+}

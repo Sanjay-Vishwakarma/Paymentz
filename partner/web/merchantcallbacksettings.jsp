@@ -1,0 +1,311 @@
+<%@ page import="com.directi.pg.Functions" %>
+<%@ page import="com.directi.pg.Logger" %>
+<%@ include file="top.jsp" %>
+<%@ page import="org.owasp.esapi.ESAPI" %>
+<%@ page import="java.util.HashMap" %>
+
+<%--
+  Created by IntelliJ IDEA.
+  User: Kanchan
+  Date: 03-03-2021
+  Time: 17:30
+  To change this template use File | Settings | File Templates.
+--%>
+<%
+  String company = ESAPI.encoder().encodeForHTML((String)session.getAttribute("partnername"));
+  session.setAttribute("submit","merchantcallbacksettings");
+  Functions functions = new Functions();
+%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%!
+  private static Logger log=new Logger("merchantcallbacksettings.jsp");
+%>
+<html>
+<head>
+<style type="text/css">
+  #ui-id-2
+  {
+    overflow: auto;
+    max-height: 350px;
+  }
+</style>
+  <script src="/partner/javascript/autocomplete_partner_memberid.js"></script>
+</head>
+
+    <title> <%=company%> Merchant Settings> Merchant Callback Settings</title>
+<script>
+  var lablevalues = new Array();
+  function ChangeFunction(Value , lable){
+    console.log("Value" + Value + "lable" + lable);
+    var finalvalue=lable+"="+Value;
+    console.log("finalvalue" + finalvalue );
+    lablevalues.push(finalvalue);
+    console.log(lablevalues);
+    document.getElementById("onchangedvalue").value = lablevalues;
+  }
+</script>
+<body class="background">
+<div class="content-page">
+  <div class="content">
+    <div class="page-heading">
+      <div class="row">
+        <div class="col-sm-12 portlets ui-sortable">
+          <div class="widget">
+            <div class="widget-header transparent">
+              <h2><strong><i class="fa fa-th-large"></i>&nbsp;&nbsp;Merchant Callback Settings</strong></h2>
+              <div class="additional-btn">
+                <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+              </div>
+            </div>
+            <%
+              ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+              if (partner.isLoggedInPartner(session))
+              {
+                  String memberid= nullToStr(request.getParameter("memberid"));
+                  String pid= nullToStr(request.getParameter("pid"));
+                  String partnerid= session.getAttribute("partnerId").toString();
+                  String Config= null;
+                  String Roles= partner.getRoleofPartner(String.valueOf(session.getAttribute("merchantid")));
+                  if (Roles.contains("superpartner"))
+                  {
+
+                  }
+                  else
+                  {
+                    pid= String.valueOf(session.getAttribute("merchantid"));
+                    Config= "disabled";
+                  }
+            %>
+            <form action="/partner/net/MerchantCallbackSetting?ctoken=<%=ctoken%>" method="get" name="F1" onsubmit="" class="form-horizontal">
+              <input type="hidden" value="<%=ctoken%>" name="ctoken" id="ctoken">
+              <input type="hidden" value="<%=partnerid%>" name="partnerid" id="partnerid">
+              <%
+                String errormsg1 = (String) request.getAttribute("error1");
+                if (functions.isValueNull(errormsg1))
+                {
+                  out.println("<h5 class=\"bg-infoorange\" style=\"text-align: center;\"><i class=\"fa fa-exclamation-triangle\"></i>&nbsp;&nbsp;" + errormsg1 + "</h5>");
+                }
+              %>
+
+              <div class="widget-content padding">
+                <div id="horizontal-form">
+                  <input type="hidden" value="<%=ctoken%>" name="ctoken">
+                  <div class="form-group col-md-4">
+                    <label class="col-sm-4 control-label">Partner Id</label>
+                    <div class="col-sm-8">
+                      <input name="pid" id="pid" value="<%=pid%>" class="form-control" autocomplete="on" <%=Config%>>
+                      <input type ="hidden" name="pid" value="<%=pid%>">
+                    </div>
+                  </div>
+
+                  <div class="form-group col-md-4">
+                    <label class="col-sm-4 control-label">Member Id*</label>
+                    <div class="col-sm-8">
+                      <input name="memberid" id="member" value="<%=memberid%>" class="form-control" autocomplete="on" >
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group col-md-4">
+                  <div class="col-sm-offset-2 col-sm-3">
+                    <button type="submit" class="btn btn-default"><i class="fa fa-clock-o"></i>
+                      &nbsp;&nbsp;Search</button>
+                  </div>
+                </div>
+              </div>
+              </div>
+              </form>
+        </div>
+      </div>
+    </div>
+      <form action="/partner/net/SetReservesCallback?ctoken=<%=ctoken%>" method="post">
+        <input type="hidden" value="" name="onchangedvalue" id="onchangedvalue">
+        <input type="hidden" name="ctoken" value="<%=ctoken%>" id="ctoken">
+        <div class="row reporttable">
+          <div class="col-md-12">
+            <div class="widget">
+              <div class="widget-header">
+                <h2><i class="fa fa-table"></i>&nbsp;&nbsp;<strong>Report Table</strong></h2>
+                <div class="additional-btn">
+                  <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                  <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                  <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+                </div>
+              </div>
+
+              <div class="widget-content padding" style="overflow-x: auto;">
+
+                <%
+                   HashMap hash = (HashMap) request.getAttribute("memberdetails");
+                   HashMap temphash= null;
+
+                  String success=(String) request.getAttribute("message");
+
+                  String error = (String) request.getAttribute("error");
+                  if (functions.isValueNull(error))
+                  {
+                    out.println("<h5 class=\"bg-infoorange\" style=\"text-align: center;\"><i class=\"fa fa-exclamation-triangle\"></i>&nbsp;&nbsp;" + error + "</h5>");
+                  }
+                   int pageno= partner.convertStringtoInt(ESAPI.encoder().encodeForHTML(request.getParameter("SPageno")), 1);
+                   int pagerecords= partner.convertStringtoInt(ESAPI.encoder().encodeForHTML(request.getParameter("SRecords")),15);
+                   int records= 0;
+
+                   if ((hash!= null && hash.size()>0))
+                   {
+                   try{
+                        records= Integer.parseInt((String)hash.get("records"));
+                      }
+                      catch (Exception ex)
+                      {
+                          log.error("Records & TotalRecords is found null",ex);
+                      }
+                   }
+                   if (records>0){
+                %>
+                <div class="reporttable" style="margin-bottom: 9px;">
+                <table border="0" width="50%" class="table table-striped table-bordered  table-green dataTable"
+                       style="margin-bottom: 0px" >
+                  <tr class="td1">
+                    <td valign="middle" align="center" colspan="4"  style="height: 30px; background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                      <center><b>Merchant Notification Callback</b></center>
+                    </td>
+                  </tr>
+                </table>
+                </div>
+
+                <input type="hidden" value="<%=ctoken%>" name="ctoken">
+                <center>
+                  <table align=center width="50%" class="display table table table-striped table-bordered table-hover dataTable" style="font-family:Open Sans;font-size: 13px;font-weight: 600;width: 60%;">
+
+                    <%
+                      String style = "td1";
+                      for (int pos = 1; pos <= records; pos++)
+                      {
+                        String id = Integer.toString(pos);
+                        int srno = Integer.parseInt(id) + ((pageno - 1) * pagerecords);
+
+                        if (pos % 2 == 0)
+                          style = "tr0";
+                        else
+                          style = "tr0";
+
+                        temphash = (HashMap) hash.get(id);
+                        String memberId = (String) temphash.get("memberid");
+                    %>
+
+                    <input type="hidden" name="memberid" value="<%=ESAPI.encoder().encodeForHTMLAttribute(memberId)%>">
+                    <thead>
+                    <tr>
+                      <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b>Reconciliation</b></td>
+                      <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b>Transactions(3D/Non-3d/Both/No)</b></td>
+                      <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b>Refund Notification</b></td>
+                      <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b>Chargeback Notification</b></td>
+                      <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b>Payout Notification</b></td>
+                      <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b>Inquiry Notification</b></td>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                      <tr>
+                        <td valign="middle" data-label="Reconciliation" align="center" class="<%=style%>">
+                          <select name="reconciliationNotification" class="form-control" onchange="ChangeFunction(this.value,'Reconciliation')">
+                            <%out.println(Functions.comboval(ESAPI.encoder().encodeForHTMLAttribute((String) temphash.get("reconciliationNotification"))));%>
+                          </select>
+                        </td>
+
+                        <td valign="middle" data-label="Transaction Notification" align="center" class="<%=style%>">
+                          <select name="transactionNotification" class="form-control" onchange="ChangeFunction(this.value,'Transactions (3D/Non-3d/Both/No)')">
+                            <%out.println(Functions.comboval3D(ESAPI.encoder().encodeForHTMLAttribute((String) temphash.get("transactionNotification"))));%>
+                          </select>
+                        </td>
+
+                        <td valign="middle" data-label="Refund Notification" align="center" class="<%=style%>">
+                          <select name="refundNotification" class="form-control" onchange="ChangeFunction(this.value,'Refund  Notification')">
+                            <%out.println(Functions.comboval(ESAPI.encoder().encodeForHTMLAttribute((String) temphash.get("refundNotification"))));%>
+                          </select>
+                        </td>
+
+                        <td valign="middle" data-label="Chargeback Notification" align="center" class="<%=style%>">
+                          <select name="chargebackNotification" class="form-control" onchange="ChangeFunction(this.value,'Chargeback Notification')">
+                            <%out.println(Functions.comboval(ESAPI.encoder().encodeForHTMLAttribute((String) temphash.get("chargebackNotification"))));%>
+                          </select>
+                        </td>
+
+                        <td valign="middle" data-label="Payout Notification" align="center" class="<%=style%>">
+                          <select name="payoutNotification" class="form-control" onchange="ChangeFunction(this.value,'Payout Notification')">
+                            <%out.println(Functions.comboval(ESAPI.encoder().encodeForHTMLAttribute((String)temphash.get("payoutNotification"))));%>
+                          </select>
+                        </td><td valign="middle" data-label="Inquiry Notification" align="center" class="<%=style%>">
+                          <select name="inquiryNotification" class="form-control" onchange="ChangeFunction(this.value,'Inquiry Notification')">
+                            <%out.println(Functions.comboval(ESAPI.encoder().encodeForHTMLAttribute((String)temphash.get("inquiryNotification"))));%>
+                          </select>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </center>
+                  <center>
+                    <button type="submit" value="Save" class="btn btn-default">
+                       Save
+                    </button>
+                  </center>
+              </div>
+            </div>
+          </div>
+        </div>
+          <%
+                }
+          %>
+      </form>
+    <br>
+    <%
+      int currentblock = 1;
+      try
+      {
+        currentblock = Integer.parseInt(request.getParameter("currentblock"));
+      }
+      catch (Exception ex)
+      {
+        currentblock = 1;
+      }
+
+    %>
+      <%
+        }
+        else if (success != null)
+        {
+          out.println("<div class=\"bg-info\" style=\"text-align:center;\"><i class=\"fa fa-info-circle\"></i>&nbsp;&nbsp;"+ success +"</div>");
+        }
+        else
+        {
+          out.println(Functions.NewShowConfirmation1("Sorry", "No records found"));
+          out.println("</div>");
+        }
+      %>
+      </div>
+      </div>
+      </div>
+<%
+  }
+  else
+  {
+    response.sendRedirect("/logout.jsp");
+    return;
+  }
+%>
+<script type="text/javascript" src="/partner/cookies/jquery.ihavecookies.js"></script>
+<script type="text/javascript" src="/partner/cookies/cookies_popup.js"></script>
+<link href="/partner/cookies/quicksand_font.css" rel="stylesheet">
+<link href="/partner/cookies/cookies_popup.css" rel="stylesheet">
+</body>
+</html>
+<%!
+  public static String nullToStr(String str)
+  {
+    if(str == null)
+      return "";
+    return str;
+  }
+%>

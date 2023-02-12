@@ -1,0 +1,209 @@
+<%@ page import="com.directi.pg.Functions" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: Jinesh
+  Date: 4/30/2015
+  Time: 6:46 AM
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ include file="index.jsp" %>
+
+<html>
+<head>
+  <title></title>
+  <script type="text/javascript">
+    function goBack()
+    {
+      document.location.href = "/icici/whitelistdetails.jsp";
+    }
+  </script>
+
+  <script type="text/javascript" language="JavaScript">
+    function check() {
+      var  retpath = document.FIRCForm.File.value;
+      var pos = retpath.lastIndexOf(".");
+      var filename="";
+      if (pos != -1)
+        filename = retpath.substring(pos + 1);
+      else
+        filename = retpath;
+
+      if (filename==('xls')) {
+
+        return true;
+      }
+      alert('Please select a .xls file instead!');
+      return false;
+
+    }
+  </script>
+
+  </head>
+<body align="center">
+  <%
+    String remark=request.getParameter("remark")==null?"":request.getParameter("remark");
+    ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+    if (com.directi.pg.Admin.isLoggedIn(session))
+    {
+%>
+    <div class="row">
+    <div class="col-lg-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          Blacklist Card File Upload
+          <div style="float: right;">
+            <form action="/icici/blockedCardList.jsp?ctoken=<%=ctoken%>" method="POST">
+
+              <button type="submit" class="addnewmember">
+                <i class="fa fa-sign-in"></i>
+                &nbsp;&nbsp;Block Card List
+              </button>
+            </form>
+          </div>
+        </div>
+        <br>
+
+          <table align="center" width="65%" cellpadding="2" cellspacing="2">
+
+            <tbody>
+            <tr>
+              <td>
+
+                <table border="0" cellpadding="5" cellspacing="0" width="100%" align="center">
+                  <tbody>
+                  <tr><td colspan="4">&nbsp;</td>
+                  </tr>
+                  <%
+                    String errormsg1 = (String) request.getAttribute("error");
+                    /*if (errormsg1 != null)
+                    {
+                      out.println("<center><font class=\"textb\"><b>"+errormsg1+"<br></b></font></center>");
+                    }*/
+
+                    if(request.getAttribute("count") != null /*&& request.getAttribute("count").equals("")*/)
+                    {
+
+                      if ((Integer)request.getAttribute("count") == 1 /*|| request.getAttribute("count").equals("1")*/)
+                      {
+                        out.println("<center><font class=\"textb\"><b>Card Blocked Successfully<br></b></font></center>");
+                      }
+                      else
+                      {
+                        out.println("<center><font class=\"textb\"><b>"+errormsg1+"<br></b></font></center>");
+                      }
+                    }
+                  %>
+                  <form name = "FIRCForm" action="/icici/servlet/BlacklistCard?ctoken=<%=ctoken%>" method="post" ENCTYPE="multipart/form-data">
+                  <tr>
+                    <td width="2%" class="textb">&nbsp;</td>
+                    <td width="43%" class="textb">BlackListedCardDetails File</td>
+                    <td width="5%" class="textb">:</td>
+                    <td width="50%" class="textb">
+                      <input name="File" type="file" value="">
+                    </td>
+
+                    <td width="50%" class="textb">
+                      <button name="mybutton" type="submit" value="Upload"  onclick="return check()"class="buttonform">Upload</button>
+                    </td>
+
+                  </tr>
+                  </form>
+                  <tr><td colspan="4">&nbsp;</td>
+                  <form action="/icici/servlet/BlacklistCard?ctoken=<%=ctoken%>" method="post">
+                  <tr>
+                    <td width="2%" class="textb">&nbsp;</td>
+                    <td width="43%" class="textb">BlackList Card*</td>
+                    <td width="5%" class="textb">:</td>
+                    <td width="200%" class="textb">
+                      <input size="8" maxlength="6" type="text"  class="txtboxsmall" name="firstsix"  value="<%=request.getParameter("firstsix")==null?"":request.getParameter("firstsix")%>">******<input maxlength="4" size="6" type="text" name="lastfour" class="txtboxsmall" value="<%=request.getParameter("lastfour")==null?"":request.getParameter("lastfour")%>">
+                    </td>
+                  </tr>
+                    <tr><td>&nbsp;&nbsp;</td></tr>
+                    <tr>
+                      <td class="textb">&nbsp;</td>
+                      <td class="textb">BlackList Reason*</td>
+                      <td class="textb">:</td>
+                      <td>
+                        <input name="reason"  value="<%=request.getParameter("reason")==null?"":request.getParameter("reason")%>" class="txtbox">
+                      </td>
+                    </tr>
+                    <tr> <td>&nbsp;&nbsp;</td></tr>
+                    <tr style="margin: 35px;">
+                      <td width="5%" class="textb">&nbsp;</td>
+                      <td width="10%" class="textb">Remark</td>
+                      <td width="5%" class="textb">:</td>
+                      <td width="20%" class="textb" style=" padding: 8px 0px;">
+                        <select class="form-control" style="width: 70%" name="remark">
+                         <%-- <option value="Select Remark">Select Remark</option>
+--%>
+                          <option value="Chargeback Received">Chargeback Received</option>
+                          <option value="Fraud Received">Fraud Received</option>
+                          <option value="Stolen Card">Stolen Card</option>
+
+                        </select>
+
+                      </td>
+                    </tr>
+
+                    <tr>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td width="50%" class="textb">
+                      <button name="mybutton" type="submit" value="blacklist" class="buttonform">BlackList</button>
+                    </td>
+
+                  </tr>
+                    <tr><td colspan="4">&nbsp;</td>
+                    </tr>
+
+                  </form>
+                  </tbody>
+                </table>
+
+              </td>
+            </tr>
+            </tbody>
+          </table>
+
+      </div>
+    </div>
+  </div>
+  <div class="reporttable">
+
+    <%
+      Functions functions = new Functions();
+      if(functions.isValueNull(String.valueOf(request.getAttribute("sSuccessMessage"))) || functions.isValueNull(String.valueOf(request.getAttribute("sErrorMessage"))))
+      {
+        if(functions.isValueNull(String.valueOf(request.getAttribute("sSuccessMessage"))))
+        {
+          String successMessage = request.getAttribute("sSuccessMessage").toString();
+          out.println(Functions.NewShowConfirmation("Success Updating", successMessage));
+        }
+        if(functions.isValueNull(String.valueOf(request.getAttribute("sErrorMessage"))))
+        {
+          String errorMessage = request.getAttribute("sErrorMessage").toString();
+          out.println(Functions.NewShowConfirmation("Failed Updating", errorMessage));
+        }
+      }
+      else
+      {
+        out.println(Functions.NewShowConfirmation("Filter","please upload the Whitelisted card details File."));
+      }
+
+    %>
+
+  </div>
+    <%
+
+
+    }
+    else
+    {
+        response.sendRedirect("/icici/logout.jsp");
+        return;
+    }
+%>
+</body>
+</html>

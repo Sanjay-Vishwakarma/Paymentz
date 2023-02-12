@@ -1,0 +1,48 @@
+package com.directi.pg;
+
+import com.payment.AbstractPaymentProcess;
+import com.payment.PaymentProcessFactory;
+import com.payment.request.PZFileVO;
+import com.payment.response.PZChargebackRecord;
+import java.util.*;
+
+/**
+ * Created by ThinkPadT410 on 7/6/2016.
+ * Last Modified:Sandip
+ */
+public class CommonChargeback
+{
+    private static Logger logger = new Logger(CommonChargeback.class.getName());
+
+    public StringBuffer processChargeback(String completeFileName, String gateway, AuditTrailVO auditTrailVO) throws SystemError
+    {
+        PZFileVO pzFileVO = new PZFileVO();
+        pzFileVO.setFilepath(completeFileName);
+
+        AbstractPaymentProcess paymentProcess = PaymentProcessFactory.getPaymentProcessInstance(gateway);
+        logger.error("-----Before readChargebackFile()-----");
+        List<PZChargebackRecord> vTransactions;
+        if (completeFileName.contains("xlsx"))
+        {
+            vTransactions = paymentProcess.readChargebackFileXlsx(pzFileVO);
+        }
+        else
+        {
+             vTransactions = paymentProcess.readChargebackFile(pzFileVO);
+        }
+        logger.error("-----After readChargebackFile()----");
+
+        StringBuffer resultString = new StringBuffer();
+        if(vTransactions != null && vTransactions.size()>0)
+        {
+            logger.error("-----Before processChargeback(Borgun)-----");
+            resultString = paymentProcess.processChargeback(vTransactions, gateway, auditTrailVO);
+            logger.error("-----After processChargeback()-----");
+        }
+        else
+        {
+            resultString.append("No Transactions Found");
+        }
+        return resultString;
+    }
+}

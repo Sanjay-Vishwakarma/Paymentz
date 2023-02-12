@@ -1,0 +1,62 @@
+<HTML>
+<HEAD>
+    <TITLE>Home</TITLE>
+    <META content="text/html; charset=windows-1252" http-equiv=Content-Type>
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+
+         <script src='/merchant/css/menu.js'></script>
+        <script type='text/javascript' src='/merchant/css/menu_jquery.js'></script>
+         <link rel="stylesheet" type="text/css" href="/merchant/css/styles123.css">
+         <link rel="stylesheet" type="text/css" href="/merchant/css/new/styles_new.css">
+         <link rel="stylesheet" type="text/css" href="/merchant/newdate/styles123.css">
+        <link rel="stylesheet" type="text/css" href="/merchant/style/styles123.css">
+        <script src='/merchant/css/bootstrap.min.js'></script>
+        <link href="/merchant/css/icons/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+
+
+</HEAD>
+
+<BODY class="bodybackground" >
+<br><br><br><br>
+<table class=search border="0" cellpadding="2" cellspacing="0" width="50%" align=center valign="center">
+    <tr>
+        <td align="center">
+            <img src="/merchant/images/pay1.png" border="0">
+        </td>
+    </tr>
+</table>
+<br><br>
+<div align="center">
+    <table border="0" cellpadding="5" cellspacing="0" width="12%">
+        <tr>
+            <td align="center"><img src="/merchant/images/process.GIF"></td>
+        </tr>
+    </table>
+    <br> <br>
+        <table border="0" cellpadding="5" cellspacing="0" width="50%">
+        <tr>
+            <td align="center" class="textb">
+                 Your order is being processed.<br>
+                 The processing time could be up to 30 sec. Please be patient and <b>DO NOT</b> click "Back"
+                 button on your browser.
+             </td>
+        </tr>
+
+
+    </table>
+</div>
+<br><br>
+ <table border="0" align="center" cellpadding="5" cellspacing="0" width="20%" style="margin-left: 52%;">
+         <tr>
+             <td>
+                     <marquee behavior="alternate">
+                     <img src="/merchant/images/1.png" >
+                     <img src="/merchant/images/2.png" >
+                     <img src="/merchant/images/3.png" >
+                    </marquee>
+
+             </td>
+         </tr>
+     </table>
+</BODY></HTML>

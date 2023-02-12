@@ -1,0 +1,284 @@
+<%@ page import="java.util.*" %>
+<%@ page import="com.directi.pg.core.GatewayAccountService" %>
+<%@ include file="functions.jsp"%>
+<%@ include file="index.jsp"%>
+<%--
+  Created by IntelliJ IDEA.
+  User: Nishant
+  Date: 11/8/12
+  Time: 3:09 PM
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="com.directi.pg.Logger"%>
+<%@ page import="com.directi.pg.Functions" %>
+<%@ page import="com.directi.pg.core.GatewayTypeService" %>
+<%@ page import="com.directi.pg.core.GatewayAccount" %>
+<%@ page import="com.manager.TerminalManager" %>
+<%@ page import="com.manager.vo.TerminalVO" %>
+<%@ page import="com.manager.vo.ChargeVO" %>
+<%@ page import="com.manager.ChargeManager" %>
+<%@ page import="com.directi.pg.core.GatewayType" %>
+<%!
+    private static Logger logger=new Logger("manageGatewayAccountsCharges.jsp");
+%>
+<html>
+<head>
+    <META content="text/html; charset=windows-1252" http-equiv=Content-Type>
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+
+    <script src="/icici/css/jquery-1.12.4.min.js"></script>
+    <script src="/icici/css/jquery-ui.min.js"></script>
+    <script src="/icici/javascript/gateway-account-member-terminalid1.js"></script>
+
+    <%--<script type="text/javascript" language="JavaScript" src="/icici/javascript/gateway-accountid.js"></script>--%>
+    <title> Add Gateway Accouts Charges</title>
+    <link href="/icici/datepicker/datepicker/datepicker3.css" rel="stylesheet">
+    <script src="/icici/datepicker/datepicker/bootstrap-datepicker.js"></script>
+    <script type="text/javascript">
+        $('#sandbox-container input').datepicker({
+        });
+    </script>
+    <script>
+        $(function() {
+            $( ".datepicker" ).datepicker({dateFormat: 'yy-mm-dd',endDate:'+10y'});
+        });
+    </script>
+</head>
+<body>
+<% ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+    if (com.directi.pg.Admin.isLoggedIn(session))
+    {
+%>
+<% ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+    if (com.directi.pg.Admin.isLoggedIn(session))
+    {
+        String str2 = "";
+        String pgtypeid = "";
+        String currency= "";
+        currency = Functions.checkStringNull(request.getParameter("currency"))==null?"":request.getParameter("currency");
+        pgtypeid = Functions.checkStringNull(request.getParameter("pgtypeid"))==null?"":request.getParameter("pgtypeid");
+        String accountid2 = Functions.checkStringNull(request.getParameter("accountid"))==null?"":request.getParameter("accountid");
+        String chargename=request.getParameter("chargename");
+        TreeMap<String,GatewayType> gatewayTypeTreeMap = GatewayTypeService.getAllGatewayTypesMap();
+        TreeMap<Integer, GatewayAccount> accountDetails = GatewayAccountService.getAccountDetails();
+
+        TerminalManager terminalManager = new TerminalManager();
+        ChargeManager chargeManager=new ChargeManager();
+        List<TerminalVO> accountList = terminalManager.getAllMappedAccounts();
+        List<ChargeVO> chargeList=chargeManager.getListOfCharges();
+        if(pgtypeid!=null)str2 = str2 + "&pgtypeid=" + pgtypeid;
+        else
+            pgtypeid="";
+        if(accountid2!=null)str2 = str2 + "&accountid=" + accountid2;
+        else
+            accountid2="";
+        if(currency!=null)str2 = str2 + "&currency=" + currency;
+        else
+            currency="";
+
+%>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default" >
+            <div class="panel-heading" >
+                Create New Gateway Account Charge
+                <div style="float: right;">
+                    <form action="/icici/listGatewayAccountsCharges.jsp?ctoken=<%=ctoken%>" method="POST">
+                        <button type="submit" value="Gateway Accounts Charges" name="submit" class="addnewmember" style="width:250px ">
+                            <i class="fa fa-sign-in"></i>
+                            &nbsp;&nbsp;Gateway Accounts Charges
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <form action="/icici/servlet/ManageAccountChargesServlet?ctoken=<%=ctoken%>" method="post" name="forms" >
+                <input type="hidden" value="<%=ctoken%>" name="ctoken" id="ctoken">
+                <input type="hidden" value="bankaccount" name="accounttype">
+                <%
+                    String message=(String)request.getAttribute("message");
+                    if(message!=null)
+                    {
+                        out.println("<BR>");
+                        out.println("<center><font class=textb><b>"+message+"</b></font></center>");
+                        out.println("<BR>");
+                    }
+                %>
+                <table  border="0" align="center" width="50%" cellpadding="2" cellspacing="2">
+                    <tbody>
+                    <tr>
+                        <td>
+                            <table border="0" cellpadding="5" cellspacing="0" width="100%" align="center">
+                                <tbody>
+                                <tr><td colspan="4">&nbsp;</td></tr>
+                                <tr>
+                                    <td style="padding: 3px" width="2%" class="textb">&nbsp;</td>
+                                    <td style="padding: 3px" width="43%" class="textb">Gateway</td>
+                                    <td style="padding: 3px" width="25%" class="textb">:</td>
+                                    <td style="padding: 3px" width="50%" class="textb">
+                                        <input name="pgtypeid" id="gateway1" value="<%=pgtypeid%>" class="txtbox" autocomplete="on">
+                                    <%--<select size="1" id="bank" class="txtbox" name="pgtypeid" style="margin-left: 3%" >
+                                            <option value="0" default>--All--</option>
+                                            <%
+                                                for(String gatewayType : gatewayTypeTreeMap.keySet())
+                                                {
+                                                    String isSelected = "";
+                                                    if(gatewayType.equalsIgnoreCase(pgtypeid))
+                                                    {
+                                                        isSelected = "selected";
+                                                    }
+                                            %>
+                                            <option value="<%=gatewayType%>" <%=isSelected%>><%=gatewayType%></option>
+                                            <%
+                                                }
+                                            %>
+                                        </select>--%>
+
+                                    </td>
+                                </tr>
+
+                                <tr><td colspan="4">&nbsp;</td></tr>
+                                <tr>
+                                    <td style="padding: 3px" width="2%" class="textb">&nbsp;</td>
+                                    <td style="padding: 3px" width="43%" class="textb">Account ID</td>
+                                    <td style="padding: 3px" width="25%" class="textb">:</td>
+                                    <td style="padding: 3px" width="50%" class="textb">
+                                        <input name="accountid" id="accountid1" value="<%=accountid2%>" class="txtbox" autocomplete="on">
+                                    <%-- <select size="1" id="accountid" name="accountid" style="margin-left: 1%" class="txtbox">
+                                                <option data-bank="all"  value="0">Select AccountID</option>
+                                                <%
+                                                for(Integer sAccid : accountDetails.keySet())
+                                                {
+                                                    GatewayAccount g = accountDetails.get(sAccid);
+                                                    String isSelected = "";
+                                                    String gateway2 = g.getGateway().toUpperCase();
+                                                    String currency2 = g.getCurrency();
+                                                    String pgtype = g.getPgTypeId();
+                                                    if (String.valueOf(sAccid).equals(accountid2))
+                                                        isSelected = "selected";
+                                                    else
+                                                        isSelected = "";
+                                            %>
+                                            <option data-bank="<%=gateway2+"-"+currency2+"-"+pgtype%>"  value="<%=sAccid%>" <%=isSelected%>><%=sAccid+"-"+g.getMerchantId()+"-"+g.getCurrency()%></option>
+                                            <%
+
+                                                }
+                                            %>
+                                        </select>--%>
+                                    </td>
+                                </tr>
+                                <tr><td colspan="4">&nbsp;</td></tr>
+                                <tr>
+                                    <td style="padding: 3px" width="2%" class="textb">&nbsp;</td>
+                                    <td style="padding: 3px" width="43%" class="textb">Commission Name</td>
+                                    <td style="padding: 3px" width="25%" class="textb">:</td>
+                                    <td style="padding: 3px" width="50%" class="textb">
+                                        <select class="txtbox" name="chargename" style="margin-left: 3%">
+                                            <option value="" selected>Select Commission Name</option>
+                                            <%
+                                                for(ChargeVO  chargeVO:chargeList)
+                                                {
+                                                    String isSelected="";
+                                                    String chargeID=chargeVO.getChargeid()+"-"+chargeVO.getChargename();
+                                                    if(chargeID.split("-")[0].equalsIgnoreCase(chargename))
+                                                        //if(chargeID.equalsIgnoreCase(chargename))
+                                                        isSelected="selected";
+                                                    else
+                                                        isSelected="";
+
+                                            %>
+                                            <option value="<%=chargeID.split("-")[0]%>" <%=isSelected%>><%=chargeID%></option>
+
+                                            <%
+                                                }
+                                            %>
+                                        </select>
+
+                                    </td>
+                                </tr>
+
+                                <tr><td colspan="4">&nbsp;</td></tr>
+                                <tr>
+                                    <td style="padding: 3px" class="textb">&nbsp;</td>
+                                    <td style="padding: 3px" class="textb">Input Required</td>
+                                    <td style="padding: 3px" class="textb">:</td>
+                                    <td style="padding: 3px">
+                                        <select name="isinputrequired" class="txtbox">
+                                            <option value="N">N</option>
+                                            <option value="Y">Y</option></select>
+                                    </td>
+                                </tr>
+                                <tr><td colspan="4">&nbsp;</td></tr>
+                                <tr>
+                                    <td style="padding: 3px" class="textb">&nbsp;</td>
+                                    <td style="padding: 3px" class="textb">Commission Value</td>
+                                    <td style="padding: 3px" class="textb">:</td>
+                                    <td style="padding: 3px">
+                                        <input maxlength="15" type="text" name="chargevalue"  value="" class="txtbox">
+
+                                    </td>
+                                </tr>
+
+                                <tr><td colspan="4">&nbsp;</td></tr>
+                                <tr>
+                                    <td style="padding: 3px" class="textb">&nbsp;</td>
+                                    <td style="padding: 3px" class="textb">Start Date</td>
+                                    <td style="padding: 3px" class="textb">:</td>
+                                    <td style="padding: 3px">
+                                        <input type="text" size="16"  readonly name="effectivestartdate" class="datepicker">
+                                    </td>
+                                </tr>
+                                <tr><td colspan="4">&nbsp;</td></tr>
+                                <tr>
+                                    <td style="padding: 3px" class="textb">&nbsp;</td>
+                                    <td style="padding: 3px" class="textb">End Date</td>
+                                    <td style="padding: 3px" class="textb">:</td>
+                                    <td style="padding: 3px" style="">
+                                        <input type="text" size="16" readonly class="datepicker" name="effectiveenddate" >
+                                    </td>
+                                </tr>
+
+                                <tr><td colspan="4">&nbsp;</td></tr>
+                                <tr>
+                                    <td style="padding: 3px" class="textb">&nbsp;</td>
+                                    <td style="padding: 3px" class="textb">Sequence Number</td>
+                                    <td style="padding: 3px" class="textb">:</td>
+                                    <td style="padding: 3px">
+                                        <input maxlength="15" type="text" name="sequencenum" class="txtbox" value="">
+                                    </td>
+                                </tr>
+                                <tr><td colspan="4">&nbsp;</td></tr>
+                                <tr>
+                                    <td style="padding: 3px" width="2%" class="textb">&nbsp;</td>
+                                    <td style="padding: 3px" width="43%" class="textb"></td>
+                                    <td style="padding: 3px" width="5%" class="textb"></td>
+                                    <td style="padding: 3px" width="50%" class="textb">
+                                        <button type="submit" class="buttonform" value="Save">
+                                            <i class="fa fa-sign-in"></i>
+                                            &nbsp;&nbsp;Save
+                                        </button>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </form>
+        </div>
+    </div>
+</div>
+<%
+        }
+        else
+        {
+            response.sendRedirect("/icici/logout.jsp");
+            return;
+        }
+    }
+%>
+</body>
+</html>

@@ -1,0 +1,428 @@
+import com.directi.pg.*;
+import com.directi.pg.core.paymentgateway.SBMPaymentGateway;
+import com.manager.TerminalManager;
+import com.manager.vo.TerminalVO;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.codecs.Codec;
+import org.owasp.esapi.codecs.MySQLCodec;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+
+/**
+ * Created by Suraj on 7/19/2017.
+ */
+public class PayoutList extends HttpServlet
+{
+    private static Logger logger = new Logger(PayoutList.class.getName());
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        HttpSession session = req.getSession();
+        Merchants merchants = new Merchants();
+        Functions functions=new Functions();
+
+        if (!merchants.isLoggedIn(session)){
+            res.sendRedirect("/merchant/Logout.jsp");
+            return;
+        }
+
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+        String merchantId = (String) session.getAttribute("merchantid");
+
+        String error="";
+        String description=null;
+        String trackingId=null;
+        String terminalId=null;
+        String paymentId=null;
+        String accountid=null;
+
+        terminalId = req.getParameter("terminalid");
+        String sb = req.getParameter("terminalbuffer");
+        paymentId=req.getParameter("paymentid");
+
+        int start = 0; // start index
+        int end = 0; // end index
+        int pageno = 1;
+        int records = 15;
+
+        String EOL="<BR>";
+        String errorMsg = "";
+        String checkBalance = "";
+
+        if(req.getParameter("checkBalance") != null){
+            checkBalance = req.getParameter("checkBalance");
+        }
+
+        if(checkBalance.equalsIgnoreCase("checkBalance"))
+        {
+            try
+            {
+
+                Calendar calendar3 = Calendar.getInstance();
+                calendar3.add(Calendar.DATE, -1);
+                calendar3.set(Calendar.HOUR_OF_DAY, 0);
+                calendar3.set(Calendar.MINUTE, 0);
+                calendar3.set(Calendar.SECOND, 0);
+
+                Calendar calendar4 = Calendar.getInstance();
+                calendar4.add(Calendar.DATE, -1);
+                calendar4.set(Calendar.HOUR_OF_DAY, 23);
+                calendar4.set(Calendar.MINUTE, 59);
+                calendar4.set(Calendar.SECOND, 59);
+
+                long todaysStartTimeInSecs  = calendar3.getTimeInMillis() / 1000;
+                long endStartTimeInSecs     = calendar4.getTimeInMillis() / 1000;
+
+               String capt = getPayoutBalanceAmount(todaysStartTimeInSecs,endStartTimeInSecs,merchantId);
+                logger.debug("capt= "+capt);
+                req.setAttribute("payoutsumm", capt);
+            }
+            catch (Exception e)
+            {
+                logger.error("Exception:::::", e);
+                Functions.NewShowConfirmation1("Error", "Internal System Error while fetching Payout Balance");
+            }
+            req.setAttribute("error", error);
+            RequestDispatcher rd1 = req.getRequestDispatcher("/payoutlist.jsp?ctoken=" + user.getCSRFToken());
+            rd1.forward(req, res);
+        }
+        if (!ESAPI.validator().isValidInput("STrakingid",req.getParameter("STrakingid"),"OnlyNumber",20,true)){
+            logger.error("Invalid Tracking ID."+EOL);
+            error=error+"Invalid Tracking ID.";
+        }
+        else
+        {
+            trackingId = req.getParameter("STrakingid");
+        }
+
+        if (!ESAPI.validator().isValidInput("paymentid",req.getParameter("paymentid"),"SafeString",100,true)){
+            logger.error("Invalid PaymentId."+EOL);
+            error=error+"Invalid PaymentId.";
+        }
+        else
+        {
+            paymentId = req.getParameter("paymentid");
+        }
+
+        if (!ESAPI.validator().isValidInput("SDescription",req.getParameter("SDescription"),"Description",60,true)){
+        logger.error("Invalid Order ID");
+        error=error+"Invalid Order ID."+EOL;
+    }
+        else
+        {
+            description = req.getParameter("SDescription");
+        }
+
+        if (!ESAPI.validator().isValidInput("bank",req.getParameter("bank"),"Numbers",20,true))
+        {
+            logger.error("Invalid bank");
+            //error=error+="Invalid bank."+EOL;
+        }
+        else
+        {
+            accountid = req.getParameter("bank");
+        }
+
+        if(functions.isValueNull(error))
+        {
+            req.setAttribute("error",error);
+            RequestDispatcher rd = req.getRequestDispatcher("/payoutlist.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+        try
+        {
+           // validateOptionalParameter(req);
+            InputValidator inputValidator = new InputValidator();
+            List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+            inputFieldsListMandatory.add(InputFields.PAGENO);
+            inputFieldsListMandatory.add(InputFields.RECORDS);
+
+            inputValidator.InputValidations(req,inputFieldsListMandatory,true);
+        }
+        catch (ValidationException e)
+        {
+            logger.error("Enter valid input",e);
+            errorMsg += "<center><font class=\"text\" face=\"arial\"><b>"+ errorMsg + e.getMessage() + EOL + "</b></font></center>";
+            logger.debug("message..."+e.getMessage());
+            req.setAttribute("message",errorMsg);
+            RequestDispatcher rd = req.getRequestDispatcher("/payoutlist.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+
+        pageno = Functions.convertStringtoInt(req.getParameter("SPageno"), 1);
+        records = Functions.convertStringtoInt(req.getParameter("SRecords"),30);
+
+        // calculating start & end
+        start = (pageno - 1) * records;
+        end = records;
+
+        Hashtable hash = null;
+        RequestDispatcher rd;
+
+        TransactionEntry transactionentry = (TransactionEntry) session.getAttribute("transactionentry");
+        Set<String> gatewayTypeSet = new HashSet();
+
+        TerminalManager terminalManager = new TerminalManager();
+        TerminalVO terminalVO = new TerminalVO();
+        functions = new Functions();
+
+        if(functions.isValueNull(terminalId) && !terminalId.equalsIgnoreCase("all"))
+        {
+            try
+            {
+                terminalVO=terminalManager.getTerminalByTerminalId(terminalId);
+                if (terminalVO !=null)
+                {
+                    terminalVO.setTerminalId("("+terminalVO.getTerminalId()+")");
+                    accountid=terminalVO.getAccountId();
+                }
+
+            }
+            catch (PZDBViolationException e)
+            {
+                logger.error("DBException---",e);
+            }
+        }
+        else
+        {
+            terminalVO.setTerminalId(sb);
+        }
+
+        if (terminalVO==null)
+        {
+            rd = req.getRequestDispatcher("/payoutlist.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+        }
+
+        gatewayTypeSet.addAll(transactionentry.getGatewayHash(merchantId,accountid).keySet());
+
+        if(gatewayTypeSet.size()==0)
+        {
+            gatewayTypeSet.add(SBMPaymentGateway.GATEWAY_TYPE);
+        }
+
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+        StringBuilder query = new StringBuilder();
+
+        String tablename="";
+        Iterator i = gatewayTypeSet.iterator();
+        while(i.hasNext())
+        {
+            tablename = Database.getTableName((String) i.next());
+            if(tablename.equals("transaction_icicicredit"))
+            {
+                query.append("select T.status,T.icicitransid as trackingid,T.paymentid as paymentid,T.transid,T.description,T.amount,T.captureamount,T.refundamount,T.paymodeid,T.accountid,M.company_name from transaction_icicicredit as T,members as M where icicitransid>1");
+            }
+            else if(tablename.equals("transaction_qwipi"))
+            {
+                query.append("select T.status,T.trackingid as trackingid,T.qwipiPaymentOrderNumber as paymentid,T.transid,T.description,T.amount,T.captureamount,T.refundamount,T.paymodeid,T.accountid,M.company_name,T.terminalid,T.currency from transaction_qwipi as T,members as M where trackingid>1");
+            }
+            else if(tablename.equals("transaction_ecore"))
+            {
+                query.append("select T.status,T.trackingid as trackingid,T.ecorePaymentOrderNumber as paymentid ,T.transid,T.description,T.amount,T.captureamount,T.refundamount,T.paymodeid,T.accountid,M.company_name,T.terminalid,T.currency from transaction_ecore as T,members as M where trackingid>1");
+            }
+            else
+            {
+                query.append("select T.status,T.trackingid as trackingid,T.paymentid as paymentid,T.transid,T.description,T.amount,T.captureamount,T.refundamount,T.paymodeid,T.accountid,M.company_name,T.terminalid,T.currency from ").append(tablename).append(" as T,members as M where trackingid>1");
+            }
+
+            if (description != null && !description.equalsIgnoreCase(""))
+            {
+                query.append(" and description like '%" +ESAPI.encoder().encodeForSQL(me,description) + "%'");
+
+            }
+            if(paymentId !=null && !paymentId.equalsIgnoreCase(""))
+            {
+                if(tablename.equals("transaction_icicicredit"))
+                {
+                    query.append(" and paymentid like '%" +ESAPI.encoder().encodeForSQL(me,paymentId) + "%'");
+                }
+                else if(tablename.equals("transaction_qwipi"))
+                {
+                    query.append(" and qwipiPaymentOrderNumber like '%" +ESAPI.encoder().encodeForSQL(me,paymentId) + "%'");
+                }
+                else if(tablename.equals("transaction_ecore"))
+                {
+                    query.append(" and ecorePaymentOrderNumber like '%" +ESAPI.encoder().encodeForSQL(me,paymentId) + "%'");
+                }
+                else
+                {
+                    query.append(" and paymentid like '%" +ESAPI.encoder().encodeForSQL(me,paymentId) + "%'");
+                }
+            }
+            if (trackingId != null && !trackingId.equalsIgnoreCase(""))
+            {
+                if(tablename.equals("transaction_icicicredit"))
+                {
+                    query.append(" and icicitransid=" ).append(ESAPI.encoder().encodeForSQL(me,trackingId));
+                }
+                else
+                {
+                    query.append(" and trackingid=").append(ESAPI.encoder().encodeForSQL(me,trackingId));
+                }
+            }
+            //query.append(" and terminalid IN " + terminalVO.getTerminalId());
+            /*if(terminalVO !=null && functions.isValueNull(terminalVO.getTerminalId()) && terminalVO.getTerminalId().contains(","))*/
+            if(terminalVO !=null && functions.isValueNull(terminalVO.getTerminalId()))
+            {
+                query.append(" and terminalid IN ").append( terminalVO.getTerminalId());
+            }
+
+            if(tablename.equals("transaction_qwipi"))
+            {
+                query.append(" and status IN ('settled','capturesuccess') and toid=" +ESAPI.encoder().encodeForSQL(me,merchantId)+ " and T.toid=M.memberid ");
+            }
+            else if(tablename.equals("transaction_ecore"))
+            {
+                query.append(" and status IN ('settled','capturesuccess') and toid=" +ESAPI.encoder().encodeForSQL(me,merchantId)+ " and T.toid=M.memberid ");
+            }
+            else
+            {
+                query.append(" and status IN ('settled','capturesuccess') and toid=" +ESAPI.encoder().encodeForSQL(me,merchantId)+ " and T.toid=M.memberid ");
+            }
+            if(i.hasNext())
+            {
+                query.append(" UNION ");
+            }
+        }
+
+        StringBuilder countquery = new StringBuilder("select count(*) from ( ").append(query).append( ") as temp ");
+        query.append(" order by trackingid desc LIMIT ").append( start).append( ",").append( end);
+        logger.debug(" query =="+query.toString());
+        Connection cn = null;
+        ResultSet rs = null;
+
+        try{
+            cn = Database.getRDBConnection();
+            hash = Database.getHashFromResultSet(Database.executeQuery(query.toString(), cn));
+            rs = Database.executeQuery(countquery.toString(), cn);
+            rs.next();
+            int totalrecords = rs.getInt(1);
+
+            hash.put("totalrecords", "" + totalrecords);
+            hash.put("records", "0");
+
+            if (totalrecords > 0)
+            {
+                hash.put("records", "" + (hash.size() - 2));
+            }
+            req.setAttribute("transdetails", hash);
+            req.setAttribute("terminal", terminalId);
+            req.setAttribute("terminalbuffer", sb);
+            req.setAttribute("trackingid", req.getParameter("STrackingid"));
+            req.setAttribute("desc", description);
+            req.setAttribute("paymentid", paymentId);
+            session.setAttribute("bank",terminalId);
+
+        }
+        catch (SystemError se){
+            logger.error("SystemError:::::",se);
+            //error="Internal system error while getting payout transaction list";
+            Functions.NewShowConfirmation1("Error", "Internal System Error while getting list of Transactions");
+        }
+        catch (Exception e){
+            logger.error("Exception:::::", e);
+            //error="Internal system error while getting payout transaction list";
+            Functions.NewShowConfirmation1("Error", "Internal System Error while getting list of Transactions");
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closeConnection(cn);
+        }
+        req.setAttribute("error",error);
+        rd = req.getRequestDispatcher("/payoutlist.jsp?ctoken="+user.getCSRFToken());
+        rd.forward(req, res);
+    }
+    /*private void validateOptionalParameter(HttpServletRequest req) throws ValidationException
+    {
+        InputValidator inputValidator = new InputValidator();
+        List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+        inputFieldsListMandatory.add(InputFields.PAGENO);
+        inputFieldsListMandatory.add(InputFields.RECORDS);
+
+        inputValidator.InputValidations(req,inputFieldsListMandatory,true);
+    }*/
+
+   public String getPayoutBalanceAmount(long todaysStartTimeInSecs,long endStartTimeInSecs,String memeberId){
+       String payOutBalance     = "0.00";
+       PreparedStatement psmt   = null;
+       ResultSet resultSet      = null;
+       Connection conn          = null;
+       try{
+           conn                = Database.getRDBConnection();
+          // double   percentage = getPayoutBalancePercetage(memeberId);
+          // StringBuffer query  = new StringBuffer("SELECT SUM(tc.captureamount *0.6) FROM transaction_common tc WHERE toid= ?  AND tc.status  IN ('capturesuccess') AND tc.dtstamp > ? AND tc.dtstamp < ?");
+           StringBuffer query  = new StringBuffer("SELECT SUM(tc.captureamount) FROM transaction_common tc WHERE toid= ?  AND tc.status  IN ('capturesuccess') AND tc.dtstamp > ? AND tc.dtstamp < ?");
+           psmt                =  conn.prepareStatement(query.toString());
+           psmt.setString(1, memeberId);
+           psmt.setString(2, String.valueOf(todaysStartTimeInSecs));
+           psmt.setString(3, String.valueOf(endStartTimeInSecs));
+           resultSet = psmt.executeQuery();
+           logger.debug("getPayoutBalanceAmount Query " + psmt);
+
+           while (resultSet.next())
+           {
+               payOutBalance = String.valueOf(resultSet.getDouble(1));
+           }
+
+        }catch (Exception e){
+           logger.error("Exception:::::", e);
+           Functions.NewShowConfirmation1("Error", "Internal System Error while getting PayoutBalance");
+        }finally
+       {
+           Database.closeResultSet(resultSet);
+           Database.closeConnection(conn);
+       }
+       return  payOutBalance;
+    }
+
+    public double getPayoutBalancePercetage(String memeberId){
+        double payOutBalance     = 0.00;
+        PreparedStatement psmt   = null;
+        ResultSet resultSet            = null;
+        Connection conn          = null;
+        try{
+            conn                = Database.getRDBConnection();
+            StringBuffer query  = new StringBuffer("SELECT payoutBalancepercentage FROM merchant_configuration  WHERE memberid=? ");
+            psmt                =  conn.prepareStatement(query.toString());
+            psmt.setString(1, memeberId);
+            resultSet = psmt.executeQuery();
+            logger.debug("getPayoutBalancePercetage " + psmt);
+            while (resultSet.next())
+            {
+                payOutBalance = resultSet.getDouble(1);
+            }
+
+        }catch (Exception e){
+            logger.error("Exception:::::", e);
+            Functions.NewShowConfirmation1("Error", "Internal System Error while getting PayoutBalance");
+        }finally
+        {
+            Database.closeResultSet(resultSet);
+            Database.closeConnection(conn);
+        }
+        return  payOutBalance;
+    }
+}

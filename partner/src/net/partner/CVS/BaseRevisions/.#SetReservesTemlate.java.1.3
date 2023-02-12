@@ -1,0 +1,397 @@
+package net.partner;
+
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.manager.PartnerManager;
+import com.manager.enums.PartnerTemplatePreference;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Created by Namrata on 6/15/2020.
+ */
+public class SetReservesTemlate extends HttpServlet
+{
+    private static Logger logger = new Logger(AddTemplateColor.class.getName());
+
+    public void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        doPost(req, res);
+    }
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+
+        int updRecs = 0;
+        HttpSession session = req.getSession();
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+        PartnerFunctions partnerFunctions = new PartnerFunctions();
+        if(!partnerFunctions.isLoggedInPartner(session))
+        {
+            res.sendRedirect("/partner/logout.jsp");
+            return;
+        }
+
+        Functions functions = new Functions();
+        String errorMsg = "";
+        String EOL = "<br>";
+        String partnerId = req.getParameter("partnerId");
+        String ATRANSACTIONPAGEMERCHANTLOGO = req.getParameter(PartnerTemplatePreference.ATRANSACTIONPAGEMERCHANTLOGO.toString());
+
+        String AMAILBACKGROUNDCOLOR = "";
+        String AMAIL_PANELHEADING_COLOR = "";
+        String AMAIL_HEADPANELFONT_COLOR = "";
+        String AMAIL_BODYPANELFONT_COLOR = "";
+
+        String NEW_CHECKOUT_BODYNFOOTER_COLOR="";
+        String NEW_CHECKOUT_HEADERBACKGROUND_COLOR="";
+        String NEW_CHECKOUT_NAVIGATIONBAR_COLOR="";
+        String NEW_CHECKOUT_BUTTON_FONT_COLOR="";
+        String NEW_CHECKOUT_HEADER_FONT_COLOR="";
+        String NEW_CHECKOUT_FULLBACKGROUND_COLOR="";
+        String NEW_CHECKOUT_LABEL_FONT_COLOR="";
+        String NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR="";
+        String NEW_CHECKOUT_BUTTON_COLOR="";
+        String NEW_CHECKOUT_ICON_COLOR="";
+        String NEW_CHECKOUT_TIMER_COLOR="";
+        String NEW_CHECKOUT_BOX_SHADOW="";
+
+
+
+        if (!ESAPI.validator().isValidInput("AMAILBACKGROUNDCOLOR ", req.getParameter(PartnerTemplatePreference.AMAILBACKGROUNDCOLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Mail Template BackGround Color" + EOL;
+        else
+            AMAILBACKGROUNDCOLOR = req.getParameter(PartnerTemplatePreference.AMAILBACKGROUNDCOLOR.toString());
+        if (!ESAPI.validator().isValidInput("AMAIL_PANELHEADING_COLOR ", req.getParameter(PartnerTemplatePreference.AMAIL_PANELHEADING_COLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Mail Panel Heading Color" + EOL;
+        else
+            AMAIL_PANELHEADING_COLOR = req.getParameter(PartnerTemplatePreference.AMAIL_PANELHEADING_COLOR.toString());
+
+        if (!ESAPI.validator().isValidInput("AMAIL_HEADPANELFONT_COLOR ", req.getParameter(PartnerTemplatePreference.AMAIL_HEADPANELFONT_COLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Mail Label Font Color" + EOL;
+        else
+            AMAIL_HEADPANELFONT_COLOR = req.getParameter(PartnerTemplatePreference.AMAIL_HEADPANELFONT_COLOR.toString());
+        if (!ESAPI.validator().isValidInput("AMAIL_BODYPANELFONT_COLOR ", req.getParameter(PartnerTemplatePreference.AMAIL_BODYPANELFONT_COLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Table Color" + EOL;
+        else
+            AMAIL_BODYPANELFONT_COLOR = req.getParameter(PartnerTemplatePreference.AMAIL_BODYPANELFONT_COLOR.toString());
+
+
+
+        if (!ESAPI.validator().isValidInput("NEW_CHECKOUT_BODYNFOOTER_COLOR ", req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Body & Footer Color" + EOL;
+        else
+            NEW_CHECKOUT_BODYNFOOTER_COLOR = req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.toString());
+
+        if (!ESAPI.validator().isValidInput("NEW_CHECKOUT_HEADERBACKGROUND_COLOR ", req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Header Background Color" + EOL;
+        else
+            NEW_CHECKOUT_HEADERBACKGROUND_COLOR = req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.toString());
+
+        if (!ESAPI.validator().isValidInput("NEW_CHECKOUT_NAVIGATIONBAR_COLOR ", req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Navigation Bar" + EOL;
+        else
+            NEW_CHECKOUT_NAVIGATIONBAR_COLOR = req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.toString());
+
+        if (!ESAPI.validator().isValidInput("NEW_CHECKOUT_BUTTON_FONT_COLOR ", req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Button Font Color" + EOL;
+        else
+            NEW_CHECKOUT_BUTTON_FONT_COLOR = req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.toString());
+
+        if (!ESAPI.validator().isValidInput("NEW_CHECKOUT_HEADER_FONT_COLOR ", req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Header Font Color" + EOL;
+        else
+            NEW_CHECKOUT_HEADER_FONT_COLOR = req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.toString());
+
+
+        if (!ESAPI.validator().isValidInput("NEW_CHECKOUT_FULLBACKGROUND_COLOR ", req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Full Background Color" + EOL;
+        else
+            NEW_CHECKOUT_FULLBACKGROUND_COLOR = req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.toString());
+
+        if (!ESAPI.validator().isValidInput("NEW_CHECKOUT_LABEL_FONT_COLOR ", req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Label Font Color" + EOL;
+        else
+            NEW_CHECKOUT_LABEL_FONT_COLOR = req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.toString());
+
+        if (!ESAPI.validator().isValidInput("NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR ", req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Navigation Bar Font Color" + EOL;
+        else
+            NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR = req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.toString());
+
+        if (!ESAPI.validator().isValidInput("NEW_CHECKOUT_BUTTON_COLOR ", req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Button Color" + EOL;
+        else
+            NEW_CHECKOUT_BUTTON_COLOR = req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.toString());
+
+        if (!ESAPI.validator().isValidInput("NEW_CHECKOUT_ICON_COLOR ", req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_ICON_COLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Icon Color" + EOL;
+        else
+            NEW_CHECKOUT_ICON_COLOR = req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_ICON_COLOR.toString());
+
+        if (!ESAPI.validator().isValidInput("NEW_CHECKOUT_TIMER_COLOR ", req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_TIMER_COLOR.toString()), "colorForTemplate", 10, true))
+            errorMsg = errorMsg + "Invalid Template Color" + EOL;
+        else
+            NEW_CHECKOUT_TIMER_COLOR = req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_TIMER_COLOR.toString());
+
+        if (!ESAPI.validator().isValidInput("NEW_CHECKOUT_BOX_SHADOW", req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_BOX_SHADOW.toString()), "colorForTemplate", 50, true))
+            errorMsg = errorMsg + "Invalid Box Shadow" + EOL;
+        else
+            NEW_CHECKOUT_BOX_SHADOW = req.getParameter(PartnerTemplatePreference.NEW_CHECKOUT_BOX_SHADOW.toString());
+
+        StringBuilder sSuccessMessage = new StringBuilder();
+        StringBuilder sErrorMessage = new StringBuilder();
+        boolean isPartnerSaved = false;
+        Map<String, Object> partnerTemplateInformationUpdate = new HashMap<String, Object>();
+        Map<String, Object> partnerTemplateInformationInsert = new HashMap<String, Object>();
+        Map<String, Object> partnerTemplateInformationDelete = new HashMap<String, Object>();
+        boolean isPartnerUpdated = false;
+        boolean isPartnerDeleted = false;
+
+        try
+        {
+            if (functions.isValueNull(partnerId))
+            {
+                PartnerManager partnerManager = new PartnerManager();
+
+                Map<String, Object> partnerPresentTemplateDetails = partnerManager.getPartnerSavedMemberTemplateDetails(partnerId);
+
+                if (!functions.isValueNull(AMAILBACKGROUNDCOLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.AMAILBACKGROUNDCOLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.AMAILBACKGROUNDCOLOR.name(), AMAILBACKGROUNDCOLOR);
+                }
+                else  if (functions.isValueNull(AMAILBACKGROUNDCOLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.AMAILBACKGROUNDCOLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.AMAILBACKGROUNDCOLOR.name(), AMAILBACKGROUNDCOLOR);
+                }
+                else if (functions.isValueNull(AMAILBACKGROUNDCOLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.AMAILBACKGROUNDCOLOR.name(), AMAILBACKGROUNDCOLOR);
+                }
+                if (!functions.isValueNull(AMAIL_PANELHEADING_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.AMAIL_PANELHEADING_COLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.AMAIL_PANELHEADING_COLOR.name(), AMAIL_PANELHEADING_COLOR);
+                }
+                else   if (functions.isValueNull(AMAIL_PANELHEADING_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.AMAIL_PANELHEADING_COLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.AMAIL_PANELHEADING_COLOR.name(), AMAIL_PANELHEADING_COLOR);
+                }
+                else if (functions.isValueNull(AMAIL_PANELHEADING_COLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.AMAIL_PANELHEADING_COLOR.name(), AMAIL_PANELHEADING_COLOR);
+                }
+                if (!functions.isValueNull(AMAIL_HEADPANELFONT_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.AMAIL_HEADPANELFONT_COLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.AMAIL_HEADPANELFONT_COLOR.name(), AMAIL_HEADPANELFONT_COLOR);
+                }
+                else if (functions.isValueNull(AMAIL_HEADPANELFONT_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.AMAIL_HEADPANELFONT_COLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.AMAIL_HEADPANELFONT_COLOR.name(), AMAIL_HEADPANELFONT_COLOR);
+                }
+                else if (functions.isValueNull(AMAIL_HEADPANELFONT_COLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.AMAIL_HEADPANELFONT_COLOR.name(), AMAIL_HEADPANELFONT_COLOR);
+                }
+                if (!functions.isValueNull(AMAIL_BODYPANELFONT_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.AMAIL_BODYPANELFONT_COLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.AMAIL_BODYPANELFONT_COLOR.name(), AMAIL_BODYPANELFONT_COLOR);
+                }
+                else  if (functions.isValueNull(AMAIL_BODYPANELFONT_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.AMAIL_BODYPANELFONT_COLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.AMAIL_BODYPANELFONT_COLOR.name(), AMAIL_BODYPANELFONT_COLOR);
+                }
+                else if (functions.isValueNull(AMAIL_BODYPANELFONT_COLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.AMAIL_BODYPANELFONT_COLOR.name(), AMAIL_BODYPANELFONT_COLOR);
+                }
+                if (!functions.isValueNull(NEW_CHECKOUT_BODYNFOOTER_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.name(), NEW_CHECKOUT_BODYNFOOTER_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_BODYNFOOTER_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.name(), NEW_CHECKOUT_BODYNFOOTER_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_BODYNFOOTER_COLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.name(), NEW_CHECKOUT_BODYNFOOTER_COLOR);
+                }
+
+
+                if (!functions.isValueNull(NEW_CHECKOUT_HEADERBACKGROUND_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.name(), NEW_CHECKOUT_HEADERBACKGROUND_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_HEADERBACKGROUND_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.name(), NEW_CHECKOUT_HEADERBACKGROUND_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_HEADERBACKGROUND_COLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.name(), NEW_CHECKOUT_HEADERBACKGROUND_COLOR);
+                }
+
+                if (!functions.isValueNull(NEW_CHECKOUT_NAVIGATIONBAR_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.name(), NEW_CHECKOUT_NAVIGATIONBAR_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_NAVIGATIONBAR_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.name(), NEW_CHECKOUT_NAVIGATIONBAR_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_NAVIGATIONBAR_COLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.name(), NEW_CHECKOUT_NAVIGATIONBAR_COLOR);
+                }
+
+                if (!functions.isValueNull(NEW_CHECKOUT_BUTTON_FONT_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.name(), NEW_CHECKOUT_BUTTON_FONT_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_BUTTON_FONT_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.name(), NEW_CHECKOUT_BUTTON_FONT_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_BUTTON_FONT_COLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.name(), NEW_CHECKOUT_BUTTON_FONT_COLOR);
+                }
+
+                if (!functions.isValueNull(NEW_CHECKOUT_HEADER_FONT_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.name(), NEW_CHECKOUT_HEADER_FONT_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_HEADER_FONT_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.name(), NEW_CHECKOUT_HEADER_FONT_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_HEADER_FONT_COLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.name(), NEW_CHECKOUT_HEADER_FONT_COLOR);
+                }
+
+                if (!functions.isValueNull(NEW_CHECKOUT_FULLBACKGROUND_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.name(), NEW_CHECKOUT_FULLBACKGROUND_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_FULLBACKGROUND_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.name(), NEW_CHECKOUT_FULLBACKGROUND_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_FULLBACKGROUND_COLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.name(), NEW_CHECKOUT_FULLBACKGROUND_COLOR);
+                }
+
+                if (!functions.isValueNull(NEW_CHECKOUT_LABEL_FONT_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.name(), NEW_CHECKOUT_LABEL_FONT_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_LABEL_FONT_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.name(), NEW_CHECKOUT_LABEL_FONT_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_LABEL_FONT_COLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.name(), NEW_CHECKOUT_LABEL_FONT_COLOR);
+                }
+
+                if (!functions.isValueNull(NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.name(), NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.name(), NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.name(), NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR);
+                }
+
+                if (!functions.isValueNull(NEW_CHECKOUT_BUTTON_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.name(), NEW_CHECKOUT_BUTTON_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_BUTTON_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.name(), NEW_CHECKOUT_BUTTON_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_BUTTON_COLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.name(), NEW_CHECKOUT_BUTTON_COLOR);
+                }
+
+                if (!functions.isValueNull(NEW_CHECKOUT_ICON_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_ICON_COLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.NEW_CHECKOUT_ICON_COLOR.name(), NEW_CHECKOUT_ICON_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_ICON_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_ICON_COLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.NEW_CHECKOUT_ICON_COLOR.name(), NEW_CHECKOUT_ICON_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_ICON_COLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.NEW_CHECKOUT_ICON_COLOR.name(), NEW_CHECKOUT_ICON_COLOR);
+                }
+
+                if (!functions.isValueNull(NEW_CHECKOUT_TIMER_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_TIMER_COLOR.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.NEW_CHECKOUT_TIMER_COLOR.name(), NEW_CHECKOUT_TIMER_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_TIMER_COLOR) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_TIMER_COLOR.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.NEW_CHECKOUT_TIMER_COLOR.name(), NEW_CHECKOUT_TIMER_COLOR);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_TIMER_COLOR))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.NEW_CHECKOUT_TIMER_COLOR.name(), NEW_CHECKOUT_TIMER_COLOR);
+                }
+
+                if (!functions.isValueNull(NEW_CHECKOUT_BOX_SHADOW) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_BOX_SHADOW.name()))
+                {
+                    partnerTemplateInformationDelete.put(PartnerTemplatePreference.NEW_CHECKOUT_BOX_SHADOW.name(), NEW_CHECKOUT_BOX_SHADOW);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_BOX_SHADOW) && partnerPresentTemplateDetails.containsKey(PartnerTemplatePreference.NEW_CHECKOUT_BOX_SHADOW.name()))
+                {
+                    partnerTemplateInformationUpdate.put(PartnerTemplatePreference.NEW_CHECKOUT_BOX_SHADOW.name(), NEW_CHECKOUT_BOX_SHADOW);
+                }
+                else if (functions.isValueNull(NEW_CHECKOUT_BOX_SHADOW))
+                {
+                    partnerTemplateInformationInsert.put(PartnerTemplatePreference.NEW_CHECKOUT_BOX_SHADOW.name(), NEW_CHECKOUT_BOX_SHADOW);
+                }
+
+                isPartnerDeleted= partnerManager.deletePartnerTemplateDetails(partnerTemplateInformationDelete, partnerId);
+                isPartnerSaved = partnerManager.insertPartnerTemplateDetails(partnerTemplateInformationInsert, partnerId);
+                isPartnerUpdated = partnerManager.updatePartnerTemplateDetails(partnerTemplateInformationUpdate, partnerId);
+                logger.debug("isPartnerSaved::"+isPartnerSaved + isPartnerUpdated +isPartnerDeleted);
+                System.out.println("isPartnerSaved::"+isPartnerSaved + isPartnerUpdated +isPartnerDeleted);
+            }
+
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        sSuccessMessage.append(updRecs + " Records Updated");
+        StringBuilder chargeBackMessage = new StringBuilder();
+        chargeBackMessage.append(sSuccessMessage.toString());
+        chargeBackMessage.append("<BR/>");
+        chargeBackMessage.append(sErrorMessage.toString());
+
+        req.setAttribute("error",errorMsg);
+        String redirectpage = "/addTemplateColors.jsp?ctoken="+user.getCSRFToken();
+        req.setAttribute("cbmessage", sSuccessMessage.toString());
+        RequestDispatcher rd = req.getRequestDispatcher(redirectpage);
+        rd.forward(req, res);
+    }
+}

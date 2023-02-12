@@ -1,0 +1,654 @@
+<%@ page import="org.owasp.esapi.ESAPI" %>
+<%@ page import="org.owasp.esapi.errors.ValidationException" %>
+<%@ page import="java.util.*" %>
+<%@ page import="org.owasp.esapi.ValidationErrorList" %>
+<%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="com.directi.pg.*" %>
+<%@ page import="com.manager.enums.TransReqRejectCheck" %>
+<%@ include file="top.jsp" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: admin
+  Date: march 9, 2017
+  Time: 4:31:18 PM
+  To change this template use File | Settings | File Templates.
+--%>
+<%!
+  TransactionLogger transactionLogger = new TransactionLogger("rejectedTransactionList.jsp");
+  Functions functions=new Functions();
+%>
+<%
+  //LinkedHashMap memberidDetails=partner.getPartnerMembersDetail((String) session.getAttribute("merchantid"));
+  String memberid=nullToStr(request.getParameter("toid"));
+  String pid=nullToStr(request.getParameter("partnerId"));
+  String Config =null;
+
+  String str = "";
+  str= str + "&ctoken="+ctoken;
+
+  String gateway = Functions.checkStringNull(request.getParameter("gateway"));
+  if (gateway == null)
+  {gateway = "";}
+
+  String desc = Functions.checkStringNull(request.getParameter("description"));
+  if (desc == null)
+    desc = "";
+
+  String amt = Functions.checkStringNull(request.getParameter("amount"));
+  if (amt == null)
+    amt = "";
+
+  String emailaddr = Functions.checkStringNull(request.getParameter("emailaddr"));
+  if (emailaddr == null)
+    emailaddr = "";
+
+  String orderdesc = Functions.checkStringNull(request.getParameter("orderdesc"));
+  if (orderdesc == null)
+    orderdesc = "";
+
+  String name1 = Functions.checkStringNull(request.getParameter("name"));
+  if (name1 == null)
+    name1 = "";
+
+  String trackingid = Functions.checkStringNull(request.getParameter("STrackingid"));
+  if (trackingid == null)
+    trackingid = "";
+
+  String toid = Functions.checkStringNull(request.getParameter("toid"));
+  if (toid == null)
+    toid = "";
+
+  String firstsix = Functions.checkStringNull(request.getParameter("firstsix"));
+  if (firstsix == null)
+    firstsix = "";
+
+  String lastfour = Functions.checkStringNull(request.getParameter("lastfour"));
+  if (lastfour == null)
+    lastfour = "";
+  String rejectreason = Functions.checkStringNull(request.getParameter("rejectreason"));
+  if (rejectreason == null)
+    rejectreason = "";
+
+  String partnerId = Functions.checkStringNull(request.getParameter("partnerId"));
+  String merchantid=(String)session.getAttribute("merchantid");
+  if (partnerId == null)
+    partnerId = "";
+
+  String Roles = partner.getRoleofPartner(String.valueOf(session.getAttribute("merchantid")));
+  if(Roles.contains("superpartner")){
+
+  }else{
+    pid = String.valueOf(session.getAttribute("merchantid"));
+    Config = "disabled";
+  }
+
+  String fdate=null;
+  String tdate=null;
+
+  fdate = ESAPI.validator().getValidInput("fromdate",request.getParameter("fromdate"),"fromDate",10,true);
+  tdate = ESAPI.validator().getValidInput("todate",request.getParameter("todate"),"fromDate",10,true);
+
+  Date date = new Date();
+  SimpleDateFormat originalFormat = new SimpleDateFormat("dd/MM/yyyy");
+
+  String Date = originalFormat.format(date);
+  date.setDate(1);
+  String fromDate = originalFormat.format(date);
+
+  fdate = Functions.checkStringNull(request.getParameter("fromdate")) == null ? fromDate : request.getParameter("fromdate");
+  tdate = Functions.checkStringNull(request.getParameter("todate")) == null ? Date : request.getParameter("todate");
+
+  String status = Functions.checkStringNull(request.getParameter("status"));
+
+  Calendar rightNow = Calendar.getInstance();
+  if (fdate == null) fdate = "" + 1;
+  if (tdate == null) tdate = "" + rightNow.get(rightNow.DATE);
+
+  String currentyear = "" + rightNow.get(rightNow.YEAR);
+
+  if (fdate != null) str = str + "&fromdate=" + fdate;
+  if (tdate != null) str = str + "&todate=" + tdate;
+  if (desc != null) str = str + "&desc=" + desc;
+  if (amt != null) str = str + "&amount=" + amt;
+  if (emailaddr != null) str = str + "&emailaddr=" + emailaddr;
+  if (name1 != null) str = str + "&name=" + name1;
+  if (trackingid != null) str = str + "&STrackingid=" + trackingid;
+  if (orderdesc != null) str = str + "&orderdesc=" + orderdesc;
+  if (toid != null) str = str + "&toid=" + toid;
+  if (status != null) str = str + "&status=" + status;
+  if (firstsix != null) str = str + "&firstsix=" + firstsix;
+  if (lastfour != null) str = str + "&lastfour=" + lastfour;
+  if (gateway !=null) str = str + "&gateway=" + gateway;
+  if (rejectreason != null) str = str + "&rejectreason=" + rejectreason;
+  if (toid != null) str = str + "&toid=" + toid;
+  if (partnerId != null) str = str + "&partnerId=" + partnerId;
+
+  int pageno = Functions.convertStringtoInt(ESAPI.encoder().encodeForHTML(request.getParameter("SPageno")), 1);
+  int pagerecords = Functions.convertStringtoInt(ESAPI.encoder().encodeForHTML(request.getParameter("SRecords")), 30);
+
+  str = str + "&SRecords=" + pagerecords;
+
+  ResourceBundle rb1 = null;
+  String language_property1 = (String)session.getAttribute("language_property");
+  rb1 = LoadProperties.getProperty(language_property1);
+
+  String rejectedTransactionList_Rejected_Transaction_List = rb1.getString("rejectedTransactionList_Rejected_Transaction_List");
+  String rejectedTransactionList_From = rb1.getString("rejectedTransactionList_From");
+  String rejectedTransactionList_To = rb1.getString("rejectedTransactionList_To");
+  String rejectedTransactionList_Reject_Reason = rb1.getString("rejectedTransactionList_Reject_Reason");
+  String rejectedTransactionList_All = rb1.getString("rejectedTransactionList_All");
+  String rejectedTransactionList_First_Six = rb1.getString("rejectedTransactionList_First_Six");
+  String rejectedTransactionList_Last_Four = rb1.getString("rejectedTransactionList_Last_Four");
+  String rejectedTransactionList_Amount = rb1.getString("rejectedTransactionList_Amount");
+  String rejectedTransactionList_Email_ID = rb1.getString("rejectedTransactionList_Email_ID");
+  String rejectedTransactionList_Partner_ID = rb1.getString("rejectedTransactionList_Partner_ID");
+  String rejectedTransactionList_Merchant_ID = rb1.getString("rejectedTransactionList_Merchant_ID");
+  String rejectedTransactionList_Name = rb1.getString("rejectedTransactionList_Name");
+  String rejectedTransactionList_Description = rb1.getString("rejectedTransactionList_Description");
+  String rejectedTransactionList_Search = rb1.getString("rejectedTransactionList_Search");
+  String rejectedTransactionList_Summary_Data = rb1.getString("rejectedTransactionList_Summary_Data");
+  String rejectedTransactionList_Note = rb1.getString("rejectedTransactionList_Note");
+  String rejectedTransactionList_Date = rb1.getString("rejectedTransactionList_Date");
+  String rejectedTransactionList_Tracking_ID = rb1.getString("rejectedTransactionList_Tracking_ID");
+  String rejectedTransactionList_Totype = rb1.getString("rejectedTransactionList_Totype");
+  String rejectedTransactionList_Currency = rb1.getString("rejectedTransactionList_Currency");
+  String rejectedTransactionList_First_Name = rb1.getString("rejectedTransactionList_First_Name");
+  String rejectedTransactionList_Last_Name = rb1.getString("rejectedTransactionList_Last_Name");
+  String rejectedTransactionList_IP_Address = rb1.getString("rejectedTransactionList_IP_Address");
+  String rejectedTransactionList_Terminal_ID = rb1.getString("rejectedTransactionList_Terminal_ID");
+  String rejectedTransactionList_Showing_Page = rb1.getString("rejectedTransactionList_Showing_Page");
+  String rejectedTransactionList_records = rb1.getString("rejectedTransactionList_records");
+  String rejectedTransactionList_Sorry = rb1.getString("rejectedTransactionList_Sorry");
+  String rejectedTransactionList_No_Records_Found = rb1.getString("rejectedTransactionList_No_Records_Found");
+  String rejectedTransactionList_Note2 = rb1.getString("rejectedTransactionList_Note2");
+  String rejectedTransactionList_of = rb1.getString("rejectedTransactionList_of");
+  String rejectedTransactionList_Filter = rb1.getString("rejectedTransactionList_Filter");
+  String rejectedTransactionList_page_no = rb1.getString("rejectedTransactionList_page_no");
+  String rejectedTransactionList_total_no_of_records = rb1.getString("rejectedTransactionList_total_no_of_records");
+
+
+%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+
+<%
+  String company = ESAPI.encoder().encodeForHTML((String)session.getAttribute("partnername"));
+  session.setAttribute("submit","rejectedTransactionsList");
+  String partnerId1=(String)session.getAttribute("merchantid");
+%>
+<html>
+<head>
+  <title><%=company%> | Rejected Transactions</title>
+  <style type="text/css">
+    #myTable th{text-align: center;}
+
+    #myTable td{
+      font-family: Open Sans;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    #myTable .button3 {
+      text-indent: 0!important;
+      width: 100%;
+      height: inherit!important;
+      display: block;
+      color: #000000;
+      padding: 0px;
+      background: transparent!important;
+      border: 0px solid #dedede;
+      text-align: center!important;
+      font-family: "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+      font-size: 12px;
+    }
+
+  </style>
+</head>
+<body class="bodybackground">
+<script type="text/javascript" src="/partner/javascript/jquery.min.js?ver=1"></script>
+<script src="/partner/NewCss/js/jquery-ui.min.js"></script>
+<script src="/partner/javascript/autocomplete_partner_memberid.js"></script>
+
+<link rel="stylesheet" href=" /merchant/transactionCSS/css/jquery.dataTables.min.css">
+<script type="text/javascript" src="/merchant/transactionCSS/js/jquery.dataTables.min.js"></script>
+<link href="/merchant/datepicker/datepicker/datepicker3.css" rel="stylesheet">
+<script src="/merchant/datepicker/datepicker/bootstrap-datepicker.js"></script>
+<script src="/partner/NewCss/libs/jquery-icheck/icheck.min.js"></script>
+
+<title><%=company%> Merchant Transactions</title>
+<script language="javascript">
+  function isint(form)
+  {
+    if (isNaN(form.numrows.value))
+      return false;
+    else
+      return true;
+  }
+</script>
+<script type="text/javascript">
+
+  $('#sandbox-container input').datepicker({
+  });
+</script>
+<script>
+  $(function() {
+    $( ".datepicker" ).datepicker({dateFormat: "yy-mm-dd"});
+  });
+</script>
+<script>
+  function download()
+  {
+    var answer = confirm("do you want to Download File?");
+    if(answer == true)
+    {
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+  }
+</script>
+<%
+  session.setAttribute("submit","rejectedTransactionsList");
+%>
+<div class="content-page">
+  <div class="content">
+    <!-- Page Heading Start -->
+    <div class="page-heading">
+
+      <div class="row">
+        <div class="col-sm-12 portlets ui-sortable">
+          <div class="widget">
+            <div class="widget-header transparent">
+              <h2><strong><i class="fa fa-th-large"></i>&nbsp;&nbsp; <%=rejectedTransactionList_Rejected_Transaction_List%></strong></h2>
+              <div class="additional-btn">
+                <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+              </div>
+            </div>
+            <form  name="form" method="post" action="/partner/net/RejectedTransactionsList?ctoken=<%=ctoken%>">
+              <input type="hidden" value="<%=ctoken%>" name="ctoken" id="ctoken">
+              <input type="hidden" value="<%=merchantid%>" name="partnerid" id="partnerid">
+              <%
+                if(request.getParameter("MES")!=null)
+                {
+                  String mes=request.getParameter("MES");
+                  if(mes.equals("ERR"))
+                  {
+                    if(request.getAttribute("validationErrorList")!=null)
+                    {
+                      ValidationErrorList error= (ValidationErrorList) request.getAttribute("validationErrorList");
+                      for(Object errorList : error.errors())
+                      {
+                        ValidationException ve = (ValidationException) errorList;
+                        out.println("<h5 class=\"bg-infoorange\" style=\"text-align: center;\"><i class=\"fa fa-exclamation-triangle\"></i>&nbsp;&nbsp;" + ve.getMessage() + "</h5>");
+                      }
+                    }
+                    else if(request.getAttribute("catchError")!=null)
+                    {
+                      out.println("<h5 class=\"bg-infoorange\" style=\"text-align: center;\"><i class=\"fa fa-exclamation-triangle\"></i>&nbsp;&nbsp;" + request.getAttribute("catchError") + "</h5>");
+                    }
+                  }
+                }
+              %>
+              <div class="widget-content padding">
+                <div id="horizontal-form">
+                  <div class="form-group col-md-4 has-feedback">
+                    <label><%=rejectedTransactionList_From%></label>
+                    <input type="text" size="16" name="fromdate" class="datepicker form-control" value="<%=ESAPI.encoder().encodeForHTMLAttribute(fdate)%>" readonly="readonly" style="cursor: auto;background-color: #ffffff;opacity: 1;width: 100%;">
+                  </div>
+                  <div class="form-group col-md-4 has-feedback">
+                    <label><%=rejectedTransactionList_To%></label>
+                    <input type="text" size="16" name="todate" class="datepicker form-control" value="<%=ESAPI.encoder().encodeForHTMLAttribute(tdate)%>" readonly="readonly" style="cursor: auto;background-color: #ffffff;opacity: 1;width: 100%;">
+                  </div>
+                  <div class="form-group col-md-4 has-feedback">
+                    <label><%=rejectedTransactionList_Reject_Reason%></label>
+                    <select size="1" name="rejectreason" class="form-control">
+                      <option value=""><%=rejectedTransactionList_All%></option>
+                      <%
+                        String selected2="";
+                        for (TransReqRejectCheck transReqRejectCheck: TransReqRejectCheck.values()){
+                          if (transReqRejectCheck.name().equals(rejectreason))
+                            selected2 = "selected";
+                          else
+                            selected2 = "";
+                      %>
+                      <option value="<%=transReqRejectCheck.name()%>" <%=selected2%>><%=transReqRejectCheck.name()%></option>
+                      <%
+                        }
+                      %>
+                    </select>
+                  </div>
+                  <div class="form-group col-md-2 has-feedback">
+                    <label ><%=rejectedTransactionList_First_Six%></label>
+                    <input name="firstsix" size="6" class="form-control"  onkeypress="if(this.value.length==6) return false;" value="<%=ESAPI.encoder().encodeForHTMLAttribute(firstsix)%>">
+                  </div>
+                  <div class="form-group col-md-2 has-feedback">
+                    <label ><%=rejectedTransactionList_Last_Four%></label>
+                    <input name="lastfour" size="4" class="form-control" onkeypress="if(this.value.length==4) return false;" value="<%=ESAPI.encoder().encodeForHTMLAttribute(lastfour)%>">
+                  </div>
+                  <div class="form-group col-md-4 has-feedback">
+                    <label><%=rejectedTransactionList_Amount%></label>
+                    <input type=text name="amount" maxlength="10"  value="<%=ESAPI.encoder().encodeForHTMLAttribute(amt)%>"  class="form-control" size="10">
+                  </div>
+                  <div class="form-group col-md-4 has-feedback">
+                    <label><%=rejectedTransactionList_Email_ID%></label>
+                    <input type=text name="emailaddr" maxlength="50"  value="<%=ESAPI.encoder().encodeForHTMLAttribute(emailaddr)%>" class="form-control" size="20">
+                  </div>
+
+                  <div class="form-group col-md-4 has-feedback">
+                    <label><%=rejectedTransactionList_Partner_ID%></label>
+                    <input name="partnerId" id="pid" value="<%=pid%>" class="form-control" autocomplete="on" <%=Config%>>
+                    <input name="partnerId" type="hidden" value="<%=pid%>" >
+                  </div>
+
+                  <div class="form-group col-md-4 has-feedback">
+                    <label><%=rejectedTransactionList_Merchant_ID%></label>
+                    <input name="toid" id="member" value="<%=memberid%>" class="form-control" autocomplete="on">
+                  </div>
+                  <div class="form-group col-md-4 has-feedback">
+                    <label><%=rejectedTransactionList_Name%></label>
+                    <input type=text name="name" maxlength="50"  value="<%=ESAPI.encoder().encodeForHTMLAttribute(name1)%>" class="form-control" size="10">
+                  </div>
+                  <div class="form-group col-md-4 has-feedback">
+                    <label><%=rejectedTransactionList_Description%></label>
+                    <input type=text name="description" maxlength="50"  value="<%=ESAPI.encoder().encodeForHTMLAttribute(desc)%>" class="form-control" size="10">
+                  </div>
+                  <div class="form-group col-md-4 has-feedback">
+                  </div>
+                  <div class="form-group col-md-4 has-feedback">
+                  </div>
+                  <div class="form-group col-md-4 has-feedback">
+                    <label style="color: transparent;"><%=rejectedTransactionList_Search%></label>
+                    <button type="submit" name="B1" class="btn btn-default" style="display: -webkit-box;"><i class="fa fa-clock-o"></i>&nbsp;&nbsp;<%=rejectedTransactionList_Search%></button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <%--start report data--%>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="widget">
+            <div class="widget-header">
+              <h2><i class="fa fa-table"></i>&nbsp;&nbsp;<strong><%=rejectedTransactionList_Summary_Data%></strong></h2>
+              <div class="additional-btn">
+                <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+              </div>
+            </div>
+            <div class="widget-content padding" <%--style="overflow-y: auto;"--%>>
+              <%----------------------Report Start-----------------------------------%>
+              <%
+                if(request.getAttribute("transactionsdetails")!=null)
+                {
+                  ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+                  Hashtable hash = (Hashtable) request.getAttribute("transactionsdetails");
+                  Hashtable temphash = null;
+
+                  str = str + "&firstsix=" + firstsix;
+                  str = str + "&lastfour=" + lastfour;
+                  str = str + "&emailaddr=" + emailaddr;
+                  str = str + "&toid=" + toid;
+                  str = str + "&name=" + name1;
+                  str = str + "&desc=" + desc;
+                  str = str + "&ctoken=" + ctoken;
+                  str = str + "&rejectreason=" + rejectreason;
+                  str = str + "&partnerId=" + partnerId;
+
+                  String error=(String ) request.getAttribute("errormessage");
+                  if(error !=null)
+                  {
+                    out.println("<b>");
+                    out.println(error);
+                    out.println("</b>");
+                  }
+                  int records = 0;
+                  int totalrecords = 0;
+                  int currentblock = 1;
+                  try
+                  {
+                    records = Integer.parseInt((String) hash.get("records"));
+                    totalrecords = Integer.parseInt((String) hash.get("totalrecords"));
+                    currentblock = Integer.parseInt(request.getParameter("currentblock"));
+                  }
+                  catch (Exception ex)
+                  {
+                  }
+                  String style = "class=tr0";
+                  if (records > 0)
+                  {
+              %>
+
+              <div id="showingid"><strong><%=rejectedTransactionList_Note%></strong></div>
+              <div class="pull-right">
+                <div class="btn-group">
+                  <form name="exportform" method="post" action="/partner/net/ExportTransactions?ctoken=<%=ctoken%>" >
+                    <input type="hidden" value="<%=ESAPI.encoder().encodeForHTMLAttribute(fdate)%>" name="fdate">
+                    <input type="hidden" value="<%=ESAPI.encoder().encodeForHTMLAttribute(tdate)%>" name="tdate">
+                    <input type="hidden" value="<%=ESAPI.encoder().encodeForHTMLAttribute(rejectreason)%>" name="rejectreason">
+                    <input type="hidden" value="<%=ESAPI.encoder().encodeForHTMLAttribute(firstsix)%>" name="firstsix">
+                    <input type="hidden" value="<%=ESAPI.encoder().encodeForHTMLAttribute(lastfour)%>" name="lastfour">
+                    <input type="hidden" value="<%=ESAPI.encoder().encodeForHTMLAttribute(emailaddr)%>" name="emailaddr">
+                    <input type="hidden" value="<%=ESAPI.encoder().encodeForHTMLAttribute(toid)%>" name="toid">
+                    <input type="hidden" value="<%=ESAPI.encoder().encodeForHTMLAttribute(name1)%>" name="name">
+                    <input type="hidden" value="<%=ESAPI.encoder().encodeForHTMLAttribute(desc)%>" name="description">
+                    <input type="hidden" value="<%=ESAPI.encoder().encodeForHTMLAttribute(partnerId)%>" name="partnerId">
+                    <input type="hidden" value="<%=ctoken%>" name="ctoken">
+
+                    <button class="btn-xs" type="submit" style="background: white;border: 0;">
+                      <img style="height: 40px;" src="/merchant/images/excel.png">
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <div id="containrecord"></div>
+
+              <div class="widget-content padding" style="overflow-x: auto;">
+
+                <table id="myTable" class="display table table table-striped table-bordered" style="font-family:Open Sans;font-size: 13px;font-weight: 600;width: 100%;">
+                  <thead>
+                  <tr style="background-color: #7eccad !important;color: white;">
+                    <th><%=rejectedTransactionList_Date%></th>
+                    <th><%=rejectedTransactionList_Tracking_ID%></th>
+                    <th><%=rejectedTransactionList_Merchant_ID%></th>
+                    <th><%=rejectedTransactionList_Totype%></th>
+                    <th><%=rejectedTransactionList_Description%></th>
+                    <th><%=rejectedTransactionList_Amount%></th>
+                    <th><%=rejectedTransactionList_Currency%></th>
+                    <th><%=rejectedTransactionList_First_Name%></th>
+                    <th><%=rejectedTransactionList_Last_Name%></th>
+                    <th><%=rejectedTransactionList_Email_ID%></th>
+                    <th><%=rejectedTransactionList_IP_Address%></th>
+                    <th><%=rejectedTransactionList_Reject_Reason%></th>
+                    <th><%=rejectedTransactionList_Terminal_ID%></th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <input type="hidden" value="<%=ctoken%>" name="ctoken">
+                  <%
+                    StringBuffer requestParameter = new StringBuffer();
+                    Enumeration<String> stringEnumeration = request.getParameterNames();
+                    while(stringEnumeration.hasMoreElements())
+                    {
+                      String name=stringEnumeration.nextElement();
+                      if("SPageno".equals(name) || "SRecords".equals(name))
+                      {
+
+                      }
+                      else
+                        requestParameter.append("<input type='hidden' name='"+name+"' value=\""+request.getParameter(name)+"\"/>");
+                    }
+                    requestParameter.append("<input type='hidden' name='SPageno' value='"+pageno+"'/>");
+                    requestParameter.append("<input type='hidden' name='SRecords' value='"+pagerecords+"'/>");
+
+                    for (int pos = 1; pos <= records; pos++)
+                    {
+                      String id = Integer.toString(pos);
+                      int srno = Integer.parseInt(id) + ((pageno - 1) * pagerecords);
+                      style = "class=\"tr" + pos % 2 + "\"";
+                      temphash = (Hashtable) hash.get(id);
+                      String date2 = Functions.convertDtstampToDBFormat((String) temphash.get("dtstamp"));
+                      String searchId = (String) temphash.get("id");
+                      String merchantId = (String) temphash.get("toid");
+                      String partnerid = (String) temphash.get("partnerid");
+                      String totype = (String) temphash.get("totype");
+                      String description = (String) temphash.get("description");
+                      String amount = (String)temphash.get("amount");
+                      String currency = (String)temphash.get("currency");
+                      String terminalId = (String) temphash.get("terminalid");
+                      String firstName = (String) temphash.get("firstname");
+                      String lastName = (String) temphash.get("lastname");
+                      String email = (String) temphash.get("email");
+                      String requestedIp = (String) temphash.get("requestedip");
+                      String rejectReason = (String) temphash.get("rejectreason");
+                      //System.out.println("1---"+rejectReason);
+
+                      if(temphash.get("rejectreason").toString().contains("<BR>"))
+                      {
+                        rejectReason = ((String)temphash.get("rejectreason")).replaceAll("<BR>","\n");
+                        //System.out.println(rejectReason);
+                      }
+                      // Not required amount conversion as we discuss
+                   /* if ("JPY".equalsIgnoreCase(currency))
+                    {
+                      amount = functions.printNumber(Locale.JAPAN, amount);
+                    }
+                    else if ("EUR".equalsIgnoreCase(currency))
+                    {
+                      amount = functions.printNumber(Locale.FRANCE, amount);
+                    }
+                    else if ("GBP".equalsIgnoreCase(currency))
+                    {
+                      amount = functions.printNumber(Locale.UK, amount);
+                    }
+                    else if ("USD".equalsIgnoreCase(currency))
+                    {
+                      amount = functions.printNumber(Locale.US, amount);
+                    }*/
+
+                      if(!functions.isValueNull(requestedIp))
+                      {
+                        requestedIp = "-";
+                      }
+                      if(!functions.isValueNull(amount))
+                      {
+                        amount = "-";
+                      }
+                      if(!functions.isValueNull(currency))
+                      {
+                        currency = "-";
+                      }
+                      if(!functions.isValueNull(terminalId))
+                      {
+                        terminalId="-";
+                      }
+                      if(!functions.isValueNull(description))
+                      {
+                        description="-";
+                      }
+                      if(!functions.isValueNull(firstName))
+                      {
+                        firstName="-";
+                      }
+                      if (!functions.isValueNull(lastName))
+                      {
+                        lastName="-";
+                      }
+                      if(!functions.isValueNull(email))
+                      {
+                        email="-";
+                      }
+
+                      if(!functions.isValueNull(totype))
+                      {
+                        totype="-";
+                      }
+
+                      out.println("<tr " + style + ">");
+                      out.println("<td align=center >" + date2 + "</td>");
+                      out.println("<td align=center><form action=\"RejectedTransactionDetails?ctoken=" + ctoken + "\" method=\"post\"><input type=\"hidden\" name=\"action\" value=\"RejectedTransactionDetails\"><input type=\"hidden\" name=\"STrackingid\" value=\"" + searchId + "\"><input type=\"hidden\" name=\"ctoken\" value=\"" + ctoken + "\"><input type=\"hidden\" name=\"archive\" value=\"false\"><input type=\"hidden\" name=\"accountid\" value=\"" + searchId + "\"><input type=\"submit\" class=\"goto\" name=\"submit\" value=\"" + searchId + "\">");
+                      out.println(requestParameter.toString());
+                      out.print("</form></td>");
+                      out.println("<td align=center>" + ESAPI.encoder().encodeForHTML(merchantId) + "</td>");
+                      out.println("<td align=center>" + ESAPI.encoder().encodeForHTML(totype) + "</td>");
+                      out.println("<td align=center>" + ESAPI.encoder().encodeForHTML(description) + "</td>");
+                      out.println("<td align=center>" + ESAPI.encoder().encodeForHTML(amount) + "</td>");
+                      out.println("<td align=center>" + ESAPI.encoder().encodeForHTML(currency) + "</td>");
+                      out.println("<td align=center>" + ESAPI.encoder().encodeForHTML(firstName) + "</td>");
+                      out.println("<td align=center>" + ESAPI.encoder().encodeForHTML(lastName) + "</td>");
+                      out.println("<td align=center>" + functions.getEmailMasking(email)+ "</td>");
+                      out.println("<td align=center>" + ESAPI.encoder().encodeForHTML(requestedIp) + "</td>");
+                      out.println("<td align=center>" + ESAPI.encoder().encodeForHTML(rejectReason) + "</td>");
+                      out.println("<td align=center>" + ESAPI.encoder().encodeForHTML(terminalId) + "</td>");
+                      out.println("</tr>");
+                    }
+                  %>
+                  </tbody>
+                </table>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+      <%
+        int TotalPageNo;
+        if(totalrecords%pagerecords!=0)
+        {
+          TotalPageNo=totalrecords/pagerecords+1;
+        }
+        else
+        {
+          TotalPageNo=totalrecords/pagerecords;
+        }
+      %>
+      <div id="showingid"><strong><%=rejectedTransactionList_page_no%> <%=pageno%>  <%=rejectedTransactionList_of%>  <%=TotalPageNo%></strong></div> &nbsp;&nbsp;
+      <div id="showingid"><strong><%=rejectedTransactionList_total_no_of_records%>      <%=totalrecords%> </strong></div>
+
+      <jsp:include page="page.jsp" flush="true">
+        <jsp:param name="numrecords" value="<%=totalrecords%>"/>
+        <jsp:param name="numrows" value="<%=pagerecords%>"/>
+        <jsp:param name="pageno" value="<%=pageno%>"/>
+        <jsp:param name="str" value="<%=str%>"/>
+        <jsp:param name="page" value="RejectedTransactionsList"/>
+        <jsp:param name="currentblock" value="<%=currentblock%>"/>
+        <jsp:param name="orderby" value=""/>
+      </jsp:include>
+      <%
+          }
+          else
+          {
+            out.println(Functions.NewShowConfirmation1(rejectedTransactionList_Sorry,rejectedTransactionList_No_Records_Found));
+          }
+        }
+        else
+        {
+          out.println(Functions.NewShowConfirmation1(rejectedTransactionList_Filter, rejectedTransactionList_Note2));
+        }
+      %>
+    </div>
+  </div>
+</div>
+<script type="text/javascript" src="/partner/cookies/jquery.ihavecookies.js"></script>
+<script type="text/javascript" src="/partner/cookies/cookies_popup.js"></script>
+<link href="/partner/cookies/quicksand_font.css" rel="stylesheet">
+<link href="/partner/cookies/cookies_popup.css" rel="stylesheet">
+</body>
+</html>
+
+<%!
+  public static String nullToStr(String str)
+  {
+    if(str == null)
+      return "";
+    return str;
+  }
+
+%>

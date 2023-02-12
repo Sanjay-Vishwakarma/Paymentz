@@ -1,0 +1,213 @@
+package net.partner;
+
+import com.directi.pg.Logger;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.manager.*;
+import com.manager.dao.BankDao;
+import com.manager.dao.PayoutDAO;
+import com.manager.vo.BankWireManagerVO;
+import com.manager.vo.TerminalVO;
+import com.manager.vo.merchantmonitoring.DateVO;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.*;
+
+/**
+ * Created by Sandip on 2/13/2018.
+ */
+public class GenerateMerchantPayoutReports extends HttpServlet
+{
+    private static Logger logger = new Logger(GenerateMerchantPayoutReports.class.getName());
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doProcess(request, response);
+    }
+
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doProcess(request, response);
+    }
+
+    public void doProcess(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("ESAPIUserSessionKey");
+
+        PartnerFunctions partner = new PartnerFunctions();
+        if (!partner.isLoggedInPartner(session))
+        {
+            response.sendRedirect("/partner/Logout.jsp");
+            return;
+        }
+
+
+        HashMap<String, String> currencyConversionRate = new HashMap();
+        boolean currencyConversionReceived = false;
+        String action = request.getParameter("action");
+        if ("next".equalsIgnoreCase(action))
+        {
+
+            String step = request.getParameter("step");
+            if ("step2".equalsIgnoreCase(step))
+            {
+                currencyConversionReceived = true;
+                String settlementCurrency = request.getParameter("settlementcurrency");
+                if (partner.isValueNull(settlementCurrency))
+                {
+                    String settlementCurrencies[] = settlementCurrency.split(",");
+                    for (String currency : settlementCurrencies)
+                    {
+                        String conversionRate = request.getParameter(currency + "_conversion_rate");
+                        if (!ESAPI.validator().isValidInput(currency + "_conversion_rate", conversionRate, "NDigitsAmount", 20, false))
+                        {
+                            // sbError.append("Invalid " + currency + " conversion_rate" + " Value<BR>");
+                        }
+                        else
+                        {
+                            currencyConversionRate.put(currency, conversionRate);
+                        }
+                    }
+                }
+            }
+            /*else{
+                if(!currencyConversionReceived){
+
+                }*/
+            //Reading the values from session-currencyConversionRate,dynamicCountAmountMap,bankWireId,settlementCycleId
+            SettlementManager settlementManager = new SettlementManager();
+            String bankWireId = (String) session.getAttribute("bankWireId");
+            String settlementCycleId = (String) session.getAttribute("settlementCycleId");
+            try
+            {
+                //Get settlement currency for all terminals
+                PayoutDAO payoutDAO = new PayoutDAO();
+                BankWireManagerVO bankWireManagerVO = payoutDAO.getBankWireDetails(bankWireId, "Y", "N");
+                String accountId = bankWireManagerVO.getAccountId();
+
+                GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+                String processingCurrency = gatewayAccount.getCurrency();
+
+                if (!currencyConversionReceived)
+                {
+                    TerminalManager terminalManager = new TerminalManager();
+                    List<TerminalVO> terminalVOList = terminalManager.getTerminalsByAccountID(accountId);
+                    Set<String> settlementCurrSet = null;
+                    if (terminalVOList != null && terminalVOList.size() > 0)
+                    {
+                        settlementCurrSet = new HashSet();
+                        for (TerminalVO terminalVO : terminalVOList)
+                        {
+                            if (!processingCurrency.equalsIgnoreCase(terminalVO.getSettlementCurrency()))
+                            {
+                                settlementCurrSet.add(terminalVO.getSettlementCurrency());
+                            }
+                        }
+                    }
+                    if (settlementCurrSet.size() > 0)
+                    {
+                        request.setAttribute("settlementCurrSet", settlementCurrSet);
+                        request.setAttribute("processingCurrency", processingCurrency);
+                        session.setAttribute("bankWireManagerVO", bankWireManagerVO);
+                        RequestDispatcher rd = request.getRequestDispatcher("/exchangeratepage.jsp?ctoken=" + user.getCSRFToken());
+                        rd.forward(request, response);
+                        return;
+                    }
+                }
+
+                HashMap<String, String> dynamicCountAmountMap = new HashMap();
+                TransactionManager transactionManager = new TransactionManager();
+
+                DateVO dateVO = new DateVO();
+                dateVO.setStartDate(bankWireManagerVO.getServer_start_date());
+                dateVO.setEndDate(bankWireManagerVO.getServer_end_date());
+
+                boolean pendingTransaction = transactionManager.checkPendingTransaction(gatewayAccount, dateVO);
+                if (pendingTransaction)
+                {
+                    List<String> stringList = new ArrayList();
+                    String cycleMemberList = bankWireManagerVO.getBankwiremanagerId() + ":-:" + accountId + ":-:Failed:Transaction status need to be corrected";
+                    stringList.add(cycleMemberList);
+                    logger.debug(cycleMemberList);
+
+                    session.removeAttribute("bankWireId");
+                    session.removeAttribute("settlementCycleId");
+
+                    session.removeAttribute("settlementCycleVO");
+                    session.removeAttribute("bankWireManagerVO");
+                    session.removeAttribute("settlementDateVO1");
+                    session.removeAttribute("settlementDateVO2");
+
+                    request.setAttribute("stringList", stringList);
+                    RequestDispatcher rd = request.getRequestDispatcher("/merchantPayoutReportSummary.jsp?ctoken=" + user.getCSRFToken());
+                    rd.forward(request, response);
+                    return;
+                }
+
+               /*calling the merchant payout report method*/
+                PayoutManager payoutManager = new PayoutManager();
+                List<String> stringList = payoutManager.merchantPayoutReportBasedOnBankWire(bankWireId, currencyConversionRate, dynamicCountAmountMap);
+                if (stringList.size() > 0)
+                {
+
+                    /*update the status of the settlement cycle.*/
+                    BankDao bankDao = new BankDao();
+                    bankDao.updateTheStatus(settlementCycleId, "MerchantWireGenerated");
+
+                   /*step1:remove the transactions form temp_settlement_upload*/
+                    settlementManager.removeTempTransactions(settlementCycleId);
+
+                    session.removeAttribute("bankWireId");
+                    session.removeAttribute("settlementCycleId");
+
+                    session.removeAttribute("settlementCycleVO");
+                    session.removeAttribute("bankWireManagerVO");
+                    session.removeAttribute("settlementDateVO1");
+                    session.removeAttribute("settlementDateVO2");
+
+                    logger.debug("settlement generated successfully GenerateMerchantPayoutReports");
+
+                       /*update the status of the settlement cycle.*/
+                    bankDao.updateTheStatus(settlementCycleId, "Completed");
+                    request.setAttribute("stringList", stringList);
+
+                    RequestDispatcher rd = request.getRequestDispatcher("/merchantPayoutReportSummary.jsp?ctoken=" + user.getCSRFToken());
+                    rd.forward(request, response);
+                    return;
+                }
+                else
+                {
+               /*take appropriate action when merchant payout report creation failed*/
+                }
+            }
+            catch (Exception e)
+            {
+           /*take appropriate action when exception occured*/
+            }
+
+        }
+        else if ("cancel".equalsIgnoreCase(action))
+        {
+            session.removeAttribute("bankWireId");
+            session.removeAttribute("settlementCycleId");
+            session.removeAttribute("settlementCycleVO");
+            session.removeAttribute("bankWireManagerVO");
+            session.removeAttribute("settlementDateVO1");
+            session.removeAttribute("settlementDateVO2");
+
+            request.setAttribute("message", "Your current settlement process has been cancelled");
+            RequestDispatcher rd = request.getRequestDispatcher("/listSettlementCycle.jsp?ctoken=" + user.getCSRFToken());
+            rd.forward(request, response);
+            return;
+        }
+
+    }
+}

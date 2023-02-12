@@ -1,0 +1,74 @@
+:root {
+        --purple: #3B3646;
+        --red: #EE4B5A;
+        --darkgray: #484848;
+        --blue: #1e85c8;
+        --orange: #fd9026;
+    }
+
+    /* Cookie Dialog */
+    #gdpr-cookie-message {
+        z-index: 9999;
+        position: fixed;
+        bottom: 0;
+        max-width: 100%;
+        /*background-color: var(--darkgray);*/
+        /*background-color: #484848;*/
+        background-color: rgba(77, 77, 77, 0.5);
+        padding: 10px;
+        box-shadow: 0 6px 6px rgba(0,0,0,0.25);
+        font-family: system-ui;
+        width: 100%;
+    }
+    #gdpr-cookie-message h4 {
+        /*color: var(--orange);*/
+        /*color: #1e8b92;*/
+        font-family: 'Quicksand', sans-serif;
+        font-size: 18px;
+        font-weight: 500;
+        margin-bottom: 10px;
+    }
+    #gdpr-cookie-message p {
+        color: white;
+        font-size: 15px;
+        line-height: 1.5em;
+    }
+    #gdpr-cookie-message p:last-child {
+        margin-bottom: 0;
+        text-align: right;
+    }
+    #gdpr-cookie-message a {
+        /*color: var(--blue);*/
+        /*color: #1e8b92;*/
+        text-decoration: none;
+        font-size: 15px;
+        padding-bottom: 2px;
+        border-bottom: 1px dotted rgba(255,255,255,0.75);
+        transition: all 0.3s ease-in;
+    }
+    #gdpr-cookie-message a:hover {
+        color: white;
+        /*border-bottom-color: var(--blue);
+        border-bottom-color: #1e8b92;*/
+        transition: all 0.3s ease-in;
+    }
+    #gdpr-cookie-message button {
+        border: none;
+        /*background: var(--red);*/
+        /*background: var(--blue);*/
+        background: #1e8b92;
+        color: white;
+        font-family: 'Quicksand', sans-serif;
+        font-size: 15px;
+        padding: 7px;
+        border-radius: 3px;
+        margin-left: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease-in;
+    }
+    #gdpr-cookie-message button:hover {
+        background: white;
+        /*color: var(--blue);*/
+        /*color: #1e8b92;*/
+        transition: all 0.3s ease-in;
+    }

@@ -1,0 +1,863 @@
+package com.payment.statussync;
+
+import com.directi.pg.*;
+import com.payment.exceptionHandler.PZExceptionHandler;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: admin
+ * Date: 11/5/14
+ * Time: 1:02 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class StatusSyncDAO
+{
+    private static Logger log = new Logger(StatusSyncDAO.class.getName());
+
+    public List<StatusSyncVO> getTransactionlist(String fromDate,String toDate,Connection connection)
+    {
+        List tableNameList = new ArrayList();
+        tableNameList.add("transaction_qwipi");
+        tableNameList.add("transaction_ecore");
+        tableNameList.add("transaction_common");
+        List<StatusSyncVO> statusSyncVOList = new ArrayList<StatusSyncVO>();
+        Calendar cal= Calendar.getInstance();
+        Functions functions= new Functions();
+        PreparedStatement preparedStatement=null;
+        String fdtstamp="";
+        String tdtstamp="";
+
+        try
+        {
+            if(functions.isValueNull(fromDate) && functions.isValueNull(toDate))
+            {
+                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+
+                Date date = sdf.parse(fromDate.trim());
+                cal.setTime(date);
+                String fdate = String.valueOf(cal.get(Calendar.DATE));
+                String fmonth = String.valueOf(cal.get(Calendar.MONTH));
+                String fyear = String.valueOf(cal.get(Calendar.YEAR));
+                fdtstamp = Functions.converttomillisec(fmonth, fdate, fyear, "0", "0", "0");
+
+                date = sdf.parse(toDate.trim());
+                cal.setTime(date);
+                String tdate = String.valueOf(cal.get(Calendar.DATE));
+                String tmonth = String.valueOf(cal.get(Calendar.MONTH));
+                String tyear = String.valueOf(cal.get(Calendar.YEAR));
+                tdtstamp = Functions.converttomillisec(tmonth, tdate, tyear, "23", "59", "59");
+            }
+            else
+            {
+                throw new SystemError("From Date OR To date should not empty");
+            }
+            for(Object tableName : tableNameList)
+            {
+                String fields = "trackingid,accountid,ccnum,NAME,emailaddr,status";
+                String selectStatement = "select "+fields+" from "+tableName+" where dtstamp>=? and dtstamp<=?";
+                preparedStatement=connection.prepareStatement(selectStatement);
+                preparedStatement.setString(1,fdtstamp);
+                preparedStatement.setString(2,tdtstamp);
+                ResultSet resultSet=preparedStatement.executeQuery();
+
+                while (resultSet.next())
+                {
+                    StatusSyncVO statusSyncVO=new StatusSyncVO();
+                    statusSyncVO.setTrackingId(resultSet.getString("trackingid"));
+                    statusSyncVO.setAccountId(resultSet.getString("accountid"));
+                    statusSyncVO.setCardNumber(resultSet.getString("ccnum"));
+                    statusSyncVO.setName(resultSet.getString("name"));
+                    statusSyncVO.setEmail(resultSet.getString("emailaddr"));
+                    statusSyncVO.setStatus(resultSet.getString("status"));
+
+                    if(statusSyncVO!=null)
+                    {
+                        statusSyncVOList.add(statusSyncVO);
+                    }
+                }
+            }
+        }
+        catch (SystemError systemError)
+        {
+            log.error("System Error while collect transaction details"+systemError);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Exception while collect transaction details" + e);
+        }
+        catch (ParseException e)
+        {
+            log.error("Date ParseException" + e);
+        }
+
+        return statusSyncVOList;
+    }
+
+    public boolean isTransPresentInBinDetail(String trackingId,Connection connection)
+    {
+
+        boolean isPresent=false;
+        try
+        {
+            String selectStatement="select count(*) as transcount from bin_details where icicitransid=?";
+            PreparedStatement preparedStatement=connection.prepareStatement(selectStatement);
+            preparedStatement.setString(1,trackingId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next())
+            {
+                if(resultSet.getInt("transcount")==1)
+                {
+                    isPresent=true;
+                }
+            }
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Exception while check bin_details" + e);
+        }
+        return isPresent;
+    }
+
+    public void insertInToBinDetails(StatusSyncVO statusSyncVO,Connection connection)
+    {
+        try
+        {
+            String firstSix="";
+            String lastFour="";
+            String email="";
+            String name="";
+            if(statusSyncVO.getCardNumber()!=null)
+            {
+                String ccPan= PzEncryptor.decryptPAN(statusSyncVO.getCardNumber());
+                firstSix= Functions.getFirstSix(ccPan);
+                lastFour= Functions.getLastFour(ccPan);
+                ccPan=null;
+            }
+            if(statusSyncVO.getEmail()!=null)
+            {
+                email=statusSyncVO.getEmail();
+            }
+            if(statusSyncVO.getName()!=null)
+            {
+                name=statusSyncVO.getName();
+            }
+
+            String insertStatement="INSERT INTO bin_details (icicitransid,first_six,last_four,accountid,emailaddr,boiledname) VALUES (?,?,?,?,?,?)";
+            PreparedStatement preparedStatement = connection.prepareStatement(insertStatement);
+            preparedStatement.setString(1,statusSyncVO.getTrackingId());
+            preparedStatement.setString(2,firstSix);
+            preparedStatement.setString(3,lastFour);
+            preparedStatement.setString(4,statusSyncVO.getAccountId());
+            preparedStatement.setString(5,email);
+            preparedStatement.setString(6,name);
+            preparedStatement.executeUpdate();
+
+        }
+        catch (SQLException e)
+        {
+            log.error("SqlException",e);
+        }
+    }
+    public String getFlagStatus(String trackingId,Connection connection)
+    {
+        String currentFlag="";
+        try
+        {
+            String updateStatement="SELECT isSettled,isSuccessful,isRefund,isChargeback,isFraud,isRollingReserveKept,isRollingReserveReleased FROM bin_details WHERE icicitransid=?";
+            PreparedStatement pstmt=connection.prepareStatement(updateStatement);
+            pstmt.setString(1,trackingId);
+            ResultSet resultSet = pstmt.executeQuery();
+            if(resultSet.next())
+            {
+                currentFlag = "isSuccess="+resultSet.getString("isSuccessful")+"|isSettled="+resultSet.getString("isSettled")+"|isRF="+resultSet.getString("isRefund")+"|isCB="+resultSet.getString("isChargeback")+"\nisFraud="+resultSet.getString("isFraud")+"|isRRKept="+resultSet.getString("isRollingReserveKept")+"|isRRReleased="+resultSet.getString("isRollingReserveReleased");
+            }
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Error occur ",e);
+        }
+        return currentFlag;
+    }
+
+    public void updateStatusSyncTransactionCronFlag(String trackingId,String status,Connection connection)
+    {
+        try
+        {
+            String updateStmt="UPDATE bin_details SET isSuccessful=?,isSettled=?,isRefund=?,isChargeback=?,isFraud=?,isRollingReserveKept=?,isRollingReserveReleased=? WHERE icicitransid=?";
+            PreparedStatement preparedStatement = connection.prepareStatement(updateStmt);
+            if(status.equalsIgnoreCase("authfailed") || status.equalsIgnoreCase("failed"))
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("authsuccessful") || status.equalsIgnoreCase("capturesuccess"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+
+            else if(status.equalsIgnoreCase("settled"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"Y");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+            else if(status.equalsIgnoreCase("reversed"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"Y");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("chargeback"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"Y");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+
+            else
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+
+            preparedStatement.setString(8,trackingId);
+            preparedStatement.executeUpdate();
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Error occur ",e);
+        }
+    }
+    public void updateAllTransactionFlowFlag(String trackingId,String status)
+    {
+        Connection connection=null;
+        PreparedStatement preparedStatement = null;
+        try
+        {
+            connection=Database.getConnection();
+            String updateStmt="UPDATE bin_details SET isSuccessful=?,isSettled=?,isRefund=?,isChargeback=?,isFraud=?,isRollingReserveKept=?,isRollingReserveReleased=? WHERE icicitransid=?";
+            preparedStatement = connection.prepareStatement(updateStmt);
+            if(status.equalsIgnoreCase("authfailed") || status.equalsIgnoreCase("failed"))
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("capturesuccess") || status.equalsIgnoreCase("authsuccessful"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+
+            else if(status.equalsIgnoreCase("authstarted"))
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("reversed"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"Y");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"N");
+            }
+            else
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+
+            preparedStatement.setString(8,trackingId);
+            preparedStatement.executeUpdate();
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Error occur ",e);
+        }
+        catch (SystemError systemError)
+        {
+            systemError.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        finally {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+    }
+    public void updateAllRefundTransactionFlowFlag(String trackingId,String status,Connection connection)
+    {
+        try
+        {
+            String updateStmt="UPDATE bin_details SET isSuccessful=?,isSettled=?,isRefund=?,isChargeback=?,isFraud=?,isRollingReserveKept=?,isRollingReserveReleased=? WHERE icicitransid=?";
+            PreparedStatement preparedStatement = connection.prepareStatement(updateStmt);
+            if(status.equalsIgnoreCase("reversed"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"Y");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("fraud"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"Y");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"Y");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+
+            preparedStatement.setString(8,trackingId);
+            preparedStatement.executeUpdate();
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Error occur ",e);
+        }
+    }
+
+    public void updateAllRefundTransactionFlowFlag(String trackingId,String status)
+    {
+        Connection connection = null;
+        try
+        {
+            connection = Database.getConnection();
+            String updateStmt="UPDATE bin_details SET isSuccessful=?,isSettled=?,isRefund=?,isChargeback=?,isFraud=?,isRollingReserveKept=?,isRollingReserveReleased=? WHERE icicitransid=?";
+            PreparedStatement preparedStatement = connection.prepareStatement(updateStmt);
+            if(status.equalsIgnoreCase("reversed"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"Y");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("fraud"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"Y");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"Y");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+
+            preparedStatement.setString(8,trackingId);
+            preparedStatement.executeUpdate();
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Error occur ",e);
+        }
+        catch (SystemError e)
+        {
+            log.error("SystemError---",e);
+        }
+        finally
+        {
+            Database.closeConnection(connection);
+        }
+    }
+
+
+    public void updateAllChargebackTransactionFlowFlag(String trackingId,String status,Connection connection)
+    {
+        try
+        {
+            String updateStmt="UPDATE bin_details SET isSuccessful=?,isSettled=?,isRefund=?,isChargeback=?,isFraud=?,isRollingReserveKept=?,isRollingReserveReleased=? WHERE icicitransid=?";
+            PreparedStatement preparedStatement = connection.prepareStatement(updateStmt);
+            if(status.equalsIgnoreCase("chargeback"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"Y");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+
+            preparedStatement.setString(8,trackingId);
+            preparedStatement.executeUpdate();
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Error occur ",e);
+            PZExceptionHandler.raiseAndHandleGenericViolationException("StatusSyncDAO.java","updateAllChargebackTransactionFlowFlag()",null,"common","SQL Exception Thrown:::",null,e.getMessage(),e.getCause(),null,null);
+        }
+    }
+    public void updateSettlementTransactionCronFlag(String trackingId,String status,Connection connection)
+    {
+        try
+        {
+            String updateStmt="UPDATE bin_details SET isSuccessful=?,isSettled=?,isRefund=?,isChargeback=?,isFraud=?,isRollingReserveKept=?,isRollingReserveReleased=? WHERE icicitransid=?";
+            PreparedStatement preparedStatement = connection.prepareStatement(updateStmt);
+            if(status.equalsIgnoreCase("authfailed"))
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"Y");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("failed"))
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("capturesuccess"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"Y");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+            else if(status.equalsIgnoreCase("reversed"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"Y");
+                preparedStatement.setString(3,"Y");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+            else if(status.equalsIgnoreCase("chargeback"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"Y");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"Y");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+            else
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+
+            preparedStatement.setString(8,trackingId);
+            preparedStatement.executeUpdate();
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Error occur ",e);
+        }
+    }
+
+    public void updateSettlementTransactionCronFlagNew(String trackingId, String status)
+    {
+        Connection connection = null;
+        try
+        {
+            connection = Database.getConnection();
+            String updateStmt = "UPDATE bin_details SET isSuccessful=?,isSettled=?,isRefund=?,isChargeback=?,isFraud=?,isRollingReserveKept=?,isRollingReserveReleased=? WHERE icicitransid=?";
+            PreparedStatement preparedStatement = connection.prepareStatement(updateStmt);
+            if (status.equalsIgnoreCase("authfailed"))
+            {
+                preparedStatement.setString(1, "N");
+                preparedStatement.setString(2, "Y");
+                preparedStatement.setString(3, "N");
+                preparedStatement.setString(4, "N");
+                preparedStatement.setString(5, "N");
+                preparedStatement.setString(6, "N");
+                preparedStatement.setString(7, "Y");
+            }
+            else if (status.equalsIgnoreCase("failed"))
+            {
+                preparedStatement.setString(1, "N");
+                preparedStatement.setString(2, "N");
+                preparedStatement.setString(3, "N");
+                preparedStatement.setString(4, "N");
+                preparedStatement.setString(5, "N");
+                preparedStatement.setString(6, "N");
+                preparedStatement.setString(7, "Y");
+            }
+            else if (status.equalsIgnoreCase("capturesuccess"))
+            {
+                preparedStatement.setString(1, "Y");
+                preparedStatement.setString(2, "Y");
+                preparedStatement.setString(3, "N");
+                preparedStatement.setString(4, "N");
+                preparedStatement.setString(5, "N");
+                preparedStatement.setString(6, "Y");
+                preparedStatement.setString(7, "N");
+            }
+            else if (status.equalsIgnoreCase("reversed"))
+            {
+                preparedStatement.setString(1, "Y");
+                preparedStatement.setString(2, "Y");
+                preparedStatement.setString(3, "Y");
+                preparedStatement.setString(4, "N");
+                preparedStatement.setString(5, "N");
+                preparedStatement.setString(6, "Y");
+                preparedStatement.setString(7, "N");
+            }
+            else if (status.equalsIgnoreCase("chargeback"))
+            {
+                preparedStatement.setString(1, "Y");
+                preparedStatement.setString(2, "Y");
+                preparedStatement.setString(3, "N");
+                preparedStatement.setString(4, "Y");
+                preparedStatement.setString(5, "N");
+                preparedStatement.setString(6, "Y");
+                preparedStatement.setString(7, "N");
+            }
+            else
+            {
+                preparedStatement.setString(1, "N");
+                preparedStatement.setString(2, "N");
+                preparedStatement.setString(3, "N");
+                preparedStatement.setString(4, "N");
+                preparedStatement.setString(5, "N");
+                preparedStatement.setString(6, "Y");
+                preparedStatement.setString(7, "N");
+            }
+            preparedStatement.setString(8, trackingId);
+            preparedStatement.executeUpdate();
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Error occur ", e);
+        }
+        catch (SystemError systemError)
+        {
+            log.error("SystemError:::" + systemError);
+        }
+        finally
+        {
+            Database.closeConnection(connection);
+        }
+    }
+
+   @Deprecated
+    public void updateReconciliationTransactionCronFlag(String trackingId,String status,Connection connection)
+    {
+        try
+        {
+            String updateStmt="UPDATE bin_details SET isSuccessful=?,isSettled=?,isRefund=?,isChargeback=?,isFraud=?,isRollingReserveKept=?,isRollingReserveReleased=? WHERE icicitransid=?";
+            PreparedStatement preparedStatement = connection.prepareStatement(updateStmt);
+            if(status.equalsIgnoreCase("authfailed")|| status.equalsIgnoreCase("capturefailed"))
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("capturesuccess"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"Y");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+            else if(status.equalsIgnoreCase("reversed"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"Y");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("failed"))
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("fraud"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"Y");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"Y");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("chargebackreversed"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+            preparedStatement.setString(8,trackingId);
+            preparedStatement.executeUpdate();
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Error occur ",e);
+        }
+    }
+
+    public void updateReconciliationTransactionCronFlag(String trackingId,String status)
+    {
+        Connection connection=null;
+        PreparedStatement preparedStatement=null;
+        try
+        {
+            connection= Database.getConnection();
+            String updateStmt="UPDATE bin_details SET isSuccessful=?,isSettled=?,isRefund=?,isChargeback=?,isFraud=?,isRollingReserveKept=?,isRollingReserveReleased=? WHERE icicitransid=?";
+            preparedStatement = connection.prepareStatement(updateStmt);
+            if(status.equalsIgnoreCase("authfailed")|| status.equalsIgnoreCase("capturefailed"))
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("capturesuccess"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"Y");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+            else if(status.equalsIgnoreCase("reversed"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"Y");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("failed"))
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("fraud"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"Y");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"Y");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+            preparedStatement.setString(8,trackingId);
+            preparedStatement.executeUpdate();
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Error occur ",e);
+        }catch(SystemError error){
+            log.error("SQL Error occur ",error);
+        }finally
+        {
+            if(connection!=null){
+                Database.closeConnection(connection);
+            }
+        }
+    }
+
+    public void updateAllFraudulantTransactionFlowFlag(String trackingId,String status,Connection connection)
+    {
+        try
+        {
+            String updateStmt="UPDATE bin_details SET isSuccessful=?,isSettled=?,isRefund=?,isChargeback=?,isFraud=?,isRollingReserveKept=?,isRollingReserveReleased=? WHERE icicitransid=?";
+            PreparedStatement preparedStatement = connection.prepareStatement(updateStmt);
+            if(status.equalsIgnoreCase("reversed"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"Y");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else if(status.equalsIgnoreCase("fraud"))
+            {
+                preparedStatement.setString(1,"Y");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"Y");
+                preparedStatement.setString(6,"N");
+                preparedStatement.setString(7,"Y");
+            }
+            else
+            {
+                preparedStatement.setString(1,"N");
+                preparedStatement.setString(2,"N");
+                preparedStatement.setString(3,"N");
+                preparedStatement.setString(4,"N");
+                preparedStatement.setString(5,"N");
+                preparedStatement.setString(6,"Y");
+                preparedStatement.setString(7,"N");
+            }
+
+            preparedStatement.setString(8,trackingId);
+            preparedStatement.executeUpdate();
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Error occur ",e);
+        }
+    }
+}

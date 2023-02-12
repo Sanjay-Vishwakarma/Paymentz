@@ -1,0 +1,2 @@
+CREATE TABLE `paymentz`.`transaction_paysafecard_detils`( `id` INT(5) NOT NULL AUTO_INCREMENT, `trackingid` INT(9) NOT NULL, `birthdate` VARCHAR(50) NOT NULL, PRIMARY KEY (`id`) );
+ALTER TABLE `paymentz`.`transaction_paysafecard_detils` ADD COLUMN `firstname` VARCHAR(255) NULL AFTER `birthdate`, ADD COLUMN `lastname` VARCHAR(255) NULL AFTER `firstname`, ADD COLUMN `emailid` VARCHAR(255) NULL AFTER `lastname`; 

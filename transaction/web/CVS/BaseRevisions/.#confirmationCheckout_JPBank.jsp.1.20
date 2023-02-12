@@ -1,0 +1,541 @@
+<%@ page import="com.directi.pg.Functions" %>
+<%@ page import="com.directi.pg.LoadProperties" %>
+<%@ page import="com.directi.pg.Logger" %>
+<%@ page import="com.directi.pg.core.valueObjects.GenericTransDetailsVO" %>
+<%@ page import="com.payment.validators.vo.CommonValidatorVO" %>
+
+<%@ page import="com.directi.pg.*" %>
+<%@ page import="com.payment.exceptionHandler.errorcode.ErrorCodeUtils" %>
+<%@ page import="com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorName" %>
+<%@ page import="com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeVO" %>
+<%@ page import="java.security.NoSuchAlgorithmException" %>
+<%@ page import="java.text.DateFormat" %>
+<%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="java.util.Date" %>
+<%@ page import="java.util.ResourceBundle" %>
+<%@ page import="com.directi.pg.core.valueObjects.JPBankTransferVO" %>
+<%@ page import="org.owasp.esapi.ESAPI" %>
+
+<%--
+Created by IntelliJ IDEA.
+User: Rihen
+Date: 4/30/2020
+Time: 4:32 PM
+To change this template use File | Settings | File Templates.
+--%>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <base href="/">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="/merchant/transactionCSS/css/raleway-font.css" type="text/css">
+    <link rel="stylesheet" href="/merchant/transactionCSS/css/bootstrap-4.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
+    <link rel="stylesheet" href="/merchant/transactionCSS/css/bootstrap-float-label.min.css"/>
+    <link rel="stylesheet" href="/merchant/transactionCSS/css/styles.css"/>
+    <link rel="stylesheet" href="/merchant/transactionCSS/css/success.css"/>
+    <link rel="stylesheet" href="/merchant/transactionCSS/css/fail.css"/>
+
+    <style>
+        @media only screen
+        and (min-device-width : 768px)
+        and (max-device-width : 1024px){
+            .mainDiv{
+                width:100% !important;
+            }
+            .modal-dialog {
+                /*max-width: 100%;*/
+                margin: 1.75rem auto !important;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .mainDiv{
+                /*width: 400px !important;*/
+                width: 100% !important;
+            }
+            .modal-dialog {
+                max-width: auto !important;
+            }
+        }
+
+        @media (max-width:576px) {
+            .mainDiv{
+                width: 100% !important;
+            }
+            .modal-dialog {
+                max-width: 100% !important;
+                margin: 0px !important;
+            }
+        }
+
+        @media (min-width: 576px) {
+            .modal-sm {
+                /*max-width: 346px;*/
+                max-width: 400px !important;
+            }
+            .modal-sm-cancel {
+                max-width: 250px !important;
+            }
+        }
+
+        .mainDiv{
+        <%=session.getAttribute("box_shadow")!=null?"box-shadow:"+session.getAttribute("box_shadow").toString():""%>;
+            width: 100%;
+        }
+
+        .background{
+        <%=session.getAttribute("bodybgcolor")!=null?"background:"+session.getAttribute("bodybgcolor").toString():""%>;
+        }
+
+        /* header */
+        .header{
+        <%=session.getAttribute("panelheading_color")!=null?"background-color:"+session.getAttribute("panelheading_color").toString()+"!important":""%>;
+        <%=session.getAttribute("bodypanelfont_color")!=null?"color:"+session.getAttribute("bodypanelfont_color").toString()+"!important":""%>;
+        }
+
+        .close{
+        <%=session.getAttribute("bodypanelfont_color")!=null?"color:"+session.getAttribute("bodypanelfont_color").toString()+"!important":""%>;
+        }
+
+        .logo{                /* background color of logo  */
+            background:transparent !important;
+            box-shadow: none !important;
+        }
+        /* end of header */
+
+        /* body */
+        .top-bar{               /* navigation bar background and font color */
+        <%=session.getAttribute("panelbody_color")!=null?"background-color:"+session.getAttribute("panelbody_color").toString()+"!important":""%>;
+        <%=session.getAttribute("navigation_font_color")!=null?"color:"+session.getAttribute("navigation_font_color").toString()+"!important":""%>;
+            height: auto;
+        }
+
+        .prev-btn{                /* form previous button on navigation bar */
+        <%=session.getAttribute("navigation_font_color")!=null?"color:"+session.getAttribute("navigation_font_color").toString()+"!important":""%>;
+        }
+
+        .footer-tab{             /* home page background color */
+        <%=session.getAttribute("mainbackgroundcolor")!=null?"background-color:"+session.getAttribute("mainbackgroundcolor").toString()+"!important":""%>;
+        }
+
+        .options{               /* body background color */
+        <%=session.getAttribute("mainbackgroundcolor")!=null?"background-color:"+session.getAttribute("mainbackgroundcolor").toString()+"!important":""%>;
+        }
+
+        .tab-icon{               /* home page icon color */
+        <%=session.getAttribute("icon_color")!=null?"color:"+session.getAttribute("icon_color").toString()+"!important":""%>;
+        }
+
+        .label-style{            /* payment type label font color*/
+        <%=session.getAttribute("bodyfgcolor")!=null?"color:"+session.getAttribute("bodyfgcolor").toString()+"!important":""%>;
+        }
+
+        .tabs-li-wallet{       /* payment type options border color */
+        <%=session.getAttribute("panelbody_color")!=null?"border-right: 1px solid "+session.getAttribute("panelbody_color").toString()+"!important":""%>;
+        <%=session.getAttribute("panelbody_color")!=null?"border-bottom: 1px solid "+session.getAttribute("panelbody_color").toString()+"!important":""%>;
+        }
+
+        .form-header{          /* form header label color(Personal,Address,Card)  */
+        <%=session.getAttribute("bodyfgcolor")!=null?"color:"+session.getAttribute("bodyfgcolor").toString()+"!important":""%>;
+            opacity: .8;
+        }
+
+        .form-control , .form-control:focus , .form-control:disabled, .form-control[readonly] {        /* input control focus disabled background and font color */
+        <%=session.getAttribute("mainbackgroundcolor")!=null?"background-color:"+session.getAttribute("mainbackgroundcolor").toString()+"!important":""%>;
+        <%=session.getAttribute("bodyfgcolor")!=null?"color:"+session.getAttribute("bodyfgcolor").toString()+"!important":""%>;
+        }
+
+        .has-float-label label, .has-float-label>span{            /* input control label font color */
+        <%=session.getAttribute("bodyfgcolor")!=null?"color:"+session.getAttribute("bodyfgcolor").toString()+"!important":""%>;
+        }
+
+        .form-label{            /* for labels as well as terms & condition*/
+        <%=session.getAttribute("bodyfgcolor")!=null?"color:"+session.getAttribute("bodyfgcolor").toString()+"!important":""%>;
+        }
+
+        .pay-button{             /* pay button background and font color */
+        <%=session.getAttribute("textbox_color")!=null?"background-color:"+session.getAttribute("textbox_color").toString()+"!important":""%>;
+        <%=session.getAttribute("headpanelfont_color")!=null?"color:"+session.getAttribute("headpanelfont_color").toString()+"!important":""%>;
+        }
+
+        .merchant-details{
+        <%=session.getAttribute("textbox_color")!=null?"background-color:"+session.getAttribute("textbox_color").toString()+"!important":""%>;
+        <%=session.getAttribute("headpanelfont_color")!=null?"color:"+session.getAttribute("headpanelfont_color").toString()+"!important":""%>;
+            border: none !important;
+            margin: 0px;
+            padding: 4px;
+        }
+
+        /* loader */
+        .loader{                    /* loader color*/
+        <%=session.getAttribute("textbox_color")!=null?" color:"+session.getAttribute("textbox_color").toString()+"!important":""%>;
+            opacity: .8;
+        }
+
+        .check_mark , .sa-icon.sa-success::before, .sa-icon.sa-success::after , .sa-fix{       /* success ( animation background color ) */
+        <%=session.getAttribute("mainbackgroundcolor")!=null?"background-color:"+session.getAttribute("mainbackgroundcolor").toString()+"!important":""%>;
+        }
+        /* end of loader */
+
+        .confirmation-div{
+        <%=session.getAttribute("mainbackgroundcolor")!=null?"background-color:"+session.getAttribute("mainbackgroundcolor").toString()+"!important":""%>;
+        <%=session.getAttribute("bodyfgcolor")!=null?"color:"+session.getAttribute("bodyfgcolor").toString()+"!important":""%>;
+            padding:10px !important;
+            max-height: none !important;
+        }
+
+        .confirm-box{
+        <%=session.getAttribute("bodyfgcolor")!=null?"border-bottom:2px solid "+session.getAttribute("bodyfgcolor").toString()+"!important":""%>;
+            border-bottom: 1px dashed #808080!important;
+        }
+        .confirm-box:last-child{
+            border: none !important;
+            padding: 0;
+            margin: 0;
+        }
+        /* end of body */
+
+        /* footer */
+        .modal-footer{
+        <%=session.getAttribute("mainbackgroundcolor")!=null?"background-color:"+session.getAttribute("mainbackgroundcolor").toString()+"!important":""%>;
+        }
+        /* end of footer */
+    </style>
+
+</head>
+<body style="font-family: Raleway;" class="background">
+
+<%
+    Functions functions=new Functions();
+    CommonValidatorVO commonValidatorVO= (CommonValidatorVO) request.getAttribute("transDetail");
+
+    Logger log = new Logger("confirmationCheckout_JPBank.jsp");
+    ResourceBundle rb = null;
+    rb = LoadProperties.getProperty("com.directi.pg.CurrencySymbol");
+
+    ResourceBundle rb1 = null;
+    String lang = "";
+    String multiLanguage = "";
+
+    if(functions.isValueNull(commonValidatorVO.getAddressDetailsVO().getLanguage()))
+    {
+        lang = commonValidatorVO.getAddressDetailsVO().getLanguage().toLowerCase();
+        if ("ja".equalsIgnoreCase(lang))
+        {
+            rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_ja");
+        }
+        else if ("bg".equalsIgnoreCase(lang))
+        {
+            rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_bg");
+        }
+        else if ("ro".equalsIgnoreCase(lang))
+        {
+            rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_ro");
+        }
+        else
+        {
+            rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_en-us");
+        }
+
+    }
+    else if(functions.isValueNull(request.getHeader("Accept-Language")))
+    {
+        multiLanguage = request.getHeader("Accept-Language");
+        String sLanguage[] = multiLanguage.split(",");
+        if(functions.isValueNull(sLanguage[0]))
+        {
+            if ("ja".equalsIgnoreCase(sLanguage[0]))
+            {
+                rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_ja");
+            }
+            else if ("bg".equalsIgnoreCase(sLanguage[0]))
+            {
+                rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_bg");
+            }
+            else if ("ro".equalsIgnoreCase(sLanguage[0]))
+            {
+                rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_ro");
+            }
+            else
+            {
+                rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_en-us");
+            }
+        }
+        else
+        {
+            rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_en-us");
+        }
+    }
+    else
+    {
+        rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_en-us");
+    }
+
+    String logoName = "";
+    String powerBy = "";
+    String sisaLogoFlag="Y";
+    String securityLogoFlag="N";
+    String partnerLogoFlag="Y";
+    String merchantLogoFlag="";
+    String trackingId="";
+    String amount ="";
+
+
+    if(commonValidatorVO!=null)
+    {
+        logoName = commonValidatorVO.getMerchantDetailsVO().getLogoName();
+        powerBy = commonValidatorVO.getMerchantDetailsVO().getPoweredBy();
+        sisaLogoFlag = commonValidatorVO.getMerchantDetailsVO().getSisaLogoFlag();
+        securityLogoFlag = commonValidatorVO.getMerchantDetailsVO().getSecurityLogo();
+        partnerLogoFlag = commonValidatorVO.getMerchantDetailsVO().getPartnerLogoFlag();
+        merchantLogoFlag = commonValidatorVO.getMerchantDetailsVO().getMerchantLogo();
+//        trackingId=commonValidatorVO.getTrackingid();
+        // amount=commonValidatorVO.getTransactionDetailsVO().getAmount();
+
+    }
+
+
+    JPBankTransferVO jpBankTransferVO = (JPBankTransferVO) request.getAttribute("transRespDetails");
+    String bankName = "";
+    String shitenName = "";
+    String kouzaType = "";
+    String kouzaMeigi = "";
+    String company = "";
+    String kouzaNm = "";
+    String result = "";
+    String shitenNm = "";
+    String bid = "";
+    String tel = "";
+    String email = "";
+    String nameId = "";
+
+    bankName =jpBankTransferVO.getBankName();
+    amount=jpBankTransferVO.getAmount();
+    shitenName =jpBankTransferVO.getShitenName();
+    kouzaType =jpBankTransferVO.getKouzaType();
+    kouzaMeigi =jpBankTransferVO.getKouzaMeigi();
+    nameId = jpBankTransferVO.getNameId();
+    kouzaNm =jpBankTransferVO.getKouzaNm();
+
+
+    // shitenNm = jpBankTransferVO.getShitenNm();
+    // company = jpBankTransferVO.getCompany();
+    // result = jpBankTransferVO.getResult();
+    // bid = jpBankTransferVO.getBid();
+    // tel = jpBankTransferVO.getTel();
+    // email = jpBankTransferVO.getEmail();
+
+%>
+
+<script type = "text/javascript" src="/merchant/transactionCSS/js/jquery-3.5.0.min.js"></script>
+<script type = "text/javascript" src="/merchant/transactionCSS/js/bootstrap-4.4.1/js/bootstrap.min.js" ></script>
+
+<!-- modal starts -->
+<div class="modal show" style="display: inline-block;position: absolute;overflow: auto;">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            <div id="target" class="mainDiv">
+                <%
+                    if((functions.isValueNull(merchantLogoFlag) && merchantLogoFlag.equalsIgnoreCase("Y")) ||
+                            functions.isValueNull(partnerLogoFlag) && partnerLogoFlag.equalsIgnoreCase("Y")){
+                %>
+                <div class="header">
+                    <%
+                        if(functions.isValueNull(merchantLogoFlag) && merchantLogoFlag.equalsIgnoreCase("Y"))
+                        {
+                    %>
+                    <div class="logo">
+                        <img class="images-style1" style="width: 100%;" src="/images/merchant/<%=session.getAttribute("merchantLogoName")%>">
+                    </div>
+                    <%
+                    }
+                    else if(functions.isValueNull(partnerLogoFlag) && partnerLogoFlag.equalsIgnoreCase("Y"))
+                    {
+                    %>
+                    <div class="logo">
+                        <img class="images-style1" style="width: 100%;" src="/images/merchant/<%=commonValidatorVO.getMerchantDetailsVO().getLogoName()%>">
+                    </div>
+                    <%
+                        }
+                    %>
+                </div>
+                <%
+                    }
+                %>
+
+                <div class="modal-body">
+                    <div class="top-bar">
+                        <div class="top-left" id="topLeft">
+                            <div id="payMethod" style="font-weight: bold;text-align: center" class="">
+                                <h6><b style="color:red">【重要】</b>お振込時には必ず「口座名義」の前に7桁の<b style="color:red">「お振込ID」</b>をご入力下さい。
+                                    振込元名義：<b style="color:red">7桁のお振込ID + 口座名義</b> <b>（例）1234567カワセタロウ</b></h6>
+                                <h6><b> [Important] Please write the <b style="color:red"> transfer ID </b> before <u> your name </u> in the transfer holder's field</b></h6>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="options">
+                        <div style="padding:10px;border-bottom:2px solid">
+                            <div class="confirmation-label" align="center" >
+                                Payee Information 振込先情報
+                            </div>
+                        </div>
+                        <div class="confirmation-div">
+                            <%
+                                if(functions.isValueNull(bankName)){
+                            %>
+                            <div class="confirm-box">
+                                <div class="confirmation-label" align="center">Bank Name 銀行名</div>
+                                <div class="confirmation-data" align="center">
+                                    <%=ESAPI.encoder().encodeForHTML(bankName)%>
+                                </div>
+                            </div>
+
+                            <%
+                                }
+                                if(functions.isValueNull(shitenName)){
+                            %>
+                            <div class="confirm-box">
+                                <div class="confirmation-label" align="center">Branch Name 支店名</div>
+                                <div class="confirmation-data" align="center">
+                                    <%=ESAPI.encoder().encodeForHTML(shitenName)%>
+                                </div>
+                            </div>
+                            <%
+                                }
+                                if(functions.isValueNull(kouzaType)){
+                            %>
+                            <div class="confirm-box">
+                                <div class="confirmation-label" align="center">Account Type  口座の種類</div>
+                                <div class="confirmation-data" align="center">
+                                    <%=ESAPI.encoder().encodeForHTML(kouzaType)%>
+                                </div>
+                            </div>
+
+                            <%
+                                }
+                                if(functions.isValueNull(kouzaNm)){
+                            %>
+                            <div class="confirm-box">
+                                <div class="confirmation-label" align="center">Account Number 口座番号</div>
+                                <div class="confirmation-data" align="center">
+                                    <%=ESAPI.encoder().encodeForHTML(kouzaNm)%>
+                                </div>
+                            </div>
+
+                            <%
+                                }
+                                if(functions.isValueNull(kouzaMeigi)){
+                            %>
+                            <div class="confirm-box">
+                                <div class="confirmation-label" align="center">Account Holder 口座名義</div>
+                                <div class="confirmation-data" align="center">
+                                    <%=ESAPI.encoder().encodeForHTML(kouzaMeigi)%>
+                                </div>
+                            </div>
+                            <%
+                                }
+                                if(functions.isValueNull(nameId)){
+                            %>
+                            <div class="confirm-box">
+                                <div class="confirmation-label" align="center" style="color:red">Transfer ID お振込みID</div>
+                                <div class="confirmation-data" align="center" >
+                                    <%=ESAPI.encoder().encodeForHTML(nameId)%>
+                                </div>
+                            </div>
+
+                            <%
+                                }
+
+                                if(functions.isValueNull(amount)){
+                            %>
+                            <div class="confirm-box">
+                                <div class="confirmation-label" align="center">Amount of Money 金額</div>
+                                <div class="confirmation-data" align="center">
+                                    <%=amount%>
+                                </div>
+                            </div>
+
+                            <%}%>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <div class="top-bar">
+                            <div class="top-left" id="">
+                                <div text-align: center>
+                                    <p> &nbsp &nbsp  決済に関するお問い合わせはお気軽にお電話ください </p>
+                                    <p>【電話】03-4413-2113 &nbsp &nbsp 【mail】jpsupport@deltapay.biz</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                        <%
+                        String align = "";
+                        if(!partnerLogoFlag.equalsIgnoreCase("N") || !sisaLogoFlag.equalsIgnoreCase("N") || !powerBy.equalsIgnoreCase("N") )
+                        {
+                    %>
+                    <div class="modal-footer" style="padding: 7px 12px;">
+                        <%
+                            if(functions.isValueNull(partnerLogoFlag) && partnerLogoFlag.equalsIgnoreCase("Y"))
+                            {
+                        %>
+                        <div class="footer-logo" style="text-align: left;">
+                            <img  class="logo-style" src="/images/merchant/<%=logoName%>">
+                        </div>
+                        <%
+                            }
+                            else if((functions.isValueNull(powerBy) && ("N").equalsIgnoreCase(powerBy)) &&
+                                    (functions.isValueNull(securityLogoFlag) && ("N").equalsIgnoreCase(securityLogoFlag))){
+                                align="text-align: center";
+                            }
+                            else {
+                                align="text-align: left";
+                            }
+                            if(functions.isValueNull(sisaLogoFlag) && sisaLogoFlag.equalsIgnoreCase("Y"))
+                            {
+                        %>
+                        <div class="footer-logo" style="<%=align%>">
+                            <img  class="logo-style" src="/images/merchant/PCI.png">
+                        </div>
+                        <%
+                            }
+                            if(functions.isValueNull(powerBy) && powerBy.equalsIgnoreCase("Y"))
+                            {
+                        %>
+                        <div class="footer-logo" style="text-align: right;">
+                            <img  class="logo-style"  src="/images/merchant/poweredBy_logo.png">
+                        </div>
+                        <%
+                        }
+                        else if(functions.isValueNull(securityLogoFlag) && securityLogoFlag.equalsIgnoreCase("Y")) {
+                        %>
+                        <div class="footer-logo" style="text-align: right;">
+                            <img  class="logo-style" src="/images/merchant/security.png" style="width: auto;margin: 0px 15px;">
+                        </div>
+                        <%
+                            }
+                        %>
+
+                    </div>
+                    <%
+                        }
+                    %>
+                    <!-- footer  -->
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- modal ends -->
+
+</body>
+</html>

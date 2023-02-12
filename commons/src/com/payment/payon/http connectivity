@@ -1,0 +1,16 @@
+The PayPipe test system (for general testing and certification) is available at:
+
+https://test.ppipe.net/connectors/gateway
+
+The PayPipe LIVE system is available at:
+
+https://ppipe.net/connectors/gateway
+
+
+The XML request has to be sent in a parameter called "requestXML". The whole request needs to be sent as HTTP POST.
+The payment system is working with the UTF-8 character set. All incoming request must be fully UTF-8 encoded.
+The content-type of your message must be set to:
+application/x-www-form-urlencoded;charset=UTF-8
+Asynchronous update requests sent from PayPipe to responseURL are sent within the Parameter "responseXML” as an HTTP POST request.
+The content-type of the response message ist set to:
+application/x-www-form-urlencoded;charset=UTF-8

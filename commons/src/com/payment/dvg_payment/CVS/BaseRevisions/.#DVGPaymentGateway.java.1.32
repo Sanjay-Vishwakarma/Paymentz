@@ -1,0 +1,411 @@
+package com.payment.dvg_payment;
+
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.PzEncryptor;
+import com.directi.pg.TransactionLogger;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.*;
+import com.payment.common.core.CommRequestVO;
+import com.payment.common.core.CommResponseVO;
+import com.payment.common.core.CommTransactionDetailsVO;
+import com.payment.exceptionHandler.PZConstraintViolationException;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.PZGenericConstraintViolationException;
+import com.payment.exceptionHandler.PZTechnicalViolationException;
+import com.payment.exceptionHandler.constraint.PZGenericConstraint;
+import com.payment.exceptionHandler.constraintType.PZConstraintExceptionEnum;
+import com.payment.exceptionHandler.errorcode.ErrorCodeUtils;
+import com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorName;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeListVO;
+import org.apache.commons.lang.StringUtils;
+
+import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Hashtable;
+import java.util.Map;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Jinesh
+ * Date: 9/17/14
+ * Time: 2:43 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class DVGPaymentGateway extends AbstractPaymentGateway
+{
+    private static Logger log = new Logger(DVGPaymentGateway.class.getName());
+    private static TransactionLogger transactionLogger = new TransactionLogger(DVGPaymentGateway.class.getName());
+
+    public static final String GATEWAY_TYPE = "dvg";
+    //private final static String TESTURL = "https://www.dgserver22.net/Admin/ccProcessTagV1074-api.cfm";
+    private final static String TESTURL = "https://www.dgserver11.net/Admin/ccProcessTagV1074-api.cfm";
+    //private final static String LIVEURL = "https://www.ATLASPAYMENTS.com/acquiring.php";
+    @Override
+    public String getMaxWaitDays()
+    {
+        return "3.5";  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    public  DVGPaymentGateway(String accountId)
+    {
+        this.accountId = accountId;
+    }
+    public GenericResponseVO processAuthentication(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        PZGenericConstraint genConstraint = new PZGenericConstraint("DVGPaymentGateway","processAuthentication",null,"common","This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",null);
+        throw new PZGenericConstraintViolationException(genConstraint,"This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",null);
+
+        /*PZExceptionHandler.raiseGenericViolationException("DVGPaymentGateway","processAuthentication",null,"common","This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",null,null,null);
+        return null;*/
+    }
+    public GenericResponseVO processSale(String trackingID,GenericRequestVO requestVO) throws PZTechnicalViolationException, PZConstraintViolationException
+    {
+        //mid - 8880000
+        //pwd - Test1234
+        log.debug("Entering processSale of DVGPaymentGateway...");
+        transactionLogger.debug("Entering processSale of DVGPaymentGateway...");
+
+
+
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        CommResponseVO commResponseVO = new CommResponseVO();
+        DVGAccount dvgAccount = new DVGAccount();
+        GatewayAccount account = GatewayAccountService.getGatewayAccount(accountId);
+        log.debug("addressvalidation"+account.getAddressValidation());
+
+       // validateForSale(trackingID, requestVO);
+
+        Hashtable getMid = dvgAccount.getMidPassword(accountId);
+
+        GenericTransDetailsVO genericTransDetailsVO = commRequestVO.getTransDetailsVO();
+        GenericCardDetailsVO genericCardDetailsVO = commRequestVO.getCardDetailsVO();
+        GenericAddressDetailsVO addressDetailsVO = commRequestVO.getAddressDetailsVO();
+
+        String mId = (String) getMid.get("mid");
+        String password = (String) getMid.get("password");
+
+
+
+            String requestData = "<?xml version='1.0' encoding='UTF-8'?>\n" +
+                "<DIVITIA_BXML xmlns:xsi='http://www.w3.org/1999/XMLSchema-instance'\n" +
+                "xsi:noNamespaceSchemaLocation='divitia.xsd'>\n" +
+                    "<DIVITIA_REQUEST>\n" +
+                        "<USER_LOG>\n" +
+                            "<VID>"+mId+"</VID>\n" +
+                            "<PASSWORD>"+password+"</PASSWORD>\n" +
+                            "<TrackID>"+trackingID+"</TrackID>\n" +
+                            "<TrxType>SALE</TrxType>\n" +
+                            "<AMOUNT>"+getAmount(genericTransDetailsVO.getAmount())+"</AMOUNT>\n" +
+                            "<IPADDRESS>"+addressDetailsVO.getCardHolderIpAddress()+"</IPADDRESS>\n" +
+                        "</USER_LOG>\n" +
+                        "<CREDIT_CARD_DATA>\n" +
+                            "<CardName>"+addressDetailsVO.getFirstname()+" "+addressDetailsVO.getLastname()+"</CardName>\n" +
+                            "<CCNum>"+genericCardDetailsVO.getCardNum()+"</CCNum>\n" +
+                            "<ExpM>"+genericCardDetailsVO.getExpMonth()+"</ExpM>\n" +
+                            "<ExpY>"+genericCardDetailsVO.getExpYear()+"</ExpY>\n" +
+                            "<CVV2>"+genericCardDetailsVO.getcVV()+"</CVV2>\n" +
+                        "</CREDIT_CARD_DATA>\n" +
+                        "<ADDRESS>\n" +
+                            "<fName>"+addressDetailsVO.getFirstname()+"</fName>\n" +
+                            "<lName>"+addressDetailsVO.getLastname()+"</lName>\n" +
+                            "<Addr1>"+addressDetailsVO.getStreet()+"</Addr1>\n" +
+                            "<Addr2>"+addressDetailsVO.getState()+"</Addr2>\n" +
+                            "<CITY>"+addressDetailsVO.getCity()+"</CITY>\n" +
+                            "<STATE>"+addressDetailsVO.getState()+"</STATE>\n" +
+                            "<COUNTRY>"+addressDetailsVO.getCountry()+"</COUNTRY>\n" +
+                            "<ZIP>"+addressDetailsVO.getZipCode()+"</ZIP>\n" +
+                            "<EMAIL>"+addressDetailsVO.getEmail()+"</EMAIL>\n" +
+                            "<PHONE>"+addressDetailsVO.getPhone()+"</PHONE>\n" +
+                        "</ADDRESS>\n" +
+                    "</DIVITIA_REQUEST>\n" +
+                "</DIVITIA_BXML>";
+
+
+
+
+        Date date104=new Date();
+        transactionLogger.debug("DVG doPostHTTPSURLConnection start time 104########"+date104.getTime());
+            String response = DVGUtills.doPostHTTPSURLConnection(TESTURL,requestData);
+            log.debug("------response sale------"+response);
+            transactionLogger.debug("------response sale------"+response);
+        transactionLogger.debug("DVG doPostHTTPSURLConnection end time 104########" + new Date().getTime());
+        transactionLogger.debug("DVG doPostHTTPSURLConnection diff time 104########"+(new Date().getTime()-date104.getTime()));
+
+
+
+
+            Map readResponse = DVGUtills.ReadSalesResponse(StringUtils.trim(response));
+
+            if(!readResponse.equals("") && readResponse!=null)
+            {
+                String status = "fail";
+                if(readResponse.get("RESULT").equals("OK") && readResponse.get("ERRORNUMBER").equals("000"))
+                {
+                    status = "success";
+                    commResponseVO.setDescription((String) readResponse.get("NOTE"));
+                }
+                else
+                {
+                    commResponseVO.setDescription((String) readResponse.get("NOTE")+"-"+(String) readResponse.get("ERRORMESSAGE"));
+                }
+                commResponseVO.setStatus(status);
+                commResponseVO.setMerchantId((String) readResponse.get("AUTHCODE"));
+                commResponseVO.setMerchantOrderId((String) readResponse.get("TrackID"));
+                commResponseVO.setTransactionId((String) readResponse.get("TransactionId"));
+                commResponseVO.setErrorCode((String) readResponse.get("ERRORNUMBER"));
+                commResponseVO.setRemark((String) readResponse.get("ERRORMESSAGE"));
+                commResponseVO.setTransactionStatus((String) readResponse.get("AUTHCODE"));
+                commResponseVO.setDescriptor(GatewayAccountService.getGatewayAccount(accountId).getDisplayName());
+                commResponseVO.setTransactionType("sale");
+                DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                Date date = new Date();
+                commResponseVO.setResponseTime(String.valueOf(dateFormat.format(date)));
+            }
+
+        return commResponseVO;
+    }
+
+    public GenericResponseVO processRefund(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        CommResponseVO commResponseVO = new CommResponseVO();
+
+        CommTransactionDetailsVO genericTransDetailsVO = commRequestVO.getTransDetailsVO();
+
+        DVGAccount dvgAccount = new DVGAccount();
+        Hashtable getMid = dvgAccount.getMidPassword(accountId);
+        Hashtable refundData = dvgAccount.refundData(trackingID);
+
+        String expDate = PzEncryptor.decryptPAN((String) refundData.get("expdate"));
+        String[] splitVal = expDate.split("/");
+        String expMonth = splitVal[0];
+        String expYear = splitVal[1];
+
+            GatewayAccount account = GatewayAccountService.getGatewayAccount(accountId);
+            String mId = (String) getMid.get("mid");
+            String password = (String) getMid.get("password");
+
+            String requestData = "<?xml version='1.0' encoding='UTF-8'?>\n" +
+                "<DIVITIA_BXML xmlns:xsi='http://www.w3.org/1999/XMLSchema-instance'\n" +
+                "xsi:noNamespaceSchemaLocation='divitia.xsd'>\n" +
+                "<DIVITIA_REQUEST>\n" +
+                "<USER_LOG>\n" +
+                "<VID>"+mId+"</VID>\n" +
+                "<PASSWORD>"+password+"</PASSWORD>\n" +
+                "<TrackID>"+genericTransDetailsVO.getPreviousTransactionId()+"</TrackID>\n" +
+                "<TrxType>REFUND</TrxType>\n" +
+                "<AMOUNT>"+getAmount(genericTransDetailsVO.getAmount())+"</AMOUNT>\n" +
+                "<IPADDRESS>"+(String) refundData.get("ipaddress")+"</IPADDRESS>\n" +
+                "</USER_LOG>\n" +
+                "<CREDIT_CARD_DATA>\n" +
+                "<CardName>"+(String) refundData.get("name")+"</CardName>\n" +
+                "<CCNum>"+ PzEncryptor.decryptPAN((String) refundData.get("ccnum"))+"</CCNum>\n" +
+                "<ExpM>"+expMonth+"</ExpM>\n" +
+                "<ExpY>"+expYear+"</ExpY>\n" +
+                "<CVV2></CVV2>\n" +
+                "</CREDIT_CARD_DATA>\n" +
+                "<ADDRESS>\n" +
+                "<fName>"+(String) refundData.get("firstname")+"</fName>\n" +
+                "<lName>"+(String) refundData.get("lastname")+"</lName>\n" +
+                "<Addr1>"+(String) refundData.get("street")+"</Addr1>\n" +
+                "<Addr2>"+(String) refundData.get("state")+"</Addr2>\n" +
+                "<CITY>"+(String) refundData.get("street")+"</CITY>\n" +
+                "<STATE>"+(String) refundData.get("state")+"</STATE>\n" +
+                "<COUNTRY>"+(String) refundData.get("country")+"</COUNTRY>\n" +
+                "<ZIP>"+(String) refundData.get("zip")+"</ZIP>\n" +
+                "<EMAIL>"+(String) refundData.get("emailaddr")+"</EMAIL>\n" +
+                "<PHONE>"+(String) refundData.get("telno")+"</PHONE>\n" +
+                "</ADDRESS>\n" +
+                "</DIVITIA_REQUEST>\n" +
+                "</DIVITIA_BXML>";
+
+            String response = DVGUtills.doPostHTTPSURLConnection(TESTURL,requestData);
+            log.debug("--------response----------"+response);
+            transactionLogger.debug("--------response----------"+response);
+
+            Map readResponse = DVGUtills.ReadSalesResponse(StringUtils.trim(response));
+            String descriptor=GatewayAccountService.getGatewayAccount(accountId).getDisplayName();
+            if(!readResponse.equals("") && readResponse!=null)
+            {
+                String status = "fail";
+
+                if(readResponse.get("RESULT")!=null && readResponse.get("RESULT").equals("OK"))
+                {
+                    status = "success";
+                }
+
+                commResponseVO.setStatus(status);
+                commResponseVO.setMerchantId((String) readResponse.get("AUTHCODE"));
+                commResponseVO.setMerchantOrderId((String) readResponse.get("TrackID"));
+                commResponseVO.setDescription((String) readResponse.get("NOTE"));
+                commResponseVO.setTransactionId((String) readResponse.get("TransactionId"));
+                commResponseVO.setErrorCode((String) readResponse.get("ERRORNUMBER"));
+                commResponseVO.setRemark((String) readResponse.get("ERRORMESSAGE"));
+                commResponseVO.setTransactionStatus((String) readResponse.get("AUTHCODE"));
+                commResponseVO.setDescriptor(descriptor);
+                commResponseVO.setTransactionType("refund");
+                DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                Date date = new Date();
+                commResponseVO.setResponseTime(String.valueOf(dateFormat.format(date)));
+            }
+
+        return commResponseVO;
+    }
+
+    public GenericResponseVO processRebilling(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        errorCodeListVO.addListOfError(errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_RECURRINGALLOW));
+        PZGenericConstraint genConstraint = new PZGenericConstraint("DVGPaymentGateway","processRebilling",null,"common","This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",errorCodeListVO);
+        throw new PZGenericConstraintViolationException(genConstraint,"This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",null);
+    }
+
+    public String getAmount(String amount)
+    {
+        DecimalFormat d = new DecimalFormat("0");
+        Double dObj2 = Double.valueOf(amount);
+        dObj2= dObj2 * 100;
+        String amt = d.format(dObj2);
+        return amt;
+    }
+
+    private void validateForSale(String trackingID, GenericRequestVO requestVO) throws PZConstraintViolationException
+    {
+
+        //System.out.println("inside validate for sale---");
+        log.debug("inside validate for sale---");
+        if(trackingID ==null || trackingID.equals(""))
+        {
+            PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(),"validateForSale()",null,"common","Tracking Id not provided while placing the transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING,null,"Tracking Id not provided while placing the transaction",new Throwable("Tracking Id not provided while placing the transaction"));
+        }
+
+        if(requestVO ==null)
+        {
+            PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(),"validateForSale()",null,"common","Request  not provided while placing the transaction", PZConstraintExceptionEnum.VO_MISSING,null,"Request  not provided while placing the transaction",new Throwable("Request  not provided while placing the transaction"));
+        }
+
+        CommRequestVO commRequestVO  =    (CommRequestVO)requestVO;
+
+
+        GenericTransDetailsVO genericTransDetailsVO = commRequestVO.getTransDetailsVO();
+        if(genericTransDetailsVO ==null)
+        {
+            PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(),"validateForSale()",null,"common","TransactionDetails  not provided while placing the transaction", PZConstraintExceptionEnum.VO_MISSING,null,"TransactionDetails  not provided while placing the transaction",new Throwable("TransactionDetails  not provided while placing the transaction"));
+        }
+        if(genericTransDetailsVO.getAmount() == null || genericTransDetailsVO.getAmount().equals(""))
+        {
+            PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(),"validateForSale()",null,"common","Amount not provided while placing the transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING,null,"Amount not provided while placing the transaction",new Throwable("Amount not provided while placing the transaction"));
+        }
+
+        GenericAddressDetailsVO genericAddressDetailsVO= commRequestVO.getAddressDetailsVO();
+
+        if(genericAddressDetailsVO ==null)
+        {
+            PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(),"validateForSale()",null,"common","Addressdetails  not provided while placing the transaction", PZConstraintExceptionEnum.VO_MISSING,null,"Addressdetails  not provided while placing the transaction",new Throwable("Addressdetails  not provided while placing the transaction"));
+        }
+        //User Details
+        if(genericAddressDetailsVO.getFirstname()==null|| genericAddressDetailsVO.getFirstname().equals(""))
+        {
+            PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(),"validateForSale()",null,"common","First Name not provided while placing the transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING,null,"First Name not provided while placing the transaction",new Throwable("First Name not provided while placing the transaction"));
+        }
+        if(genericAddressDetailsVO.getLastname()==null|| genericAddressDetailsVO.getLastname().equals(""))
+        {
+            PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(),"validateForSale()",null,"common","Last Name not provided while placing the transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING,null,"Last Name not provided while placing the transaction",new Throwable("Last Name not provided while placing the transaction"));
+        }
+
+        if(genericAddressDetailsVO.getEmail()==null || genericAddressDetailsVO.getEmail().equals(""))
+        {
+
+            PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(),"validateForSale()",null,"common","Email Id not provided while placing the transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING,null,"Email Id not provided while placing the transaction",new Throwable("Email Id not provided while placing the transaction"));
+        }
+
+
+        /*if(genericAddressDetailsVO.getIp()==null || genericAddressDetailsVO.getIp().equals(""))
+        {
+            log.info("Customer IP not provided");
+            throw new SystemError("Customer IP not provided");
+        }*/
+
+
+        //Address Details
+        GatewayAccount account = GatewayAccountService.getGatewayAccount(accountId);
+        String addressValidation = account.getAddressValidation();
+        if (addressValidation.equalsIgnoreCase("Y"))
+        {
+
+            if (genericAddressDetailsVO.getStreet() == null || genericAddressDetailsVO.getStreet().equals(""))
+            {
+                PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(), "validateForSale()", null, "common", "Street not provided while placing the transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING, null, "Street not provided while placing the transaction", new Throwable("Street not provided while placing the transaction"));
+            }
+
+            if (genericAddressDetailsVO.getCity() == null || genericAddressDetailsVO.getCity().equals(""))
+            {
+                PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(), "validateForSale()", null, "common", "City not provided while placing the transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING, null, "City not provided while placing the transaction", new Throwable("City not provided while placing the transaction"));
+            }
+
+
+            if (genericAddressDetailsVO.getCountry() == null || genericAddressDetailsVO.getCountry().equals(""))
+            {
+                PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(), "validateForSale()", null, "common", "Country not provided while placing the transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING, null, "Country not provided while placing the transaction", new Throwable("Country not provided while placing the transaction"));
+            }
+
+            if (genericAddressDetailsVO.getState() == null || genericAddressDetailsVO.getState().equals(""))
+            {
+                PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(), "validateForSale()", null, "common", "State not provided while placing the transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING, null, "State not provided while placing the transaction", new Throwable("State not provided while placing the transaction"));
+            }
+
+            if (genericAddressDetailsVO.getZipCode() == null || genericAddressDetailsVO.getZipCode().equals(""))
+            {
+                PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(), "validateForSale()", null, "common", "Zip Code not provided while placing the transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING, null, "Zip Code not provided while placing the transaction", new Throwable("Zip Code not provided while placing the transaction"));
+            }
+        }
+
+
+        GenericCardDetailsVO genericCardDetailsVO= commRequestVO.getCardDetailsVO();
+
+        if(genericCardDetailsVO ==null)
+        {
+            PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(),"validateForSale()",null,"common","CardDetails  not provided while placing the transaction", PZConstraintExceptionEnum.VO_MISSING,null,"CardDetails  not provided while placing the transaction",new Throwable("CardDetails  not provided while placing the transaction"));
+        }
+        //Card Details
+
+        if(genericCardDetailsVO.getCardNum()==null || genericCardDetailsVO.getCardNum().equals(""))
+        {
+            PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(),"validateForSale()",null,"common","Card NO not provided while placing the transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING,null,"Card NO not provided while placing the transaction",new Throwable("Card NO not provided while placing the transaction"));
+        }
+
+        String ccnum = genericCardDetailsVO.getCardNum();
+
+        if(ccnum!=null && !Functions.isValid(ccnum))
+        {
+            PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(),"validateForSale()",null,"common","Card NO provided is Invalid while placing the transaction", PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,null,"Card NO provided is Invalid while placing the transaction",new Throwable("Card NO provided is Invlaid while placing the transaction"));
+        }
+
+
+
+        if(genericCardDetailsVO.getcVV()==null || genericCardDetailsVO.getcVV().equals(""))
+        {
+            PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(),"validateForSale()",null,"common","CVV not provided while placing the transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING,null,"CVV not provided while placing the transaction",new Throwable("CVV not provided while placing the transaction"));
+        }
+
+
+        if(genericCardDetailsVO.getExpMonth()==null || genericCardDetailsVO.getExpMonth().equals(""))
+        {
+            PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(),"validateForSale()",null,"common","Expiry Month not provided while placing the transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING,null,"Expiry Month not provided while placing the transaction",new Throwable("Expiry Month not provided while placing the transaction"));
+        }
+
+
+        if(genericCardDetailsVO.getExpYear()==null || genericCardDetailsVO.getExpYear().equals(""))
+        {
+            PZExceptionHandler.raiseConstraintViolationException(DVGPaymentGateway.class.getName(),"validateForSale()",null,"common","Expiry Year not provided while placing the transaction", PZConstraintExceptionEnum.MANDATORY_PARAMETER_MISSING,null,"Expiry Year not provided while placing the transaction",new Throwable("Expiry Year not provided while placing the transaction"));
+        }
+
+    }
+
+}

@@ -1,0 +1,170 @@
+package com.fraud.vo;
+
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeListVO;
+import org.json.JSONObject;
+
+import java.util.List;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: sandip
+ * Date: 7/30/14
+ * Time: 7:52 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class PZFraudResponseVO
+{
+    String responseCode;  //0=Success,1=Failed
+    String description;   //Error Message Description if Any Error
+    String fsTransId;     //Fraud System Provided Id
+    String recommendation;//Recommendation On Current Situation
+    Double score;         //Score Calculated By Our Payment Fraud Engine
+    String third_party;   //none
+    String rulesTriggered;
+    String internal_trans_id;
+    ErrorCodeListVO errorCodeListVO ;
+    boolean isFraud; //used for Internal Fraud checker
+    String fraud_result;
+    Result result;
+
+    public String getStatus()
+    {
+        return status;
+    }
+
+    public void setStatus(String status)
+    {
+        this.status = status;
+    }
+
+    String status;
+    public List getErrorList()
+    {
+        return errorList;
+    }
+
+    public void setErrorList(List errorList)
+    {
+        this.errorList = errorList;
+    }
+
+    List errorList;
+
+    public String getRecommendation()
+    {
+        return recommendation;
+    }
+
+    public void setRecommendation(String recommendation)
+    {
+        this.recommendation = recommendation;
+    }
+    public String getFsTransId()
+    {
+        return fsTransId;
+    }
+
+    public void setFsTransId(String fsTransId)
+    {
+        this.fsTransId = fsTransId;
+    }
+    public Double getScore()
+    {
+        return score;
+    }
+
+    public void setScore(Double score)
+    {
+        this.score = score;
+    }
+
+    public String getThird_party()
+    {
+        return third_party;
+    }
+
+    public void setThird_party(String third_party)
+    {
+        this.third_party = third_party;
+    }
+
+    public String getResponseCode()
+    {
+        return responseCode;
+    }
+
+    public void setResponseCode(String responseCode)
+    {
+        this.responseCode = responseCode;
+    }
+
+    public String getDescription()
+    {
+        return description;
+    }
+
+    public void setDescription(String description)
+    {
+        this.description = description;
+    }
+
+    public String getRulesTriggered()
+    {
+        return rulesTriggered;
+    }
+
+    public void setRulesTriggered(String rulesTriggered)
+    {
+        this.rulesTriggered = rulesTriggered;
+    }
+
+    public String getInternal_trans_id()
+    {
+        return internal_trans_id;
+    }
+
+    public void setInternal_trans_id(String internal_trans_id)
+    {
+        this.internal_trans_id = internal_trans_id;
+    }
+
+    public boolean isFraud()
+    {
+        return isFraud;
+    }
+
+    public void setFraud(boolean isFraud)
+    {
+        this.isFraud = isFraud;
+    }
+
+    public ErrorCodeListVO getErrorCodeListVO()
+    {
+        return errorCodeListVO;
+    }
+
+    public void setErrorCodeListVO(ErrorCodeListVO errorCodeListVO)
+    {
+        this.errorCodeListVO = errorCodeListVO;
+    }
+
+    public String getFraud_result()
+    {
+        return fraud_result;
+    }
+
+    public void setFraud_result(String fraud_result)
+    {
+        this.fraud_result = fraud_result;
+    }
+
+    public Result getResult()
+    {
+        return result;
+    }
+
+    public void setResult(Result result)
+    {
+        this.result = result;
+    }
+}

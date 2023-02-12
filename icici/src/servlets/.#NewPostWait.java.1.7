@@ -1,0 +1,524 @@
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import org.owasp.esapi.ESAPI;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.security.NoSuchAlgorithmException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.ResourceBundle;
+
+public class NewPostWait extends TransecuteServlet
+{
+    static Logger logger = new Logger(NewPostWait.class.getName());
+    final static ResourceBundle RB = LoadProperties.getProperty("com.directi.pg.Servlet");
+    final static String PAYPROCESS = RB.getString("PAYPROCESS");
+
+    /**
+     * It is used as the start tag in the replaceData function.
+     */
+
+    static String startTag = "<#";
+
+    /**
+     * It is the length of the start tag.
+     */
+
+    static int startTagLength = 2;
+
+    /**
+     * It is used as the end tag in the replaceData function.
+     */
+
+    static String endTag = "#>";
+
+    /**
+     * It is the length of the end tag.
+     */
+
+    static int endTagLength = 2;
+
+    /**
+     * Sole constructor.
+     */
+
+    public NewPostWait()
+    {
+        super();
+    }
+
+    public void doGet(HttpServletRequest req, HttpServletResponse res)
+            throws ServletException, IOException
+    {
+        doService(req, res);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res)
+            throws ServletException, IOException
+    {
+        doService(req, res);
+    }
+
+    public void doService(HttpServletRequest req,
+                          HttpServletResponse res)
+            throws ServletException, IOException
+    {
+
+
+        HttpSession session = req.getSession();
+
+        PrintWriter out = res.getWriter();
+        ServletContext ctx = getServletContext();
+        if (req.getParameter("TOID") == null)
+        {
+            //out.print(Functions.ShowMessage("Message","MerchantID is not found. Your session is Expire."));
+            res.sendRedirect("http://www.pz.com");
+            return;
+        }
+         if(req.getSession()== null)
+        {
+           //out.print(Functions.ShowMessage("Message","Your session is Expire"));
+            res.sendRedirect("http://www.pz.com");
+            return;
+        }
+
+        logger.debug("CSRF token from request "+req.getParameter("ctoken"));
+        /*String ctoken = null;
+        if(session !=null)
+        {
+            ctoken =  (String)session.getAttribute("ctoken");
+
+        }
+
+        if(ctoken!=null && !ctoken.equals("") && !req.getParameter("ctoken").equals(ctoken))
+        {
+
+            logger.debug("UnAuthorized member ");
+            out.println("Token mismatch. Illeagal Access");
+            return;
+
+        }
+
+        logger.debug("CSRF check successful ");
+*/
+
+        logger.debug("Entering doService of NewPostWait");
+        boolean triesOver = false;
+
+        boolean proofrequired = false;
+        boolean autoredirect = false;
+
+        Hashtable otherdetails = new Hashtable();
+
+
+        if (req.getParameter("TEMPLATE") != null)
+            otherdetails.put("TEMPLATE", req.getParameter("TEMPLATE"));
+
+        Enumeration nenu = req.getParameterNames();
+
+        while (nenu.hasMoreElements())
+        {
+            String name = (String) nenu.nextElement();
+            if (name.startsWith("TMPL_"))
+                otherdetails.put(name, req.getParameter(name));
+        }
+
+        StringBuffer templatevar = new StringBuffer();
+        Enumeration enu = req.getParameterNames();
+
+        while (enu.hasMoreElements())
+        {
+            String name = (String) enu.nextElement();
+
+            if (name.equals("CARDHOLDER"))
+                templatevar.append("&" + name + "=" + URLEncoder.encode(req.getParameter(name)));
+
+            else if (name.equals("TMPL_LOGOHEIGHT"))
+                templatevar.append("&" + name + "=" + URLEncoder.encode(req.getParameter(name)));
+
+            else if (name.equals("TMPL_RESELLERID"))
+                templatevar.append("&" + name + "=" + URLEncoder.encode(req.getParameter(name)));
+
+            else if (name.equals("TMPL_TABLEBG"))
+                templatevar.append("&" + name + "=" + URLEncoder.encode(req.getParameter(name)));
+
+            else if (name.equals("emailaddr"))
+                templatevar.append("&" + "TMPL_" + name + "=" + URLEncoder.encode(req.getParameter(name)));
+
+            else if (name.equals("street"))
+                templatevar.append("&" + "TMPL_" + name + "=" + URLEncoder.encode(req.getParameter(name)));
+
+            else if (name.equals("city"))
+                templatevar.append("&" + "TMPL_" + name + "=" + URLEncoder.encode(req.getParameter(name)));
+
+            else if (name.equals("state"))
+                templatevar.append("&" + "TMPL_" + name + "=" + URLEncoder.encode(req.getParameter(name)));
+
+            else if (name.equals("zip"))
+                templatevar.append("&" + "TMPL_" + name + "=" + URLEncoder.encode(req.getParameter(name)));
+
+            else if (name.equals("telnocc"))
+                templatevar.append("&" + "TMPL_" + name + "=" + URLEncoder.encode(req.getParameter(name)));
+
+            else if (name.equals("telno"))
+                templatevar.append("&" + "TMPL_" + name + "=" + URLEncoder.encode(req.getParameter(name)));
+
+            else if (name.equals("country"))
+                templatevar.append("&" + "TMPL_" + req.getParameter(name) + "=SELECTED");
+
+        }
+
+
+        if (("Y").equals(req.getParameter("PROOFREQUIRED")))
+        {
+            proofrequired = true;
+        }
+
+        if ((req.getParameter("AUTOREDIRECT")).equals("Y"))
+        {
+            autoredirect = true;
+        }
+
+        ctx.log("Entering doService");
+        ctx.log("Amount = " + req.getParameter("amount"));
+
+        res.setContentType("text/html");
+        out.println("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">");
+
+
+        String sessionID = req.getParameter("TOID") + "#~#" + req.getParameter("DESCRIPTION");
+        if (session.getAttribute(sessionID) != null)
+        {
+            int onOfTries = Integer.parseInt((String) session.getAttribute(sessionID));
+            onOfTries++;
+            session.setAttribute(sessionID, "" + onOfTries);
+
+            if (onOfTries >= 2)
+            {
+                triesOver = true;
+            }
+        }
+        else
+        {
+            session.setAttribute(sessionID, "1");
+        }
+
+
+        String clkey = "";
+        String checksumAlgo = null;
+        String companyname = "";
+        String brandname = "";
+        String sitename = "";
+        String currency = "";
+        String version = req.getParameter("TMPL_VERSION");
+        if (version == null)
+            version = "";
+
+        String memberId = req.getParameter("TOID");
+        String accountId = null;
+        BigDecimal amt = new BigDecimal(req.getParameter("amount"));
+        amt = amt.setScale(2, BigDecimal.ROUND_HALF_UP);
+        Connection con = null;
+        PreparedStatement p1 = null;
+        PreparedStatement p2 = null;
+        ResultSet rsdet = null;
+        ResultSet rs = null;
+        try
+        {
+            con = Database.getConnection();
+            String query = "select clkey,company_name,brandname,sitename,checksumalgo,accountid from members where memberid=?";
+            p1=con.prepareStatement(query);
+            p1.setString(1,memberId);
+            rs = p1.executeQuery();
+            if (rs.next())
+            {
+                clkey = rs.getString(1);
+                companyname = rs.getString(2);
+                brandname = rs.getString(3);
+                sitename = rs.getString(4);
+
+//                version = rs.getString( 5 );
+                checksumAlgo = rs.getString("checksumalgo");
+                accountId = rs.getString("accountid");
+                GatewayAccount account = GatewayAccountService.getGatewayAccount(accountId);
+                currency = account.getCurrency();
+                if (brandname.trim().equals(""))
+                    brandname = companyname;
+
+                if (sitename.trim().equals(""))
+                    sitename = companyname;
+
+            }
+            else
+            {
+                throw new SystemError("Could not load Key");
+            }
+
+            //ctx.log( "Amount = " + ( String ) req.getParameter( "amount" ) );
+            boolean verify = false;
+
+            ctx.log("Merchant version=" + version);
+
+            if (version.equals("2"))
+            {
+
+                //ctx.log( "!Checksum.verifyChecksum(" + memberId + "," + ( String ) req.getParameter( "status" ) + "," + ( String ) req.getParameter( "message" ) + "," + ( String ) req.getParameter( "DESCRIPTION" ) + "," + ( String ) req.getParameter( "amount" ) + "," + ( String ) req.getParameter( "chargeamt" ) + "," + clkey + "," + ( String ) req.getParameter( "checksum" ) );
+                verify = Checksum.verifyChecksumV3(memberId, req.getParameter("status"), req.getParameter("message"), req.getParameter("DESCRIPTION"), req.getParameter("amount"), req.getParameter("chargeamt"), clkey, req.getParameter("checksum"), checksumAlgo);
+            }
+            else
+            {
+                //ctx.log( "!Checksum.verifyChecksum(" + memberId + "," + ( String ) req.getParameter( "status" ) + "," + ( String ) req.getParameter( "message" ) + "," + ( String ) req.getParameter( "DESCRIPTION" ) + "," + ( String ) req.getParameter( "amount" ) + "," + clkey + "," + ( String ) req.getParameter( "checksum" ) );
+                verify = Checksum.verifyChecksumV1(memberId, req.getParameter("status"), req.getParameter("message"), req.getParameter("DESCRIPTION"), req.getParameter("amount"), clkey, req.getParameter("checksum"), checksumAlgo);
+            }
+
+            if (!verify)
+            {
+
+                out.println("Checksum mismatch. Illeagal Access");
+                return;
+            }
+
+            //Generate a random number and also include it in checksum so that nobody can get exact formula for checksum
+            int random = (int) ((2147483647) * java.lang.Math.random());
+
+            ctx.log("Value of ProofRequired" + proofrequired);
+            if (proofrequired)
+            {
+                query = "select name,ccnum,amount,description,templatecurrency,templateamount from transaction_icicicredit where icicitransid=?";
+                p2=con.prepareStatement(query);
+                p2.setString(1,req.getParameter("TRACKING_ID"));
+                rsdet = p2.executeQuery();
+                Hashtable taghash = new Hashtable();
+                taghash.putAll(otherdetails);
+                //otherdetails.putAll(taghash);
+
+                if (rsdet.next())
+                {
+                    String templateCurrency = rsdet.getString("templatecurrency");
+                    String templateAmount = rsdet.getString("templateamount");
+                    taghash.put("NAMEONCARD",rsdet.getString("name"));
+                    taghash.put("COMPANYNAME", companyname);
+                    taghash.put("BRANDNAME", brandname);
+                    taghash.put("SITENAME", sitename);
+                    taghash.put("CURRENCY", currency);
+                    taghash.put("DATE", (new java.util.Date()).toString());
+                    taghash.put("AMOUNT", rsdet.getString("amount"));
+                    taghash.put("CCNUM", PzEncryptor.decryptPAN(rsdet.getString("ccnum")));
+                    taghash.put("DESRIPTION", rsdet.getString("description"));
+                    taghash.put("TRACKINGID", req.getParameter("TRACKING_ID"));
+                    if (!currency.equals(templateCurrency))
+                        taghash.put("TMPL_TRANSACTION", "( approximately " + templateCurrency + " " + templateAmount + " ) ");
+
+
+                }
+
+                if (version.equals("2"))
+                {
+                    taghash.put("CONTINUEBUTTON", "<input type=\"button\" value=\"Continue to Merchant's Website\" onClick=\"document.location.href='" + req.getParameter("REDIRECTURL").trim() + "?status=P&message=" + URLEncoder.encode((String) req.getParameter("message")) + "&desc=" + URLEncoder.encode(req.getParameter("DESCRIPTION")) + "&amount=" + amt.toString() + "&chargeamount=" + req.getParameter("chargeamt") + "&newchecksum=" + Checksum.generateChecksumV4(req.getParameter("DESCRIPTION"), amt.toString(), req.getParameter("chargeamt"), "P", clkey, random, checksumAlgo) + "&trackingid=" + ESAPI.encoder().encodeForHTMLAttribute(req.getParameter("TRACKING_ID")) + "&random=" + random + "'\">");
+                }
+                else
+                {
+                    taghash.put("CONTINUEBUTTON", "<input type=\"button\" value=\"Continue to Merchant's Website\" onClick=\"document.location.href='" + req.getParameter("REDIRECTURL").trim() + "?status=P&message=" + URLEncoder.encode((String) req.getParameter("message")) + "&desc=" + URLEncoder.encode(req.getParameter("DESCRIPTION")) + "&amount=" + amt.toString() + "&newchecksum=" + Checksum.generateChecksumV2(req.getParameter("DESCRIPTION"), amt.toString(), "P", clkey, checksumAlgo) + "&trackingid=" + ESAPI.encoder().encodeForHTMLAttribute(req.getParameter("TRACKING_ID")) + "'\">");
+                }
+                ctx.log("Printing the proof page" + Template.getProofPage(memberId + "", taghash));
+                out.println(Template.getProofPage(memberId + "", taghash));
+                taghash=null;
+            }
+            else
+            {
+                if ((req.getParameter("status")).equals("Y"))
+                {
+                    otherdetails.put("TRANSACTIONSTATUS", "This Transaction is Successful.");
+                    otherdetails.put("RETRYMESSAGE", "<br>Please Click on Continue button below in order to complete the Transaction.");
+                    triesOver = true; //bcoz now the control has to go away irrespective of noOfTries
+//There was no form tag for retry and cancel button but on netscape it was giving error. SO put form tag before displaying this button.
+//as form tag is already written in template removed it from here
+//	otherdetails.put("CONTINUEBUTTON","<form action=\"" +  req.getParameter("REDIRECTURL").trim()+"?status="+(String)req.getParameter("status")+"&message="+URLEncoder.encode((String)req.getParameter("message"))+"&desc="+URLEncoder.encode((String)req.getParameter("DESCRIPTION"))+"&amount="+amt.toString()+"&newchecksum="+Checksum.getChecksum((String)req.getParameter("DESCRIPTION"),amt.toString(),(String)req.getParameter("status"),clkey) +"&trackingid="+req.getParameter("TRACKING_ID")+"\" method=\"post\"><input type=\"submit\" value=\"Continue\"> " );
+                    if (version.equals("2"))
+                    {
+                        otherdetails.put("CONTINUEBUTTON", "<input type=\"button\" value=\"Continue\" onClick=\"document.location.href='" + req.getParameter("REDIRECTURL").trim() + "?status=" + (String) req.getParameter("status") + "&message=" + URLEncoder.encode((String) req.getParameter("message")) + "&desc=" + URLEncoder.encode(req.getParameter("DESCRIPTION")) + "&amount=" + amt.toString() + "&chargeamount=" + req.getParameter("chargeamt") + "&newchecksum=" + Checksum.generateChecksumV4(req.getParameter("DESCRIPTION"), amt.toString(), req.getParameter("chargeamt"), req.getParameter("status"), clkey, random, checksumAlgo) + "&trackingid=" + ESAPI.encoder().encodeForHTMLAttribute(req.getParameter("TRACKING_ID")) + "&random=" + random + "'\">");
+                    }
+                    else
+                    {
+                        otherdetails.put("CONTINUEBUTTON", "<input type=\"button\" value=\"Continue\" onClick=\"document.location.href='" + req.getParameter("REDIRECTURL").trim() + "?status=" + (String) req.getParameter("status") + "&message=" + URLEncoder.encode((String) req.getParameter("message")) + "&desc=" + URLEncoder.encode(req.getParameter("DESCRIPTION")) + "&amount=" + amt.toString() + "&newchecksum=" + Checksum.generateChecksumV2(req.getParameter("DESCRIPTION"), amt.toString(), req.getParameter("status"), clkey, checksumAlgo) + "&trackingid=" + ESAPI.encoder().encodeForHTMLAttribute(req.getParameter("TRACKING_ID")) + "'\">");
+                    }
+                }
+                else
+                {
+                    otherdetails.put("TRANSACTIONSTATUS", "This Transaction has Failed. This could be due to any of the below reasons</b><ul><li><b>Your card has insufficient funds</b></li><li><b>or Your card issuer bank declined the transaction for some reason. Various card issuing banks have various different rules for processing online transactions</b></li><li><b>or The Card details you submitted were invalid</b></li><li><b>or Some other error occurred during the processing of this transaction</b></li></ul>");
+                    if (!triesOver)
+                    {
+                        otherdetails.put("RETRYMESSAGE", "Please Click on Retry below to verify your Card details and retry this transaction again, or hit Cancel Transaction in order to cancel the Transaction.");
+                        otherdetails.put("RETRYBUTTON", "<input type=\"button\" value=\"Retry \" onClick=\"document.location.href='" + PAYPROCESS + "?toid=" + memberId + "&totype=transecute&description=" + URLEncoder.encode(req.getParameter("DESCRIPTION")) + "&orderdescription=" + URLEncoder.encode(req.getParameter("ORDER_DESCRIPTION")) + "&amount=" + amt.toString() + "&redirecturl=" + req.getParameter("REDIRECTURL") + "&fromtype=icicicredit&checksum=" + Checksum.generateChecksumV1(memberId, "transecute", amt.toString(), req.getParameter("DESCRIPTION"), req.getParameter("REDIRECTURL"), clkey, rs.getString("checksumalgo")) + "&" + templatevar + "&TMPL_VERSION=" + version + "'\">");
+                    }
+
+                    if (version.equals("2"))
+                    {
+                        otherdetails.put("CONTINUEBUTTON", "<input type=\"button\" value=\"Cancel Transaction\" onClick=\"document.location.href='" + req.getParameter("REDIRECTURL").trim() + "?status=" + req.getParameter("status") + "&message=" + URLEncoder.encode(req.getParameter("message")) + "&desc=" + URLEncoder.encode(req.getParameter("DESCRIPTION")) + "&amount=" + amt.toString() + "&chargeamount=" + req.getParameter("chargeamt") + "&newchecksum=" + Checksum.generateChecksumV4(req.getParameter("DESCRIPTION"), amt.toString(), req.getParameter("chargeamt"), req.getParameter("status"), clkey, random, checksumAlgo) + "&trackingid=" + ESAPI.encoder().encodeForHTMLAttribute(req.getParameter("TRACKING_ID")) + "&random=" + random + "'\">");
+                    }
+                    else
+                    {
+                        otherdetails.put("CONTINUEBUTTON", "<input type=\"button\" value=\"Cancel Transaction\" onClick=\"document.location.href='" + req.getParameter("REDIRECTURL").trim() + "?status=" + req.getParameter("status") + "&message=" + URLEncoder.encode(req.getParameter("message")) + "&desc=" + URLEncoder.encode(req.getParameter("DESCRIPTION")) + "&amount=" + amt.toString() + "&newchecksum=" + Checksum.generateChecksumV2(req.getParameter("DESCRIPTION"), amt.toString(), req.getParameter("status"), clkey, checksumAlgo) + "&trackingid=" + ESAPI.encoder().encodeForHTMLAttribute(req.getParameter("TRACKING_ID")) + "'\">");
+                    }
+                }
+
+                try
+                {
+                    otherdetails.put("TRACKING_ID", ESAPI.encoder().encodeForHTML(req.getParameter("TRACKING_ID")));
+                    otherdetails.put("DESCRIPTION", ESAPI.encoder().encodeForHTML(req.getParameter("DESCRIPTION")));
+                    otherdetails.put("ORDER_DESCRIPTION", ESAPI.encoder().encodeForHTML(req.getParameter("ORDER_DESCRIPTION")));
+                    otherdetails.put("TXN_AMT", amt.toString());
+                    otherdetails.put("MESSAGE", ESAPI.encoder().encodeForHTML(req.getParameter("message")));
+                    //otherdetails.put("TMPL_CUSTOMISE", ESAPI.encoder().encodeForHTML(req.getParameter("TMPL_CUSTOMISE")));
+                    //otherdetails.put("TMPL_MSG", ESAPI.encoder().encodeForHTML(req.getParameter("TMPL_MSG")));
+
+                    if (autoredirect && triesOver)
+                    {
+                        if (version.equals("2"))
+                        {
+                            otherdetails.put("URL", req.getParameter("REDIRECTURL").trim() + "?status=" + req.getParameter("status") + "&message=" + URLEncoder.encode(req.getParameter("message")) + "&desc=" + URLEncoder.encode(req.getParameter("DESCRIPTION")) + "&amount=" + amt.toString() + "&chargeamount=" + req.getParameter("chargeamt") + "&newchecksum=" + Checksum.generateChecksumV4(req.getParameter("DESCRIPTION"), amt.toString(), req.getParameter("chargeamt"), req.getParameter("status"), clkey, random, checksumAlgo) + "&trackingid=" + ESAPI.encoder().encodeForHTMLAttribute(req.getParameter("TRACKING_ID")) + "&random=" + random);
+                        }
+                        else
+                        {
+                            otherdetails.put("URL", req.getParameter("REDIRECTURL").trim() + "?status=" + req.getParameter("status") + "&message=" + URLEncoder.encode(req.getParameter("message")) + "&desc=" + URLEncoder.encode(req.getParameter("DESCRIPTION")) + "&amount=" + amt.toString() + "&newchecksum=" + Checksum.generateChecksumV2(req.getParameter("DESCRIPTION"), amt.toString(), req.getParameter("status"), clkey, checksumAlgo) + "&trackingid=" + ESAPI.encoder().encodeForHTMLAttribute(req.getParameter("TRACKING_ID")));
+                        }
+                        out.println(Template.getAutoRedirectPage(memberId + "", otherdetails));
+                    }
+                    else
+                    {
+                        out.println(Template.getConfirmationPage(memberId + "", otherdetails,accountId+""));
+
+                    }
+
+                }
+                catch (SystemError ex)
+                {
+                    out.println("Error in Template " + ex.toString());
+                }
+            }
+        }
+        catch (SystemError e)
+        {   logger.error("System Error:::::",e);
+            ctx.log(e.toString());
+            //e.printStackTrace();
+            throw new ServletException(e.getMessage());
+        }
+        catch (SQLException e)
+        {   logger.error("SQL Exception" ,e);
+            ctx.log(e.toString());
+            //e.printStackTrace();
+            throw new ServletException(e.getMessage());
+        }
+        catch (NoSuchAlgorithmException ex)
+        {   logger.error("Algorithm Exception",ex);
+            ctx.log(ex.toString());
+            throw new ServletException(ex.getMessage());
+        }
+        finally
+        {
+            String query2;
+            query2 = "update transaction_icicicredit set ccid = null where icicitransid=?" ;
+            try{
+            p2=con.prepareStatement(query2);
+            p2.setString(1,req.getParameter("TRACKING_ID"));
+            p2.executeQuery();
+            }
+            catch(SQLException sqle)
+            {
+                               //
+            }
+            Database.closeResultSet(rs);
+            Database.closeResultSet(rsdet);
+            Database.closePreparedStatement(p1);
+            Database.closePreparedStatement(p2);
+            Database.closeConnection(con);
+        }
+    }
+
+
+    public static String replaceData(String data, String searchString, String replaceString)
+    {
+        String firstPart = "";
+        String secondPart = "";
+
+        int startPos = 0;
+        int startTagPos = 0;
+        int length = data.length();
+        int searchLength = searchString.length();
+        int replaceLength = searchString.length();
+        
+
+
+        while (startPos < length)
+        {
+
+            startTagPos = data.indexOf(searchString, startPos);
+
+
+            if (startTagPos != -1)
+            {
+                firstPart = data.substring(0, startTagPos);
+                secondPart = data.substring(startTagPos + searchLength);
+                data = firstPart + replaceString + secondPart;
+
+                startPos = startTagPos + replaceLength;
+                length = data.length();
+            }
+            else
+            {
+                break;
+            }
+
+        }//while ends
+        return data;
+    }
+
+
+    public static String replaceTag(String data, Hashtable values)
+    {
+
+        StringBuffer sb = new StringBuffer();
+        int startPos = 0;
+        int startTagPos = 0;
+        int endTagPos = 0;
+        int length = data.length();
+        String value = null;
+        // ctx.log("Before While");
+        while (startPos < length)
+        {
+            startTagPos = data.indexOf(startTag, startPos);
+            if (startTagPos == -1)
+            {
+                sb.append(data.substring(startPos));
+                startPos = length + 1;
+            }
+            else
+            {
+                sb.append(data.substring(startPos, startTagPos));
+                endTagPos = data.indexOf(endTag, startTagPos);
+                value = (String) values.get(data.substring(startTagPos + startTagLength, endTagPos));
+                //System.out.println(data.substring(startTagPos+startTagLength,endTagPos)+" : "+value);
+                if (value != null)
+                {
+                    sb.append(value);
+                }
+                startPos = endTagPos + endTagLength;
+            }
+        }
+        return sb.toString();
+    }
+
+}

@@ -1,0 +1,253 @@
+package net.partner;
+
+import com.directi.pg.Functions;
+import com.directi.pg.LoadProperties;
+import com.directi.pg.Logger;
+import com.directi.pg.SystemError;
+import com.fraud.FraudTransaction;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.apache.commons.lang.StringUtils;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+
+public class FraudTransactionList extends HttpServlet
+{
+    static Logger logger = new Logger(FraudTransactionList.class.getName());
+    public void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+
+        doPost(req, res);
+
+    }
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+
+        logger.debug("listing Fraud Transaction in doPost method");
+        int start = 0; // start index
+        int end = 0; // end index
+        boolean flag=false;
+        String errormsg="";
+        String EOL = "<BR>";
+        Functions functions = new Functions();
+        FraudTransaction fraudTransaction=new FraudTransaction();
+        HttpSession session = req.getSession();
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+        ResourceBundle rb1 = null;
+        String language_property1 = (String) session.getAttribute("language_property");
+        rb1 = LoadProperties.getProperty(language_property1);
+        String FraudTransactionList_PartnerID_errormsg = StringUtils.isNotEmpty(rb1.getString("FraudTransactionList_PartnerID_errormsg")) ? rb1.getString("FraudTransactionList_PartnerID_errormsg") : "Invalid Partner ID.";
+        String FraudTransactionList_Partner_mapping_errormsg = StringUtils.isNotEmpty(rb1.getString("FraudTransactionList_Partner_mapping_errormsg")) ? rb1.getString("FraudTransactionList_Partner_mapping_errormsg") : "Invalid Member Partner Mapping";
+        String FraudTransactionList_Partner_errormsg = StringUtils.isNotEmpty(rb1.getString("FraudTransactionList_Partner_errormsg")) ? rb1.getString("FraudTransactionList_Partner_errormsg") : "Invalid Partner Mapping";
+        String FraudTransactionList_date_errormsg = StringUtils.isNotEmpty(rb1.getString("FraudTransactionList_date_errormsg")) ? rb1.getString("FraudTransactionList_date_errormsg") : "Invalid From & To date";
+
+
+        PartnerFunctions partner=new PartnerFunctions();
+        if (!partner.isLoggedInPartner(session))
+        {
+            res.sendRedirect("/partner/Logout.jsp");
+            return;
+        }
+
+
+        if(functions.isValueNull(req.getParameter("fstransid")) && functions.isValueNull(req.getParameter("fsid")))
+        {
+            try
+            {
+                Hashtable hash =fraudTransaction.getFraudTransactionDetails(req.getParameter("fstransid"),req.getParameter("fsid"),req.getParameter("score"));
+                req.setAttribute("transactionsdetails", hash);
+                logger.debug("Forwarding to fraudTransactionDetails.jsp");
+                RequestDispatcher rd = req.getRequestDispatcher("/fraudTransactionDetails.jsp?ctoken="+user.getCSRFToken());
+                rd.forward(req, res);
+            }
+            catch (SystemError se)
+            {
+                logger.error("SysyemError in doGet method",se);
+            }
+            catch (Exception e)
+            {
+                logger.error("Exception in doGet method", e);
+            }
+            return;
+        }
+        if (!ESAPI.validator().isValidInput("pid", req.getParameter("pid"), "Numbers", 10, true))
+        {
+            errormsg =  FraudTransactionList_PartnerID_errormsg + EOL ;
+        }
+
+        try
+        {
+            validateOptionalParameter(req);
+        }
+        catch(ValidationException e)
+        {
+            errormsg =  errormsg + e.getMessage();
+            flag = false;
+        }
+
+        String fsid = req.getParameter("fsid");
+        String fstransstatus = req.getParameter("fstransstatus");
+        String trackingid = req.getParameter("STrackingid");
+        String fstransid = req.getParameter("fraudtransid");
+        String toid = req.getParameter("memberid");
+        String partnerId = "";
+
+        try
+        {
+            validateMandatoryParameter(req);
+        }
+        catch (ValidationException e)
+        {
+            errormsg = errormsg + e.getMessage() + EOL;
+
+        }
+        if(functions.isValueNull(errormsg)){
+            req.setAttribute("errormessage",errormsg);
+            RequestDispatcher rd = req.getRequestDispatcher("/fraudTransactionList.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+
+        String partner_id=(String) session.getAttribute("merchantid");
+        String error = "";
+        PartnerFunctions partnerFunctions = new PartnerFunctions();
+        try
+        {
+            if (functions.isValueNull(req.getParameter("pid")) && partnerFunctions.isPartnerSuperpartnerMapped(req.getParameter("pid"), partner_id))
+            {
+                if (partnerFunctions.isPartnerMemberMapped(req.getParameter("memberid"), req.getParameter("pid")))
+                {
+                    toid = req.getParameter("memberid");
+                }
+                else
+                {
+                    error = "Invalid Member Partner Mapping" + EOL;
+                }
+            }
+            else if (!functions.isValueNull(req.getParameter("pid")))
+            {
+                if (partnerFunctions.isPartnerSuperpartnerMembersMapped(req.getParameter("memberid"), (String) session.getAttribute("merchantid")))
+                {
+                    toid = req.getParameter("memberid");
+                }
+                else
+                {
+                    error =  FraudTransactionList_Partner_mapping_errormsg+ EOL;
+                }
+            }
+            else
+            {
+                error = FraudTransactionList_Partner_errormsg + EOL;
+            }
+        }catch(Exception e){
+            logger.error("Exception---" + e);
+        }
+
+
+
+        if(functions.isValueNull(error)){
+            req.setAttribute("errormessage",error);
+            RequestDispatcher rd = req.getRequestDispatcher("/fraudTransactionList.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        Calendar rightNow = Calendar.getInstance();
+        String fromdate = req.getParameter("fromdate");
+        String todate = req.getParameter("todate");
+        Date date= null;
+
+        try
+        {
+            if(functions.isFutureDateComparisonWithFromAndToDate(fromdate, todate, "dd/MM/yyyy"))
+            {
+                req.setAttribute("errormessage",FraudTransactionList_date_errormsg);
+                RequestDispatcher rd = req.getRequestDispatcher("/fraudTransactionList.jsp?ctoken="+user.getCSRFToken());
+                rd.forward(req, res);
+                return;
+            }
+
+            date=sdf.parse(fromdate);
+            rightNow.setTime(date);
+            String fdate=String.valueOf(rightNow.get(Calendar.DATE));
+            String fmonth=String.valueOf(rightNow.get(Calendar.MONTH));
+            String fyear=String.valueOf(rightNow.get(Calendar.YEAR));
+
+            //to Date
+            date=sdf.parse(todate);
+            rightNow.setTime(date);
+            String tdate=String.valueOf(rightNow.get(Calendar.DATE));
+            String tmonth=String.valueOf(rightNow.get(Calendar.MONTH));
+            String tyear=String.valueOf(rightNow.get(Calendar.YEAR));
+
+            String fdtstamp = Functions.converttomillisec(fmonth, fdate, fyear, "0", "0", "0");
+            String tdtstamp = Functions.converttomillisec(tmonth, tdate, tyear, "23", "59", "59");
+            res.setContentType("text/html");
+            req.setAttribute("fdtstamp", fdtstamp);
+            req.setAttribute("tdtstamp", tdtstamp);
+
+
+            int pageno = Functions.convertStringtoInt(req.getParameter("SPageno"), 1);
+            int records = Functions.convertStringtoInt(req.getParameter("SRecords"), 15);
+
+            logger.debug("toid insidee:::::"+toid);
+              logger.debug("toid:::::"+toid);
+                Hashtable hash =fraudTransaction.listPartnerFraudTransactions1(partnerId,toid, trackingid, fstransid, fsid, tdtstamp, fdtstamp, fstransstatus, records, pageno);
+                req.setAttribute("transactionsdetails",hash);
+                logger.debug("Transaction is successfully load the data and forwaring to fraudtransactionList.jsp");
+
+        }
+        catch (SystemError se)
+        {
+            logger.error("errror in doPost ", se);
+            Functions.ShowMessage("Error", "Internal System Error while getting list of Transactions");
+        }
+        catch (Exception e)
+        {
+            logger.error("Exception:::: errror in doPost", e);
+            Functions.ShowMessage("Error", "Internal System Error while getting list of Transactions");
+        }
+        RequestDispatcher rd1 = req.getRequestDispatcher("/fraudTransactionList.jsp?ctoken="+user.getCSRFToken());
+        rd1.forward(req, res);
+
+    }
+    private void validateOptionalParameter(HttpServletRequest req) throws ValidationException
+    {
+        InputValidator inputValidator = new InputValidator();
+        List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+        inputFieldsListMandatory.add(InputFields.TRACKINGID_TRA);
+        inputFieldsListMandatory.add(InputFields.STATUS);
+        inputFieldsListMandatory.add(InputFields.TOID);
+        inputFieldsListMandatory.add(InputFields.FSID);
+        //inputFieldsListMandatory.add(InputFields.FROMDATE);
+        //inputFieldsListMandatory.add(InputFields.TODATE);
+        //inputFieldsListMandatory.add(InputFields.FROMMONTH);
+       // inputFieldsListMandatory.add(InputFields.TOMONTH);
+        //inputFieldsListMandatory.add(InputFields.FROMYEAR);
+        //inputFieldsListMandatory.add(InputFields.TOYEAR);
+        inputFieldsListMandatory.add(InputFields.RECORDS);
+        inputFieldsListMandatory.add(InputFields.PAGENO);
+        inputValidator.InputValidations(req,inputFieldsListMandatory,true);
+    }
+
+    private void validateMandatoryParameter(HttpServletRequest req) throws ValidationException
+    {
+        InputValidator inputValidator = new InputValidator();
+        List<InputFields> inputFieldsListMandatory = new ArrayList();
+        inputFieldsListMandatory.add(InputFields.MEMBERID);
+        inputValidator.InputValidations(req,inputFieldsListMandatory,false);
+    }
+}

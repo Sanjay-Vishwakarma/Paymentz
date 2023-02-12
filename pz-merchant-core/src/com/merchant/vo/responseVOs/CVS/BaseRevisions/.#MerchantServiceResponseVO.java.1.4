@@ -1,0 +1,249 @@
+package com.merchant.vo.responseVOs;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
+/**
+ * Created by Admin on 4/27/2017.
+ */
+@XmlRootElement(name = "response")
+@XmlAccessorType(XmlAccessType.FIELD)
+public class MerchantServiceResponseVO
+{
+    @XmlElement(name="paymentId")
+    String paymentId;
+
+    @XmlElement(name="partnerId")
+    String partnerId;
+
+    @XmlElement(name="memberId")
+    String memberId;
+
+    @XmlElement(name = "customerId")
+    String customerId;
+
+    @XmlElement(name="result")
+    Result result;
+
+    @XmlElement (name="timestamp")
+    String timestamp;
+
+    @XmlElement (name="secureKey")
+    String secureKey;
+
+    @XmlElement (name="email")
+    String email;
+
+    @XmlElement (name="telno")
+    String telno;
+
+    @XmlElement (name="login")
+    String login;
+
+    @XmlElement (name="contactPerson")
+    String contactPerson;
+
+    @XmlElement (name="country")
+    String country;
+    
+    @XmlElement (name="LoginName")
+    String LoginName;
+
+    @XmlElement (name="AuthToken")
+    String authToken;
+
+    @XmlElement (name="mobilenumber")
+    String mobilenumber;
+
+    @XmlElement (name="isemailverified")
+    String isemailverified;
+
+    @XmlElement (name="isMobileVerified")
+    String isMobileVerified;
+
+    @XmlElement (name="isActive")
+    String isActive;
+
+    public String getTimestamp()
+    {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp)
+    {
+        this.timestamp = timestamp;
+    }
+
+    public String getPaymentId()
+    {
+        return paymentId;
+    }
+
+    public void setPaymentId(String paymentId)
+    {
+        this.paymentId = paymentId;
+    }
+
+    public String getPartnerId()
+    {
+        return partnerId;
+    }
+
+    public void setPartnerId(String partnerId)
+    {
+        this.partnerId = partnerId;
+    }
+
+    public String getMemberId()
+    {
+        return memberId;
+    }
+
+    public void setMemberId(String memberId)
+    {
+        this.memberId = memberId;
+    }
+
+    public String getCustomerId()
+    {
+        return customerId;
+    }
+
+    public void setCustomerId(String customerId)
+    {
+        this.customerId = customerId;
+    }
+
+    public Result getResult()
+    {
+        return result;
+    }
+
+    public void setResult(Result result)
+    {
+        this.result = result;
+    }
+
+    public String getSecureKey()
+    {
+        return secureKey;
+    }
+
+    public void setSecureKey(String secureKey)
+    {
+        this.secureKey = secureKey;
+    }
+
+    public String getEmail()
+    {
+        return email;
+    }
+
+    public void setEmail(String email)
+    {
+        this.email = email;
+    }
+
+    public String getTelno()
+    {
+        return telno;
+    }
+
+    public void setTelno(String telno)
+    {
+        this.telno = telno;
+    }
+
+    public String getLogin()
+    {
+        return login;
+    }
+
+    public void setLogin(String login)
+    {
+        this.login = login;
+    }
+
+    public String getContactPerson()
+    {
+        return contactPerson;
+    }
+
+    public void setContactPerson(String contactPerson)
+    {
+        this.contactPerson = contactPerson;
+    }
+
+    public String getCountry()
+    {
+        return country;
+    }
+
+    public void setCountry(String country)
+    {
+        this.country = country;
+    }
+
+    public String getLoginName()
+    {
+        return LoginName;
+    }
+
+    public void setLoginName(String loginName)
+    {
+        LoginName = loginName;
+    }
+
+    public String getAuthToken()
+    {
+        return authToken;
+    }
+
+    public void setAuthToken(String authToken)
+    {
+        this.authToken = authToken;
+    }
+
+    public String getMobilenumber()
+    {
+        return mobilenumber;
+    }
+
+    public void setMobilenumber(String mobilenumber)
+    {
+        this.mobilenumber = mobilenumber;
+    }
+
+
+    public String getIsemailverified()
+    {
+        return isemailverified;
+    }
+
+    public void setIsemailverified(String isemailverified)
+    {
+        this.isemailverified = isemailverified;
+    }
+
+    public String getIsMobileVerified()
+    {
+        return isMobileVerified;
+    }
+
+    public void setIsMobileVerified(String isMobileVerified)
+    {
+        this.isMobileVerified = isMobileVerified;
+    }
+
+    public String getIsActive()
+    {
+        return isActive;
+    }
+
+    public void setIsActive(String isActive)
+    {
+        this.isActive = isActive;
+    }
+}

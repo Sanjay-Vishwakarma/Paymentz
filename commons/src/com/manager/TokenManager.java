@@ -1,0 +1,865 @@
+package com.manager;
+
+import com.directi.pg.EmiVO;
+import com.directi.pg.Functions;
+import com.directi.pg.core.valueObjects.GenericAddressDetailsVO;
+import com.manager.dao.TokenDAO;
+import com.manager.vo.*;
+import com.payment.common.core.CommCardDetailsVO;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.validators.vo.CommonValidatorVO;
+import org.owasp.esapi.ESAPI;
+
+import javax.servlet.http.HttpServletRequest;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Random;
+
+//import com.directi.pg.Logger;
+//import com.directi.pg.core.valueObjects.GenericCardDetailsVO;
+//import com.payment.validators.vo.ReserveField2VO;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: sandip
+ * Date: 4/3/15
+ * Time: 3:47 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class TokenManager
+{
+   // private static Logger logger = new Logger(TokenManager.class.getName());
+
+    TokenDAO tokenDAO = new TokenDAO();
+
+    public static String generateToken()
+    {
+        return generateToken(32);
+    }
+
+    public static String generateTokenRegestration()
+    {
+        return generateToken(32);
+    }
+
+    public static String generateToken(int size)
+    {
+        String tokenData = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        int len = tokenData.length();
+        Date date = new Date();
+        Random rand = new Random(date.getTime());
+        StringBuffer token = new StringBuffer();
+        int index = -1;
+
+        for (int i = 0; i < size; i++)
+        {
+            index = rand.nextInt(len);
+            token.append(tokenData.substring(index, index + 1));
+        }
+        return token.toString();
+    }
+
+    public static String generateTokenRegestration(int size)
+    {
+        String tokenData = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890";
+        int len = tokenData.length();
+        Date date = new Date();
+        Random rand = new Random(date.getTime());
+        StringBuffer token = new StringBuffer();
+        int index = -1;
+
+        for (int i = 0; i < size; i++)
+        {
+            index = rand.nextInt(len);
+            token.append(tokenData.substring(index, index + 1));
+        }
+        return token.toString();
+    }
+
+    public boolean checkUniqueOderIdForToken(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.checkUniqueOderIdForToken(tokenRequestVO);
+    }
+
+    public TokenResponseVO createToken(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.createToken(tokenRequestVO);
+    }
+
+    public TokenResponseVO createTokenNew(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.createTokenNew(tokenRequestVO);
+    }
+
+/*    public TokenResponseVO createTokenNewForAccount(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.createTokenNewForAccount(tokenRequestVO);
+    }*/
+
+    public String insertBankAccountDetails(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.insertBankAccountDetails(tokenRequestVO);
+    }
+
+    public TokenResponseVO createTokenByPartner(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.createTokenByPartner(tokenRequestVO);
+    }
+
+    public TokenResponseVO createRestTokenByPartner(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.createRestTokenByPartner(tokenRequestVO);
+    }
+
+    public String createTokenByTrackingId(String trackingId) throws PZDBViolationException
+    {
+        return "";
+    }
+
+    public String createTokenByTrackingId(String trackingId, TransactionDetailsVO transactionDetailsVO) throws PZDBViolationException
+    {
+        return tokenDAO.createTokenByTrackingId(trackingId, transactionDetailsVO);
+    }
+
+    public CardholderResponseVO registerCardholder(CardHolderRequestVO cardHolderRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.registerCardholder(cardHolderRequestVO);
+    }
+
+    public CardholderResponseVO registerCardholderByPartner(CardHolderRequestVO cardHolderRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.registerCardholderByPartner(cardHolderRequestVO);
+    }
+
+    public Hashtable getMerchantRegistrationCardList(String merchantid, String fdtstamp, String tdtstamp, String description, String firstName, String lastName, String email, int records, int pageno, String role, String useraccname) throws PZDBViolationException
+    {
+        return tokenDAO.getMerchantRegistrationCardList(merchantid, fdtstamp, tdtstamp, description, firstName, lastName, email, records, pageno, role, useraccname);
+    }
+    public Hashtable getMerchantRegistrationCardLists(String merchantid, String fdtstamp, String tdtstamp, String description, String firstName, String lastName, String email, int records, int pageno,String partnerid, String useraccname) throws PZDBViolationException
+    {
+        return tokenDAO.getMerchantRegistrationCardLists(merchantid, fdtstamp, tdtstamp, description, firstName, lastName, email, records, pageno,partnerid, useraccname);
+    }
+    public List<TokenDetailsVO> getMerchantRegistrationList(String memberId,String fdtstamp,String tdtstamp,String description,String firstName,String lastName,String email, PaginationVO paginationVO)throws PZDBViolationException
+    {
+        return tokenDAO.getMerchantRegistrationList(memberId, fdtstamp, tdtstamp, description, firstName, lastName, email, paginationVO);
+    }
+
+    public List<TokenDetailsVO> getAdminRegistrationList(String memberId,String fdtstamp,String tdtstamp,String description,String firstName,String lastName,String email, PaginationVO paginationVO,String partnerId,String city,String state,String street, String country,String zipCode,String telnocc, String telno)throws PZDBViolationException
+    {
+        return tokenDAO.getAdminRegistrationList(memberId, fdtstamp, tdtstamp, description, firstName, lastName, email, paginationVO,partnerId,city,state,street,country,zipCode,telnocc,telno);
+    }
+
+
+    public List<TokenDetailsVO> getMerchantActiveTokens(String merchantId) throws PZDBViolationException
+    {
+        return tokenDAO.getMerchantActiveTokens(merchantId);
+    }
+
+    public TokenDetailsVO getTokenDetails(String memberid, String token, String terminalId) throws PZDBViolationException
+    {
+        return tokenDAO.getTokenDetails(memberid, token, terminalId);
+    }
+
+    public TokenDetailsVO getTokenDetails(String memberid, String token) throws PZDBViolationException
+    {
+        return tokenDAO.getTokenDetails(memberid, token);
+    }
+
+    public TokenDetailsVO getTokenDetails(String memberid, String token, CommonValidatorVO commonValidatorVO) throws PZDBViolationException
+    {
+        return tokenDAO.getTokenDetails(memberid, token, commonValidatorVO);
+    }
+
+    public TokenDetailsVO getBankAccountTokenDetailsWithMemberId(String bankAccountId, String token, String memberId, CommonValidatorVO commonValidatorVO, TokenDetailsVO tokenDetailsVO) throws PZDBViolationException
+    {
+        return tokenDAO.getBankAccountTokenDetailsWithMemberId(bankAccountId, token, memberId, commonValidatorVO, tokenDetailsVO);
+    }
+
+    public TokenDetailsVO getBankAccountTokenDetailsWithPartnerId(String bankAccountId, String token, String partnerId, CommonValidatorVO commonValidatorVO, TokenDetailsVO tokenDetailsVO) throws PZDBViolationException
+    {
+        return tokenDAO.getBankAccountTokenDetailsWithPartnerId(bankAccountId, token, partnerId, commonValidatorVO, tokenDetailsVO);
+    }
+
+    public TokenDetailsVO getInitialTokenDetailsWithMemebrId(String token, String memberId) throws PZDBViolationException
+    {
+        return tokenDAO.getInitialTokenDetailsWithMemebrId(token, memberId);
+    }
+
+    public TokenDetailsVO getInitialTokenDetailsWithPartnerId(String token, String partnerId) throws PZDBViolationException
+    {
+        return tokenDAO.getInitialTokenDetailsWithPartnerId(token, partnerId);
+    }
+
+    public TokenDetailsVO getTokenDetailsByPartner(String partnerId, String token) throws PZDBViolationException
+    {
+        return tokenDAO.getTokenDetailsByPartner(partnerId, token);
+    }
+
+    public List<TokenDetailsVO> getCustomerStoredCards(String toId, String cardholderId) throws PZDBViolationException
+    {
+        return tokenDAO.getCustomerStoredCards(toId, cardholderId);
+    }
+
+    public List<TokenDetailsVO> getCustomerStoredCardsWithoutCardholderId(String toId) throws PZDBViolationException
+    {
+        return tokenDAO.getCustomerStoredCardsWithoutCardholderId(toId);
+    }
+
+    public List<TokenDetailsVO> getCustomerStoredCardsByPartner(String partnerId, String cardholderId) throws PZDBViolationException
+    {
+        return tokenDAO.getCustomerStoredCardsByPartner(partnerId, cardholderId);
+    }
+
+    public List<TokenDetailsVO> getCustomerStoredCardsByPartnerWithoutCardholderId(String partnerId) throws PZDBViolationException
+    {
+        return tokenDAO.getCustomerStoredCardsByPartnerWithoutCardholderId(partnerId);
+    }
+
+    public boolean isNewCard(String memberId, String cardNumber) throws PZDBViolationException
+    {
+        return tokenDAO.isNewCard(memberId, cardNumber);
+    }
+
+    public String isNewAccount(String memberId, TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.isNewAccount(memberId, tokenRequestVO);
+    }
+
+    public boolean isNewCardForPartner(String partnerId, String cardNumber) throws PZDBViolationException
+    {
+        return tokenDAO.isNewCardForPartner(partnerId, cardNumber);
+    }
+
+    public boolean isNewAccountForPartner(String partnerId, String bic) throws PZDBViolationException
+    {
+        return tokenDAO.isNewAccountForPartner(partnerId, bic);
+    }
+
+    public String isTokenAvailable(String memberId, String cardNumber,String expDate) throws PZDBViolationException
+    {
+        return tokenDAO.isTokenAvailable(memberId, cardNumber,expDate);
+    }
+
+    public String isCardAvailable(String memberId, String cardNumber) throws PZDBViolationException
+    {
+        return tokenDAO.isCardAvailable(memberId, cardNumber);
+    }
+
+    public String isAccountAvailable(String memberId, String bankaccount_bic) throws PZDBViolationException
+    {
+        return tokenDAO.isAccountAvailable(memberId, bankaccount_bic);
+    }
+
+    public String manageTokenTransactionDetails(TokenTransactionDetailsVO tokenTransactionDetailsVO) throws PZDBViolationException
+    {
+        return tokenDAO.manageTokenTransactionDetails(tokenTransactionDetailsVO);
+    }
+
+    public String manageRegistrationTransactionDetails(TokenTransactionDetailsVO tokenTransactionDetailsVO) throws PZDBViolationException
+    {
+        return tokenDAO.manageRegistrationTransactionDetails(tokenTransactionDetailsVO);
+    }
+
+    public String doTokenInactive(String tokenId) throws PZDBViolationException
+    {
+        return tokenDAO.doTokenInactive(tokenId);
+    }
+
+    public TokenDetailsVO getRegisteredTokenDetails(String memberId, String token, String terminalId) throws PZDBViolationException
+    {
+        return tokenDAO.getRegisteredTokenDetails(memberId, token, terminalId);
+    }
+
+    public String doMerchantRegisteredTokenInactive(String memberId, String token) throws PZDBViolationException
+    {
+        return tokenDAO.doMerchantRegisteredTokenInactive(memberId, token);
+    }
+
+    public String doPartnerRegisteredTokenInactive(String partnerId, String token) throws PZDBViolationException
+    {
+        return tokenDAO.doPartnerRegisteredTokenInactive(partnerId, token);
+    }
+
+    public String updateTokenMaster(TokenTransactionDetailsVO tokenTransactionDetailsVO) throws PZDBViolationException
+    {
+        return tokenDAO.updateTokenMaster(tokenTransactionDetailsVO);
+    }
+
+    public boolean isCardholderRegistered(String toId, String cardholderId) throws PZDBViolationException
+    {
+        return tokenDAO.isCardholderRegistered(toId, cardholderId);
+    }
+
+    public boolean isCardholderRegisteredWithPartner(String partnerId, String cardholderId) throws PZDBViolationException
+    {
+        return tokenDAO.isCardholderRegisteredWithPartner(partnerId, cardholderId);
+    }
+
+    public String doRestTokenDelete(String token) throws PZDBViolationException
+    {
+        return tokenDAO.doRestTokenDelete(token);
+    }
+
+    public String performNewTokenValidation(TokenRequestVO tokenRequestVO)
+    {
+        StringBuffer sb = new StringBuffer();
+        CommCardDetailsVO commCardDetailsVO = tokenRequestVO.getCommCardDetailsVO();
+        GenericAddressDetailsVO addressDetailsVO = tokenRequestVO.getAddressDetailsVO();
+        if (!ESAPI.validator().isValidInput("toid", tokenRequestVO.getMemberId(), "Numbers", 20, false))
+        {
+            sb.append("Invalid toid | ");
+        }
+        if (!ESAPI.validator().isValidInput("terminalid", tokenRequestVO.getTerminalId(), "Numbers", 6, false))
+        {
+            sb.append("Invalid terminal | ");
+        }
+        if (!ESAPI.validator().isValidInput("cnum", commCardDetailsVO.getCardNum(), "CC", 20, false))
+        {
+            sb.append("Invalid cardnumber | ");
+        }
+        if (!ESAPI.validator().isValidInput("expirymonth", commCardDetailsVO.getExpMonth(), "Months", 2, false))
+        {
+            sb.append("Invalid expiry month | ");
+        }
+        if (!ESAPI.validator().isValidInput("expiryyear", commCardDetailsVO.getExpYear(), "Years", 4, false))
+        {
+            sb.append("Invalid expiry year | ");
+        }
+        if (!ESAPI.validator().isValidInput("cvv", commCardDetailsVO.getcVV(), "Numbers", 4, false))
+        {
+            sb.append("Invalid cvv | ");
+        }
+        if (!ESAPI.validator().isValidInput("firstname", addressDetailsVO.getFirstname(), "contactName", 50, false))
+        {
+            sb.append("Invalid firstname | ");
+        }
+        if (!ESAPI.validator().isValidInput("lastname", addressDetailsVO.getLastname(), "contactName", 50, false))
+        {
+            sb.append("Invalid lastname | ");
+        }
+        if (!ESAPI.validator().isValidInput("language", addressDetailsVO.getLanguage(), "SafeString", 4, false))
+        {
+            sb.append("Invalid language | ");
+        }
+        if (!ESAPI.validator().isValidInput("birthdate", addressDetailsVO.getBirthdate(), "Numbers", 8, false))
+        {
+            sb.append("Invalid birthdate | ");
+        }
+        if (!ESAPI.validator().isValidInput("street", addressDetailsVO.getStreet(), "Address", 100, false))
+        {
+            sb.append("Invalid Address | ");
+        }
+        if (!ESAPI.validator().isValidInput("city", addressDetailsVO.getCity(), "City", 30, false))
+        {
+            sb.append("Invalid city | ");
+        }
+        if (!ESAPI.validator().isValidInput("zip", addressDetailsVO.getZipCode(), "Zip", 10, false))
+        {
+            sb.append("Invalid zip | ");
+        }
+        if (!ESAPI.validator().isValidInput("countrycode", addressDetailsVO.getCountry(), "CountryCode", 3, false))
+        {
+            sb.append("Invalid countrycode | ");
+        }
+        if (!ESAPI.validator().isValidInput("state", addressDetailsVO.getState(), "State", 40, false))
+        {
+            sb.append("Invalid state | ");
+        }
+        if (!ESAPI.validator().isValidInput("phone", addressDetailsVO.getPhone(), "Phone", 15, false))
+        {
+            sb.append("Invalid phone number | ");
+        }
+        if (!ESAPI.validator().isValidInput("cardholderemail", addressDetailsVO.getEmail(), "Email", 50, false))
+        {
+            sb.append("Invalid cardholder email | ");
+        }
+        return sb.toString();
+    }
+
+    public DateDetailsVO getDateDifference(String date1, String date2) throws ParseException
+    {
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        DateDetailsVO dateDetailsVO = new DateDetailsVO();
+        Date d1 = null;
+        Date d2 = null;
+
+        d1 = format.parse(date1);
+        d2 = format.parse(date2);
+
+        //in milliseconds
+        long diff = d2.getTime() - d1.getTime();
+
+        long diffSeconds = diff / 1000 % 60;
+        long diffMinutes = diff / (60 * 1000) % 60;
+        long diffHours = diff / (60 * 60 * 1000) % 24;
+        long diffDays = diff / (24 * 60 * 60 * 1000);
+
+        dateDetailsVO.setDays(diffDays);
+        dateDetailsVO.setHours(diffHours);
+        dateDetailsVO.setMinutes(diffMinutes);
+        dateDetailsVO.setSeconds(diffSeconds);
+        return dateDetailsVO;
+    }
+
+    public boolean isTokenExpired(DateDetailsVO dateDetailsVO, int memberValidDays)
+    {
+        boolean flag = false;
+
+        int tokenValidDays = memberValidDays;
+
+        long expirationHours = tokenValidDays * 24 - 1;
+        long expirationMinutes = 59;
+        long expirationSeconds = 59;
+
+        long actualHours = dateDetailsVO.getDays() * 24;
+        long actualMinutes = dateDetailsVO.getMinutes();
+        long actualSeconds = dateDetailsVO.getSeconds();
+
+        if (actualHours >= expirationHours)
+        {
+            //expired
+            flag = true;
+        }
+        else
+        {
+            if (actualHours - 1 == expirationHours)
+            {
+                if (actualMinutes < expirationMinutes)
+                {
+                    flag = false;
+                }
+                else
+                {
+                    if (actualMinutes == expirationMinutes)
+                    {
+                        if (actualSeconds <= expirationSeconds)
+                        {
+                            flag = false;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                flag = false;
+            }
+        }
+        return flag;
+    }
+
+    public String cardRegistrationDirectAPIMandatoryValidationForAESEncryption(HttpServletRequest request, String key) throws Exception
+    {
+        StringBuffer sb = new StringBuffer();
+        AESEncryptionManager encryptionManager = new AESEncryptionManager();
+        /*if(!ESAPI.validator().isValidInput("toid", request.getParameter("toid"), "Numbers", 20, false))
+        {
+            sb.append("Invalid toid | ");
+        }*/
+        if (!ESAPI.validator().isValidInput("partnerid", request.getParameter("partnerid"), "Numbers", 20, false))
+        {
+            sb.append("Invalid partnerid | ");
+        }
+        if (!ESAPI.validator().isValidInput("cardnumber", encryptionManager.decrypt(request.getParameter("cardnumber"), key), "CC", 20, false))
+        {
+            sb.append("Invalid cardnumber | ");
+        }
+        if (!ESAPI.validator().isValidInput("expirymonth", encryptionManager.decrypt(request.getParameter("expirymonth"), key), "Months", 2, false))
+        {
+            sb.append("Invalid expiry month | ");
+        }
+        if (!ESAPI.validator().isValidInput("expiryyear", encryptionManager.decrypt(request.getParameter("expiryyear"), key), "Years", 4, false))
+        {
+            sb.append("Invalid expiry year | ");
+        }
+        if (!ESAPI.validator().isValidInput("cvv", encryptionManager.decrypt(request.getParameter("cvv"), key), "CVV", 4, false))
+        {
+            sb.append("Invalid cvv | ");
+        }
+        if (!ESAPI.validator().isValidInput("firstname", request.getParameter("firstname"), "SafeString", 50, false))
+        {
+            sb.append("Invalid firstname | ");
+        }
+        if (!ESAPI.validator().isValidInput("lastname", request.getParameter("lastname"), "SafeString", 50, false))
+        {
+            sb.append("Invalid lastname | ");
+        }
+        if (!ESAPI.validator().isValidInput("email", request.getParameter("emailaddr"), "Email", 40, false))
+        {
+            sb.append("Invalid email | ");
+        }
+        return sb.toString();
+    }
+
+
+    public String cardRegistrationDirectAPIMandatoryValidation(HttpServletRequest request)
+    {
+        StringBuilder sb = new StringBuilder();
+        /*if(!ESAPI.validator().isValidInput("toid", request.getParameter("toid"), "Numbers", 20, false))
+        {
+            sb.append("Invalid toid | ");
+        }*/
+        if (!ESAPI.validator().isValidInput("partnerid", request.getParameter("partnerid"), "Numbers", 20, false))
+        {
+            sb.append("Invalid partnerid | ");
+        }
+        if (!ESAPI.validator().isValidInput("cardnumber", request.getParameter("cardnumber"), "CC", 20, false))
+        {
+            sb.append("Invalid cardnumber | ");
+        }
+        if (!ESAPI.validator().isValidInput("expirymonth", request.getParameter("expirymonth"), "Months", 2, false))
+        {
+            sb.append("Invalid expiry month | ");
+        }
+        if (!ESAPI.validator().isValidInput("expiryyear", request.getParameter("expiryyear"), "Years", 4, false))
+        {
+            sb.append("Invalid expiry year | ");
+        }
+        if (!ESAPI.validator().isValidInput("cvv", request.getParameter("cvv"), "Numbers", 4, false))
+        {
+            sb.append("Invalid cvv | ");
+        }
+        if (!ESAPI.validator().isValidInput("firstname", request.getParameter("firstname"), "SafeString", 50, false))
+        {
+            sb.append("Invalid firstname | ");
+        }
+        if (!ESAPI.validator().isValidInput("lastname", request.getParameter("lastname"), "SafeString", 50, false))
+        {
+            sb.append("Invalid lastname | ");
+        }
+        if (!ESAPI.validator().isValidInput("email", request.getParameter("emailaddr"), "Email", 40, false))
+        {
+            sb.append("Invalid email | ");
+        }
+        return sb.toString();
+    }
+
+    public String cardholderRegistrationDirectAPIValidation(HttpServletRequest request)
+    {
+        StringBuilder sb = new StringBuilder();
+        if (!ESAPI.validator().isValidInput("toid", request.getParameter("toid"), "Numbers", 20, true))
+        {
+            sb.append("Invalid toid | ");
+        }
+        if (!ESAPI.validator().isValidInput("firstname", request.getParameter("firstname"), "SafeString", 50, false))
+        {
+            sb.append("Invalid firstname | ");
+        }
+        if (!ESAPI.validator().isValidInput("lastname", request.getParameter("lastname"), "SafeString", 50, false))
+        {
+            sb.append("Invalid lastname | ");
+        }
+        if (!ESAPI.validator().isValidInput("email", request.getParameter("emailaddr"), "Email", 40, false))
+        {
+            sb.append("Invalid email | ");
+        }
+        if (!ESAPI.validator().isValidInput("phone", request.getParameter("telno"), "Phone", 15, true))
+        {
+            sb.append("Invalid telno | ");
+        }
+        if (!ESAPI.validator().isValidInput("birthdate", request.getParameter("birthdate"), "Numbers", 8, true) || !Functions.isValidDateNew(request.getParameter("birthdate")))
+        {
+            sb.append("Invalid birthdate | ");
+        }
+        if (!ESAPI.validator().isValidInput("gender", request.getParameter("gender"), "StrictString", 10, true))
+        {
+            sb.append("Invalid gender | ");
+        }
+        if (!ESAPI.validator().isValidInput("zip", request.getParameter("zip"), "Zip", 10, true))
+        {
+            sb.append("Invalid zip | ");
+        }
+        return sb.toString();
+    }
+
+    public String listOFCardsDirectAPIValidation(HttpServletRequest request)
+    {
+        StringBuilder sb = new StringBuilder();
+        if (!ESAPI.validator().isValidInput("partnerid", request.getParameter("partnerid"), "Numbers", 10, false))
+        {
+            sb.append("Invalid partnerId | ");
+        }
+        if (!ESAPI.validator().isValidInput("cardholderid", request.getParameter("cardholderid"), "Numbers", 10, true))
+        {
+            sb.append("Invalid cardholderId | ");
+        }
+        return sb.toString();
+    }
+
+    public String cardRegistrationDirectAPIConditionalValidation(HttpServletRequest request)
+    {
+        StringBuilder sb = new StringBuilder();
+        if (!ESAPI.validator().isValidInput("toid", request.getParameter("toid"), "Numbers", 10, true))
+        {
+            sb.append("Invalid toId | ");
+        }
+        if (!ESAPI.validator().isValidInput("city", request.getParameter("city"), "City", 30, false))
+        {
+            sb.append("Invalid city | ");
+        }
+        if (!ESAPI.validator().isValidInput("state", request.getParameter("state"), "State", 40, false))
+        {
+            sb.append("Invalid state | ");
+        }
+        if (!ESAPI.validator().isValidInput("street", request.getParameter("street"), "Address", 100, false))
+        {
+            sb.append("Invalid address | ");
+        }
+        if (!ESAPI.validator().isValidInput("zip", request.getParameter("zip"), "Zip", 10, false))
+        {
+            sb.append("Invalid zip | ");
+        }
+        if (!ESAPI.validator().isValidInput("telnocc", request.getParameter("telnocc"), "Phone", 4, false))
+        {
+            sb.append("Invalid telnocc | ");
+        }
+        if (!ESAPI.validator().isValidInput("phone", request.getParameter("telno"), "Phone", 15, false))
+        {
+            sb.append("Invalid phone number | ");
+        }
+        /*if (!ESAPI.validator().isValidInput("email", request.getParameter("emailaddr"), "Email",40,false))
+        {
+            sb.append("Invalid email | ");
+        }*/
+        if (!ESAPI.validator().isValidInput("countrycode", request.getParameter("countrycode"), "CountryCode", 3, false))
+        {
+            sb.append("Invalid countrycode | ");
+        }
+        return sb.toString();
+    }
+
+    public String cardRegistrationDirectAPIOptionalValidation(HttpServletRequest request)
+    {
+        StringBuilder sb = new StringBuilder();
+        if (!ESAPI.validator().isValidInput("birthdate", request.getParameter("birthdate"), "Numbers", 8, true) || !Functions.isValidDateNew(request.getParameter("birthdate")))
+        {
+            sb.append("Invalid birthdate | ");
+        }
+        if (!ESAPI.validator().isValidInput("language", request.getParameter("language"), "StrictString", 3, true))
+        {
+            sb.append("Invalid language | ");
+        }
+        if (!ESAPI.validator().isValidInput("cardholderid", request.getParameter("cardholderid"), "Numbers", 10, true))
+        {
+            sb.append("Invalid cardholderid | ");
+        }
+        return sb.toString();
+    }
+
+    public String cardRegistrationBackOfficeBirthDateValidation(HttpServletRequest request)
+    {
+        StringBuilder sb = new StringBuilder();
+        if (!ESAPI.validator().isValidInput("birthdate", request.getParameter("bdate"), "Numbers", 25, true) || !Functions.isValidDateNew(request.getParameter("bdate")))
+        {
+            sb.append("Invalid birthdate | ");
+        }
+        return sb.toString();
+    }
+    public String cardRegistrationBackOfficeBirthDatePickerValidation(HttpServletRequest request)
+    {
+        StringBuilder sb = new StringBuilder();
+        if (!ESAPI.validator().isValidInput("birthdate", request.getParameter("bdate"), "Numbers", 25, true) || !Functions.isValidDatePicker(request.getParameter("bdate")))
+        {
+            sb.append("Invalid birthdate | ");
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Check whether the mandate provided from the customer is valid or not from SEPA_TOKEN_MASTER
+     *
+     * @param sepaMandateToken
+     * @return
+     */
+    public boolean validateMandate(String sepaMandateToken) throws PZDBViolationException
+    {
+        return tokenDAO.isMandateAvailableAndActive(sepaMandateToken);
+    }
+
+    public String gatewayMandateIdFromMandateToken(String sepaMandateToken) throws PZDBViolationException
+    {
+        return tokenDAO.getMandateIDFromMandate(sepaMandateToken);
+    }
+
+    public String insertMandateForSEPA(String sepaMandateId, String toid, String trackingid, String mandateURL, String revokeMandateURL, boolean isRecurring) throws PZDBViolationException
+    {
+        return tokenDAO.insertMandateDetails(sepaMandateId, toid, trackingid, mandateURL, revokeMandateURL, isRecurring);
+    }
+
+    public boolean insertSEPATransactionHistory(String sepaMandateId, String trackingid) throws PZDBViolationException
+    {
+        return tokenDAO.insertMandateTransactionHistory(sepaMandateId, trackingid);
+    }
+
+    public boolean updateMandateForSEPA(String sepaMandateId, boolean isactive) throws PZDBViolationException
+    {
+        return tokenDAO.updateMandateDetails(sepaMandateId, isactive);
+    }
+
+    public void updateTrackingIdInTokenMaster(String token, String trackingid, String toid)
+    {
+        tokenDAO.updateTrackingIdInTokenMaster(token, trackingid, toid);
+    }
+
+    public TokenDetailsVO getAccountDetails(TokenDetailsVO tokenDetailsVO, String memberId, String token) throws PZDBViolationException
+    {
+        return tokenDAO.getAccountDetails(tokenDetailsVO, memberId, token);
+    }
+
+    public TokenResponseVO createNewToken(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.createNewToken(tokenRequestVO);
+    }
+
+    public String doTokenDeleteWithAccount(String token) throws PZDBViolationException
+    {
+        return tokenDAO.doTokenDeleteWithAccount(token);
+    }
+
+    /* public TokenResponseVO createTokenWithRegistrationByMember(TokenRequestVO tokenRequestVO)throws PZDBViolationException
+     {
+         return tokenDAO.createTokenWithRegistrationByMember(tokenRequestVO);
+     }*/
+    public TokenDetailsVO createNewTokenRegistrationByMember(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.createNewTokenRegistrationByMember(tokenRequestVO);
+    }
+
+    public String newTokenRegistrationMemberMappingEntry(String registrationTokenId, String memberId, String trackingId) throws PZDBViolationException
+    {
+        return tokenDAO.newTokenRegistrationMemberMappingEntry(registrationTokenId, memberId, trackingId);
+    }
+
+    public String createTokenForRegistrationByMember(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.createTokenForRegistrationByMember(tokenRequestVO);
+    }
+
+    public void updateTrackingIdForRegistrationTokenByMerchant(String token, String trackingid, String toid) throws PZDBViolationException
+    {
+        tokenDAO.updateTrackingIdForRegistrationTokenByMerchant(token, trackingid, toid);
+    }
+
+    public void updateTrackingIdForRegistrationTokenByPartner(String token, String trackingid, String partnerId) throws PZDBViolationException
+    {
+        tokenDAO.updateTrackingIdForRegistrationTokenByPartner(token, trackingid, partnerId);
+    }
+
+    public TokenDetailsVO getRegisteredTokenDetailsByMerchant(String memberId, String token, CommonValidatorVO commonValidatorVO, TokenDetailsVO tokenDetailsVO) throws PZDBViolationException
+    {
+        return tokenDAO.getRegisteredTokenDetailsByMerchant(memberId, token, commonValidatorVO, tokenDetailsVO);
+    }
+
+    public TokenDetailsVO getRegisteredTokenDetailsByPartner(String partnerId, String token, CommonValidatorVO commonValidatorVO) throws PZDBViolationException
+    {
+        return tokenDAO.getRegisteredTokenDetailsByPartner(partnerId, token, commonValidatorVO);
+    }
+
+    public boolean validateTokenAndMember(CommonValidatorVO commonValidatorVO) throws PZDBViolationException
+    {
+        return tokenDAO.validateTokenAndMember(commonValidatorVO);
+    }
+
+    public List<RegistrationDetailVO> getRegistrationsByMerchantAndCustomer(String toId, String cardholderId) throws PZDBViolationException
+    {
+        return tokenDAO.getRegistrationsByMerchantAndCustomer(toId, cardholderId);
+    }
+
+    public List<RegistrationDetailVO> getRegistrationsByMerchant(String toId) throws PZDBViolationException
+    {
+        return tokenDAO.getRegistrationsByMerchant(toId);
+    }
+
+    public List<RegistrationDetailVO> getCustomerRegistrationDetailsByPartner(String partnerId) throws PZDBViolationException
+    {
+        return tokenDAO.getCustomerRegistrationDetailsByPartner(partnerId);
+    }
+
+    public List<RegistrationDetailVO> getRegistrationsByPartnerAndCustomer(String partnerId, String customerId) throws PZDBViolationException
+    {
+        return tokenDAO.getRegistrationsByPartnerAndCustomer(partnerId, customerId);
+    }
+
+    public boolean isCustomerRegisteredWithMerchant(String toId, String customerId) throws PZDBViolationException
+    {
+        return tokenDAO.isCustomerRegisteredWithMerchant(toId, customerId);
+    }
+
+    public boolean isCustomerRegisteredWithPartner(String partnerId, String customerId) throws PZDBViolationException
+    {
+        return tokenDAO.isCustomerRegisteredWithPartner(partnerId, customerId);
+    }
+
+    public List<RegistrationDetailVO> getBankAccountDetails(String bankAccountId, List<RegistrationDetailVO> registrationDetailVOList) throws PZDBViolationException
+    {
+        return tokenDAO.getBankAccountDetails(bankAccountId, registrationDetailVOList);
+    }
+
+    public TokenResponseVO createTokenRegistrationByPartner(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.createTokenRegistrationByPartner(tokenRequestVO);
+    }
+
+    public String getExistingTokenByPartner(String partnerId, String cardNum) throws PZDBViolationException
+    {
+        return tokenDAO.getExistingTokenByPartner(partnerId, cardNum);
+    }
+
+    public boolean isNewAccountForPartner(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.isNewAccountForPartner(tokenRequestVO);
+    }
+
+    public String getExistingTokenForAccountByPartner(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.getExistingTokenForAccountByPartner(tokenRequestVO);
+    }
+
+    public TokenResponseVO createTokenAccountByPartner(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.createTokenAccountByPartner(tokenRequestVO);
+    }
+
+    public TokenDetailsVO createNewTokenRegistrationByPartner(TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.createNewTokenRegistrationByPartner(tokenRequestVO);
+    }
+
+    public String createTokenWithAccount(String bankAccountId, TokenRequestVO tokenRequestVO) throws PZDBViolationException
+    {
+        return tokenDAO.createTokenWithAccount(bankAccountId, tokenRequestVO);
+    }
+
+    public void insertTrackingIdForRegistrationTokenByMerchant(CommonValidatorVO commonValidatorVO, TokenDetailsVO tokenDetailsVO, String trackingId) throws PZDBViolationException
+    {
+        tokenDAO.insertTrackingIdForRegistrationTokenByMerchant(commonValidatorVO, tokenDetailsVO, trackingId);
+    }
+
+    public TokenDetailsVO getRegistrationTrackingId(String memberId, TokenDetailsVO tokenDetailsVO) throws PZDBViolationException
+    {
+        return tokenDAO.getRegistrationTrackingId(memberId, tokenDetailsVO);
+    }
+
+    public boolean isTokenMappedWithTrackingId(String registrationId, String memberId) throws PZDBViolationException
+    {
+        return tokenDAO.isTokenMappedWithTrackingId(registrationId, memberId);
+    }
+    public EmiVO getEmiCountWithTerminalId(CommonValidatorVO commonValidatorVO)
+    {
+        return tokenDAO.getEmiCountWithTerminalId(commonValidatorVO);
+    }
+    public TokenDetailsVO getTokenDetailsByUsingTrackingId(String toid,String trackingId)
+    {
+        return tokenDAO.getTokenDetailsByUsingTrackingId(toid, trackingId);
+    }
+    public boolean activate3DTransactionToken(TokenDetailsVO tokenDetailsVO)
+    {
+        return tokenDAO.activate3DTransactionToken(tokenDetailsVO);
+    }
+    public String deleteTokenFromRegistration(String token)
+    {
+        return tokenDAO.deleteTokenFromRegistration(token);
+    }
+}

@@ -1,0 +1,312 @@
+import com.directi.pg.*;
+import com.manager.MerchantConfigManager;
+import com.manager.TerminalManager;
+import com.manager.vo.TerminalVO;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.ValidationErrorList;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+//import java.io.PrintWriter;
+
+public class Transactions extends HttpServlet
+{
+
+    private static Logger log = new Logger(Transactions.class.getName());
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        HttpSession session = req.getSession();
+        log.debug("Enter in Transection ");
+        Merchants merchants = new Merchants();
+        MerchantConfigManager merchantConfigManager = new MerchantConfigManager();
+        Functions functions = new Functions();
+        if (!merchants.isLoggedIn(session))
+        {
+            res.sendRedirect("/merchant/Logout.jsp");
+            return;
+        }
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+
+        ValidationErrorList validationErrorList =null;
+
+        log.debug("CSRF check successful ");
+        String merchantid           = (String) session.getAttribute("merchantid");
+        ServletContext application  = getServletContext();
+        String desc                 = null;
+        String trackingid           = null;
+        String status               = null;
+        String accountid    = null;
+        String terminalId   = null;
+        String firstName    = null;
+        String lastName     = null;
+        String emailAddress = null;
+        String paymentId    = null;
+        String customerId   = null;
+        String sb               = req.getParameter("terminalbuffer");
+        String transactionMode  = req.getParameter("transactionMode");
+
+        boolean archive     = false;
+        //boolean isOptional=false;
+      //  int start = 0; // start index
+       // int end = 0; // end index
+        int pageno      = 1;
+        int records     = 30;
+       // String str = null;
+
+        status                      = Functions.checkStringNull(req.getParameter("status"));
+        RequestDispatcher rdError   = req.getRequestDispatcher("/transactions.jsp?MES=ERR&ctoken="+user.getCSRFToken());
+        validationErrorList         = validateOptionalParameters(req);
+
+        if(!validationErrorList.isEmpty())
+        {
+            req.setAttribute("validationErrorList",validationErrorList);
+            rdError.forward(req,res);
+            return;
+        }
+
+        terminalId  = req.getParameter("terminalid");
+        archive     = Boolean.valueOf(req.getParameter("archive"));
+        desc        = req.getParameter("desc");
+        firstName   = req.getParameter("firstname");
+        lastName    = req.getParameter("lastname");
+        emailAddress= req.getParameter("emailaddr");
+        trackingid  = req.getParameter("trackingid");
+        paymentId   = req.getParameter("paymentid");
+        customerId          = req.getParameter("customerid");
+        String startTime    = req.getParameter("starttime");
+        String endTime      = req.getParameter("endtime");
+        String dateType     = req.getParameter("datetype");
+        String statusflag   = req.getParameter("statusflag");
+        String issuingBank  = req.getParameter("issuingbank");
+        String timezone     = req.getParameter("timezone");
+        String firstsix     = req.getParameter("firstsix");
+        String lastfour     = req.getParameter("lastfour");
+        String cardtype     = req.getParameter("cardtype");
+        String currency     = "";
+        String gateway_name = "";
+        if (functions.isValueNull(timezone))
+        {
+            timezone = timezone.substring(0,timezone.indexOf("|"));
+        }
+
+       /* if (req.getParameter("pgtypeid")!=null && req.getParameter("pgtypeid").split("-").length == 3 && !req.getParameter("pgtypeid").equalsIgnoreCase(""))
+        {
+            currency = req.getParameter("pgtypeid").split("-")[1];
+            gateway_name = req.getParameter("pgtypeid").split("-")[0];
+
+        }*/
+        Calendar rightNow               = Calendar.getInstance();
+        SimpleDateFormat sdf            = new SimpleDateFormat("dd/MM/yyyy");
+        SimpleDateFormat sdftimezone    = new SimpleDateFormat("yyyy-MM-dd");
+        Date date                       = null;
+
+        res.setContentType("text/html");
+
+        try
+        {
+            pageno  = Functions.convertStringtoInt(req.getParameter("SPageno"), 1);
+            records = Functions.convertStringtoInt(ESAPI.validator().getValidInput("Srecord",req.getParameter("SRecords"),"Numbers",3,true), Integer.parseInt((String) application.getAttribute("NOOFRECORDSPERPAGE")));
+        }
+        catch(ValidationException e)
+        {
+            log.error("Invalid page no or records",e);
+            pageno  = 1;
+            records = 30;
+        }
+
+
+        String fyear    = "";
+        String fmonth   = "";
+        String fdate    = "";
+        String tyear    = "";
+        String tmonth   = "";
+        String tdate    = "";
+
+        startTime   = startTime.trim();
+        endTime     = endTime.trim();
+
+        if (!functions.isValueNull(startTime))
+        {
+            startTime   = "00:00:00";
+        }
+        if (!functions.isValueNull(endTime))
+        {
+            endTime = "23:59:59";
+        }
+        try
+        {
+
+            Hashtable hash = new Hashtable();
+            RequestDispatcher rd;
+            if (functions.isValueNull(timezone))
+            {
+                String fromdate = req.getParameter("fdate");
+                String todate   = req.getParameter("tdate");
+                //from date
+                Date frtzdate       = sdf.parse(fromdate);
+                String fdatetime    = sdftimezone.format(frtzdate)+ " " + startTime;
+                //to Date
+                Date totzdate       = sdf.parse(todate);
+                String tdatetime    = sdftimezone.format(totzdate) + " " + endTime;
+                String fdatetime1   = functions.convertDateTimeToTimeZone1(fdatetime, timezone);
+                String tdatetime1   = functions.convertDateTimeToTimeZone1(tdatetime, timezone);
+                String fdt[]        = fdatetime1.split(" ");
+                String tdt[]        = tdatetime1.split(" ");
+                date                = sdftimezone.parse(fdt[0]);
+                rightNow.setTime(date);
+                fdate       = String.valueOf(rightNow.get(Calendar.DATE));
+                fmonth      = String.valueOf(rightNow.get(Calendar.MONTH));
+                fyear       = String.valueOf(rightNow.get(Calendar.YEAR));
+                startTime   = fdt[1];
+                date        = sdftimezone.parse(tdt[0]);
+                rightNow.setTime(date);
+                tdate   = String.valueOf(rightNow.get(Calendar.DATE));
+                tmonth  = String.valueOf(rightNow.get(Calendar.MONTH));
+                tyear   = String.valueOf(rightNow.get(Calendar.YEAR));
+                endTime = tdt[1];
+            }
+           else
+            {
+
+            String fromdate     = req.getParameter("fdate");
+            String todate       = req.getParameter("tdate");
+            date                = sdf.parse(fromdate);
+            rightNow.setTime(date);
+            fdate   = String.valueOf(rightNow.get(Calendar.DATE));
+            fmonth  = String.valueOf(rightNow.get(Calendar.MONTH));
+            fyear   = String.valueOf(rightNow.get(Calendar.YEAR));
+
+            //to Date
+            date    = sdf.parse(todate);
+            rightNow.setTime(date);
+            tdate   = String.valueOf(rightNow.get(Calendar.DATE));
+            tmonth = String.valueOf(rightNow.get(Calendar.MONTH));
+            tyear   = String.valueOf(rightNow.get(Calendar.YEAR));
+
+            log.debug("startTime::" + startTime);
+            log.debug("endTime::" + endTime);
+
+            }
+
+            String startTimeArr[]   = startTime.split(":");
+            String endTimeArr[]     = endTime.split(":");
+            log.debug("From date dd::"+fdate+" MM::"+fmonth+" YY::"+ fyear + " To date dd::" + tdate + " MM::" + tmonth+" YY::"+tyear);
+            String fdtstamp = Functions.converttomillisec(fmonth, fdate, fyear, startTimeArr[0], startTimeArr[1], startTimeArr[2]);
+            String tdtstamp = Functions.converttomillisec(tmonth, tdate, tyear, endTimeArr[0], endTimeArr[1], endTimeArr[2]);
+
+            TransactionEntry transactionentry   = (TransactionEntry) session.getAttribute("transactionentry");
+            Set<String> gatewayTypeSet          = new HashSet();
+            TerminalManager terminalManager     = new TerminalManager();
+            TerminalVO terminalVO               = new TerminalVO();
+            functions                           = new Functions();
+            if(functions.isValueNull(terminalId) && !terminalId.equalsIgnoreCase("all"))
+            {
+                terminalVO  = terminalManager.getTerminalByTerminalId(terminalId);
+                if(terminalVO != null)
+                {
+                    terminalVO.setTerminalId("(" + terminalVO.getTerminalId() + ")");
+                    accountid = terminalVO.getAccountId();
+                }
+                else
+                {
+                    terminalVO  = new TerminalVO();
+                }
+            }
+            if (functions.isValueNull(cardtype)&& cardtype.equals("CP"))
+            {
+                // Entering for Card present (transaction_card_present)
+                hash = transactionentry.listCardTransactions(desc, tdtstamp, fdtstamp, trackingid, status, records, pageno, archive, gatewayTypeSet, accountid, terminalVO, firstName, lastName, emailAddress, paymentId, customerId, dateType, statusflag, issuingBank, firstsix, lastfour);
+            }
+            else
+            {
+                // Entering for Card not present(transaction_common)
+                hash = transactionentry.listTransactions(desc, tdtstamp, fdtstamp, trackingid, status, records, pageno, archive, gatewayTypeSet, accountid, terminalVO, firstName, lastName, emailAddress, paymentId, customerId, dateType, statusflag, issuingBank, firstsix, lastfour,transactionMode);
+            }
+            req.setAttribute("transactionsdetails", hash);
+        }
+        catch (SystemError se)
+        {
+            log.error("System error occure",se);
+
+            Functions.NewShowConfirmation1("Error", "Internal System Error while getting list of Transactions");
+        }
+        catch (ParseException e)
+        {   log.error("Exception ::::",e);
+
+            Functions.NewShowConfirmation1("Error", "Internal System Error while getting list of Transactions");
+        }
+        catch (Exception e)
+        {   log.error("Exception ::::",e);
+
+            Functions.NewShowConfirmation1("Error", "Internal System Error while getting list of Transactions");
+        }
+
+        session.setAttribute("bank",accountid);
+
+
+        try
+        {
+            if (functions.isValueNull(merchantid))
+            {
+                Map<String,Object> merchantTemplateSetting  = new HashMap<String, Object>();
+                merchantTemplateSetting                     = merchantConfigManager.getSavedMemberTemplateDetails(merchantid);
+                req.setAttribute("merchantTemplateSetting",merchantTemplateSetting);
+            }
+        }
+        catch (Exception e)
+        {
+            log.error("Exception while getting template preference",e);
+        }
+        req.setAttribute("transactionMode",transactionMode);
+        RequestDispatcher rd = req.getRequestDispatcher("/transactions.jsp?ctoken="+user.getCSRFToken());
+        rd.forward(req, res);
+    }
+
+    public ValidationErrorList validateOptionalParameters(HttpServletRequest req)
+    {
+        List<InputFields> inputOptionalParameter= new ArrayList<InputFields>();
+        inputOptionalParameter.add(InputFields.TRACKINGID_SMALL);
+        inputOptionalParameter.add(InputFields.ARCHIVE_SMALL);
+        inputOptionalParameter.add(InputFields.FIRSTNAME);
+        inputOptionalParameter.add(InputFields.LASTNAME);
+        inputOptionalParameter.add(InputFields.EMAILADDR);
+        inputOptionalParameter.add(InputFields.PAYMENTID);
+        inputOptionalParameter.add(InputFields.PAGENO);
+        inputOptionalParameter.add(InputFields.RECORDS);
+       // inputOptionalParameter.add(InputFields.CUSTOMER_ID);
+        inputOptionalParameter.add(InputFields.FIRST_SIX);
+        inputOptionalParameter.add(InputFields.LAST_FOUR);
+
+        /*inputOptionalParameter.add(InputFields.FROMDATE);
+        inputOptionalParameter.add(InputFields.TODATE);
+        inputOptionalParameter.add(InputFields.FROMMONTH);
+        inputOptionalParameter.add(InputFields.TOMONTH);
+        inputOptionalParameter.add(InputFields.FROMYEAR);
+        inputOptionalParameter.add(InputFields.TOYEAR);*/
+
+        InputValidator inputValidator = new InputValidator();
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.InputValidations(req,inputOptionalParameter, errorList,true);
+
+        return errorList;
+    }
+}

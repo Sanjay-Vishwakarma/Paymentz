@@ -1,0 +1,273 @@
+package payment;
+
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.manager.TransactionManager;
+import com.manager.dao.MerchantDAO;
+import com.manager.vo.MerchantDetailsVO;
+import com.manager.vo.TransactionDetailsVO;
+import com.payment.Mail.AsynchronousMailService;
+import com.payment.Mail.MailEventEnum;
+import com.payment.PZTransactionStatus;
+import com.payment.common.core.CommResponseVO;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.sms.AsynchronousSmsService;
+import com.payment.statussync.StatusSyncDAO;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.reference.DefaultEncoder;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.Connection;
+
+/**
+ * Created by Rihen on 10-Aug-19.
+ */
+public class PaySendBackEndServlet extends HttpServlet
+{
+    private static TransactionLogger transactionLogger = new TransactionLogger(PaySendBackEndServlet.class.getName());
+    String ctoken = ESAPI.randomizer().getRandomString(32, DefaultEncoder.CHAR_ALPHANUMERICS);
+
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doService(request, response);
+    }
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doService(request, response);
+    }
+
+    public void doService(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        transactionLogger.error("Inside PaySendBackEndServlet ---");
+
+        TransactionManager transactionManager=new TransactionManager();
+        CommResponseVO transRespDetails = new CommResponseVO();
+        Functions functions=new Functions();
+        PrintWriter pWriter = response.getWriter();
+        String responseCode = "200";
+        String responseStatus = "OK";
+        AuditTrailVO auditTrailVO= new AuditTrailVO();
+        ActionEntry actionEntry = new ActionEntry();
+        StatusSyncDAO statusSyncDAO = new StatusSyncDAO();
+        Connection con=null;
+        String query = "";
+        String action = "";
+        String trackingId = "";
+        String toId="";
+        String accountId = "";
+        String transactionId = "";
+        String status="";
+        String message="";
+        String dbStatus="";
+        String billingDesc="";
+        String notificationUrl="";
+        String updatedStatus="";
+        StringBuilder responseMsg=new StringBuilder();
+        BufferedReader br = request.getReader();
+        String str;
+        while ((str = br.readLine()) != null)
+        {
+            responseMsg.append(str);
+        }
+
+        transactionLogger.error("-----Notification JSON-----" + responseMsg);
+        try
+        {
+
+            String data[]= responseMsg.toString().split("--------------------------");
+            MerchantDAO merchantDAO=new MerchantDAO();
+            String resp_status="";
+            String amount = "";
+            String currency = "";
+            for (String d : data){
+                if(functions.isValueNull(d)){
+                    String s1[]=d.split("name=\"");
+                    for (String d2 : s1){
+                        if(d2.contains("status\"")){
+//                            transactionLogger.error("d2---"+d2);
+                            String a1[]=d2.split("\"");
+                            resp_status=a1[1];
+                        }
+                        if(d2.contains("order_id\"")){
+//                            transactionLogger.error("d2---"+d2);
+                            String a1[]=d2.split("\"");
+                            trackingId=a1[1];
+                        }
+                        if(d2.contains("currency\"")){
+//                            transactionLogger.error("d2---"+d2);
+                            String a1[]=d2.split("\"");
+                            currency=a1[1];
+                        }
+                        if(d2.contains("price\"")){
+//                            transactionLogger.error("d2---"+d2);
+                            String a1[]=d2.split("\"");
+                            amount=a1[1];
+                        }
+                        if(d2.contains("id\"")){
+//                            transactionLogger.error("d2---"+d2);
+                            String a1[]=d2.split("\"");
+                            if(!a1[0].contains("reference_id")  && !a1[0].contains("order_id"))
+                            {
+                                transactionId = a1[1];
+                            }
+                        }
+                    }
+                }
+            }
+
+            transactionLogger.error("resp_status-----"+resp_status);
+            transactionLogger.error("trackingId-----"+trackingId);
+            transactionLogger.error("currency-----"+currency);
+            transactionLogger.error("amount-----"+amount);
+            transactionLogger.error("transactionId-----"+transactionId);
+            
+            TransactionDetailsVO transactionDetailsVO = transactionManager.getTransDetailFromCommon(trackingId);
+            if (transactionDetailsVO != null)
+            {
+                accountId = transactionDetailsVO.getAccountId();
+                GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+                billingDesc = gatewayAccount.getDisplayName();
+
+                transactionDetailsVO.setCcnum(PzEncryptor.decryptPAN(transactionDetailsVO.getCcnum()));
+                transactionDetailsVO.setExpdate(PzEncryptor.decryptExpiryDate(transactionDetailsVO.getExpdate()));
+                toId = transactionDetailsVO.getToid();
+                dbStatus = transactionDetailsVO.getStatus();
+                notificationUrl = transactionDetailsVO.getNotificationUrl();
+                MerchantDetailsVO merchantDetailsVO = merchantDAO.getMemberDetails(toId);
+                if(merchantDetailsVO!=null)
+                {
+                    transactionDetailsVO.setSecretKey(merchantDetailsVO.getKey());
+                }
+                transactionLogger.error("accountId----" + accountId);
+                transactionLogger.error("toId----" + toId);
+                transactionLogger.error("dbStatus----" + dbStatus);
+
+                auditTrailVO.setActionExecutorName("AcquirerCommonBackEnd");
+                auditTrailVO.setActionExecutorId(toId);
+                transRespDetails.setTransactionId(transactionId);
+                transRespDetails.setAmount(amount);
+                transRespDetails.setCurrency(currency);
+                if(functions.isValueNull(transactionDetailsVO.getTemplateamount())) {
+                    transRespDetails.setTmpl_Amount(transactionDetailsVO.getTemplateamount());
+                }
+                else{
+                    transRespDetails.setTmpl_Amount(amount);
+                }
+                if(functions.isValueNull(transactionDetailsVO.getTemplatecurrency())) {
+                    transRespDetails.setTmpl_Currency(transactionDetailsVO.getTemplatecurrency());
+                }
+                else {
+                    transRespDetails.setTmpl_Currency(currency);
+                }
+
+                transactionLogger.error("----- db status -----" + dbStatus);
+                transactionLogger.error("----- response status -----" + resp_status);
+
+                if ((PZTransactionStatus.AUTH_STARTED.toString().equals(dbStatus) || PZTransactionStatus.AUTHSTARTED_3D.toString().equals(dbStatus)) && resp_status.equalsIgnoreCase("completed"))
+                {
+                    transactionLogger.error("-----inside if status -----" + resp_status);
+                    status = "success";
+                    transRespDetails.setStatus("success");
+                    transRespDetails.setDescriptor(gatewayAccount.getDisplayName());
+                    message = "Transaction Successful";
+                    transRespDetails.setRemark(message);
+                    transRespDetails.setDescription(message);
+                    updatedStatus = PZTransactionStatus.CAPTURE_SUCCESS.toString();
+                    action = ActionEntry.ACTION_CAPTURE_SUCCESSFUL.toString();
+                    query = "update transaction_common set status='" + updatedStatus + "',remark='" + message + "',paymentid='" + transactionId + "',captureamount='" + amount + "' where trackingid='" + trackingId + "'";
+                    transactionLogger.error("-----query-----" + query);
+                    con = Database.getConnection();
+                    Database.executeUpdate(query.toString(), con);
+                    actionEntry.actionEntryForCommon(trackingId, amount, action, updatedStatus, transRespDetails, auditTrailVO, null);
+                }
+                else if ((PZTransactionStatus.AUTH_STARTED.toString().equals(dbStatus) || PZTransactionStatus.AUTHSTARTED_3D.toString().equals(dbStatus)) && resp_status.equalsIgnoreCase("failed"))
+                {
+                    transactionLogger.error("-----inside else if status -----" + resp_status);
+                    status = "fail";
+                    transRespDetails.setStatus("failed");
+                    message = "Transaction Declined";
+                    transRespDetails.setRemark(message);
+                    transRespDetails.setDescription(message);
+                    updatedStatus = PZTransactionStatus.AUTH_FAILED.toString();
+                    action = ActionEntry.ACTION_AUTHORISTION_FAILED.toString();
+                    query = "update transaction_common set status='" + updatedStatus + "',remark='" + message + "',paymentid='" + transactionId + "',captureamount='" + amount + "' where trackingid='" + trackingId + "'";
+                    transactionLogger.error("-----query-----" + query);
+                    con = Database.getConnection();
+                    Database.executeUpdate(query.toString(), con);
+                    actionEntry.actionEntryForCommon(trackingId, amount, action, updatedStatus, transRespDetails, auditTrailVO, null);
+                }
+                else if (PZTransactionStatus.CAPTURE_SUCCESS.toString().equals(dbStatus))
+                {
+                    status = "success";
+                    message = "Transaction Successful";
+                    updatedStatus = PZTransactionStatus.CAPTURE_SUCCESS.toString();
+                }
+                else
+                {
+                    status = "fail";
+                    message = "Transaction Declined";
+                    updatedStatus = PZTransactionStatus.AUTH_FAILED.toString();
+                }
+
+                Database.closeConnection(con);
+                statusSyncDAO.updateAllTransactionFlowFlag(trackingId, updatedStatus);
+
+
+                AsynchronousMailService asynchronousMailService = AsynchronousMailService.getInstance();
+                asynchronousMailService.sendEmail(MailEventEnum.PARTNERS_MERCHANT_SALE_TRANSACTION, String.valueOf(trackingId), status, message, billingDesc);
+
+                AsynchronousSmsService smsService = AsynchronousSmsService.getInstance();
+                smsService.sendSMS(MailEventEnum.PARTNERS_MERCHANT_SALE_TRANSACTION, String.valueOf(trackingId), status, message, billingDesc);
+
+
+                if (functions.isValueNull(notificationUrl))
+                {
+                    transactionLogger.error("inside sending notification---" + notificationUrl);
+                    AsyncNotificationService asyncNotificationService = AsyncNotificationService.getInstance();
+                    asyncNotificationService.sendNotification(transactionDetailsVO, trackingId, updatedStatus, message, "");
+                }
+
+                JSONObject jsonResObject = new JSONObject();
+                jsonResObject.put("responseCode", responseCode);
+                jsonResObject.put("responseStatus", responseStatus);
+                response.setContentType("application/json");
+                response.setStatus(200);
+                pWriter.println(jsonResObject.toString());
+                pWriter.flush();
+                return;
+            }
+
+
+
+        }
+        catch (SystemError systemError)
+        {
+            transactionLogger.error("SystemError PaySendBackEndServlet---", systemError);
+        }
+        catch (JSONException e)
+        {
+            transactionLogger.error("JSONException PaySendBackEndServlet ---", e);
+        }
+        catch (PZDBViolationException e)
+        {
+            transactionLogger.error("PZDBViolationException PaySendBackEndServlet ---", e);
+        }finally
+        {
+            Database.closeConnection(con);
+        }
+
+    }
+}
+

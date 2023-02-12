@@ -1,0 +1,147 @@
+package net.partner;
+
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.manager.PartnerManager;
+import com.manager.TerminalManager;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.User;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+
+public class MemberMappingDetails extends HttpServlet
+{
+    private static Logger logger = new Logger(MemberMappingDetails.class.getName());
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+
+        HttpSession session = req.getSession();
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+        String url="/membermappingpreference.jsp?ctoken=\""+user.getCSRFToken()+"\"";
+
+
+        TerminalManager terminalManager =new TerminalManager();
+        PartnerManager partnerManager = new PartnerManager();
+        String partnerid = (String)session.getAttribute("merchantid");
+
+        PartnerFunctions partner=new PartnerFunctions();
+        if (!partner.isLoggedInPartner(session))
+        {
+            res.sendRedirect("/partner/Logout.jsp");
+            return;
+        }
+
+
+        res.setContentType("text/html");
+        String errormsg="";
+        Functions functions = new Functions();
+        /*try
+        {
+           // validateOptionalParameter(req);
+            InputValidator inputValidator = new InputValidator();
+            List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+
+            inputFieldsListMandatory.add(InputFields.ACCOUNTID_SMALL);
+            inputFieldsListMandatory.add(InputFields.MEMBERID);
+            inputValidator.InputValidations(req,inputFieldsListMandatory,true);
+        }
+        catch(ValidationException e)
+        {
+            logger.error("ENTER valid data in memberid::::",e);
+            errormsg = errormsg + "Please Enter valid value in Member Id.";
+        }*/
+        String memberid = req.getParameter("memberid");
+        try
+        {
+            //validateOptionalParameter(req);
+            InputValidator inputValidator = new InputValidator();
+            List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+
+            inputFieldsListMandatory.add(InputFields.ACCOUNTID_SMALL);
+            inputFieldsListMandatory.add(InputFields.MEMBERID);
+            inputValidator.InputValidations(req,inputFieldsListMandatory,true);
+        }
+        catch(ValidationException e)
+        {
+            logger.error("ENTER valid data in accountid::::",e);
+            errormsg = errormsg + "Please Enter valid value in Account Id.";
+        }
+        String accountid = req.getParameter("accountid");
+
+
+        if(functions.isValueNull(errormsg))
+        {
+            logger.debug("ENTER VALID DATA");
+            req.setAttribute("error",errormsg);
+        }
+        if(!functions.isValueNull(memberid)&&!functions.isValueNull(accountid))
+        {
+            logger.error("kindly search Member Id and Account Id::::");
+            errormsg = errormsg + "kindly search Member Id and Account Id";
+            req.setAttribute("accountid",accountid);
+            req.setAttribute("accountids",partnerManager.loadGatewayAccounts(partnerid, accountid));
+            req.setAttribute("paymodeids",terminalManager.getPaymodeType());
+            req.setAttribute("cardtypeids",terminalManager.getCardTypeID());
+            req.setAttribute("error",errormsg);
+            RequestDispatcher rd = req.getRequestDispatcher(url);
+            rd.forward(req, res);
+            return;
+        }
+        //query
+
+        if (functions.isValueNull(memberid) && !functions.isValueNull(accountid))
+        {
+
+            url+="&memberid="+memberid;
+        }
+        else if(functions.isValueNull(accountid) && !functions.isValueNull(memberid))
+        {
+
+            url+="&accountid="+accountid;
+        }
+        else if(functions.isValueNull(accountid) && functions.isValueNull(memberid))
+        {
+
+            url+="&accountid="+accountid;
+            url+="&memberid="+memberid;
+        }
+
+        Hashtable memberhash =partnerManager.getMembermapping(accountid,memberid,partnerid);
+        req.setAttribute("memberdetails", memberhash);
+        req.setAttribute("accountid",accountid);
+        req.setAttribute("accountids", partnerManager.loadGatewayAccounts(partnerid, accountid));
+        req.setAttribute("paymodeids",terminalManager.getPaymodeType());
+        req.setAttribute("cardtypeids",terminalManager.getCardTypeID());
+        req.setAttribute("memberid",memberid);
+
+
+        RequestDispatcher rd = req.getRequestDispatcher(url);
+        rd.forward(req, res);
+    }
+
+    /*private void validateOptionalParameter(HttpServletRequest req) throws ValidationException
+    {
+        InputValidator inputValidator = new InputValidator();
+        List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+
+        inputFieldsListMandatory.add(InputFields.ACCOUNTID_SMALL);
+        inputFieldsListMandatory.add(InputFields.MEMBERID);
+        inputValidator.InputValidations(req,inputFieldsListMandatory,true);
+    }*/
+
+}

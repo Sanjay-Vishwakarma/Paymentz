@@ -1,0 +1,235 @@
+<%@ page import="com.directi.pg.Functions" %>
+<%@ page import="com.manager.vo.BlacklistVO" %>
+<%@ page import="com.manager.vo.PaginationVO" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.function.Function" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: Jinesh
+  Date: 4/30/2015
+  Time: 6:24 AM
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ include file="functions.jsp"%>
+<%@ include file="blocktab.jsp"%>
+<html>
+<head>
+  <title>Blocked Card List</title>
+  <script>
+    function ToggleAll(checkbox)
+    {
+      flag = checkbox.checked;
+      var checkboxes = document.getElementsByName("id");
+      var total_boxes = checkboxes.length;
+
+      for(i=0; i<total_boxes; i++ )
+      {
+        checkboxes[i].checked =flag;
+      }
+    }
+    function Unblock()
+    {
+      var checkboxes = document.getElementsByName("id");
+      var total_boxes = checkboxes.length;
+      flag = false;
+
+      for(i=0; i<total_boxes; i++ )
+      {
+        if(checkboxes[i].checked)
+        {
+          flag= true;
+          break;
+        }
+      }
+      if(!flag)
+      {
+        alert("Select at least one record");
+        return false;
+      }
+      if (confirm("Do you really want to unblock all selected Data."))
+      {
+        document.BlackListDetails.submit();
+      }
+    }
+  </script>
+</head>
+<%
+  session.setAttribute("submit","Block Cards");
+  if(buttonvalue==null)
+  {
+    buttonvalue=(String)session.getAttribute("submit");
+    //System.out.println("buttonvalue::"+buttonvalue);
+  }
+  ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+%>
+<body>
+<div class="row" style="margin-top: 0px">
+  <div class="col-lg-12">
+    <div class="panel panel-default"style="margin-top: 0px">
+      <div class="panel-heading" >
+        Blacklisted Card Details
+        <div style="float: right;">
+          <form action="/icici/uploadBlacklistCardDetails.jsp?ctoken=<%=ctoken%>" method="POST">
+            <button type="submit" value="Upload Card Details" name="submit" class="addnewmember">
+              <i class="fa fa-sign-in"></i>
+              &nbsp;&nbsp;Upload Card Details
+            </button>
+          </form>
+        </div>
+      </div><br>
+      <form action="/icici/servlet/BlackListDetails?ctoken=<%=ctoken%>" method="post" name="forms" >
+
+        <table  align="center" width="95%" cellpadding="2" cellspacing="2" style="margin-left:2.5%;margin-right: 2.5% ">
+
+          <tr>
+            <td>
+
+              <table border="0" cellpadding="5" cellspacing="0" width="100%"  align="center">
+
+
+                <tr><td colspan="4">&nbsp;</td></tr>
+                <%
+                  String errormsg1 = (String) request.getAttribute("error");
+                  if (errormsg1 != null)
+                  {
+                    out.println("<center><font class=\"textb\"><b>"+errormsg1+"<br></b></font></center>");
+                  }
+                %>
+
+                <tr>
+                  <td width="0%" class="textb">&nbsp;</td>
+                  <td width="40%" class="textb" >First_SIX & Last_Four</td>
+                  <td width="0%" class="textb"></td>
+                  <td width="200%" class="textb">
+                    <input size="8" maxlength="6" type="text"  class="txtboxsmall" name="firstsix"  value="">******<input maxlength="4" size="6" type="text" name="lastfour" class="txtboxsmall" value="">
+                  </td>
+
+                  <td width="2%" class="textb"><button type="submit" name="" class="buttonform">
+                    <i class="fa fa-clock-o"></i>
+                    &nbsp;&nbsp;Search
+                  </button></td>
+                </tr>
+
+                <tr><td colspan="4">&nbsp;</td>
+                </tr>
+              </table>
+            </td>
+        </table>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="reporttable">
+  <%
+
+    if(request.getAttribute("listofcard")!=null)
+    {
+      List<BlacklistVO> cList = (List<BlacklistVO>)request.getAttribute("listofcard");
+      //BlacklistVO blacklistVO = (BlacklistVO) request.getAttribute("cardVo");
+      PaginationVO paginationVO=(PaginationVO) request.getAttribute("paginationVO");
+      paginationVO.setInputs("ctoken=" + ctoken+paginationVO.getInputs());
+      Functions functions = new Functions();
+      if(cList.size()>0)
+      {
+
+  %>
+  <form name="BlackListDetails" action="/icici/servlet/BlackListDetails?ctoken=<%=ctoken%>" method="post">
+  <table align=center width="100%" class="table table-striped table-bordered table-hover table-green dataTable">
+   <thead>
+    <tr>
+      <td valign="middle" align="center" class="th0"><input type="checkbox" onClick="ToggleAll(this);" name="alltrans"></td>
+      <td  align="center" class="th0">First Six</td>
+      <td  align="center" class="th0">Last Four</td>
+      <td  align="center" class="th0">Action Executor Id</td>
+      <td  align="center" class="th0">Action Executor Name</td>
+    </tr>
+    </thead>
+      <%
+        String role="Admin";
+        String username=(String)session.getAttribute("username");
+        String actionExecutorId=(String)session.getAttribute("merchantid");
+        String actionExecutorName=role+"-"+username;
+        String style="class=td1";
+        String ext="light";
+        int pos = 1;
+        if(pos%2==0)
+          {
+              style="class=tr0";
+              ext="dark";
+          }
+          else
+          {
+              style="class=tr1";
+              ext="light";
+          }
+
+        for(BlacklistVO blacklistVO : cList)
+        {
+          if(functions.isValueNull(blacklistVO.getActionExecutorId()))
+          {
+            actionExecutorId=blacklistVO.getActionExecutorId();
+          }
+          else
+          {
+            actionExecutorId="-";
+          }
+
+          if(functions.isValueNull(blacklistVO.getActionExecutorName()))
+          {
+            actionExecutorName=blacklistVO.getActionExecutorName();
+          }
+          else
+          {
+            actionExecutorName="-";
+          }
+          out.println("<tr>");
+          out.println("<td " + style + " align=\"center\">&nbsp;<input type=\"checkbox\" name=\"id\" value=\"" + blacklistVO.getId()+ "\"></td>");
+          out.println("<td align=center "+style+">"+blacklistVO.getFirstSix()+"</td>");
+          out.println("<td align=center "+style+">"+blacklistVO.getLastFour()+"</td>");
+          out.println("<td align=center "+style+">"+actionExecutorId+"</td>");
+          out.println("<td align=center "+style+">"+actionExecutorName+"</td>");
+          out.println("</tr>");
+          pos++;
+        }
+      %>
+  </table>
+    <table width="100%">
+      <thead>
+      <tr>
+        <td width="15%" align="center">
+          <input type="hidden" name="unblock" value="unblock"><input type="button" name="unblock" class="addnewmember" value="Unblock" onclick="return Unblock();">
+        </td>
+      </tr>
+      </thead>
+    </table>
+    </form>
+  <table align=center valign=top><tr>
+    <td align=center>
+      <jsp:include page="page.jsp" flush="true">
+        <jsp:param name="numrecords" value="<%=paginationVO.getTotalRecords()%>"/>
+        <jsp:param name="numrows" value="<%=paginationVO.getRecordsPerPage()%>"/>
+        <jsp:param name="pageno" value="<%=paginationVO.getPageNo()%>"/>
+        <jsp:param name="str" value="<%=paginationVO.getInputs()%>"/>
+        <jsp:param name="page" value="<%=paginationVO.getPage()%>"/>
+        <jsp:param name="currentblock" value="<%=paginationVO.getCurrentBlock()%>"/>
+        <jsp:param name="orderby" value=""/>
+      </jsp:include>
+    </td>
+  </tr>
+  </table>
+</div>
+</body>
+<%
+      }
+      else
+      {
+        out.println(Functions.NewShowConfirmation("Sorry","No records found."));
+      }
+    }
+    else
+    {
+      out.println(Functions.NewShowConfirmation("Filter", "Please provide the data to get Blocked Cards"));
+    }
+%>
+</html>

@@ -1,0 +1,873 @@
+<HTML><HEAD><TITLE>Paymentz Payment Gateway</TITLE>
+<META content="text/html; charset=windows-1252" http-equiv=Content-Type>
+<meta http-equiv="Expires" content="0">
+<meta http-equiv="Pragma" content="no-cache">
+</HEAD>
+<SCRIPT language="javascript">
+var newwindow;
+function getRate()
+{
+	newwindow=window.open('http://www.oanda.com/convert/classic?user=transoanda','','left=10,top=10,width=500,height=450,resizable=no,scrollbars=no');
+	return false;
+}
+
+function showCCID()
+{
+	newwindow=window.open('/icici/ccidHelp.jsp','','left=10,top=10,width=400,height=350,resizable=no,scrollbars=no');
+	return false;
+}
+
+/*
+function checkPaste(code)
+{
+    if (document.layers) 
+        return true;
+    else{
+        var which = event.keyCode;
+	    if (event.ctrlKey && which==86){
+           alert('paste on '+code);	
+           event.cancelBubble = true, event.returnValue = true;  return true;
+        }		
+    }
+}
+*/
+
+function pasted(code)
+{
+    if (document.layers) 
+    	return true;
+    else{
+        if(code=='CCCP')
+            document.mainForm.CCCP.value='Y';		
+	    if(code=='NAMECP')
+	        document.mainForm.NAMECP.value='Y';
+    	if(code=='ADDRCP')
+	        document.mainForm.ADDRCP.value='Y';
+    	return true;
+    }
+}
+
+function checkNotEmpty()
+{
+	var message="";
+	var focus="f";
+	
+	if (document.mainForm.ccid.value.length <3){
+		message=message+"Please enter Card Verification Number.\n";
+		if(focus!="t"){
+			document.mainForm.ccid.focus();
+			focus="t";
+		}
+	}
+	if(isNaN(document.mainForm.ccid.value)){
+		message=message+"Please Enter a Numeric value in the Card Verification Number.\n";
+		document.mainForm.ccid.value='';
+		if(focus!="t"){
+			document.mainForm.ccid.focus();
+			focus="t";
+		}
+	}
+	if (document.mainForm.street.value.length == 0){
+		message=message+"Please enter Street.\n";
+		if(focus!="t"){
+			document.mainForm.street.focus();
+			focus="t";
+		}
+	}
+	if (document.mainForm.city.value.length == 0){
+		message=message+"Please enter City.\n";
+		if(focus!="t"){
+			document.mainForm.city.focus();
+			focus="t";
+		}
+	}
+	if (document.mainForm.firstname.value.length == 0){
+        		message=message+"Please enter First Name.\n";
+        		if(focus!="t"){
+        			document.mainForm.firstname.focus();
+        			focus="t";
+        		}
+        	}
+        	if (document.mainForm.lastname.value.length == 0){
+            		message=message+"Please enter Last Name.\n";
+            		if(focus!="t"){
+            			document.mainForm.lastname.focus();
+            			focus="t";
+            		}
+            	}
+	if (document.mainForm.state.value.length == 0){
+		message=message+"Please enter State.\n";
+		if(focus!="t"){
+			document.mainForm.state.focus();
+			focus="t";
+		}
+	}
+	if (document.mainForm.zip.value.length == 0){
+		message=message+"Please enter Zip.\n";
+		if(focus!="t"){
+			document.mainForm.zip.focus();
+			focus="t";
+		}
+	}
+
+	var vartelnocc = document.mainForm.telnocc;
+	var vartelno = document.mainForm.telno;
+
+	if((isNaN(vartelnocc.value))||vartelnocc.value.length==0){
+		message=message+"Please Enter a Numeric value for country code.\n";
+		if(focus!="t"){
+			vartelnocc.focus();
+			focus="t";
+		}
+	}
+	if((isNaN(vartelno.value))||vartelno.value.length==0){
+		message=message+"Please Enter a Numeric value in the Tel. number.\n";
+		if(focus!="t"){
+			vartelno.focus();
+			focus="t";
+		}
+	}
+	if (document.mainForm.emailaddr.value.length == 0){
+		message=message+"Please enter Email Address.\n";
+		if(focus!="t"){
+			document.mainForm.emailaddr.focus();
+			focus="t";
+		}
+	}
+	if(focus=="t"){
+		alert(message);
+		return false;
+	}else
+		return true;
+}
+
+function CardCheck()
+{
+	var ptr = document.mainForm.PAN ;
+	Chk=parseInt(ptr.value.substring(0,1));
+	Chk1=ptr.value.length;
+
+	if((isNaN(ptr.value))||ptr.value.length==0){
+		alert('Please Enter a Numeric value in the Card Number');
+		ptr.value='';
+		ptr.focus();
+		return false;
+	}
+	NumStr = parseInt(ptr.value).toString();
+	NumLen = NumStr.length;
+	if((Chk==3 && NumLen!=14 && Chk1!=NumLen)||(Chk!=3 && NumLen!=16 && Chk1!=NumLen)){
+		alert('Please Enter a Numeric value in the Card Number');
+		ptr.focus();
+		ptr.value='';
+		return false;
+	}
+
+	if((Chk==3 && Chk1!=14)||(Chk!=3 && Chk1<16)||(NumStr <0)){
+		alert('Please enter the card number correctly');
+		ptr.focus();
+		ptr.value='';
+		return false;
+	}
+	if(!checkNotEmpty())
+		return false;
+	else
+    	return true;
+}
+var flag = '0';
+function submitForm(actionurl)
+{
+    if(!document.mainForm.TC.checked)
+    {
+        alert("Please accept Terms & Condition");
+        return false;
+    }
+    if(!CardCheck())
+        return false;
+    else if(flag == '0'){
+        flag = '1' ;
+        var ptr = document.mainForm.PAN ;
+        Chk=parseInt(ptr.value.substring(0,1));
+        //for live template use this
+
+        document.mainForm.action=actionurl;
+
+        //for test on dev use this
+        // document.mainForm.action=actionurl;
+
+        document.mainForm.method="post";
+        document.mainForm.target="_self";
+        //newwindow.close();
+
+        //below line may be reason for double submit so commented.
+        //document.mainForm.submit();  
+        return true;
+	}else
+	    return false;
+}
+
+function cancelForm()
+{
+    document.mainForm.action="http://johny/transecuteicici/icicicredit/cancel.php3";
+    document.mainForm.method="post";
+    document.mainForm.target="_self";
+    document.mainForm.submit();
+}
+
+</script>
+<BODY aLink=#000080 leftMargin=0 link=#003399
+topMargin=0 vLink=#800080 marginheight="0" marginwidth="0" bgcolor="<#BGCOLOR#>" text="<#TEXTCOLOR#>" background="<#BACKGROUND#>">
+<center><br><br><center><table><tr><td align=center><#HEADER#></td></tr></table></center></center>
+<FORM name="mainForm" METHOD="POST" ACTION="">
+<input type="hidden" value="<#ctoken#>" name="ctoken">
+<p>&nbsp;</p>
+<div align="center">
+  <center>
+  <table border="0" cellpadding="0" cellspacing="0" width="80%">
+    <tr>
+      <td width="100%"><font face="<#FONTFACE#>" size="2"><b>Payment Details</b></font></td>
+    </tr>
+    <tr>
+      <td width="100%" bgcolor="#000000" height="1"><IMG height=1 src="/icici/images/1ptrans.gif" width=1></td>
+    </tr>
+     </table>
+  </center>
+</div>
+<div align="center">
+
+  <table border="0" cellpadding="5" cellspacing="0" align="center">
+    <tr>
+      <td width="100%" colspan="2"><font face="<#FONTFACE#>" size="2">This is a Secure Connection and
+        your information is secure and private.</font></td>
+    </tr>
+    <tr>
+    <td>
+      <p align="right"><b><font face="<#FONTFACE#>" size="2">Tracking Id</font>:</b></p></td>
+    <center>
+    <td><font face="<#FONTFACE#>" size="2"><#TRACKING_ID#></font></td>
+    </tr>
+    <tr>
+  <tr>
+    <td>
+      <p align="right"><b><font face="<#FONTFACE#>" size="2">Description</font>:</b></p></td>
+    <center>
+    <td><font face="<#FONTFACE#>" size="2"><#DESCRIPTION#></font></td>
+    </tr>
+  <tr>
+    <td>
+      <p align="right"><b><font face="<#FONTFACE#>" size="2">Order
+      Description</font>:</b></p></td>
+    <center>
+    <td><font face="<#FONTFACE#>" size="2"><#ORDER_DESCRIPTION#></font></td>
+    </tr>
+    <tr>
+    <td>
+      <p align="right"><b><font face="<#FONTFACE#>" size="2">Amount</font>:</b></p></td>
+    <td><font face="<#FONTFACE#>" size="2"><#TMPL_CUSTOMISE#></font><font face="<#FONTFACE#>" size="1">&nbsp;<#TMPL_MSG#><br>
+      <A href="" onclick="return getRate()">Click here to get an approximate conversion to your currency</a></font></td>
+    </tr>
+    <tr>
+    <td colspan="2">
+      <font face="<#FONTFACE#>" size="2">Enter your Credit Card
+      Details</font></td>
+    </tr>
+  
+    <tr>
+      <td>
+        <p align="right"><b><font face="<#FONTFACE#>" size="2">Card Number</font>:</b></p></td>
+      <td><input name="PAN" size="30" maxlength="16" onpaste="return pasted('CCCP');" autocomplete="OFF"><font face="<#FONTFACE#>" size="1"><nobr>&nbsp;&nbsp;<#CARDTYPEMSG#></font></td>
+    </tr>
+    <tr>
+      <td>
+        <p align="right"><b><font face="<#FONTFACE#>" size="2">Expiration
+        Date</font>:</b></p></td>
+      <td>
+	<select NAME="EXPIRE_MONTH">
+	<option VALUE="01" selected>January</option>
+	<option VALUE="02">February</option>
+	<option VALUE="03">March</option>
+	<option VALUE="04">April</option>
+	<option VALUE="05">May</option>
+	<option VALUE="06">June</option>
+	<option VALUE="07">July</option>
+	<option VALUE="08">August</option>
+	<option VALUE="09">September</option>
+	<option VALUE="10">October</option>
+	<option VALUE="11">November</option>
+	<option VALUE="12">December</option>
+	</select>
+	<select NAME="EXPIRE_YEAR">
+	<option VALUE="2006" SELECTED>2006</option>
+	<option VALUE="2007">2007</option>
+	<option VALUE="2008">2008</option>
+	<option VALUE="2009">2009</option>
+	<option VALUE="2010">2010</option>
+	<option VALUE="2011">2011</option>
+	<option VALUE="2012">2012</option>
+	<option VALUE="2013">2013</option>
+	<option VALUE="2014">2014</option>
+	<option VALUE="2015">2015</option>
+	<option VALUE="2016">2016</option>
+	<option VALUE="2017">2017</option>
+	<option VALUE="2018">2018</option>
+	<option VALUE="2019">2019</option>
+	<option VALUE="2020">2020</option>
+	<option VALUE="2021">2021</option>
+	<option VALUE="2022">2022</option>
+	<option VALUE="2023">2023</option>
+	<option VALUE="2024">2024</option>
+	<option VALUE="2025">2025</option>
+	<option VALUE="2026">2026</option>
+	<option VALUE="2027">2027</option>
+	<option VALUE="2028">2028</option>
+	<option VALUE="2029">2029</option>
+	<option VALUE="2030">2030</option>
+	</select>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p align="right"><b><font face="<#FONTFACE#>" size="2">Card
+        Verification Number</font>:</b><br><font face="<#FONTFACE#>" size="1"></font></p></td>
+      <td><input name="ccid" size="2" maxlength="3" autocomplete="OFF" > <font face="<#FONTFACE#>" size="1"><nobr>(Locate
+        the last 3 digits of the number on the back of your card)</font> </td>
+    </tr>
+    <tr>
+      <td colspan="2"><font face="<#FONTFACE#>" size="2">Billing
+        Address (where you receive your Credit Card bills)</font></td>
+    </tr>
+    <tr>
+      <td>
+        <p align="right"><b><font face="<#FONTFACE#>" size="2" >First Name</font>:</b></p></td>
+      <td><input name="firstname" size="30" value=""  ></td>
+    </tr>
+    <tr>
+      <td>
+        <p align="right"><b><font face="<#FONTFACE#>" size="2" >Last Name</font>:</b></p></td>
+      <td><input name="lastname" size="30" value=""  ></td>
+    </tr>
+    <tr>
+      <td>
+        <p align="right"><b><font face="<#FONTFACE#>" size="2">Birth
+        Date</font>:</b></p></td>
+      <td>
+	<select NAME="DAY">
+	<option VALUE="01" selected>01</option>
+	<option VALUE="02">02</option>
+	<option VALUE="03">03</option>
+	<option VALUE="04">04</option>
+	<option VALUE="05">05</option>
+	<option VALUE="06">06</option>
+	<option VALUE="07">07</option>
+	<option VALUE="08">08</option>
+	<option VALUE="09">09</option>
+	<option VALUE="10">10</option>
+	<option VALUE="11">11</option>
+	<option VALUE="12">12</option>
+	<option VALUE="13">13</option>
+	<option VALUE="14">14</option>
+	<option VALUE="15">15</option>
+	<option VALUE="16">16</option>
+	<option VALUE="17">17</option>
+	<option VALUE="18">18</option>
+	<option VALUE="19">19</option>
+	<option VALUE="20">20</option>
+	<option VALUE="21">21</option>
+	<option VALUE="22">22</option>
+	<option VALUE="23">23</option>
+	<option VALUE="24">24</option>
+	<option VALUE="25">25</option>
+	<option VALUE="26">26</option>
+	<option VALUE="27">27</option>
+	<option VALUE="28">28</option>
+	<option VALUE="29">29</option>
+	<option VALUE="30">30</option>
+	<option VALUE="31">31</option>
+	</select>
+	<select NAME="MONTH">
+	<option VALUE="01" selected>01</option>
+	<option VALUE="02">02</option>
+	<option VALUE="03">03</option>
+	<option VALUE="04">04</option>
+	<option VALUE="05">05</option>
+	<option VALUE="06">06</option>
+	<option VALUE="07">07</option>
+	<option VALUE="08">08</option>
+	<option VALUE="09">09</option>
+	<option VALUE="10">10</option>
+	<option VALUE="11">11</option>
+	<option VALUE="12">12</option>
+	</select>
+	<select NAME="YEAR">
+	<option VALUE="1910" SELECTED>1910</option>
+	<option VALUE="1911">1911</option>
+	<option VALUE="1912">1912</option>
+	<option VALUE="1913">1913</option>
+	<option VALUE="1914">1914</option>
+	<option VALUE="1915">1915</option>
+	<option VALUE="1916">1916</option>
+	<option VALUE="1917">1917</option>
+	<option VALUE="1918">1918</option>
+	<option VALUE="1919">1919</option>
+	<option VALUE="1920">1920</option>
+	<option VALUE="1921">1921</option>
+	<option VALUE="1922">1922</option>
+	<option VALUE="1923">1923</option>
+	<option VALUE="1924">1924</option>
+	<option VALUE="1925">1925</option>
+	<option VALUE="1926">1926</option>
+	<option VALUE="1927">1927</option>
+	<option VALUE="1928">1928</option>
+	<option VALUE="1929">1929</option>
+	<option VALUE="1930">1930</option>
+	<option VALUE="1931">1931</option>
+	<option VALUE="1932">1932</option>
+	<option VALUE="1933">1933</option>
+	<option VALUE="1934">1934</option>
+	<option VALUE="1935">1935</option>
+	<option VALUE="1936">1936</option>
+	<option VALUE="1937">1937</option>
+	<option VALUE="1938">1938</option>
+	<option VALUE="1939">1939</option>
+	<option VALUE="1940">1940</option>
+	<option VALUE="1941">1941</option>
+	<option VALUE="1942">1942</option>
+	<option VALUE="1943">1943</option>
+	<option VALUE="1944">1944</option>
+	<option VALUE="1945">1945</option>
+	<option VALUE="1946">1946</option>
+	<option VALUE="1947">1947</option>
+	<option VALUE="1948">1948</option>
+	<option VALUE="1949">1949</option>
+	<option VALUE="1950">1950</option>
+	<option VALUE="1951">1951</option>
+	<option VALUE="1952">1952</option>
+	<option VALUE="1953">1953</option>
+	<option VALUE="1954">1954</option>
+	<option VALUE="1955">1955</option>
+	<option VALUE="1956">1956</option>
+	<option VALUE="1957">1957</option>
+	<option VALUE="1958">1958</option>
+	<option VALUE="1959">1959</option>
+	<option VALUE="1960">1960</option>
+	<option VALUE="1961">1961</option>
+	<option VALUE="1962">1962</option>
+	<option VALUE="1963">1963</option>
+	<option VALUE="1964">1964</option>
+	<option VALUE="1965">1965</option>
+	<option VALUE="1966">1966</option>
+	<option VALUE="1967">1967</option>
+	<option VALUE="1968">1968</option>
+	<option VALUE="1969">1969</option>
+	<option VALUE="1970">1970</option>
+	<option VALUE="1971">1971</option>
+	<option VALUE="1972">1972</option>
+	<option VALUE="1973">1973</option>
+	<option VALUE="1974">1974</option>
+	<option VALUE="1975">1975</option>
+	<option VALUE="1976">1976</option>
+	<option VALUE="1977">1977</option>
+	<option VALUE="1978">1978</option>
+	<option VALUE="1979">1979</option>
+	<option VALUE="1980">1980</option>
+	<option VALUE="1981">1981</option>
+	<option VALUE="1982">1982</option>
+	<option VALUE="1983">1983</option>
+	<option VALUE="1984">1984</option>
+	<option VALUE="1985">1985</option>
+	<option VALUE="1986">1986</option>
+	<option VALUE="1987">1987</option>
+	<option VALUE="1988">1988</option>
+	<option VALUE="1989">1989</option>
+	<option VALUE="1990">1990</option>
+	<option VALUE="1991">1991</option>
+	<option VALUE="1992">1992</option>
+	<option VALUE="1993">1993</option>
+	<option VALUE="1994">1994</option>
+	<option VALUE="1995">1995</option>
+	<option VALUE="1996">1996</option>
+	<option VALUE="1997">1997</option>
+	<option VALUE="1998">1998</option>
+	<option VALUE="1999">1999</option>
+	<option VALUE="2000">2000</option>
+	<option VALUE="2001">2001</option>
+	<option VALUE="2002">2002</option>
+	<option VALUE="2003">2003</option>
+	<option VALUE="2004">2004</option>
+	<option VALUE="2005">2005</option>
+	<option VALUE="2006">2006</option>
+	<option VALUE="2007">2007</option>
+	<option VALUE="2008">2008</option>
+	<option VALUE="2009">2009</option>
+	<option VALUE="2010">2010</option>
+	</select>
+      </td>
+    </tr>
+     <tr>
+      <td>
+        <p align="right"><b><font face="<#FONTFACE#>" size="2">Language</font>:</b></p></td>
+      <td>
+	<select NAME="LANGUAGE">
+	<option VALUE="ENG" selected>ENG</option>
+	<option VALUE="CHN">CHN</option>
+	<option VALUE="RUS">RUS</option>
+	</select>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p align="right"><b><font face="<#FONTFACE#>" size="2" >Street</font>:</b></p></td>
+      <td><input name="street" size="30" value="<#TMPL_street#>" onpaste="return pasted('ADDRCP');" ></td>
+    </tr>
+    <tr>
+      <td>
+        <p align="right"><b><font face="<#FONTFACE#>" size="2">City</font>:</b></p></td>
+      <td><input name="city" size="30" value="<#TMPL_city#>"></td>
+    </tr>
+    <tr>
+      <td>
+        <p align="right"><b><font face="<#FONTFACE#>" size="2">State</font>:</b></p></td>
+      <td><input name="state" size="30" value="<#TMPL_state#>"><font face="arial,verdana,helvetica" size="1"><nobr>&nbsp;&nbsp;(Enter abbreviation for US states e.g. for Texas enter TX)</font></td>
+    </tr>
+    <tr>
+      <td>
+        <p align="right"><b><font face="<#FONTFACE#>" size="2">Zip</font>:</b></p></td>
+      <td><input name="zip" size="30" maxlength="10" value="<#TMPL_zip#>"></td>
+    </tr>
+    <tr>
+      <td>
+        <p align="right"><b><font face="<#FONTFACE#>" size="2">Country</font>:</b></p></td>
+      <td>
+	<select name="country" >
+	<option value="">Select a Country</option>
+		<option value="AF" <#TMPL_AF#> >Afghanistan</option>
+		<option value="AL" <#TMPL_AL#> >Albania</option>
+		<option value="DZ" <#TMPL_DZ#> >Algeria</option>
+		<option value="AS" <#TMPL_AS#> >American Samoa</option>
+		<option value="AD" <#TMPL_AD#> >Andorra</option>
+		<option value="AO" <#TMPL_AO#> >Angola</option>
+		<option value="AI" <#TMPL_AI#> >Anguilla</option>
+		<option value="AQ" <#TMPL_AQ#> >Antarctica</option>
+		<option value="AG" <#TMPL_AG#> >Antigua And Barbuda</option>
+		<option value="AR" <#TMPL_AR#> >Argentina</option>
+		<option value="AM" <#TMPL_AM#> >Armenia</option>
+		<option value="AW" <#TMPL_AW#> >Aruba</option>
+		<option value="AU" <#TMPL_AU#> >Australia</option>
+		<option value="AT" <#TMPL_AT#> >Austria</option>
+		<option value="AZ" <#TMPL_AZ#> >Azerbaijan</option>
+		<option value="BS" <#TMPL_BS#> >Bahamas, The</option>
+		<option value="BH" <#TMPL_BH#> >Bahrain</option>
+		<option value="BD" <#TMPL_BD#> >Bangladesh</option>
+		<option value="BB" <#TMPL_BB#> >Barbados</option>
+		<option value="BY" <#TMPL_BY#> >Belarus</option>
+		<option value="BE" <#TMPL_BE#> >Belgium</option>
+		<option value="BZ" <#TMPL_BZ#> >Belize</option>
+		<option value="BJ" <#TMPL_BJ#> >Benin</option>
+		<option value="BM" <#TMPL_BM#> >Bermuda</option>
+		<option value="BT" <#TMPL_BT#> >Bhutan</option>
+		<option value="BO" <#TMPL_BO#> >Bolivia</option>
+		<option value="BA" <#TMPL_BA#> >Bosnia and Herzegovina</option>
+		<option value="BW" <#TMPL_BW#> >Botswana</option>
+		<option value="BV" <#TMPL_BV#> >Bouvet Island</option>
+		<option value="BR" <#TMPL_BR#> >Brazil</option>
+		<option value="IO" <#TMPL_IO#> >British Indian Ocean Territory</option>
+		<option value="BN" <#TMPL_BN#> >Brunei</option>
+		<option value="BG" <#TMPL_BG#> >Bulgaria</option>
+		<option value="BF" <#TMPL_BF#> >Burkina Faso</option>
+		<option value="BI" <#TMPL_BI#> >Burundi</option>
+		<option value="KH" <#TMPL_KH#> >Cambodia</option>
+		<option value="CM" <#TMPL_CM#> >Cameroon</option>
+		<option value="CA" <#TMPL_CA#> >Canada</option>
+		<option value="CV" <#TMPL_CV#> >Cape Verde</option>
+		<option value="KY" <#TMPL_KY#> >Cayman Islands</option>
+		<option value="CF" <#TMPL_CF#> >Central African Republic</option>
+		<option value="TD" <#TMPL_TD#>  >Chad</option>
+		<option value="CL" <#TMPL_CL#> >Chile</option>
+		<option value="CN" <#TMPL_CN#> >China</option>
+		<option value="CX" <#TMPL_CX#> >Christmas Island</option>
+		<option value="CC" <#TMPL_CC#> >Cocos (Keeling) Islands</option>
+		<option value="CO" <#TMPL_CO#> >Colombia</option>
+		<option value="KM" <#TMPL_KM#> >Comoros</option>
+		<option value="CG" <#TMPL_CG#> >Congo</option>
+		<option value="CD" <#TMPL_CD#> >Congo, Democractic Republic of the</option>
+		<option value="CK" <#TMPL_CK#> >Cook Islands</option>
+		<option value="CR" <#TMPL_CR#> >Costa Rica</option>
+		<option value="CI" <#TMPL_CI#> >Cote D'Ivoire (Ivory Coast)</option>
+		<option value="HR" <#TMPL_HR#> >Croatia (Hrvatska)</option>
+		<option value="CU" <#TMPL_CU#> >Cuba</option>
+		<option value="CY" <#TMPL_CY#> >Cyprus</option>
+		<option value="CZ" <#TMPL_CZ#> >Czech Republic</option>
+		<option value="DK" <#TMPL_DK#> >Denmark</option>
+		<option value="DJ" <#TMPL_DJ#> >Djibouti</option>
+		<option value="DM" <#TMPL_DM#> >Dominica</option>
+		<option value="DO" <#TMPL_DO#> >Dominican Republic</option>
+		<option value="TP" <#TMPL_TP#> >East Timor</option>
+		<option value="EC" <#TMPL_EC#> >Ecuador</option>
+		<option value="EG" <#TMPL_EG#> >Egypt</option>
+		<option value="SV" <#TMPL_SV#> >El Salvador</option>
+		<option value="GQ" <#TMPL_GQ#> >Equatorial Guinea</option>
+		<option value="ER" <#TMPL_ER#> >Eritrea</option>
+		<option value="EE" <#TMPL_EE#> >Estonia</option>
+		<option value="ET" <#TMPL_ET#> >Ethiopia</option>
+		<option value="FK" <#TMPL_FK#> >Falkland Islands (Islas Malvinas)</option>
+		<option value="FO" <#TMPL_FO#> >Faroe Islands</option>
+		<option value="FJ" <#TMPL_FJ#> >Fiji Islands</option>
+		<option value="FI" <#TMPL_FI#> >Finland</option>
+		<option value="FR" <#TMPL_FR#> >France</option>
+		<option value="GF" <#TMPL_GF#> >French Guiana</option>
+		<option value="PF" <#TMPL_PF#> >French Polynesia</option>
+		<option value="TF" <#TMPL_TF#> >French Southern Territories</option>
+		<option value="GA" <#TMPL_GA#> >Gabon</option>
+		<option value="GM" <#TMPL_GM#> >Gambia, The</option>
+		<option value="GE" <#TMPL_GE#> >Georgia</option>
+		<option value="DE" <#TMPL_DE#> >Germany</option>
+		<option value="GH" <#TMPL_GH#> >Ghana</option>
+		<option value="GI" <#TMPL_GI#> >Gibraltar</option>
+		<option value="GR" <#TMPL_GR#> >Greece</option>
+		<option value="GL" <#TMPL_GL#> >Greenland</option>
+		<option value="GD" <#TMPL_GD#> >Grenada</option>
+		<option value="GP" <#TMPL_GP#> >Guadeloupe</option>
+		<option value="GU" <#TMPL_GU#> >Guam</option>
+		<option value="GT" <#TMPL_GT#> >Guatemala</option>
+		<option value="GN" <#TMPL_GN#> >Guinea</option>
+		<option value="GW" <#TMPL_GW#> >Guinea-Bissau</option>
+		<option value="GY" <#TMPL_GY#> >Guyana</option>
+		<option value="HT" <#TMPL_HT#> >Haiti</option>
+		<option value="HM" <#TMPL_HM#> >Heard and McDonald Islands</option>
+		<option value="HN" <#TMPL_HN#> >Honduras</option>
+		<option value="HK" <#TMPL_HK#> >Hong Kong S.A.R.</option>
+		<option value="HU" <#TMPL_HU#> >Hungary</option>
+		<option value="IS" <#TMPL_IS#> >Iceland</option>
+		<option value="IN" <#TMPL_IN#> >India</option>
+		<option value="ID" <#TMPL_ID#> >Indonesia</option>
+		<option value="IR" <#TMPL_IR#> >Iran</option>
+		<option value="IQ" <#TMPL_IQ#> >Iraq</option>
+		<option value="IE" <#TMPL_IE#> >Ireland</option>
+		<option value="IL" <#TMPL_IL#> >Israel</option>
+		<option value="IT" <#TMPL_IT#> >Italy</option>
+		<option value="JM" <#TMPL_JM#> >Jamaica</option>
+		<option value="JP" <#TMPL_JP#> >Japan</option>
+		<option value="JO" <#TMPL_JO#> >Jordan</option>
+		<option value="KZ" <#TMPL_KZ#> >Kazakhstan</option>
+		<option value="KE" <#TMPL_KE#> >Kenya</option>
+		<option value="KI" <#TMPL_KI#> >Kiribati</option>
+		<option value="KR" <#TMPL_KR#> >Korea</option>
+		<option value="KP" <#TMPL_KP#> >Korea, North</option>
+		<option value="KW" <#TMPL_KW#> >Kuwait</option>
+		<option value="KG" <#TMPL_KG#> >Kyrgyzstan</option>
+		<option value="LA" <#TMPL_LA#> >Laos</option>
+		<option value="LV" <#TMPL_LV#> >Latvia</option>
+		<option value="LB" <#TMPL_LB#> >Lebanon</option>
+		<option value="LS" <#TMPL_LS#> >Lesotho</option>
+		<option value="LR" <#TMPL_LR#> >Liberia</option>
+		<option value="LY" <#TMPL_LY#> >Libya</option>
+		<option value="LI" <#TMPL_LI#> >Liechtenstein</option>
+		<option value="LT" <#TMPL_LT#> >Lithuania</option>
+		<option value="LU" <#TMPL_LU#> >Luxembourg</option>
+		<option value="MO" <#TMPL_MO#> >Macau S.A.R.</option>
+		<option value="MK" <#TMPL_MK#> >Macedonia, Former Yugoslav Republic of</option>
+		<option value="MG" <#TMPL_MG#> >Madagascar</option>
+		<option value="MW" <#TMPL_MW#> >Malawi</option>
+		<option value="MY" <#TMPL_MY#> >Malaysia</option>
+		<option value="MV" <#TMPL_MV#> >Maldives</option>
+		<option value="ML" <#TMPL_ML#> >Mali</option>
+		<option value="MT" <#TMPL_MT#> >Malta</option>
+		<option value="MH" <#TMPL_MH#> >Marshall Islands</option>
+		<option value="MQ" <#TMPL_MQ#> >Martinique</option>
+		<option value="MR" <#TMPL_MR#> >Mauritania</option>
+		<option value="MU" <#TMPL_MU#> >Mauritius</option>
+		<option value="YT" <#TMPL_YT#> >Mayotte</option>
+		<option value="MX" <#TMPL_MX#> >Mexico</option>
+		<option value="FM" <#TMPL_FM#> >Micronesia</option>
+		<option value="MD" <#TMPL_MD#> >Moldova</option>
+		<option value="MC" <#TMPL_MC#> >Monaco</option>
+		<option value="MN" <#TMPL_MN#> >Mongolia</option>
+		<option value="MS" <#TMPL_MS#> >Montserrat</option>
+		<option value="MA" <#TMPL_MA#> >Morocco</option>
+		<option value="MZ" <#TMPL_MZ#> >Mozambique</option>
+		<option value="MM" <#TMPL_MM#> >Myanmar</option>
+		<option value="NA" <#TMPL_NA#> >Namibia</option>
+		<option value="NR" <#TMPL_NR#> >Nauru</option>
+		<option value="NP" <#TMPL_NP#> >Nepal</option>
+		<option value="AN" <#TMPL_AN#> >Netherlands Antilles</option>
+		<option value="NL" <#TMPL_NL#> >Netherlands, The</option>
+		<option value="NC" <#TMPL_NC#> >New Caledonia</option>
+		<option value="NZ" <#TMPL_NZ#> >New Zealand</option>
+		<option value="NI" <#TMPL_NI#> >Nicaragua</option>
+		<option value="NE" <#TMPL_NE#> >Niger</option>
+		<option value="NG" <#TMPL_NG#> >Nigeria</option>
+		<option value="NU" <#TMPL_NU#> >Niue</option>
+		<option value="NF" <#TMPL_NF#> >Norfolk Island</option>
+		<option value="MP" <#TMPL_MP#> >Northern Mariana Islands</option>
+		<option value="NO" <#TMPL_NO#> >Norway</option>
+		<option value="OM" <#TMPL_OM#> >Oman</option>
+		<option value="PK" <#TMPL_PK#> >Pakistan</option>
+		<option value="PW" <#TMPL_PW#> >Palau</option>
+		<option value="PA" <#TMPL_PA#> >Panama</option>
+		<option value="PG" <#TMPL_PG#> >Papua new Guinea</option>
+		<option value="PY" <#TMPL_PY#> >Paraguay</option>
+		<option value="PE" <#TMPL_PE#> >Peru</option>
+		<option value="PH" <#TMPL_PH#> >Philippines</option>
+		<option value="PN" <#TMPL_PN#> >Pitcairn Island</option>
+		<option value="PL" <#TMPL_PL#> >Poland</option>
+		<option value="PT" <#TMPL_PT#> >Portugal</option>
+		<option value="PR" <#TMPL_PR#> >Puerto Rico</option>
+		<option value="QA" <#TMPL_QA#> >Qatar</option>
+		<option value="RE" <#TMPL_RE#> >Reunion</option>
+		<option value="RO" <#TMPL_RO#> >Romania</option>
+		<option value="RU" <#TMPL_RU#> >Russia</option>
+		<option value="RW" <#TMPL_RW#> >Rwanda</option>
+		<option value="SH" <#TMPL_SH#> >Saint Helena</option>
+		<option value="KN" <#TMPL_KN#> >Saint Kitts And Nevis</option>
+		<option value="LC" <#TMPL_LC#> >Saint Lucia</option>
+		<option value="PM" <#TMPL_PM#> >Saint Pierre and Miquelon</option>
+		<option value="VC" <#TMPL_VC#> >Saint Vincent And The Grenadines</option>
+		<option value="WS" <#TMPL_WS#> >Samoa</option>
+		<option value="SM" <#TMPL_SM#> >San Marino</option>
+		<option value="ST" <#TMPL_ST#> >Sao Tome and Principe</option>
+		<option value="SA" <#TMPL_SA#> >Saudi Arabia</option>
+		<option value="SN" <#TMPL_SN#> >Senegal</option>
+		<option value="SC" <#TMPL_SC#> >Seychelles</option>
+		<option value="SL" <#TMPL_SL#> >Sierra Leone</option>
+		<option value="SG" <#TMPL_SG#> >Singapore</option>
+		<option value="SK" <#TMPL_SK#> >Slovakia</option>
+		<option value="SI" <#TMPL_SI#> >Slovenia</option>
+		<option value="SB" <#TMPL_SB#> >Solomon Islands</option>
+		<option value="SO" <#TMPL_SO#> >Somalia</option>
+		<option value="ZA" <#TMPL_ZA#> >South Africa</option>
+		<option value="GS" <#TMPL_GS#> >South Georgia And The South Sandwich Islands</option>
+		<option value="ES" <#TMPL_ES#> >Spain</option>
+		<option value="LK" <#TMPL_LK#> >Sri Lanka</option>
+		<option value="SD" <#TMPL_SD#> >Sudan</option>
+		<option value="SR" <#TMPL_SR#> >Suriname</option>
+		<option value="SJ" <#TMPL_SJ#> >Svalbard And Jan Mayen Islands</option>
+		<option value="SZ" <#TMPL_SZ#> >Swaziland</option>
+		<option value="SE" <#TMPL_SE#> >Sweden</option>
+		<option value="CH" <#TMPL_CH#> >Switzerland</option>
+		<option value="SY" <#TMPL_SY#> >Syria</option>
+		<option value="TW" <#TMPL_TW#> >Taiwan</option>
+		<option value="TJ" <#TMPL_TJ#> >Tajikistan</option>
+		<option value="TZ" <#TMPL_TZ#> >Tanzania</option>
+		<option value="TH" <#TMPL_TH#> >Thailand</option>
+		<option value="TG" <#TMPL_TG#> >Togo</option>
+		<option value="TK" <#TMPL_TK#> >Tokelau</option>
+		<option value="TO" <#TMPL_TO#> >Tonga</option>
+		<option value="TT" <#TMPL_TT#> >Trinidad And Tobago</option>
+		<option value="TN" <#TMPL_TN#> >Tunisia</option>
+		<option value="TR" <#TMPL_TR#> >Turkey</option>
+		<option value="TM" <#TMPL_TM#> >Turkmenistan</option>
+		<option value="TC" <#TMPL_TC#> >Turks And Caicos Islands</option>
+		<option value="TV" <#TMPL_TV#> >Tuvalu</option>
+		<option value="UG" <#TMPL_UG#> >Uganda</option>
+		<option value="UA" <#TMPL_UA#> >Ukraine</option>
+		<option value="AE" <#TMPL_AE#> >United Arab Emirates</option>
+		<option value="GB" <#TMPL_UK#> >United Kingdom</option>
+		<option value="US" <#TMPL_US#> >United States</option>
+		<option value="UM" <#TMPL_UM#> >United States Minor Outlying Islands</option>
+		<option value="UY" <#TMPL_UY#> >Uruguay</option>
+		<option value="UZ" <#TMPL_UZ#> >Uzbekistan</option>
+		<option value="VU" <#TMPL_VU#> >Vanuatu</option>
+		<option value="VA" <#TMPL_VA#> >Vatican City State (Holy See)</option>
+		<option value="VE" <#TMPL_VE#> >Venezuela</option>
+		<option value="VN" <#TMPL_VN#> >Vietnam</option>
+		<option value="VG" <#TMPL_VG#> >Virgin Islands (British)</option>
+		<option value="VI" <#TMPL_VI#> >Virgin Islands (US)</option>
+		<option value="WF" <#TMPL_WF#> >Wallis And Futuna Islands</option>
+		<option value="YE" <#TMPL_YE#> >Yemen</option>
+		<option value="YU" <#TMPL_YU#> >Yugoslavia</option>
+		<option value="ZM" <#TMPL_ZM#> >Zambia</option>
+		<option value="ZW" <#TMPL_ZW#> >Zimbabwe</option>
+	</select>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p align="right"><b><font face="<#FONTFACE#>" size="2">Tel</font>:</b></p></td>
+      <td><input name="telnocc" size="2" maxlength="3" value="<#TMPL_telnocc#>"> - <input name="telno" size="9" maxlength="10" value="<#TMPL_telno#>">
+        <font face="<#FONTFACE#>" size="1">(eg 001 - 2306370256)</font>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2"><font face="<#FONTFACE#>" size="2">Please enter
+        your email address below for any correspondence with respect to this
+        transaction</font></td>
+    </tr>
+    <tr>
+      <td>
+        <p align="right"><b><font face="<#FONTFACE#>" size="2">Email
+        Address</font>:</b></p></td>
+      <td><input name="emailaddr" size="30" value="<#TMPL_emailaddr#>"  <#DISABLED#> ></td>
+    </tr>
+    <tr>
+      <td><input type="hidden" name="ADDRCP" value="N" ><input type="hidden" name="NAMECP" value="N" ><input type="hidden" name="CCCP"  value="N" ></td>
+      <td></td>
+    </tr>
+    <tr>
+
+          <td colspan="2"><font face="<#FONTFACE#>" size="2"><#TMPL_TC_MSG#></font></td>
+
+    </tr>
+    <tr>
+
+             <td colspan="2">
+
+    <font face="<#FONTFACE#>" size="2">NOTE : PLEASE NOTE THAT SHOULD YOUR ORDER DOES NOT COMPLY WITH THE SHIPPING JURISDICTION , WE WILL REFUND YOUR ORDER </font>
+
+             </td>
+
+    </tr>
+  </table>
+</center>
+</div>
+<div align="center">
+  <center>
+  <table border="0" cellpadding="0" cellspacing="0" width="80%">
+  <TBODY>
+    <tr>
+      <td width="100%" bgcolor="#000000" height="1"><IMG height=1 src="/icici/images/1ptrans.gif" width=1></td>
+    </tr>
+  </center></TBODY></TABLE>
+</div></CENTER>
+<div align="center">
+  <table border="0" cellpadding="5" cellspacing="0" width="80%">
+    <tr>
+      <td width="30%" height="1">
+              <#LOGO#>
+              </td>
+      <td width="50%" height="1">
+        <p align="left"><a target="_blank" href="http://sisainfosec.com/site/certificate/13835412899812182686"><IMG border=0 height=40 src="http://www.paymentz.com/sites/all/themes/UrbanSolice/images/Pci.png" width=105></a></p></td>
+      <td width="10%" height="1">
+        <p align="right"><#PARTNERLOGO#></p></td>
+      <td width="10%" height="1">
+        <p align="right"><#CONTINUEBUTTON#></p>
+      </td>
+    </tr>
+  </table>
+</div>
+<p align="right">&nbsp;</p>
+<#HIDDENVARIABLES#>
+<input type=hidden name="BGCOLOR" value='<#BGCOLOR#>'>
+<input type=hidden name="TEXTCOLOR" value='<#TEXTCOLOR#>'>
+<input type=hidden name="FONTFACE" value='<#FONTFACE#>'>
+<input type=hidden name="HIGHLIGHT_TEXT_COLOR" value='<#HIGHLIGHT_TEXT_COLOR#>'>
+</form>
+
+<script language="javascript">
+var url;
+url = location.href;
+
+if (url.indexOf('sslbuy.net')!=-1)
+{
+
+    document.getElementById("p1").style.display = "block";
+	document.getElementById("p2").style.display = "none";
+
+}
+if (url.indexOf('secure.transecute.com')!=-1)
+{
+    document.getElementById("p1").style.display = "none";
+	document.getElementById("p2").style.display = "block";
+}
+
+</script>
+
+</BODY></HTML>

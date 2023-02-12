@@ -1,0 +1,27 @@
+D/message////
+/Authorization.java/1.1/Tue Sep 03 09:06:54 2013//
+/ErrorsCodes.java/1.1/Tue Sep 03 09:04:06 2013//
+/EuroPayAddress.java/1.1/Fri Jul 19 08:21:32 2013//
+/EuroPayCard.java/1.1/Fri Jul 19 08:21:32 2013//
+/EuroPayCustomer.java/1.1/Fri Jul 19 08:21:32 2013//
+/EuroPayDebitCard.java/1.1/Fri Jul 19 08:21:32 2013//
+/EuroPayErrorCode.java/1.1/Fri Jul 19 08:21:32 2013//
+/EuroPayIdentity.java/1.1/Fri Jul 19 08:21:32 2013//
+/EuroPayPayment.java/1.1/Fri Jul 19 08:21:32 2013//
+/EuroPayPaymentGateway.java/1.5/Wed May 19 06:02:41 2021//
+/EuroPayPaymentProcess.java/1.2/Sun Sep 01 06:54:44 2013//
+/EuroPayRequestVO.java/1.1/Fri Jul 19 08:21:32 2013//
+/EuroPayResponseVO.java/1.1/Tue Sep 03 09:02:28 2013//
+/EuroPayTransactions.java/1.2/Sun Sep 01 06:54:44 2013//
+/Message.java/1.1/Tue Sep 03 09:06:54 2013//
+/ProcessResults.java/1.1/Fri Jul 19 08:21:32 2013//
+/RefundRequest.java/1.2/Sat Jul 20 01:56:04 2013//
+/Response.java/1.1/Tue Sep 03 09:02:28 2013//
+/SearchResults.java/1.1/Tue Sep 03 09:04:08 2013//
+/Token.java/1.1/Tue Sep 03 09:06:54 2013//
+/TransactionLog.java/1.1/Tue Sep 03 09:06:56 2013//
+/TransactionsLogList.java/1.1/Tue Sep 03 09:06:56 2013//
+/TransactionsRequest.java/1.1/Fri Jul 19 08:21:34 2013//
+/euroPayTest.java/1.4/Wed May 19 06:02:41 2021//
+/test/1.1/Fri Jul 19 08:21:34 2013//
+/transactions_response.java/1.2/Sun Sep 01 06:54:46 2013//

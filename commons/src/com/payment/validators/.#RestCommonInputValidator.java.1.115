@@ -1,0 +1,2804 @@
+package com.payment.validators;
+
+import com.auth.AuthFunctions;
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.valueObjects.GenericAddressDetailsVO;
+import com.directi.pg.core.valueObjects.GenericCardDetailsVO;
+import com.directi.pg.core.valueObjects.GenericTransDetailsVO;
+import com.manager.*;
+import com.manager.dao.MerchantDAO;
+import com.manager.dao.PartnerDAO;
+import com.manager.dao.RecurringDAO;
+import com.manager.helper.TransactionHelper;
+import com.manager.vo.*;
+import com.payment.checkers.PaymentChecker;
+import com.payment.common.core.CommCardDetailsVO;
+import com.payment.exceptionHandler.PZConstraintViolationException;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.constraintType.PZConstraintExceptionEnum;
+import com.payment.exceptionHandler.errorcode.ErrorCodeUtils;
+import com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorName;
+import com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorType;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeListVO;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeVO;
+import com.payment.validators.vo.CommonValidatorVO;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.ValidationErrorList;
+
+import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * Created by Sneha on 3/23/2016.
+ */
+public class RestCommonInputValidator
+{
+    private static Logger log = new Logger(RestCommonInputValidator.class.getName());
+    private static TransactionLogger transactionLogger = new TransactionLogger(RestCommonInputValidator.class.getName());
+    private Functions functions = new Functions();
+    private PaymentChecker paymentChecker = new PaymentChecker();
+
+    private CommonValidatorVO performChecksumVerification(CommonValidatorVO commonValidatorVO) throws PZDBViolationException, NoSuchAlgorithmException, PZConstraintViolationException
+    {
+        String error = "";
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        GenericTransDetailsVO genericTransDetailsVO = commonValidatorVO.getTransDetailsVO();
+        TokenRequestVO tokenRequestVO = new TokenRequestVO();
+        GenericAddressDetailsVO addressDetailsVO = new GenericAddressDetailsVO();
+        String toid = merchantDetailsVO.getMemberId();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeListVO errorCodeListVO = null;
+        FailedTransactionLogEntry failedTransactionLogEntry = new FailedTransactionLogEntry();
+
+        //Toid Validation
+        if(!functions.isValueNull(toid) || !ESAPI.validator().isValidInput("toid",toid,"Numbers",10,false))
+        {
+            errorCodeVO = errorCodeUtils.getErrorCode(ErrorName.VALIDATION_TOID);
+            errorCodeVO.setErrorName(ErrorName.VALIDATION_TOID);
+            error = errorCodeVO.getApiCode()+" "+errorCodeVO.getApiDescription();
+            failedTransactionLogEntry.genericBlockedInputTransactionRequestEntryForRejected(commonValidatorVO, error, ErrorName.VALIDATION_TOID.toString(), ErrorType.VALIDATION.toString());
+            commonValidatorVO.setErrorMsg(error);
+            if (commonValidatorVO.getErrorCodeListVO() != null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+
+            return commonValidatorVO;
+        }
+        if(!functions.isValueNull(genericTransDetailsVO.getAmount()) || !ESAPI.validator().isValidInput("amount",genericTransDetailsVO.getAmount(),"tenDigitAmount",12,false))
+        {
+            errorCodeVO = errorCodeUtils.getErrorCode(ErrorName.VALIDATION_AMOUNT);
+            errorCodeVO.setErrorName(ErrorName.VALIDATION_AMOUNT);
+            error = errorCodeVO.getApiCode()+" "+errorCodeVO.getApiDescription();
+            failedTransactionLogEntry.genericBlockedInputTransactionRequestEntryForRejected(commonValidatorVO, error, ErrorName.VALIDATION_AMOUNT.toString(), ErrorType.VALIDATION.toString());
+            commonValidatorVO.setErrorMsg(error);
+            if (commonValidatorVO.getErrorCodeListVO() != null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+
+            return commonValidatorVO;
+        }
+        else
+        {
+            merchantDetailsVO = getMerchantConfigDetailsByLogin(toid);
+            commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+            if(merchantDetailsVO==null || merchantDetailsVO.getMemberId()==null)
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_TOID_INVALID);
+                error = errorCodeVO.getApiCode()+" "+errorCodeVO.getApiDescription();
+                commonValidatorVO.setErrorMsg(error);
+                failedTransactionLogEntry.genericBlockedInputTransactionRequestEntryForRejected(commonValidatorVO, error, ErrorName.VALIDATION_TOID_INVALID.toString(), ErrorType.VALIDATION.toString());
+                if(commonValidatorVO.getErrorCodeListVO()!=null)
+                    commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return commonValidatorVO;
+            }
+            if(functions.isValueNull( commonValidatorVO.getTrackingid()))
+            {
+                //for capture and refund transaction
+                if (!Checksum.verifyMD5ChecksumRest(toid, merchantDetailsVO.getKey(), commonValidatorVO.getTrackingid(), genericTransDetailsVO.getAmount(), genericTransDetailsVO.getChecksum()))
+                {
+                    error = "Checksum- Illegal Access. CheckSum mismatch";
+                    errorCodeListVO = getErrorVO(ErrorName.SYS_INVALID_CHECKSUM);
+                    failedTransactionLogEntry.genericBlockedInputTransactionRequestEntryForRejected(commonValidatorVO, error, ErrorName.SYS_INVALID_CHECKSUM.toString(), ErrorType.SYSCHECK.toString());
+                    PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+
+                //Activation check
+                if (!merchantDetailsVO.getActivation().equals("Y"))
+                {
+                    error = "Error- The Merchant Account is not set to LIVE mode.<BR><BR> This could happen if there is any pending formality from the Merchant Side. Please contact support so that they can activate your account.";
+                    errorCodeListVO = getErrorVO(ErrorName.SYS_MEMBER_ACTIVATION_CHECK);
+                    PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,errorCodeListVO, null, null);
+                }
+
+                //getting partner details
+                PartnerManager partnerManager = new PartnerManager();
+                PartnerDetailsVO partnerDetailsVO = partnerManager.getPartnerDetails(merchantDetailsVO.getPartnerId());
+                commonValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+
+                //IP Whitelist check
+                if ("Y".equals(commonValidatorVO.getPartnerDetailsVO().getIsIpWhiteListedCheckForAPIs()) && "Y".equalsIgnoreCase(merchantDetailsVO.getIsIpWhiteListedCheckForAPIs()))
+                {
+                    transactionLogger.debug("ip address--------" + merchantDetailsVO.getMemberId() + "---" + commonValidatorVO.getAddressDetailsVO().getIp());
+                    if (!paymentChecker.isIpWhitelistedForTransaction(merchantDetailsVO.getMemberId(), commonValidatorVO.getAddressDetailsVO().getIp()))
+                    {
+                        error = "Merchant's IP is not white listed with us. Kindly Contact the Paymentz Support Desk.";
+                        errorCodeListVO = getErrorVO(ErrorName.SYS_IPWHITELIST_CHECK);
+                        PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                    }
+                }
+            }
+            else
+            {
+                //for Sync and Async transaction
+                if(!ESAPI.validator().isValidInput("orderId", genericTransDetailsVO.getOrderId(), "Description", 180, false))
+                {
+                    errorCodeVO = errorCodeUtils.getErrorCode(ErrorName.VALIDATION_DESCRIPTION);
+                    errorCodeVO.setErrorName(ErrorName.VALIDATION_DESCRIPTION);
+                    error = errorCodeVO.getApiCode()+" "+errorCodeVO.getApiDescription();
+                    commonValidatorVO.setErrorMsg(error);
+                    failedTransactionLogEntry.genericBlockedInputTransactionRequestEntryForRejected(commonValidatorVO, error, ErrorName.VALIDATION_DESCRIPTION.toString(), ErrorType.VALIDATION.toString());
+                    if (commonValidatorVO.getErrorCodeListVO() != null)
+                        commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+
+                    return commonValidatorVO;
+                }
+                if (!Checksum.verifyMD5ChecksumRest(toid, merchantDetailsVO.getKey(), genericTransDetailsVO.getOrderId(), genericTransDetailsVO.getAmount(), genericTransDetailsVO.getChecksum()))
+                {
+                    error = "Checksum- Illegal Access. CheckSum mismatch";
+                    errorCodeListVO = getErrorVO(ErrorName.SYS_INVALID_CHECKSUM);
+                    failedTransactionLogEntry.genericBlockedInputTransactionRequestEntryForRejected(commonValidatorVO, error, ErrorName.SYS_INVALID_CHECKSUM.toString(), ErrorType.SYSCHECK.toString());
+                    PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+
+                //Activation check
+                if (!merchantDetailsVO.getActivation().equals("Y"))
+                {
+                    error = "Error- The Merchant Account is not set to LIVE mode. This could happen if there is any pending formality from the Merchant Side. Please contact support so that they can activate your account.";
+                    errorCodeListVO = getErrorVO(ErrorName.SYS_MEMBER_ACTIVATION_CHECK);
+                    failedTransactionLogEntry.genericBlockedInputTransactionRequestEntryForRejected(commonValidatorVO, error, ErrorName.SYS_MEMBER_ACTIVATION_CHECK.toString(), ErrorType.SYSCHECK.toString());
+                    PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,errorCodeListVO, null, null);
+                }
+
+                //getting partner details
+                PartnerManager partnerManager = new PartnerManager();
+                PartnerDetailsVO partnerDetailsVO = partnerManager.getPartnerDetails(merchantDetailsVO.getPartnerId());
+                commonValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+
+                //IP Whitelist check
+                if ("Y".equals(commonValidatorVO.getPartnerDetailsVO().getIsIpWhiteListedCheckForAPIs()) && "Y".equalsIgnoreCase(merchantDetailsVO.getIsIpWhiteListedCheckForAPIs()))
+                {
+                    if (!paymentChecker.isIpWhitelistedForTransaction(merchantDetailsVO.getMemberId(), commonValidatorVO.getAddressDetailsVO().getIp()))
+                    {
+                        error = "Merchant's IP is not white listed with us. Kindly Contact the Paymentz Support Desk.";
+                        errorCodeListVO = getErrorVO(ErrorName.SYS_IPWHITELIST_CHECK);
+                        failedTransactionLogEntry.genericBlockedInputTransactionRequestEntryForRejected(commonValidatorVO, error, ErrorName.SYS_IPWHITELIST_CHECK.toString(), ErrorType.SYSCHECK.toString());
+                        PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                    }
+                }
+
+                //Partner and Merchant level Address validation checks
+                //CommonInputValidator validator = new CommonInputValidator();
+                //error = validator.validatePartnerMerchantFlagBasedAddressField(commonValidatorVO, "REST");
+            }
+
+            genericTransDetailsVO.setTotype(commonValidatorVO.getMerchantDetailsVO().getPartnerName());
+            commonValidatorVO.setTransDetailsVO(genericTransDetailsVO);
+            tokenRequestVO.setGeneratedBy(merchantDetailsVO.getLogin());
+            addressDetailsVO.setEmail(merchantDetailsVO.getContact_emails());
+        }
+
+        if (functions.isEmptyOrNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+        return commonValidatorVO;
+    }
+    private CommonValidatorVO performVerificationForCancelInquiryAndDeleteToken(CommonValidatorVO commonValidatorVO) throws PZDBViolationException, PZConstraintViolationException, NoSuchAlgorithmException
+    {
+        String error = "";
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        PartnerDetailsVO partnerDetailsVO = commonValidatorVO.getPartnerDetailsVO();
+        GenericTransDetailsVO genericTransDetailsVO = commonValidatorVO.getTransDetailsVO();
+        GenericCardDetailsVO cardDetailsVO = commonValidatorVO.getCardDetailsVO();
+        GenericAddressDetailsVO addressDetailsVO = commonValidatorVO.getAddressDetailsVO();
+        TokenRequestVO tokenRequestVO = new TokenRequestVO();
+        PartnerManager partnerManager = new PartnerManager();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+
+        if(functions.isValueNull(merchantDetailsVO.getMemberId()))
+        {
+            transactionLogger.debug("inside performVerificationForCancelInquiryAndDeleteToken::");
+            String toid = merchantDetailsVO.getMemberId();
+            //Toid Validation
+            if(!functions.isValueNull(toid) || !ESAPI.validator().isValidInput("toid",toid,"Numbers",10,false))
+            {
+                error = "Invalid request";
+                commonValidatorVO.setErrorCodeListVO(getErrorVO(ErrorName.VALIDATION_TOID));
+                PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performVerificationForCancelInquiryAndDeleteToken()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, commonValidatorVO.getErrorCodeListVO(), null, null);
+            }
+
+            merchantDetailsVO = getMerchantConfigDetailsByLogin(toid);
+            if (merchantDetailsVO == null || merchantDetailsVO.getMemberId() == null)
+            {
+                error = "Invalid request";
+                commonValidatorVO.setErrorCodeListVO(getErrorVO(ErrorName.VALIDATION_TOID_INVALID));
+                PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performVerificationForCancelInquiryAndDeleteToken()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, commonValidatorVO.getErrorCodeListVO(), null, null);
+            }
+
+            transactionLogger.debug("PartnerId-->"+merchantDetailsVO.getPartnerId());
+            //partnerDetailsVO = partnerManager.getPartnerDetails(merchantDetailsVO.getPartnerId());
+            commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+            //commonValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+
+            transactionLogger.debug("Merchant Activation---->"+merchantDetailsVO.getActivation());
+            //Activation check
+            if (!merchantDetailsVO.getActivation().equals("Y"))
+            {
+                error = "Error- The Merchant Account is not set to LIVE mode.<BR><BR> This could happen if there is any pending formality from the Merchant Side. Please contact support so that they can activate your account.";
+                errorCodeListVO = getErrorVO(ErrorName.SYS_MEMBER_ACTIVATION_CHECK);
+                PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performVerificationForCancelInquiryAndDeleteToken()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,errorCodeListVO, null, null);
+            }
+            //IP Whitelist check
+            transactionLogger.debug("commonValidatorVO.getPartnerDetailsVO().getIsIpWhiteListedCheckForAPIs()--->"+commonValidatorVO.getPartnerDetailsVO().getIsIpWhiteListedCheckForAPIs());
+            if("Y".equals(commonValidatorVO.getPartnerDetailsVO().getIsIpWhiteListedCheckForAPIs()) && "Y".equalsIgnoreCase(commonValidatorVO.getMerchantDetailsVO().getIsIpWhiteListedCheckForAPIs()))
+            {
+                transactionLogger.debug("MerchantId--------"+merchantDetailsVO.getMemberId()+"---"+commonValidatorVO.getAddressDetailsVO().getIp());
+                if (!paymentChecker.isIpWhitelistedForTransaction(merchantDetailsVO.getMemberId(), commonValidatorVO.getAddressDetailsVO().getIp()))
+                {
+                    error = "Merchant's IP is not white listed with us. Kindly Contact the Paymentz Support Desk.";
+                    errorCodeListVO = getErrorVO(ErrorName.SYS_IPWHITELIST_CHECK);
+                    PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performVerificationForCancelInquiryAndDeleteToken()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+            }
+        }
+        else if(functions.isValueNull(commonValidatorVO.getPartnerDetailsVO().getPartnerId()))
+        {
+            String partnerId = partnerDetailsVO.getPartnerId();
+            //PartnerId Validation
+            if(!functions.isValueNull(partnerId) || !ESAPI.validator().isValidInput("partnerid",partnerId,"Numbers",10,false))
+            {
+                error = "Invalid request";
+                commonValidatorVO.setErrorCodeListVO(getErrorVO(ErrorName.VALIDATION_PARTNERID));
+                PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performVerificationForCancelInquiryAndDeleteToken()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, commonValidatorVO.getErrorCodeListVO(), null, null);
+            }
+
+            partnerDetailsVO = partnerManager.getPartnerDetails(partnerId); //fetch the partner details with partnerId
+            if (partnerDetailsVO == null)
+            {
+                error = "Invalid request";
+                commonValidatorVO.setErrorCodeListVO(getErrorVO(ErrorName.SYS_UNAUTHORIZE_PARTNER));
+                PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performVerificationForCancelInquiryAndDeleteToken()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, commonValidatorVO.getErrorCodeListVO(), null, null);
+            }
+            //IP Whitelist check
+            if("Y".equalsIgnoreCase(partnerDetailsVO.getIsIpWhiteListedCheckForAPIs()))
+            {
+                transactionLogger.debug("partnerId--------"+partnerId+"---"+commonValidatorVO.getAddressDetailsVO().getIp());
+                if (!paymentChecker.isIpWhitelistedForTransactionByPartner(partnerId, commonValidatorVO.getAddressDetailsVO().getIp()))
+                {
+                    error = "Merchant's IP is not white listed with us. Kindly Contact the Paymentz Support Desk.";
+                    errorCodeListVO = getErrorVO(ErrorName.SYS_IPWHITELIST_CHECK);
+                    PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performVerificationForCancelInquiryAndDeleteToken()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+            }
+        }
+
+        if (functions.isValueNull(commonValidatorVO.getTrackingid()) || functions.isValueNull(commonValidatorVO.getTransDetailsVO().getOrderId()))
+        {
+            //Inquiry and Cancel checksum verification
+
+            String checksumId=commonValidatorVO.getTrackingid();
+            if(functions.isValueNull(commonValidatorVO.getIdType())){
+                if(commonValidatorVO.getIdType().equalsIgnoreCase("MID"))
+                {
+                    checksumId = commonValidatorVO.getTransDetailsVO().getOrderId();
+                }
+            }
+            log.debug("Checksum with trackingId------>"+commonValidatorVO.getTransDetailsVO().getChecksum());
+            if (!Checksum.verifyChecksumV3(merchantDetailsVO.getMemberId(), merchantDetailsVO.getKey(),checksumId,commonValidatorVO.getTransDetailsVO().getChecksum()))
+            {
+                error = "Checksum- Illegal Access. CheckSum mismatch";
+                errorCodeListVO = getErrorVO(ErrorName.SYS_INVALID_CHECKSUM);
+                PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performVerificationForCancelInquiryAndDeleteToken()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }
+        }
+        else if(functions.isValueNull(commonValidatorVO.getToken()))
+        {
+            //Delete Token Checksum verification
+            log.debug("Checksum with token------>"+commonValidatorVO.getTransDetailsVO().getChecksum());
+            if(functions.isValueNull(merchantDetailsVO.getMemberId()))
+            {
+                if (!Checksum.verifyChecksumV3(merchantDetailsVO.getMemberId(), merchantDetailsVO.getKey(), commonValidatorVO.getToken(), commonValidatorVO.getTransDetailsVO().getChecksum()))
+                {
+                    error = "Checksum- Illegal Access. CheckSum mismatch";
+                    errorCodeListVO = getErrorVO(ErrorName.SYS_INVALID_CHECKSUM);
+                    PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performVerificationForCancelInquiryAndDeleteToken()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+            }
+            else
+            {
+                if (!Checksum.verifyChecksumV3(partnerDetailsVO.getPartnerId(), partnerDetailsVO.getPartnerKey(), commonValidatorVO.getToken(), commonValidatorVO.getTransDetailsVO().getChecksum()))
+                {
+                    error = "Checksum- Illegal Access. CheckSum mismatch";
+                    errorCodeListVO = getErrorVO(ErrorName.SYS_INVALID_CHECKSUM);
+                    PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performVerificationForCancelInquiryAndDeleteToken()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+            }
+        }
+
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        commonValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+        genericTransDetailsVO.setTotype(commonValidatorVO.getMerchantDetailsVO().getPartnerName());
+        commonValidatorVO.setTransDetailsVO(genericTransDetailsVO);
+        commonValidatorVO.setCardDetailsVO(cardDetailsVO);
+        tokenRequestVO.setGeneratedBy(merchantDetailsVO.getLogin());
+        addressDetailsVO.setEmail(merchantDetailsVO.getContact_emails());
+
+        if (functions.isEmptyOrNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+        return commonValidatorVO;
+    }
+
+    private CommonValidatorVO performVerificationWithTrackingidAndToken(CommonValidatorVO commonValidatorVO) throws PZDBViolationException, PZConstraintViolationException, NoSuchAlgorithmException
+    {
+        String error = "";
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        GenericTransDetailsVO genericTransDetailsVO = commonValidatorVO.getTransDetailsVO();
+        TokenRequestVO tokenRequestVO = new TokenRequestVO();
+        GenericAddressDetailsVO addressDetailsVO = new GenericAddressDetailsVO();
+        String toid = merchantDetailsVO.getMemberId();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeListVO errorCodeListVO = null;
+
+        //Toid Validation
+        if(!functions.isValueNull(toid) || !ESAPI.validator().isValidInput("toid",toid,"Numbers",10,false))
+        {
+            errorCodeVO = errorCodeUtils.getErrorCode(ErrorName.VALIDATION_TOID);
+            errorCodeVO.setErrorName(ErrorName.VALIDATION_TOID);
+            error = errorCodeVO.getErrorCode()+" "+errorCodeVO.getErrorDescription();
+            commonValidatorVO.setErrorMsg(error);
+            if (commonValidatorVO.getErrorCodeListVO() != null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+
+            return commonValidatorVO;
+        }
+        merchantDetailsVO = getMerchantConfigDetailsByLogin(toid);
+        if(merchantDetailsVO==null || merchantDetailsVO.getMemberId()==null)
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_TOID_INVALID);
+            error = errorCodeVO.getErrorCode()+" " +errorCodeVO.getErrorDescription();
+            commonValidatorVO.setErrorMsg(error);
+            if(commonValidatorVO.getErrorCodeListVO()!=null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return commonValidatorVO;
+        }
+        if(functions.isValueNull(commonValidatorVO.getTrackingid()) && functions.isValueNull(commonValidatorVO.getRecurringBillingVO().getRecurringType()))
+        {
+            if (!Checksum.verifyMD5ChecksumRest(toid, merchantDetailsVO.getKey(), commonValidatorVO.getTrackingid(), genericTransDetailsVO.getAmount(), genericTransDetailsVO.getChecksum()))
+            {
+                error = "Checksum- Illegal Access. CheckSum mismatch";
+                errorCodeListVO = getErrorVO(ErrorName.SYS_INVALID_CHECKSUM);
+                PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }
+        }
+        else if(functions.isValueNull(commonValidatorVO.getToken()))
+        {
+            if("N".equals(merchantDetailsVO.getIsTokenizationAllowed()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_TOKEN_ALLOWED);
+                error = errorCodeVO.getErrorCode()+" " +errorCodeVO.getErrorDescription();
+                commonValidatorVO.setErrorMsg(error);
+                if(commonValidatorVO.getErrorCodeListVO()!=null)
+                    commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return commonValidatorVO;
+            }
+            if (!Checksum.verifyMD5ChecksumRest(toid, merchantDetailsVO.getKey(), commonValidatorVO.getToken(), genericTransDetailsVO.getAmount(), genericTransDetailsVO.getChecksum()))
+            {
+                error = "Checksum- Illegal Access. CheckSum mismatch";
+                errorCodeListVO = getErrorVO(ErrorName.SYS_INVALID_CHECKSUM);
+                PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }
+        }
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        genericTransDetailsVO.setTotype(commonValidatorVO.getMerchantDetailsVO().getPartnerName());
+        commonValidatorVO.setTransDetailsVO(genericTransDetailsVO);
+        tokenRequestVO.setGeneratedBy(merchantDetailsVO.getLogin());
+        addressDetailsVO.setEmail(merchantDetailsVO.getContact_emails());
+
+        //getting partner details
+        PartnerManager partnerManager = new PartnerManager();
+        PartnerDetailsVO partnerDetailsVO = partnerManager.getPartnerDetails(merchantDetailsVO.getPartnerId());
+        commonValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+
+        //IP Whitelist check
+        if("Y".equals(commonValidatorVO.getPartnerDetailsVO().getIsIpWhiteListedCheckForAPIs()) && "Y".equalsIgnoreCase(merchantDetailsVO.getIsIpWhiteListedCheckForAPIs()))
+        {
+            transactionLogger.debug("ip address--------"+merchantDetailsVO.getMemberId()+"---"+commonValidatorVO.getAddressDetailsVO().getIp());
+            if (!paymentChecker.isIpWhitelistedForTransaction(merchantDetailsVO.getMemberId(), commonValidatorVO.getAddressDetailsVO().getIp()))
+            {
+                error = "Merchant's IP is not white listed with us. Kindly Contact the Paymentz Support Desk.";
+                errorCodeListVO = getErrorVO(ErrorName.SYS_IPWHITELIST_CHECK);
+                PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }
+        }
+
+        //Activation check
+        if (!merchantDetailsVO.getActivation().equals("Y"))
+        {
+            error = "Error- The Merchant Account is not set to LIVE mode.<BR><BR> This could happen if there is any pending formality from the Merchant Side. Please contact support so that they can activate your account.";
+            errorCodeListVO = getErrorVO(ErrorName.SYS_MEMBER_ACTIVATION_CHECK);
+            PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,errorCodeListVO, null, null);
+        }
+
+        if (functions.isEmptyOrNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+        return commonValidatorVO;
+    }
+
+    //Validations for Rest
+    public CommonValidatorVO performRestTransactionValidation(CommonValidatorVO commonValidatorVO) throws PZConstraintViolationException, PZDBViolationException, NoSuchAlgorithmException
+    {
+        String error = "";
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        FailedTransactionLogEntry failedTransactionLogEntry = new FailedTransactionLogEntry();
+        //Checking login details of merchant
+        commonValidatorVO = performChecksumVerification(commonValidatorVO);
+        //Transasction type check
+        if (("Y".equalsIgnoreCase(commonValidatorVO.getMerchantDetailsVO().getIsService())) && ("PA".equalsIgnoreCase(commonValidatorVO.getTransactionType())) || ("N".equalsIgnoreCase(commonValidatorVO.getMerchantDetailsVO().getIsService())) && ("DB".equalsIgnoreCase(commonValidatorVO.getTransactionType())))
+        {
+            error = "Error- The functionality is not allowed for account. Please contact support for help.";
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.TRANSACTION_REJECTED_TRANSACTION_TYPE);
+            failedTransactionLogEntry.genericBlockedInputTransactionRequestEntryForRejected(commonValidatorVO, error, ErrorName.TRANSACTION_REJECTED_TRANSACTION_TYPE.toString(), ErrorType.REJECTED_TRANSACTION.toString());
+            if(commonValidatorVO.getErrorCodeListVO()!=null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return commonValidatorVO;
+        }
+
+        //Validation RecurringType
+/*
+        if((functions.isValueNull(commonValidatorVO.getRecurringBillingVO().getRecurringType())) && ("REPEATED".equalsIgnoreCase(commonValidatorVO.getRecurringBillingVO().getRecurringType())))
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_RECURRINGALLOW);
+            error = errorCodeVO.getErrorCode()+" " +errorCodeVO.getErrorDescription();
+            commonValidatorVO.setErrorMsg(error);
+            if(commonValidatorVO.getErrorCodeListVO()!=null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return commonValidatorVO;
+        }
+*/
+        error = validateRestKitParameters(commonValidatorVO, "REST");
+        if (!commonValidatorVO.getErrorCodeListVO().getListOfError().isEmpty())
+        {
+            String errorName = errorCodeUtils.getErrorNames(commonValidatorVO.getErrorCodeListVO().getListOfError());
+            error = errorCodeUtils.getSystemErrorCodeVO(commonValidatorVO.getErrorCodeListVO());
+            failedTransactionLogEntry.genericBlockedInputTransactionRequestEntryForRejected(commonValidatorVO, error, errorName, ErrorType.VALIDATION.toString());
+            return commonValidatorVO;
+        }
+
+        error = validateRestKitParametersStep2(commonValidatorVO, "REST");
+        if (!commonValidatorVO.getErrorCodeListVO().getListOfError().isEmpty())
+        {
+            String errorName = errorCodeUtils.getErrorNames(commonValidatorVO.getErrorCodeListVO().getListOfError());
+            error = errorCodeUtils.getSystemErrorCodeVO(commonValidatorVO.getErrorCodeListVO());
+            failedTransactionLogEntry.genericBlockedInputTransactionRequestEntryForRejected(commonValidatorVO, error, errorName, ErrorType.VALIDATION.toString());
+            return commonValidatorVO;
+        }
+
+
+        /*if (functions.isValueNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            String errorName = errorCodeUtils.getErrorNames(commonValidatorVO.getErrorCodeListVO().getListOfError());
+            System.out.println("inside error-----");
+            failedTransactionLogEntry.genericBlockedInputTransactionRequestEntryForRejected(commonValidatorVO, error, errorName, ErrorType.VALIDATION.toString());
+            return commonValidatorVO;
+        }*/
+        return commonValidatorVO;
+    }
+
+    public CommonValidatorVO performRestCaptureValidation(CommonValidatorVO commonValidatorVO) throws PZConstraintViolationException, PZDBViolationException, NoSuchAlgorithmException
+    {
+        String error = "";
+        //Checking login details of merchant
+        commonValidatorVO = performChecksumVerification(commonValidatorVO);
+
+        error =  validateRestKitCaptureParameters(commonValidatorVO, "REST");
+        if (functions.isEmptyOrNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+        return commonValidatorVO;
+    }
+    public CommonValidatorVO performRestCancelValidation(CommonValidatorVO commonValidatorVO) throws PZConstraintViolationException, PZDBViolationException, NoSuchAlgorithmException
+    {
+        String error = "";
+        //Checking login details of merchant
+        commonValidatorVO = performVerificationForCancelInquiryAndDeleteToken(commonValidatorVO);
+
+        error =  validateRestKitCancelParameters(commonValidatorVO, "REST");
+        if (functions.isEmptyOrNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+        return commonValidatorVO;
+    }
+    public CommonValidatorVO performRestInquiryValidation(CommonValidatorVO directKitValidatorVO) throws PZConstraintViolationException, PZDBViolationException, NoSuchAlgorithmException
+    {
+        //Checking login details of merchant
+        String error = "";
+
+        directKitValidatorVO = performVerificationForCancelInquiryAndDeleteToken(directKitValidatorVO);
+
+        error = validateRestKitInquiryParameters(directKitValidatorVO, "REST");
+
+        if (functions.isValueNull(error))
+            directKitValidatorVO.setErrorMsg(error);
+
+        return directKitValidatorVO;
+    }
+    public CommonValidatorVO performRestRefundValidation(CommonValidatorVO commonValidatorVO) throws PZConstraintViolationException, PZDBViolationException, NoSuchAlgorithmException
+    {
+        String error = "";
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+
+        //Checking login details of merchant
+        commonValidatorVO = performChecksumVerification(commonValidatorVO);
+
+        if("N".equals(commonValidatorVO.getMerchantDetailsVO().getIsrefund()))
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_REFUND_ALLOWED);
+            error = errorCodeVO.getErrorCode()+" " +errorCodeVO.getErrorDescription();
+            commonValidatorVO.setErrorMsg(error);
+            if(commonValidatorVO.getErrorCodeListVO()!=null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return commonValidatorVO;
+        }
+
+        error =  validateRestKitRefundParameters(commonValidatorVO, "REST");
+        if (functions.isEmptyOrNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+        return commonValidatorVO;
+    }
+
+    public CommonValidatorVO performRestRecurringTokenValidation(CommonValidatorVO directKitValidatorVO) throws PZConstraintViolationException, PZDBViolationException, NoSuchAlgorithmException
+    {
+        String error = "";
+        GenericTransDetailsVO genericTransDetailsVO =directKitValidatorVO.getTransDetailsVO();
+        TransactionManager transactionManager = new TransactionManager();
+        RecurringBillingVO recurringBillingVO = directKitValidatorVO.getRecurringBillingVO();
+
+        TokenManager tokenManager = new TokenManager();
+        TokenDetailsVO tokenDetailsVO = new TokenDetailsVO();
+        PartnerDetailsVO partnerDetailsVO = directKitValidatorVO.getPartnerDetailsVO();
+        PartnerManager partnerManager = new PartnerManager();
+        Transaction transaction = new Transaction();
+        RecurringDAO recurringDAO = new RecurringDAO();
+        String recurringType = recurringBillingVO.getRecurringType();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        CommonInputValidator commonInputValidator = new CommonInputValidator();
+        ManualRecurringManager manualRecurringManager = new ManualRecurringManager();
+
+        //Checking login details of merchant
+        directKitValidatorVO = performVerificationWithTrackingidAndToken(directKitValidatorVO);
+        if (!directKitValidatorVO.getErrorCodeListVO().getListOfError().isEmpty())
+        {
+            return directKitValidatorVO;
+        }
+        error =  validateRestKitWithTokenParameters(directKitValidatorVO, "REST");
+        if (functions.isValueNull(error))
+        {
+            directKitValidatorVO.setErrorMsg(error);
+            return directKitValidatorVO;
+        }
+
+        MerchantDetailsVO merchantDetailsVO = directKitValidatorVO.getMerchantDetailsVO();
+        String toid = merchantDetailsVO.getMemberId();
+
+        String orderDes = "";
+        SimpleDateFormat dateFormater = new SimpleDateFormat("yyMMddHHmmss");
+        String currentSystemDate = dateFormater.format(new Date());
+
+        if(directKitValidatorVO.getToken() != null)
+        {
+            log.debug("Inside if-------"+directKitValidatorVO.getToken());
+
+            partnerDetailsVO = partnerManager.getPartnerDetails(merchantDetailsVO.getPartnerId()); //fetch the partner details with partnerId
+            if("Y".equals(partnerDetailsVO.getIsMerchantRequiredForCardRegistration()))
+                tokenDetailsVO = tokenManager.getRegisteredTokenDetailsByMerchant(directKitValidatorVO.getMerchantDetailsVO().getMemberId(), directKitValidatorVO.getToken(), directKitValidatorVO, tokenDetailsVO); //Tokn Details By Merchant
+            else
+                tokenDetailsVO = tokenManager.getRegisteredTokenDetailsByPartner(directKitValidatorVO.getMerchantDetailsVO().getPartnerId(), directKitValidatorVO.getToken(), directKitValidatorVO); //token details by Partner
+
+
+            if (!functions.isValueNull(tokenDetailsVO.getToken()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_MERCHANT_REQUIRED_FOR_REGISTRATION);
+                if (directKitValidatorVO.getErrorCodeListVO() != null)
+                    directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return directKitValidatorVO;
+            }
+            if (functions.isValueNull(directKitValidatorVO.getTerminalId()))
+            {
+                if (!tokenDetailsVO.getTerminalId().equals(directKitValidatorVO.getTerminalId()))
+                {
+                    errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_INVALID_TERMINAL);
+                    if (directKitValidatorVO.getErrorCodeListVO() != null)
+                        directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                    return directKitValidatorVO;
+                }
+            }
+            else
+                directKitValidatorVO.setTerminalId(tokenDetailsVO.getTerminalId());
+
+            if ("N".equalsIgnoreCase(tokenDetailsVO.getIsActive()) && "N".equalsIgnoreCase(tokenDetailsVO.getIsActiveReg()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_REFERENCE_DELETE_TOKEN);
+                if (directKitValidatorVO.getErrorCodeListVO() != null)
+                    directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return directKitValidatorVO;
+            }
+
+            //getting the initial trackingId of transaction
+            tokenDetailsVO = tokenManager.getRegistrationTrackingId(directKitValidatorVO.getMerchantDetailsVO().getMemberId(), tokenDetailsVO);
+
+            if(functions.isValueNull(tokenDetailsVO.getTrackingId()))
+            {
+                log.debug("Inside trackingid------" + tokenDetailsVO.getTrackingId());
+                if(!functions.isValueNull(tokenDetailsVO.getTokenAccountId()) && functions.isValueNull(tokenDetailsVO.getCommCardDetailsVO().getCardNum()))
+                {
+                    log.debug("trackingid---"+tokenDetailsVO.getTrackingId());
+                    //REPEATED transaction with card
+                    ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+
+                    directKitValidatorVO = performRestTokenChecks(directKitValidatorVO, tokenDetailsVO);
+
+                    error = error + commonInputValidator.validateRestFlagBasedAddressField(directKitValidatorVO, "REST");
+                    if(!functions.isEmptyOrNull(error))
+                    {
+                        directKitValidatorVO.setErrorMsg(error);
+                        return directKitValidatorVO;
+                    }
+
+                    String accountid = directKitValidatorVO.getTerminalVO().getAccountId();
+                    directKitValidatorVO.getTransDetailsVO().setOrderDesc("Test");////Hardcode for p4
+                    directKitValidatorVO.getTransDetailsVO().setOrderId((int)(Math.random()*100000)+"JHG54");////Hardcode for p4
+                    String accountAddressValidation = GatewayAccountService.getGatewayAccount(accountid).getAddressValidation();
+                    AbstractInputValidator paymentProcess = InputValidatorFactory.getInputValidatorInstance(Integer.parseInt(accountid));
+                    error = error + paymentProcess.validateIntegrationSpecificParameters(directKitValidatorVO, "REST", accountAddressValidation);
+
+                    if(!functions.isEmptyOrNull(error))
+                    {
+                        directKitValidatorVO.setErrorMsg(error);
+                        return directKitValidatorVO;
+                    }
+
+                    CommCardDetailsVO commCardDetailsVO = tokenDetailsVO.getCommCardDetailsVO();
+                    if(!ESAPI.validator().isValidInput("cvv", directKitValidatorVO.getCardDetailsVO().getcVV(), "OnlyNumber", 3, false))
+                    {
+                        error = error + "Invalid CVV, Accept only numeric[0-9] with Max Length 4";
+                        errorCodeListVO = getErrorVO(ErrorName.VALIDATION_CVV);
+                        PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                    }
+                    commCardDetailsVO.setcVV(directKitValidatorVO.getCardDetailsVO().getcVV());
+                    directKitValidatorVO.setCardDetailsVO(tokenDetailsVO.getCommCardDetailsVO());
+                    merchantDetailsVO.setAccountId(transaction.getAccountID(tokenDetailsVO.getTrackingId()));
+                    directKitValidatorVO = transactionManager.getDetailFromTransCommon(directKitValidatorVO, tokenDetailsVO);
+                    directKitValidatorVO.setTrackingid(tokenDetailsVO.getTrackingId());
+
+                    manualRecurringManager.checkAmountlimitForRebill(directKitValidatorVO.getTransDetailsVO().getAmount(), toid, directKitValidatorVO.getTerminalVO().getAccountId());
+                    recurringBillingVO = recurringDAO.getRecurringSubscriptionDetails(tokenDetailsVO.getTrackingId());
+                    if (!"INITIAL".equalsIgnoreCase(recurringBillingVO.getRecurringType()))
+                    {
+                        errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_RECURRING_INITIAL);
+                        error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+                        directKitValidatorVO.setErrorMsg(error);
+                        if (directKitValidatorVO.getErrorCodeListVO() != null)
+                            directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                        return directKitValidatorVO;
+                    }
+                    recurringBillingVO.setRecurringType(recurringType);
+                    orderDes = tokenDetailsVO.getTrackingId() + "_" + currentSystemDate;
+                }
+                else if(functions.isValueNull(tokenDetailsVO.getTokenAccountId()))
+                {
+                    //REPEATED transaction with bank account
+                    directKitValidatorVO = performRestTokenChecks(directKitValidatorVO, tokenDetailsVO);
+
+                    tokenDetailsVO = tokenManager.getAccountDetails(tokenDetailsVO,toid,directKitValidatorVO.getToken());
+                    directKitValidatorVO.setCardDetailsVO(tokenDetailsVO.getCommCardDetailsVO());
+                    merchantDetailsVO.setAccountId(transaction.getAccountID(tokenDetailsVO.getTrackingId()));
+                    directKitValidatorVO = transactionManager.getDetailFromTransCommon(directKitValidatorVO, tokenDetailsVO);
+
+                    recurringBillingVO = recurringDAO.getRecurringSubscriptionDetails(tokenDetailsVO.getTrackingId());
+                    if (!"INITIAL".equalsIgnoreCase(recurringBillingVO.getRecurringType()))
+                    {
+                        log.debug("Inside if with initial-----");
+                        errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_RECURRING_INITIAL);
+                        error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+                        directKitValidatorVO.setErrorMsg(error);
+                        if (directKitValidatorVO.getErrorCodeListVO() != null)
+                            directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                        return directKitValidatorVO;
+                    }
+
+                    manualRecurringManager.checkAmountlimitForRebill(directKitValidatorVO.getTransDetailsVO().getAmount(), toid, directKitValidatorVO.getTerminalVO().getAccountId());
+                    recurringBillingVO.setRecurringType(recurringType);
+                    orderDes = tokenDetailsVO.getTrackingId() + "_" + currentSystemDate;
+                    directKitValidatorVO.setTrackingid(tokenDetailsVO.getTrackingId()); //setting initial trackingId in commonValidatoVo
+                }
+            }
+            //REPEATED recurring with trackingId
+            else if (functions.isValueNull(directKitValidatorVO.getTrackingid()))
+            {
+                recurringBillingVO = recurringDAO.getRecurringSubscriptionDetailsForRepeatedRecurring(directKitValidatorVO.getTrackingid());
+                if (!"INITIAL".equalsIgnoreCase(recurringBillingVO.getRecurringType()))
+                {
+                    errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_RECURRING_INITIAL);
+                    error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+                    directKitValidatorVO.setErrorMsg(error);
+                    if (directKitValidatorVO.getErrorCodeListVO() != null)
+                        directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                    return directKitValidatorVO;
+                }
+
+                directKitValidatorVO = performRestTokenChecks(directKitValidatorVO, tokenDetailsVO);
+                if ("N".equalsIgnoreCase(directKitValidatorVO.getTerminalVO().getIsManualRecurring()))
+                {
+                    errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_RECURRINGALLOW);
+                    error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+                    directKitValidatorVO.setErrorMsg(error);
+                    if (directKitValidatorVO.getErrorCodeListVO() != null)
+                        directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                    return directKitValidatorVO;
+                }
+                manualRecurringManager.checkAmountlimitForRebill(directKitValidatorVO.getTransDetailsVO().getAmount(), toid, directKitValidatorVO.getTerminalVO().getAccountId());
+            }
+            else
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_RECURRING_INITIAL);
+                error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+                directKitValidatorVO.setErrorMsg(error);
+                if (directKitValidatorVO.getErrorCodeListVO() != null)
+                    directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return directKitValidatorVO;
+            }
+            directKitValidatorVO.setRecurringBillingVO(recurringBillingVO);
+            genericTransDetailsVO.setOrderId(orderDes);
+            genericTransDetailsVO.setOrderDesc(orderDes);
+            directKitValidatorVO.setTransDetailsVO(genericTransDetailsVO);
+            directKitValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+
+            error =  validateRestKitRecurringTokenParameters(directKitValidatorVO, "REST");
+            if (functions.isEmptyOrNull(error))
+            {
+                directKitValidatorVO.setErrorMsg(error);
+                return directKitValidatorVO;
+            }
+        }
+        else if (functions.isValueNull(directKitValidatorVO.getTrackingid()))
+        {
+            {
+                if (("Y".equalsIgnoreCase(directKitValidatorVO.getMerchantDetailsVO().getIsService())) && ("PA".equalsIgnoreCase(directKitValidatorVO.getTransactionType())) || ("N".equalsIgnoreCase(directKitValidatorVO.getMerchantDetailsVO().getIsService())) && ("DB".equalsIgnoreCase(directKitValidatorVO.getTransactionType())))
+                {
+                    error = "Error- The functionality is not allowed for account. Please contact support for help.";
+                    errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.TRANSACTION_REJECTED_TRANSACTION_TYPE);
+                    if(directKitValidatorVO.getErrorCodeListVO()!=null)
+                        directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                    return directKitValidatorVO;
+                }
+
+                recurringBillingVO = recurringDAO.getRecurringSubscriptionDetailsForRepeatedRecurring(directKitValidatorVO.getTrackingid());
+                TerminalManager terminalManager = new TerminalManager();
+                ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+
+                if (functions.isValueNull(directKitValidatorVO.getTerminalId()) && !recurringBillingVO.getTerminalid().equals(directKitValidatorVO.getTerminalId()))
+                {
+                    errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_INVALID_TERMINAL);
+                    error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+                    directKitValidatorVO.setErrorMsg(error);
+                    if (directKitValidatorVO.getErrorCodeListVO() != null)
+                    {
+                        directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                    }
+                    return directKitValidatorVO;
+                }
+                if (!"INITIAL".equalsIgnoreCase(recurringBillingVO.getRecurringType()))
+                {
+                    errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_RECURRING_INITIAL);
+                    error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+                    directKitValidatorVO.setErrorMsg(error);
+                    if (directKitValidatorVO.getErrorCodeListVO() != null)
+                    {
+                        directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                    }
+                    return directKitValidatorVO;
+                }
+
+                TerminalVO terminalVO = null;
+                //TerminalVO terminalVO = terminalManager.getTerminalFromPaymodeCardtypeMemberidCurrency(toid, recurringBillingVO.getPaymentType(), recurringBillingVO.getCardType(), genericTransDetailsVO.getCurrency());
+                if (directKitValidatorVO.getTerminalId() != null)
+                {
+                    terminalVO = terminalManager.getTerminalByTerminalId(directKitValidatorVO.getTerminalId());
+                }
+                else if (recurringBillingVO.getTerminalid() != null)
+                {
+                    terminalVO = terminalManager.getTerminalByTerminalId(recurringBillingVO.getTerminalid());
+                }
+
+                if(terminalVO == null)
+                {
+                    error = error + "Account ID-Payment Mode, Card Type or Currency requested by you is not valid for your account. Please check your Technical specification.";
+                    errorCodeListVO = getErrorVO(ErrorName.SYS_INVALID_CURRENCY_BRAND_MODE);
+                    PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+
+                if ("N".equalsIgnoreCase(terminalVO.getIsManualRecurring()))
+                {
+                    errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_RECURRINGALLOW);
+                    error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+                    directKitValidatorVO.setErrorMsg(error);
+                    if (directKitValidatorVO.getErrorCodeListVO() != null)
+                        directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                    return directKitValidatorVO;
+                }
+
+                directKitValidatorVO.setTerminalVO(terminalVO);
+                manualRecurringManager.checkAmountlimitForRebill(directKitValidatorVO.getTransDetailsVO().getAmount(), toid, terminalVO.getAccountId());
+            }
+            orderDes = directKitValidatorVO.getTrackingid() + "_" + currentSystemDate;
+            directKitValidatorVO.setRecurringBillingVO(recurringBillingVO);
+            genericTransDetailsVO.setOrderId(orderDes);
+            genericTransDetailsVO.setOrderDesc(orderDes);
+            directKitValidatorVO.setTransDetailsVO(genericTransDetailsVO);
+            directKitValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        }
+
+        error =  validateRestKitRecurringTokenParameters(directKitValidatorVO, "REST");
+        if (functions.isEmptyOrNull(error))
+        {
+            directKitValidatorVO.setErrorMsg(error);
+            return directKitValidatorVO;
+        }
+        return directKitValidatorVO;
+    }
+
+    public CommonValidatorVO performRestDeleteTokenValidation(CommonValidatorVO directKitValidatorVO) throws PZConstraintViolationException, PZDBViolationException, NoSuchAlgorithmException
+    {
+        String error = null;
+
+        //Checking login details of merchant
+        directKitValidatorVO = performVerificationForCancelInquiryAndDeleteToken(directKitValidatorVO);
+        if (!directKitValidatorVO.getErrorCodeListVO().getListOfError().isEmpty())
+            return directKitValidatorVO;
+
+        error =  validateDeleteTokenParams(directKitValidatorVO, "REST");
+        if (functions.isValueNull(error))
+        {
+            directKitValidatorVO.setErrorMsg(error);
+            return directKitValidatorVO;
+        }
+
+        return directKitValidatorVO;
+    }
+
+    public CommonValidatorVO performRestTokenRegistrationValidation(CommonValidatorVO commonValidatorVO) throws PZDBViolationException, PZConstraintViolationException
+    {
+        String error = "";
+
+        error =  validateRestKitStandAloneTokenParameters(commonValidatorVO, "REST");
+        if (functions.isEmptyOrNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+        return commonValidatorVO;
+    }
+    public CommonValidatorVO performRestTransactionDetail(CommonValidatorVO commonValidatorVO) throws PZDBViolationException, PZConstraintViolationException, NoSuchAlgorithmException
+    {
+        String error = "";
+
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        error =  performGettransactionDetailsValidation(commonValidatorVO, "REST");
+        if (functions.isEmptyOrNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+        return commonValidatorVO;
+    }
+
+    public CommonValidatorVO performRestMerchantSignUpValidation(CommonValidatorVO commonValidatorVO) throws PZDBViolationException, PZConstraintViolationException, NoSuchAlgorithmException
+    {
+        String error = "";
+        PartnerManager partnerManager = new PartnerManager();
+        PartnerDetailsVO partnerDetailsVO = null;
+        error =  validateRestKitMerchantSignUpParameters(commonValidatorVO, "REST");
+        //System.out.println("error"+error);
+        if (functions.isValueNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+
+            return commonValidatorVO;
+        }
+        partnerDetailsVO=partnerManager.getPartnerDetails(commonValidatorVO.getPartnerDetailsVO().getPartnerId());
+
+
+        commonValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+
+        return commonValidatorVO;
+    }
+    public CommonValidatorVO performGenerateAppOTP(CommonValidatorVO commonValidatorVO) throws PZDBViolationException, PZConstraintViolationException, NoSuchAlgorithmException
+    {
+        String error = "";
+    error =  validateGenerateAppOTP(commonValidatorVO, "REST");
+    if (functions.isEmptyOrNull(error))
+    {
+        commonValidatorVO.setErrorMsg(error);
+        return commonValidatorVO;
+    }
+    return commonValidatorVO;
+}
+
+    public CommonValidatorVO performVerifyAppOTP(CommonValidatorVO commonValidatorVO) throws PZDBViolationException, PZConstraintViolationException, NoSuchAlgorithmException
+    {
+        String error = "";
+        error =  validateVerifyAppOTP(commonValidatorVO, "REST");
+        if (functions.isEmptyOrNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+        return commonValidatorVO;
+    }
+
+    public CommonValidatorVO performRestMerchantLoginValidation(CommonValidatorVO commonValidatorVO) throws PZDBViolationException
+    {
+        String error = "";
+        error = validateRestKitMerchantLoginParameters(commonValidatorVO, "REST");
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        MerchantDAO merchantDAO = new MerchantDAO();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        PartnerManager partnerManager = new PartnerManager();
+        PartnerDetailsVO partnerDetailsVO = new PartnerDetailsVO();
+        String password = merchantDetailsVO.getPassword();
+        String etoken = merchantDetailsVO.getEtoken();
+
+        if (functions.isValueNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+
+        if (functions.isValueNull(merchantDetailsVO.getLogin()))
+        {
+            merchantDetailsVO = merchantDAO.getMemberDetailsByLogin(merchantDetailsVO.getLogin());
+            if (!functions.isValueNull(merchantDetailsVO.getMemberId()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_LOGIN);
+                if (commonValidatorVO.getErrorCodeListVO() != null)
+                    commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return commonValidatorVO;
+            }
+        }
+
+        partnerDetailsVO = partnerManager.getPartnerDetails(commonValidatorVO.getParetnerId());
+
+        merchantDetailsVO.setPassword(password);
+        merchantDetailsVO.setEtoken(etoken);
+
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        commonValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+
+        return commonValidatorVO;
+    }
+
+    public CommonValidatorVO performRestMerchantAuthTokenValidation(CommonValidatorVO commonValidatorVO) throws PZDBViolationException
+    {
+        String error = "";
+        error = validateRestKitMerchantAuthTokenParameters(commonValidatorVO, "REST");
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        MerchantDAO merchantDAO = new MerchantDAO();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        PartnerManager partnerManager = new PartnerManager();
+        PartnerDetailsVO partnerDetailsVO = null;
+        String password = merchantDetailsVO.getPassword();
+        String sKey = merchantDetailsVO.getKey();
+        String loginName = merchantDetailsVO.getLogin();
+
+        if (functions.isValueNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+
+        if (functions.isValueNull(merchantDetailsVO.getLogin()))
+        {
+            merchantDetailsVO = merchantDAO.getMemberDetailsByLogin(merchantDetailsVO.getLogin());
+            if (!loginName.equalsIgnoreCase(merchantDetailsVO.getLogin()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_LOGIN);
+                if (commonValidatorVO.getErrorCodeListVO() != null)
+                    commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return commonValidatorVO;
+            }
+        }
+            if (functions.isValueNull(sKey))
+            {
+                boolean isKey = merchantDAO.authenticateMemberViaKey(loginName, sKey,commonValidatorVO.getParetnerId());
+                if (!isKey)
+                {
+                    errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_TOKEN_GENERATION_FAILED);
+                    if (commonValidatorVO.getErrorCodeListVO() != null)
+                        commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                    return commonValidatorVO;
+                }
+            }
+
+        partnerDetailsVO = partnerManager.getPartnerDetails(commonValidatorVO.getParetnerId());
+        if (partnerDetailsVO == null)
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_PARTNERID);
+            if (commonValidatorVO.getErrorCodeListVO() != null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return commonValidatorVO;
+        }
+
+            merchantDetailsVO.setPassword(password);
+
+            merchantDetailsVO.setKey(sKey);
+            merchantDetailsVO.setLogin(loginName);
+            commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+            commonValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+
+            return commonValidatorVO;
+
+    }
+
+
+    public CommonValidatorVO performverifymail(CommonValidatorVO commonValidatorVO) throws PZDBViolationException
+    {
+        String error = "";
+        error = validateRestKitVerifyMailParameters(commonValidatorVO, "REST");
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        PartnerDetailsVO partnerDetailsVO = new PartnerDetailsVO();
+        MerchantDAO merchantDAO = new MerchantDAO();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        PartnerManager partnerManager = new PartnerManager();
+        String password = merchantDetailsVO.getPassword();
+        String etoken = merchantDetailsVO.getEtoken();
+        String partnerid = merchantDetailsVO.getPartnerId();
+        String fromtype = merchantDetailsVO.getPartnerName();
+
+        if (functions.isValueNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+
+        if (functions.isValueNull(merchantDetailsVO.getLogin()))
+        {
+            merchantDetailsVO = merchantDAO.getMemberDetailsByLogin(merchantDetailsVO.getLogin());
+        }
+
+        //  partnerDetailsVO = partnerManager.getPartnerDetails(commonValidatorVO.getParetnerId());
+
+        merchantDetailsVO.setPassword(password);
+        merchantDetailsVO.setEtoken(etoken);
+
+
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+
+
+        //   commonValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+
+        return commonValidatorVO;
+    }
+
+
+    public CommonValidatorVO performGetNewAuthTokenValidation(CommonValidatorVO commonValidatorVO) throws PZDBViolationException
+    {
+        String error = "";
+        String userName = "";
+        String role = "";
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        String token = commonValidatorVO.getAuthToken();
+        String partnerId = commonValidatorVO.getParetnerId();
+        AuthFunctions authFunctions = new AuthFunctions();
+        MerchantDetailsVO merchantDetailsVO = new MerchantDetailsVO();
+        MerchantDAO merchantDAO = new MerchantDAO();
+        error = validateGetNewAuthTokenParameters(commonValidatorVO, "REST");
+
+        if (functions.isValueNull(error))
+            commonValidatorVO.setErrorMsg(error);
+        else
+        {
+            userName = authFunctions.getUserName(token);
+            if (!functions.isValueNull(userName))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_TOKEN_GENERATION_FAILED);
+                if(commonValidatorVO.getErrorCodeListVO()!=null)
+                    commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return commonValidatorVO;
+
+            }
+
+            role = authFunctions.getUserRole(token);
+            if (!functions.isValueNull(role))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_TOKEN_GENERATION_FAILED);
+                if(commonValidatorVO.getErrorCodeListVO()!=null)
+                    commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return commonValidatorVO;
+            }
+
+            merchantDetailsVO = merchantDAO.getMemberDetailsByLogin(userName);
+            if (!partnerId.equals(merchantDetailsVO.getPartnerId()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_MEMBERID_PARTNERID);
+                if(commonValidatorVO.getErrorCodeListVO()!=null)
+                    commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return commonValidatorVO;
+            }
+            merchantDetailsVO.setLogin(userName);
+            merchantDetailsVO.setRole(role);
+            commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        }
+
+        return commonValidatorVO;
+    }
+
+    public CommonValidatorVO performMerchantCurrenciesValidation(CommonValidatorVO commonValidatorVO) throws PZDBViolationException
+    {
+        String error = "";
+        error = validateRestKitMerchantCurrencyParameters(commonValidatorVO, "REST");
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        MerchantDAO merchantDAO = new MerchantDAO();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        PartnerManager partnerManager = new PartnerManager();
+        PartnerDetailsVO partnerDetailsVO = new PartnerDetailsVO();
+        if (functions.isValueNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+
+        if (functions.isValueNull(commonValidatorVO.getMerchantDetailsVO().getMemberId()))
+        {
+            merchantDetailsVO = merchantDAO.getMemberDetails(merchantDetailsVO.getMemberId());
+        }
+
+        if (!functions.isValueNull(merchantDetailsVO.getMemberId()))
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_TOID);
+            if(commonValidatorVO.getErrorCodeListVO()!=null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return commonValidatorVO;
+        }
+
+        partnerDetailsVO = partnerManager.getPartnerDetails(merchantDetailsVO.getPartnerId());
+
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        commonValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+        return commonValidatorVO;
+    }
+
+    public CommonValidatorVO performMerchantAddressValidation(CommonValidatorVO commonValidatorVO) throws PZDBViolationException, PZConstraintViolationException
+    {
+
+        String error = "";
+        MerchantDetailsVO merchantDetailsVO =commonValidatorVO.getMerchantDetailsVO();
+        PartnerManager partnerManager = new PartnerManager();
+        PartnerDetailsVO partnerDetailsVO = new PartnerDetailsVO();
+        MerchantDAO merchantDAO = new MerchantDAO();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        error = validateUpdateAddressParameters(commonValidatorVO, "REST");
+        if (functions.isValueNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+        if (functions.isValueNull(commonValidatorVO.getMerchantDetailsVO().getMemberId()))
+        {
+            merchantDetailsVO = merchantDAO.getMemberDetails(merchantDetailsVO.getMemberId());
+        }
+        if (!functions.isValueNull(merchantDetailsVO.getMemberId()))
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_TOID);
+            if(commonValidatorVO.getErrorCodeListVO()!=null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return commonValidatorVO;
+        }
+
+
+        partnerDetailsVO = partnerManager.getPartnerDetails(merchantDetailsVO.getPartnerId());
+
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        commonValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+
+        return commonValidatorVO;
+    }
+
+
+
+    public CommonValidatorVO performMerchantChangePasswordValidation(CommonValidatorVO commonValidatorVO) throws PZDBViolationException
+    {
+        MerchantDAO merchantDAO = new MerchantDAO();
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        String error = "";
+        error = validateRestKitMerchantChangePasswordParameters(commonValidatorVO,"REST");
+        if (functions.isValueNull(error))
+            commonValidatorVO.setErrorMsg(error);
+
+        merchantDetailsVO = merchantDAO.getMemberDetails(merchantDetailsVO.getMemberId());
+        merchantDetailsVO.setPassword(commonValidatorVO.getMerchantDetailsVO().getPassword());
+        merchantDetailsVO.setNewPassword(commonValidatorVO.getMerchantDetailsVO().getNewPassword());
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+
+        return commonValidatorVO;
+
+    }
+
+    public CommonValidatorVO performMerchantForgetPasswordValidation(CommonValidatorVO commonValidatorVO)
+    {
+        String error = "";
+        error = validateRestKitMerchantForgetPasswordParameters(commonValidatorVO,"REST");
+        if (functions.isValueNull(error))
+            commonValidatorVO.setErrorMsg(error);
+
+        return commonValidatorVO;
+    }
+
+    public CommonValidatorVO performRestCustomerRegistrationValidation(CommonValidatorVO commonValidatorVO) throws PZDBViolationException, PZConstraintViolationException, NoSuchAlgorithmException
+    {
+        String error = "";
+        error =  validateRestKitCustomerRegistrationParameters(commonValidatorVO, "REST");
+        if (functions.isEmptyOrNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+        return commonValidatorVO;
+    }
+
+    public CommonValidatorVO performInitialRecurringTokenValidation(CommonValidatorVO directKitValidatorVO) throws PZConstraintViolationException, PZDBViolationException, NoSuchAlgorithmException
+    {
+        String error = "";
+        GenericTransDetailsVO genericTransDetailsVO =directKitValidatorVO.getTransDetailsVO();
+        RecurringBillingVO recurringBillingVO = directKitValidatorVO.getRecurringBillingVO();
+
+        TokenManager tokenManager = new TokenManager();
+        TokenDetailsVO tokenDetailsVO = new TokenDetailsVO();
+        PartnerDetailsVO partnerDetailsVO = new PartnerDetailsVO();
+        PartnerManager partnerManager = new PartnerManager();
+        RecurringDAO recurringDAO = new RecurringDAO();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+
+        String recurringType = recurringBillingVO.getRecurringType();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+
+        //checking login details
+        directKitValidatorVO = performVerificationWithTrackingidAndToken(directKitValidatorVO);
+        if (!directKitValidatorVO.getErrorCodeListVO().getListOfError().isEmpty())
+        {
+            return directKitValidatorVO;
+        }
+        if (("Y".equalsIgnoreCase(directKitValidatorVO.getMerchantDetailsVO().getIsService())) && ("PA".equalsIgnoreCase(directKitValidatorVO.getTransactionType())) || ("N".equalsIgnoreCase(directKitValidatorVO.getMerchantDetailsVO().getIsService())) && ("DB".equalsIgnoreCase(directKitValidatorVO.getTransactionType())))
+        {
+            error = "Error- The functionality is not allowed for account. Please contact support for help.";
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.TRANSACTION_REJECTED_TRANSACTION_TYPE);
+            if(directKitValidatorVO.getErrorCodeListVO()!=null)
+                directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return directKitValidatorVO;
+        }
+
+        error =  validateRestKitWithTokenParameters(directKitValidatorVO, "REST");
+        if (functions.isValueNull(error))
+        {
+            directKitValidatorVO.setErrorMsg(error);
+            return directKitValidatorVO;
+        }
+        MerchantDetailsVO merchantDetailsVO = directKitValidatorVO.getMerchantDetailsVO();
+        String toid = merchantDetailsVO.getMemberId();
+
+        if(directKitValidatorVO.getToken() != null)
+        {
+            partnerDetailsVO = partnerManager.getPartnerDetails(merchantDetailsVO.getPartnerId()); //fetch the partner details with partnerId
+
+            if("Y".equals(partnerDetailsVO.getIsMerchantRequiredForCardRegistration()))
+                tokenDetailsVO = tokenManager.getRegisteredTokenDetailsByMerchant(directKitValidatorVO.getMerchantDetailsVO().getMemberId(), directKitValidatorVO.getToken(), directKitValidatorVO, tokenDetailsVO);
+            else
+                tokenDetailsVO = tokenManager.getRegisteredTokenDetailsByPartner(merchantDetailsVO.getPartnerId(), directKitValidatorVO.getToken(), directKitValidatorVO); //token generated by PartnerId
+
+            if (!functions.isValueNull(tokenDetailsVO.getToken()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_REFERENCE_TOKEN);
+                if (directKitValidatorVO.getErrorCodeListVO() != null)
+                    directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return directKitValidatorVO;
+            }
+
+            if (functions.isValueNull(directKitValidatorVO.getTerminalId()) && functions.isValueNull(tokenDetailsVO.getTerminalId()) && !tokenDetailsVO.getTerminalId().equals(directKitValidatorVO.getTerminalId()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_INVALID_TERMINAL);
+                if (directKitValidatorVO.getErrorCodeListVO() != null)
+                    directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return directKitValidatorVO;
+            }
+
+            if ("N".equalsIgnoreCase(tokenDetailsVO.getIsActive()) && "N".equalsIgnoreCase(tokenDetailsVO.getIsActiveReg()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_REFERENCE_DELETE_TOKEN);
+                if (directKitValidatorVO.getErrorCodeListVO() != null)
+                {
+                    directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                }
+                return directKitValidatorVO;
+            }
+
+            String orderDes = "";
+            SimpleDateFormat dateFormater = new SimpleDateFormat("yyMMddHHmmss");
+            String currentSystemDate = dateFormater.format(new Date());
+            CommonInputValidator commonInputValidator = new CommonInputValidator();
+
+            //Transaction with Card
+            if(!functions.isValueNull(tokenDetailsVO.getTokenAccountId()))
+            {
+                if(!ESAPI.validator().isValidInput("cvv", directKitValidatorVO.getCardDetailsVO().getcVV(), "OnlyNumber", 3, false))
+                {
+                    error = error + "Invalid CVV, Accept only numeric[0-9] with Max Length 4";
+                    errorCodeListVO = getErrorVO(ErrorName.VALIDATION_CVV);
+                    PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+
+                directKitValidatorVO = performRestTokenChecks(directKitValidatorVO, tokenDetailsVO);
+                if (!directKitValidatorVO.getErrorCodeListVO().getListOfError().isEmpty())
+                    return directKitValidatorVO;
+
+                if ("N".equalsIgnoreCase(directKitValidatorVO.getTerminalVO().getIsManualRecurring()))
+                {
+                    errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_RECURRINGALLOW);
+                    error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+                    directKitValidatorVO.setErrorMsg(error);
+                    if (directKitValidatorVO.getErrorCodeListVO() != null)
+                        directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                    return directKitValidatorVO;
+                }
+                error = error + commonInputValidator.validateRestFlagBasedAddressField(directKitValidatorVO, "REST");
+                if(!functions.isEmptyOrNull(error))
+                {
+                    directKitValidatorVO.setErrorMsg(error);
+                    return directKitValidatorVO;
+                }
+
+                String accountid = directKitValidatorVO.getTerminalVO().getAccountId();
+                directKitValidatorVO.getTransDetailsVO().setOrderDesc("Test");////Hardcode for p4
+                directKitValidatorVO.getTransDetailsVO().setOrderId((int)(Math.random()*100000)+"JHG54");////Hardcode for p4
+
+                String accountAddressValidation = GatewayAccountService.getGatewayAccount(accountid).getAddressValidation();
+                AbstractInputValidator paymentProcess = InputValidatorFactory.getInputValidatorInstance(Integer.parseInt(accountid));
+                error = error + paymentProcess.validateIntegrationSpecificParameters(directKitValidatorVO, "REST", accountAddressValidation);
+
+                if(!functions.isEmptyOrNull(error))
+                {
+                    directKitValidatorVO.setErrorMsg(error);
+                    return directKitValidatorVO;
+                }
+
+                //transaction details setting
+                merchantDetailsVO.setAccountId(directKitValidatorVO.getTerminalVO().getAccountId());
+                genericTransDetailsVO.setFromid(directKitValidatorVO.getTerminalVO().getMemberId());
+                genericTransDetailsVO.setFromtype(directKitValidatorVO.getTerminalVO().getGateway());
+                recurringBillingVO.setTerminalid(directKitValidatorVO.getTerminalVO().getTerminalId());
+
+                //getting trackingId if exist
+                tokenDetailsVO = tokenManager.getRegistrationTrackingId(merchantDetailsVO.getMemberId(), tokenDetailsVO);
+
+                recurringBillingVO = recurringDAO.getRecurringSubscriptionDetails(tokenDetailsVO.getTrackingId());
+                if (functions.isValueNull(recurringBillingVO.getRecurringType()) && "INITIAL".equalsIgnoreCase(recurringBillingVO.getRecurringType()))
+                {
+                    errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_RECURRING_INITIAL_INVALID);
+                    error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+                    directKitValidatorVO.setErrorMsg(error);
+                    if (directKitValidatorVO.getErrorCodeListVO() != null)
+                        directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                    return directKitValidatorVO;
+                }
+                else
+                {
+                    recurringBillingVO.setRecurringType(recurringType);
+                }
+
+                //card details are setting
+                CommCardDetailsVO commCardDetailsVO = tokenDetailsVO.getCommCardDetailsVO();
+                commCardDetailsVO.setcVV(directKitValidatorVO.getCardDetailsVO().getcVV());
+                directKitValidatorVO.setCardDetailsVO(commCardDetailsVO);
+                directKitValidatorVO.setTerminalVO(directKitValidatorVO.getTerminalVO());
+                directKitValidatorVO.setTerminalId(directKitValidatorVO.getTerminalId());
+                directKitValidatorVO.setPaymentType(directKitValidatorVO.getTerminalVO().getPaymodeId());
+                directKitValidatorVO.setCardType(directKitValidatorVO.getTerminalVO().getCardTypeId());
+                directKitValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+                orderDes = currentSystemDate; //unique orderId
+
+            }
+            //Transaction with accountId
+            else
+            {
+                directKitValidatorVO = performRestTokenChecks(directKitValidatorVO, tokenDetailsVO);
+                if (!directKitValidatorVO.getErrorCodeListVO().getListOfError().isEmpty())
+                    return directKitValidatorVO;
+
+                //transaction details setting
+                merchantDetailsVO.setAccountId(directKitValidatorVO.getTerminalVO().getAccountId());
+                genericTransDetailsVO.setFromid(directKitValidatorVO.getTerminalVO().getMemberId());
+                genericTransDetailsVO.setFromtype(directKitValidatorVO.getTerminalVO().getGateway());
+                recurringBillingVO.setTerminalid(directKitValidatorVO.getTerminalVO().getTerminalId());
+
+                //getting trackingId if exist
+                tokenDetailsVO = tokenManager.getRegistrationTrackingId(merchantDetailsVO.getMemberId(), tokenDetailsVO);
+
+                recurringBillingVO = recurringDAO.getRecurringSubscriptionDetails(tokenDetailsVO.getTrackingId());
+                if (functions.isValueNull(recurringBillingVO.getRecurringType()) && "INITIAL".equalsIgnoreCase(recurringBillingVO.getRecurringType()))
+                {
+                    errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_RECURRING_INITIAL_INVALID);
+                    error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+                    directKitValidatorVO.setErrorMsg(error);
+                    if (directKitValidatorVO.getErrorCodeListVO() != null)
+                        directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                    return directKitValidatorVO;
+                }
+                else
+                {
+                    recurringBillingVO.setRecurringType(recurringType);
+                }
+
+                tokenDetailsVO = tokenManager.getAccountDetails(tokenDetailsVO,toid,directKitValidatorVO.getToken());
+                directKitValidatorVO.setCardDetailsVO(tokenDetailsVO.getCommCardDetailsVO());
+
+                directKitValidatorVO.setTerminalId(directKitValidatorVO.getTerminalVO().getTerminalId());
+                directKitValidatorVO.setTerminalVO(directKitValidatorVO.getTerminalVO());
+                directKitValidatorVO.setPaymentType(directKitValidatorVO.getTerminalVO().getPaymodeId());
+                directKitValidatorVO.setCardType(directKitValidatorVO.getTerminalVO().getCardTypeId());
+                orderDes = currentSystemDate; //unique orderId
+            }
+            tokenDetailsVO.getAddressDetailsVO().setIp(directKitValidatorVO.getAddressDetailsVO().getIp());
+            directKitValidatorVO.setAddressDetailsVO(tokenDetailsVO.getAddressDetailsVO());
+            genericTransDetailsVO.setOrderId(orderDes);
+            genericTransDetailsVO.setOrderDesc(orderDes);
+            directKitValidatorVO.setTerminalId(tokenDetailsVO.getTerminalId());
+            directKitValidatorVO.setRecurringBillingVO(recurringBillingVO);
+            directKitValidatorVO.setTransDetailsVO(genericTransDetailsVO);
+            directKitValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+            directKitValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+        }
+        error =  validateRestKitRecurringTokenParameters(directKitValidatorVO, "REST");
+        if (functions.isEmptyOrNull(error))
+        {
+            directKitValidatorVO.setErrorMsg(error);
+            return directKitValidatorVO;
+        }
+        return directKitValidatorVO;
+    }
+
+    public CommonValidatorVO performRestTokenValidation(CommonValidatorVO directKitValidatorVO) throws PZConstraintViolationException, PZDBViolationException, NoSuchAlgorithmException
+    {
+        String error = "";
+        GenericTransDetailsVO genericTransDetailsVO =directKitValidatorVO.getTransDetailsVO();
+        PartnerDetailsVO partnerDetailsVO = new PartnerDetailsVO();
+        PartnerManager partnerManager = new PartnerManager();
+        TokenManager tokenManager = new TokenManager();
+        TokenDetailsVO tokenDetailsVO = null;
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+
+        //checking login details
+        directKitValidatorVO = performVerificationWithTrackingidAndToken(directKitValidatorVO);
+        if (!directKitValidatorVO.getErrorCodeListVO().getListOfError().isEmpty())
+        {
+            return directKitValidatorVO;
+        }
+        error =  validateRestKitWithTokenParameters(directKitValidatorVO, "REST");
+        if (functions.isValueNull(error))
+        {
+            directKitValidatorVO.setErrorMsg(error);
+            return directKitValidatorVO;
+        }
+
+        MerchantDetailsVO merchantDetailsVO = directKitValidatorVO.getMerchantDetailsVO();
+
+        if (("Y".equalsIgnoreCase(directKitValidatorVO.getMerchantDetailsVO().getIsService())) && ("PA".equalsIgnoreCase(directKitValidatorVO.getTransactionType())) || ("N".equalsIgnoreCase(directKitValidatorVO.getMerchantDetailsVO().getIsService())) && ("DB".equalsIgnoreCase(directKitValidatorVO.getTransactionType())))
+        {
+            error = "Error- The functionality is not allowed for account. Please contact support for help.";
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.TRANSACTION_REJECTED_TRANSACTION_TYPE);
+            if(directKitValidatorVO.getErrorCodeListVO()!=null)
+                directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return directKitValidatorVO;
+        }
+
+        if(directKitValidatorVO.getToken() != null)
+        {
+            partnerDetailsVO = partnerManager.getPartnerDetails(merchantDetailsVO.getPartnerId()); //fetch the partner details with partnerId
+
+            if("Y".equals(partnerDetailsVO.getIsMerchantRequiredForCardRegistration()))
+                tokenDetailsVO = tokenManager.getInitialTokenDetailsWithMemebrId(directKitValidatorVO.getToken(), merchantDetailsVO.getMemberId()); //token generated by merchant
+            else
+                tokenDetailsVO = tokenManager.getInitialTokenDetailsWithPartnerId(directKitValidatorVO.getToken(), merchantDetailsVO.getPartnerId()); //token generated by PartnerId
+
+            if(tokenDetailsVO == null)
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_REFERENCE_TOKEN);
+                if (directKitValidatorVO.getErrorCodeListVO() != null)
+                    directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return directKitValidatorVO;
+            }
+
+            //getting trackingId if exist
+            tokenDetailsVO = tokenManager.getRegistrationTrackingId(merchantDetailsVO.getMemberId(), tokenDetailsVO);
+
+            if(functions.isValueNull(directKitValidatorVO.getTerminalId()) && !directKitValidatorVO.getTerminalId().equals(tokenDetailsVO.getTerminalId()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_INVALID_TERMINAL);
+                if (directKitValidatorVO.getErrorCodeListVO() != null)
+                {
+                    directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                }
+                return directKitValidatorVO;
+            }
+            if ("N".equalsIgnoreCase(tokenDetailsVO.getIsActive()) && "N".equals(tokenDetailsVO.getIsActiveReg()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_REFERENCE_DELETE_TOKEN);
+                if (directKitValidatorVO.getErrorCodeListVO() != null)
+                {
+                    directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                }
+                return directKitValidatorVO;
+            }
+
+            String orderDes = "";
+            SimpleDateFormat dateFormater = new SimpleDateFormat("yyMMddHHmmss");
+            String currentSystemDate = dateFormater.format(new Date());
+            String currency = directKitValidatorVO.getTransDetailsVO().getCurrency();
+
+            //For BankAccount Transaction(Token)
+            if(functions.isValueNull(tokenDetailsVO.getTokenAccountId()))
+            {
+                log.debug("Bank Transaction::");
+                if("Y".equals(partnerDetailsVO.getIsMerchantRequiredForCardRegistration()))
+                {
+                    tokenDetailsVO = tokenManager.getBankAccountTokenDetailsWithMemberId(tokenDetailsVO.getTokenAccountId(), directKitValidatorVO.getToken(), directKitValidatorVO.getMerchantDetailsVO().getMemberId(), directKitValidatorVO, tokenDetailsVO);
+                }
+                else
+                {
+                    tokenDetailsVO = tokenManager.getBankAccountTokenDetailsWithPartnerId(tokenDetailsVO.getTokenAccountId(), directKitValidatorVO.getToken(), directKitValidatorVO.getMerchantDetailsVO().getPartnerId(), directKitValidatorVO, tokenDetailsVO);
+                }
+
+                CommCardDetailsVO commCardDetailsVO = tokenDetailsVO.getCommCardDetailsVO();
+                directKitValidatorVO.setCardDetailsVO(commCardDetailsVO);
+                //Token transaction generated with payment
+                if (functions.isValueNull(tokenDetailsVO.getTrackingId()))
+                {
+                    log.debug("TrackingId is not null::");
+                    //fetching all details on basis of initial trackingId
+                    TransactionManager transactionManager = new TransactionManager();
+                    CommonInputValidator commonInputValidator = new CommonInputValidator();
+                    directKitValidatorVO.setReserveField2VO(tokenDetailsVO.getReserveField2VO());
+
+                    directKitValidatorVO = transactionManager.getDetailFromTransCommon(directKitValidatorVO, tokenDetailsVO); // getting all the transaction details from transaction_common
+
+                    directKitValidatorVO = performRestTokenChecks(directKitValidatorVO, tokenDetailsVO); // validation with terminalVo details
+                    if (!directKitValidatorVO.getErrorCodeListVO().getListOfError().isEmpty())
+                        return directKitValidatorVO;
+
+                    error = error + commonInputValidator.validateRestFlagBasedAddressField(directKitValidatorVO, "REST");
+                    if(!functions.isEmptyOrNull(error))
+                    {
+                        directKitValidatorVO.setErrorMsg(error);
+                        return directKitValidatorVO;
+                    }
+                    String accountid = directKitValidatorVO.getTerminalVO().getAccountId();
+                    log.debug("accountid in stand alone token---"+accountid);
+                    directKitValidatorVO.getTransDetailsVO().setOrderDesc("Test");////Hardcode for p4
+                    directKitValidatorVO.getTransDetailsVO().setOrderId((int)(Math.random()*100000)+"JHG54");////Hardcode for p4
+
+                    String accountAddressValidation = GatewayAccountService.getGatewayAccount(accountid).getAddressValidation();
+                    AbstractInputValidator paymentProcess = InputValidatorFactory.getInputValidatorInstance(Integer.parseInt(accountid));
+                    error = error + paymentProcess.validateIntegrationSpecificParameters(directKitValidatorVO, "REST", accountAddressValidation);
+                    if(!functions.isEmptyOrNull(error))
+                    {
+                        directKitValidatorVO.setErrorMsg(error);
+                        return directKitValidatorVO;
+                    }
+
+                    merchantDetailsVO.setAccountId(accountid);
+                    orderDes = tokenDetailsVO.getTrackingId() + "_" + currentSystemDate;
+                }
+                else
+                {
+                    //Token transaction generated with StandAlone - Bank Account
+                    log.debug("TrackingId is null::::");
+                    directKitValidatorVO = performRestTokenChecks(directKitValidatorVO, tokenDetailsVO);
+                    if (!directKitValidatorVO.getErrorCodeListVO().getListOfError().isEmpty())
+                        return directKitValidatorVO;
+
+                    //transaction details setting
+                    merchantDetailsVO.setAccountId(directKitValidatorVO.getTerminalVO().getAccountId());
+                    genericTransDetailsVO.setFromid(directKitValidatorVO.getTerminalVO().getMemberId());
+                    genericTransDetailsVO.setFromtype(directKitValidatorVO.getTerminalVO().getGateway());
+
+                    directKitValidatorVO.setPaymentType(tokenDetailsVO.getPaymentType());
+                    directKitValidatorVO.setCardType(tokenDetailsVO.getCardType());
+                    directKitValidatorVO.setTerminalId(directKitValidatorVO.getTerminalVO().getTerminalId());
+                    directKitValidatorVO.setTerminalVO(directKitValidatorVO.getTerminalVO());
+                    orderDes = currentSystemDate; //unique orderId
+                }
+            }
+            else
+            {
+                //For Card transaction(Token+Cvv)
+                log.debug("Card Transaction::");
+                ErrorCodeListVO errorCodeListVO = null;
+                if("Y".equals(partnerDetailsVO.getIsMerchantRequiredForCardRegistration()))
+                    tokenDetailsVO = tokenManager.getRegisteredTokenDetailsByMerchant(directKitValidatorVO.getMerchantDetailsVO().getMemberId(), directKitValidatorVO.getToken(), directKitValidatorVO, tokenDetailsVO);
+                else
+                    tokenDetailsVO = tokenManager.getRegisteredTokenDetailsByPartner(directKitValidatorVO.getMerchantDetailsVO().getPartnerId(), directKitValidatorVO.getToken(), directKitValidatorVO);
+
+                if (functions.isValueNull(tokenDetailsVO.getTrackingId()))
+                {
+                    log.debug("TrackingId is not null::");
+                    //fetching all details on basis of initial trackingId
+                    Transaction transaction = new Transaction();
+                    TransactionManager transactionManager = new TransactionManager();
+                    CommonInputValidator commonInputValidator = new CommonInputValidator();
+
+                    //getting all transaction details from transaction_common
+                    directKitValidatorVO = transactionManager.getDetailFromTransCommon(directKitValidatorVO, tokenDetailsVO); // getting details of transaction based on first transaction with token
+                    if(!currency.equals(directKitValidatorVO.getTransDetailsVO().getCurrency()))
+                    {
+                        errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_INVALID_TERMINAL_MODE_BRAND);
+                        if (directKitValidatorVO.getErrorCodeListVO() != null)
+                            directKitValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                        return directKitValidatorVO;
+                    }
+                    directKitValidatorVO = performRestTokenChecks(directKitValidatorVO, tokenDetailsVO); //validation
+                    if (!directKitValidatorVO.getErrorCodeListVO().getListOfError().isEmpty())
+                        return directKitValidatorVO;
+
+                    error = error + commonInputValidator.validateRestFlagBasedAddressField(directKitValidatorVO, "REST"); //address validation
+                    if(!functions.isEmptyOrNull(error))
+                    {
+                        directKitValidatorVO.setErrorMsg(error);
+                        return directKitValidatorVO;
+                    }
+                    String accountid = directKitValidatorVO.getTerminalVO().getAccountId();
+                    String accountAddressValidation = GatewayAccountService.getGatewayAccount(accountid).getAddressValidation();
+
+                    AbstractInputValidator paymentProcess = InputValidatorFactory.getInputValidatorInstance(Integer.parseInt(accountid));
+                    error = error + paymentProcess.validateIntegrationSpecificParameters(directKitValidatorVO, "REST", accountAddressValidation);
+
+                    if(!functions.isEmptyOrNull(error))
+                    {
+                        directKitValidatorVO.setErrorMsg(error);
+                        return directKitValidatorVO;
+                    }
+                    CommCardDetailsVO commCardDetailsVO = tokenDetailsVO.getCommCardDetailsVO();
+                    if(!ESAPI.validator().isValidInput("cvv", directKitValidatorVO.getCardDetailsVO().getcVV(), "OnlyNumber", 3, false))
+                    {
+                        error = error + "Invalid CVV, Accept only numeric[0-9] with Max Length 4";
+                        errorCodeListVO = getErrorVO(ErrorName.VALIDATION_CVV);
+                        PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                    }
+                    commCardDetailsVO.setcVV(directKitValidatorVO.getCardDetailsVO().getcVV());
+                    directKitValidatorVO.setCardDetailsVO(commCardDetailsVO);
+                    merchantDetailsVO.setAccountId(transaction.getAccountID(tokenDetailsVO.getTrackingId()));
+                    merchantDetailsVO.setAccountId(accountid);
+                    orderDes = tokenDetailsVO.getTrackingId() + "_" + currentSystemDate;
+                }
+                else
+                {
+                    log.debug("TrackingID is null");
+                    //fetching data from paymodeid and cardtypeid
+                    CommonInputValidator commonInputValidator = new CommonInputValidator();
+
+                    directKitValidatorVO = performRestTokenChecks(directKitValidatorVO, tokenDetailsVO);
+                    if (!directKitValidatorVO.getErrorCodeListVO().getListOfError().isEmpty())
+                        return directKitValidatorVO;
+
+                    error = error + commonInputValidator.validateRestFlagBasedAddressField(directKitValidatorVO, "REST");
+                    if(!functions.isEmptyOrNull(error))
+                    {
+                        directKitValidatorVO.setErrorMsg(error);
+                        return directKitValidatorVO;
+                    }
+
+                    String accountid = directKitValidatorVO.getTerminalVO().getAccountId();
+                    String accountAddressValidation = GatewayAccountService.getGatewayAccount(accountid).getAddressValidation();
+                    AbstractInputValidator paymentProcess = InputValidatorFactory.getInputValidatorInstance(Integer.parseInt(accountid));
+                    error = error + paymentProcess.validateIntegrationSpecificParameters(directKitValidatorVO, "REST", accountAddressValidation);
+                    if(!functions.isEmptyOrNull(error))
+                    {
+                        directKitValidatorVO.setErrorMsg(error);
+                        return directKitValidatorVO;
+                    }
+
+                    if(!functions.isValueNull(directKitValidatorVO.getCardDetailsVO().getcVV()) || !functions.isNumericVal(directKitValidatorVO.getCardDetailsVO().getcVV()))
+                    {
+                        error = error + "Invalid CVV, Accept only numeric[0-9] with Max Length 4";
+                        errorCodeListVO = getErrorVO(ErrorName.VALIDATION_CVV);
+                        PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                    }
+                    //transaction details setting
+                    merchantDetailsVO.setAccountId(accountid);
+                    genericTransDetailsVO.setFromid(directKitValidatorVO.getTerminalVO().getMemberId());
+
+                    //card details are setting
+                    CommCardDetailsVO commCardDetailsVO = tokenDetailsVO.getCommCardDetailsVO();
+                    commCardDetailsVO.setcVV(directKitValidatorVO.getCardDetailsVO().getcVV());
+                    directKitValidatorVO.setCardDetailsVO(commCardDetailsVO);
+
+                    directKitValidatorVO.setPaymentType(tokenDetailsVO.getPaymentType());
+                    directKitValidatorVO.setCardType(tokenDetailsVO.getCardType());
+                    directKitValidatorVO.setTerminalId(directKitValidatorVO.getTerminalVO().getTerminalId());
+                    directKitValidatorVO.setTerminalVO(directKitValidatorVO.getTerminalVO());
+                    orderDes = currentSystemDate; //unique orderId
+                }
+            }
+            genericTransDetailsVO.setOrderId(orderDes);
+            genericTransDetailsVO.setOrderDesc(orderDes);
+            directKitValidatorVO.setTransDetailsVO(genericTransDetailsVO);
+            directKitValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+            directKitValidatorVO.setAddressDetailsVO(tokenDetailsVO.getAddressDetailsVO());
+        }
+        error =  validateRestKitRecurringTokenParameters(directKitValidatorVO, "REST");
+        if (functions.isEmptyOrNull(error))
+        {
+            directKitValidatorVO.setErrorMsg(error);
+            return directKitValidatorVO;
+        }
+        return directKitValidatorVO;
+    }
+
+    public CommonValidatorVO performGetCardsAndAccountValidator(CommonValidatorVO commonValidatorVO) throws PZDBViolationException, NoSuchAlgorithmException, PZConstraintViolationException
+    {
+        String error = "";
+        error = validateCardsAndAccountsParams(commonValidatorVO, "REST");
+        if(functions.isEmptyOrNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+
+        return commonValidatorVO;
+    }
+    public  CommonValidatorVO performGetTransactionValidation (CommonValidatorVO commonValidatorVO ,String actionName) throws  PZDBViolationException ,NoSuchAlgorithmException ,PZConstraintViolationException
+
+    {
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        String memberId =commonValidatorVO.getMerchantDetailsVO().getMemberId();
+        String error = "";
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        //Validate invoice mandatory parameters
+        List<InputFields> inputInvoiceMandatoryList = new ArrayList<InputFields>();
+        inputInvoiceMandatoryList.addAll(inputValiDatorUtils.getInvoicelistMandatoryParams());
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputInvoiceMandatoryList, errorList, false);
+        error = error + inputValiDatorUtils.getError(errorList, inputInvoiceMandatoryList, actionName);
+        //Validate invoice optional parameters
+        List<InputFields> inputInvoiceOptionalList = new ArrayList<InputFields>();
+        inputInvoiceOptionalList.addAll(inputValiDatorUtils.getInvoicelistOptionalParams());
+        ValidationErrorList optionalErrorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputInvoiceOptionalList, optionalErrorList, true);
+        error = error + inputValiDatorUtils.getError(optionalErrorList,inputInvoiceOptionalList,actionName);
+
+        if (functions.isValueNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        MerchantDAO merchantDAO = new MerchantDAO();
+        merchantDetailsVO = merchantDAO.getMemberDetails(memberId);
+
+        if (!functions.isValueNull(merchantDetailsVO.getMemberId()))
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_TOID);
+            if (commonValidatorVO.getErrorCodeListVO() != null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return commonValidatorVO;
+        }
+
+
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        return commonValidatorVO;
+
+    }
+
+
+    public  String performGettransactionDetailsValidation (CommonValidatorVO commonValidatorVO ,String actionName) throws  PZDBViolationException ,NoSuchAlgorithmException ,PZConstraintViolationException
+
+    {
+        String error = "";
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+
+        //Validate invoice mandatory parameters
+        List<InputFields> inputInvoiceMandatoryList = new ArrayList<InputFields>();
+        inputInvoiceMandatoryList.addAll(inputValiDatorUtils.getInvoicelistMandatoryParams());
+
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputInvoiceMandatoryList, errorList, false);
+        error = error + inputValiDatorUtils.getError(errorList, inputInvoiceMandatoryList, actionName);
+
+        //Validate invoice optional parameters
+        List<InputFields> inputInvoiceOptionalList = new ArrayList<InputFields>();
+        inputInvoiceOptionalList.addAll(inputValiDatorUtils.getInvoicelistOptionalParams());
+        ValidationErrorList optionalErrorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputInvoiceOptionalList, optionalErrorList, true);
+        error = error + inputValiDatorUtils.getError(optionalErrorList,inputInvoiceOptionalList,actionName);
+
+
+        return error;
+
+    }
+
+    public CommonValidatorVO performPayoutTransactionValidation(CommonValidatorVO commonValidatorVO, String actionName) throws PZDBViolationException
+    {
+        String error = "";
+        InputValiDatorUtils inputValiDatorUtils = new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        MerchantDAO merchantDAO = new MerchantDAO();
+        GenericTransDetailsVO transDetailsVO = commonValidatorVO.getTransDetailsVO();
+        String expDateOffset = merchantDetailsVO.getExpDateOffset();
+
+        List<InputFields> inputFields = new ArrayList<InputFields>();
+        inputFields.addAll(inputValiDatorUtils.getPayoutTransactionMandatoryParams());
+        ValidationErrorList validationErrorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputFields, validationErrorList, false);
+        error = error + inputValiDatorUtils.getError(validationErrorList, inputFields, actionName);
+
+        //Validate invoice optional parameters
+        List<InputFields> inputPayoutOptionalList = new ArrayList<InputFields>();
+        inputPayoutOptionalList.addAll(inputValiDatorUtils.getPayoutOptionalParams());
+        ValidationErrorList optionalErrorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputPayoutOptionalList, optionalErrorList, true);
+        error = error + inputValiDatorUtils.getError(optionalErrorList,inputPayoutOptionalList,actionName);
+
+        if (!error.isEmpty())
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return  commonValidatorVO;
+        }
+
+        merchantDetailsVO = merchantDAO.getMemberDetails(merchantDetailsVO.getMemberId());
+
+        if (functions.isValueNull(expDateOffset))
+            merchantDetailsVO.setExpDateOffset(expDateOffset);
+
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        commonValidatorVO.setTransDetailsVO(transDetailsVO);
+        return commonValidatorVO;
+    }
+
+    public CommonValidatorVO performExchangerValidation(CommonValidatorVO commonValidatorVO, String actionName) throws PZDBViolationException
+    {
+        String error = "";
+        InputValiDatorUtils inputValiDatorUtils = new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        MerchantDAO merchantDAO = new MerchantDAO();
+        GenericTransDetailsVO transDetailsVO = commonValidatorVO.getTransDetailsVO();
+        PartnerManager partnerManager = new PartnerManager();
+
+        List<InputFields> inputFields = new ArrayList<InputFields>();
+
+        inputFields.add(InputFields.CUSTOMER_ID);
+        inputFields.add(InputFields.AMOUNT);
+        inputFields.add(InputFields.CURRENCY);
+        inputFields.add(InputFields.PAYMENTMODE);
+        inputFields.add(InputFields.PAYMENTBRAND);
+        inputFields.add(InputFields.TOID);
+        inputFields.add(InputFields.CHECKSUM);
+
+        ValidationErrorList validationErrorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputFields, validationErrorList, false);
+        error = error + inputValiDatorUtils.getError(validationErrorList, inputFields, actionName);
+
+        if (!error.isEmpty())
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return  commonValidatorVO;
+        }
+
+        merchantDetailsVO = merchantDAO.getMemberDetails(merchantDetailsVO.getMemberId());
+        commonValidatorVO = partnerManager.getPartnerDetailFromMemberId(merchantDetailsVO.getMemberId(),commonValidatorVO);
+
+        commonValidatorVO.getAddressDetailsVO().setEmail(merchantDetailsVO.getContact_emails());
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        commonValidatorVO.setTransDetailsVO(transDetailsVO);
+        return commonValidatorVO;
+    }
+
+
+
+
+    private String validateCardsAndAccountsParams(CommonValidatorVO commonValidatorVO, String actionName)
+    {
+        String error = null;
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        //Validate optional parameters
+        List<InputFields> inputOptionalFieldsList = new ArrayList<InputFields>();
+        inputOptionalFieldsList.addAll(inputValiDatorUtils.getCardAndAccountOptionalParams());
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputOptionalFieldsList, errorList, true);
+        error = error + inputValiDatorUtils.getError(errorList,inputOptionalFieldsList,actionName);
+
+        //Validate optional parameters
+        List<InputFields> inputMandatoryFieldsList = new ArrayList<InputFields>();
+        inputMandatoryFieldsList.addAll(inputValiDatorUtils.getCardAndAccountMandatoryParams());
+        ValidationErrorList errorMandatoryList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputMandatoryFieldsList, errorMandatoryList, false);
+        error = error + inputValiDatorUtils.getError(errorMandatoryList,inputMandatoryFieldsList,actionName);
+
+        return error;
+    }
+
+    private String validateDeleteTokenParams(CommonValidatorVO commonValidatorVO, String actionName) throws PZConstraintViolationException
+    {
+        String error="";
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        //Validation for Rest Optional parameters (card)
+        List<InputFields> inputOptionalFieldsList = new ArrayList<InputFields>();
+        inputOptionalFieldsList.addAll(inputValiDatorUtils.getRestAPIOptionalParams());
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputOptionalFieldsList, errorList, true);
+        error = error + inputValiDatorUtils.getError(errorList,inputOptionalFieldsList,actionName);
+
+        return error;
+    }
+
+    private String validateRestKitStandAloneTokenParameters(CommonValidatorVO commonValidatorVO, String actionName) throws PZConstraintViolationException
+    {
+        String error="";
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        //Validation for Rest Mandatory parameters
+        List<InputFields> inputMandatoryFieldsList = new ArrayList<InputFields>();
+        inputMandatoryFieldsList.addAll(inputValiDatorUtils.getConditionalParameterListForRest(commonValidatorVO.getTerminalId()));
+
+
+        //validate all parameters
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputMandatoryFieldsList, errorList, false);
+        error = error+ inputValiDatorUtils.getError(errorList,inputMandatoryFieldsList,actionName);
+
+        //Validation for Rest Optional parameters (card)
+        List<InputFields> inputOptionalFieldsList1 = new ArrayList<InputFields>();
+        inputOptionalFieldsList1.addAll(inputValiDatorUtils.getRestTokenOptionalParameters());
+        ValidationErrorList errorList2 = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputOptionalFieldsList1, errorList2, true);
+        error = error + inputValiDatorUtils.getError(errorList2, inputOptionalFieldsList1, actionName);
+
+        validateMandatoryDetailsBasedOnPaymentMode(commonValidatorVO, actionName);
+
+        return error;
+    }
+
+    private String validateMandatoryDetailsBasedOnPaymentMode(CommonValidatorVO commonValidatorVO, String actionName)
+    {
+        String error = "";
+        InputValiDatorUtils inputValiDatorUtils = new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        if("CC".equals(commonValidatorVO.getPaymentMode()) && commonValidatorVO.getMerchantDetailsVO().getHostedPaymentPage().equalsIgnoreCase("N") && (!(commonValidatorVO.getPaymentBrand().equalsIgnoreCase("UNICREDIT") || commonValidatorVO.getPaymentBrand().equalsIgnoreCase("CLEARSETTLE") || commonValidatorVO.getPaymentBrand().equalsIgnoreCase("AVISA") || commonValidatorVO.getPaymentBrand().equalsIgnoreCase("AMC"))))
+        {
+            List<InputFields> cardMandatoryInputFields = new ArrayList<InputFields>();
+            cardMandatoryInputFields.addAll(inputValiDatorUtils.getRestTokenWithCardMandatoryParameters());
+            ValidationErrorList cardMandatoryInputList = new ValidationErrorList();
+            inputValidator.RestInputValidations(commonValidatorVO, cardMandatoryInputFields, cardMandatoryInputList, false);
+            error = error + inputValiDatorUtils.getError(cardMandatoryInputList, cardMandatoryInputFields, actionName);
+        }
+        else if ("SEPA".equals(commonValidatorVO.getPaymentMode()))
+        {
+            //Validate Optional parameters for Account
+            List<InputFields> inputMandatoryFieldsListForAccount = new ArrayList<InputFields>();
+            inputMandatoryFieldsListForAccount.addAll(inputValiDatorUtils.getRestAccountDetailsValidation());
+            ValidationErrorList errorListForAccount = new ValidationErrorList();
+            inputValidator.RestInputValidations(commonValidatorVO, inputMandatoryFieldsListForAccount, errorListForAccount, false);
+            error = error + inputValiDatorUtils.getError(errorListForAccount, inputMandatoryFieldsListForAccount, actionName);
+        }
+        else if ("ACH".equals(commonValidatorVO.getPaymentMode()) || "CHK".equals(commonValidatorVO.getPaymentMode()))
+        {
+            //Validate Optional parameters for Account
+            List<InputFields> inputMandatoryFieldsListForPaymitcoAccount = new ArrayList<InputFields>();
+            inputMandatoryFieldsListForPaymitcoAccount.addAll(inputValiDatorUtils.getRestPaymitcoDetailsValidation());
+            ValidationErrorList errorListForPaymitcoAccount = new ValidationErrorList();
+            inputValidator.RestInputValidations(commonValidatorVO, inputMandatoryFieldsListForPaymitcoAccount, errorListForPaymitcoAccount, false);
+            error = error + inputValiDatorUtils.getError(errorListForPaymitcoAccount, inputMandatoryFieldsListForPaymitcoAccount, actionName);
+        }
+        return error;
+    }
+    private String validateRestKitMerchantSignUpParameters(CommonValidatorVO commonValidatorVO, String actionName) throws PZConstraintViolationException
+    {
+        String error="";
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        //Validation for Rest Optional parameters (card)
+        List<InputFields> inputOptionalFieldsList1 = new ArrayList<InputFields>();
+        inputOptionalFieldsList1.addAll(inputValiDatorUtils.getRestMerchantSignupParameters());
+        ValidationErrorList errorList2 = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputOptionalFieldsList1, errorList2, false);
+        error = error + inputValiDatorUtils.getError(errorList2,inputOptionalFieldsList1,actionName);
+
+        //validate address field validation
+        List<InputFields> inputFlagBasedAddressValidation = new ArrayList<InputFields>();
+        inputFlagBasedAddressValidation.addAll(inputValiDatorUtils.getOptionalValidationForMerchantSignup());
+        ValidationErrorList addressValidationError = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputFlagBasedAddressValidation, addressValidationError, true);
+        error = error + inputValiDatorUtils.getError(addressValidationError,inputFlagBasedAddressValidation,actionName);
+
+        return error;
+    }
+    private String validateGenerateAppOTP(CommonValidatorVO commonValidatorVO,String actionName ) throws PZConstraintViolationException
+    {
+
+        String error="";
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+
+        //Validation for Rest Optional parameters (card)
+        List<InputFields> inputOptionalFieldsList1 = new ArrayList<InputFields>();
+        inputOptionalFieldsList1.addAll(inputValiDatorUtils.getGenerateAppOTP());
+        ValidationErrorList errorList2 = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputOptionalFieldsList1, errorList2, false);
+        error = error + inputValiDatorUtils.getError(errorList2,inputOptionalFieldsList1,actionName);
+
+        return error;
+
+    }
+
+    private String validateVerifyAppOTP(CommonValidatorVO commonValidatorVO,String actionName ) throws PZConstraintViolationException
+    {
+
+        String error="";
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        //Validation for Rest Optional parameters (card)
+        List<InputFields> inputOptionalFieldsList1 = new ArrayList<InputFields>();
+        inputOptionalFieldsList1.addAll(inputValiDatorUtils.getVerifyAppOTP());
+        ValidationErrorList errorList2 = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputOptionalFieldsList1, errorList2, false);
+        error = error + inputValiDatorUtils.getError(errorList2,inputOptionalFieldsList1,actionName);
+
+        return error;
+
+    }
+
+    private String validateRestKitMerchantLoginParameters(CommonValidatorVO commonValidatorVO, String actionName)
+    {
+        String error = "";
+        InputValiDatorUtils inputValiDatorUtils = new InputValiDatorUtils();
+        InputValidatorForMerchantServices inputValidator = new InputValidatorForMerchantServices();
+
+        List<InputFields> inputMandatoryFieldsList = new ArrayList<InputFields>();
+        inputMandatoryFieldsList.addAll(inputValiDatorUtils.getRestMerchantLoginParameters());
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.restInputValidations(commonValidatorVO, inputMandatoryFieldsList, errorList, false);
+        error = error + inputValiDatorUtils.getError(errorList,inputMandatoryFieldsList,actionName);
+        return error;
+
+    }
+
+    private String validateRestKitMerchantAuthTokenParameters(CommonValidatorVO commonValidatorVO, String actionName)
+    {
+        String error = "";
+        InputValiDatorUtils inputValiDatorUtils = new InputValiDatorUtils();
+        InputValidatorForMerchantServices inputValidator = new InputValidatorForMerchantServices();
+
+        List<InputFields> inputMandatoryFieldsList = new ArrayList<InputFields>();
+        inputMandatoryFieldsList.addAll(inputValiDatorUtils.getRestMerchantAuthTokenParameters());
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.restInputValidations(commonValidatorVO, inputMandatoryFieldsList, errorList, false);
+        error = error + inputValiDatorUtils.getError(errorList,inputMandatoryFieldsList,actionName);
+
+        List<InputFields> inputOptionalFieldsList = new ArrayList<InputFields>();
+        inputOptionalFieldsList.addAll(inputValiDatorUtils.getRestMerchantAuthTokenOptionalParameters());
+        ValidationErrorList errorList1 = new ValidationErrorList();
+        inputValidator.restInputValidations(commonValidatorVO, inputOptionalFieldsList, errorList1, true);
+        error = error + inputValiDatorUtils.getError(errorList1,inputOptionalFieldsList,actionName);
+        return error;
+
+    }
+
+
+    private String validateRestKitVerifyMailParameters(CommonValidatorVO commonValidatorVO, String actionName)
+    {
+        String error = "";
+        InputValiDatorUtils inputValiDatorUtils = new InputValiDatorUtils();
+        InputValidatorForMerchantServices inputValidator = new InputValidatorForMerchantServices();
+
+        List<InputFields> inputMandatoryFieldsList = new ArrayList<InputFields>();
+        inputMandatoryFieldsList.addAll(inputValiDatorUtils.getRestVerifyMailParameters());
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.restInputValidations(commonValidatorVO,inputMandatoryFieldsList,errorList,false);
+        error = error + inputValiDatorUtils.getError(errorList,inputMandatoryFieldsList,actionName);
+        return error;
+
+    }
+
+    private String validateGetNewAuthTokenParameters(CommonValidatorVO commonValidatorVO, String actionName)
+    {
+        String error = "";
+        InputValiDatorUtils inputValiDatorUtils = new InputValiDatorUtils();
+        InputValidatorForMerchantServices inputValidator = new InputValidatorForMerchantServices();
+
+        List<InputFields> inputMandatoryFieldsList = new ArrayList<InputFields>();
+        inputMandatoryFieldsList.addAll(inputValiDatorUtils.getNewAuthTokenParameters());
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.restInputValidations(commonValidatorVO,inputMandatoryFieldsList,errorList,false);
+        error = error + inputValiDatorUtils.getError(errorList,inputMandatoryFieldsList,actionName);
+        return error;
+    }
+
+    private String validateRestKitMerchantCurrencyParameters(CommonValidatorVO commonValidatorVO , String actionName)
+    {
+        String error = "";
+        InputValiDatorUtils inputValiDatorUtils = new InputValiDatorUtils();
+        InputValidatorForMerchantServices inputValidator = new InputValidatorForMerchantServices();
+
+        List<InputFields> inputFieldsMandatoryList = new ArrayList<InputFields>();
+        inputFieldsMandatoryList.addAll(inputValiDatorUtils.getRestMerchantCurrencyParameters());
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.restInputValidations(commonValidatorVO,inputFieldsMandatoryList,errorList,false);
+        error = error + inputValiDatorUtils.getError(errorList,inputFieldsMandatoryList,actionName);
+        return error;
+    }
+
+    private String validateRestKitMerchantChangePasswordParameters(CommonValidatorVO commonValidatorVO, String actionName)
+    {
+        String error = "";
+        InputValiDatorUtils inputValiDatorUtils = new InputValiDatorUtils();
+        InputValidatorForMerchantServices inputValidator = new InputValidatorForMerchantServices();
+
+        List<InputFields> inputFieldsMandatoryList = new ArrayList<InputFields>();
+        inputFieldsMandatoryList.addAll(inputValiDatorUtils.getRestMerchantChangePasswordParameters());
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.restInputValidations(commonValidatorVO,inputFieldsMandatoryList,errorList,false);
+        error = error + inputValiDatorUtils.getError(errorList,inputFieldsMandatoryList,actionName);
+        return error;
+    }
+
+    private String validateRestKitMerchantForgetPasswordParameters(CommonValidatorVO commonValidatorVO,String actionName)
+    {
+        String error = "";
+        InputValiDatorUtils inputValiDatorUtils = new InputValiDatorUtils();
+        InputValidatorForMerchantServices inputValidator = new InputValidatorForMerchantServices();
+
+        List<InputFields> inputMandatoryFieldsList = new ArrayList<InputFields>();
+        inputMandatoryFieldsList.add(InputFields.LOGIN);
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.restInputValidations(commonValidatorVO,inputMandatoryFieldsList,errorList,false);
+        error = error + inputValiDatorUtils.getError(errorList,inputMandatoryFieldsList,actionName);
+        return error;
+    }
+
+    private String validateRestKitCustomerRegistrationParameters(CommonValidatorVO commonValidatorVO, String actionName) throws PZConstraintViolationException
+    {
+        String error="";
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        //Validation for Rest Optional parameters (card)
+        List<InputFields> inputOptionalFieldsList1 = new ArrayList<InputFields>();
+        inputOptionalFieldsList1.addAll(inputValiDatorUtils.getRestCustomerRegistrationMandatoryParameters());
+        ValidationErrorList errorList2 = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputOptionalFieldsList1, errorList2, false);
+        error = error + inputValiDatorUtils.getError(errorList2,inputOptionalFieldsList1,actionName);
+
+        //validate address field validation
+        List<InputFields> inputFlagBasedAddressValidation = new ArrayList<InputFields>();
+        inputFlagBasedAddressValidation.addAll(inputValiDatorUtils.getAddressFieldValidationForCardholderRegistration());
+        ValidationErrorList addressValidationError = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputFlagBasedAddressValidation, addressValidationError, true);
+        error = error + inputValiDatorUtils.getError(addressValidationError,inputFlagBasedAddressValidation,actionName);
+
+        return error;
+    }
+
+    private String validateUpdateAddressParameters(CommonValidatorVO commonValidatorVO,String actionName) throws PZConstraintViolationException
+    {
+
+        String error="";
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        //Validation for Rest Optional parameters (card)
+        List<InputFields> inputOptionalFieldsList1 = new ArrayList<InputFields>();
+        inputOptionalFieldsList1.addAll(inputValiDatorUtils.getUpdateAddressMandatoryParameters());
+        ValidationErrorList errorList2 = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputOptionalFieldsList1, errorList2, false);
+        error = error + inputValiDatorUtils.getError(errorList2,inputOptionalFieldsList1,actionName);
+       // System.out.println("error----");
+
+        return error;
+    }
+
+
+    public String validateRestKitRecurringTokenParameters(CommonValidatorVO directKitValidatorVO,String actionName)
+    {
+        String error="";
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        //Validation for Rest Mandatory parameters
+        List<InputFields> inputMandatoryFieldsList = new ArrayList<InputFields>();
+        inputMandatoryFieldsList.addAll(inputValiDatorUtils.getRestRecurringAndTokenMandatoryParameters());
+
+        //Validation for Rest Conditional parameters
+        List<InputFields> inputFieldsListConditional = new ArrayList<InputFields>();
+        inputFieldsListConditional.addAll(inputValiDatorUtils.getRestTokenConditionalParametersForBrands());
+        ValidationErrorList errorList2 = new ValidationErrorList();
+        inputValidator.RestInputValidations(directKitValidatorVO, inputFieldsListConditional, errorList2, true);
+        error = error+ inputValiDatorUtils.getError(errorList2,inputFieldsListConditional,actionName);
+
+        if ("".equalsIgnoreCase(directKitValidatorVO.getRecurringBillingVO().getRecurringType()) && (functions.isValueNull(directKitValidatorVO.getCardDetailsVO().getcVV())))
+        {
+            //Validation for Rest Conditional parameters
+            List<InputFields> inputFieldsListOptional = new ArrayList<InputFields>();
+            inputFieldsListOptional.addAll(inputValiDatorUtils.getRestTokenOptionalParametersForBrands());
+            ValidationErrorList errorList3 = new ValidationErrorList();
+            inputValidator.RestInputValidations(directKitValidatorVO, inputFieldsListOptional, errorList3, true);
+            error = error + inputValiDatorUtils.getError(errorList3, inputFieldsListOptional, actionName);
+        }
+
+        //validate all parameters
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(directKitValidatorVO, inputMandatoryFieldsList, errorList, false);
+        error = error+ inputValiDatorUtils.getError(errorList,inputMandatoryFieldsList,actionName);
+
+        //validate mandatory parameters while transaction with bank account details
+        if(directKitValidatorVO.getBankAccountVO() != null)
+        {
+            List<InputFields> inputMandatoryFieldsListForAccount = new ArrayList<InputFields>();
+            inputMandatoryFieldsListForAccount.addAll(inputValiDatorUtils.getRestAccountDetailsValidation());
+            ValidationErrorList errorListForAccount = new ValidationErrorList();
+            inputValidator.RestInputValidations(directKitValidatorVO, inputMandatoryFieldsListForAccount, errorListForAccount, false);
+            error = error + inputValiDatorUtils.getError(errorListForAccount,inputMandatoryFieldsListForAccount,actionName);
+        }
+        return error;
+    }
+    private String validateRestKitRefundParameters(CommonValidatorVO commonValidatorVO,String actionName)
+    {
+        String error="";
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        //Validation for Rest Mandatory parameters
+        List<InputFields> inputMandatoryFieldsList = new ArrayList<InputFields>();
+        inputMandatoryFieldsList.addAll(inputValiDatorUtils.getRestRefundCaptureMandatoryParameters());
+
+        //validate all parameters
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputMandatoryFieldsList, errorList, false);
+        error = error+ inputValiDatorUtils.getError(errorList,inputMandatoryFieldsList,actionName);
+
+        return error;
+    }
+    private String validateRestKitCancelParameters(CommonValidatorVO commonValidatorVO,String actionName)
+    {
+        String error="";
+
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        //Validation for Rest Mandatory parameters
+        List<InputFields> inputMandatoryFieldsList = new ArrayList<InputFields>();
+        inputMandatoryFieldsList.addAll(inputValiDatorUtils.getRestCancelMandatoryParameters());
+        //validate all parameters
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputMandatoryFieldsList, errorList, false);
+        error = error+ inputValiDatorUtils.getError(errorList,inputMandatoryFieldsList,actionName);
+
+        return error;
+    }
+
+    private String validateRestKitInquiryParameters(CommonValidatorVO commonValidatorVO, String actionName)
+    {
+        String error = "";
+
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        //Validation for Rest Mandatory parameters
+        List<InputFields> inputMandatoryFieldsList = new ArrayList<InputFields>();
+        inputMandatoryFieldsList.addAll(inputValiDatorUtils.getRestInquiryParameters());
+        //validate all parameters
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputMandatoryFieldsList, errorList, true);
+        error = error+ inputValiDatorUtils.getError(errorList,inputMandatoryFieldsList,actionName);
+
+        return error;
+    }
+
+    private String validateRestKitCaptureParameters(CommonValidatorVO commonValidatorVO,String actionName)
+    {
+        String error="";
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        //Validation for Rest Mandatory parameters
+        List<InputFields> inputMandatoryFieldsList = new ArrayList<InputFields>();
+        inputMandatoryFieldsList.addAll(inputValiDatorUtils.getRestRefundCaptureMandatoryParameters());
+
+        //validate all parameters
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputMandatoryFieldsList, errorList, false);
+        error = error+ inputValiDatorUtils.getError(errorList,inputMandatoryFieldsList,actionName);
+        return error;
+    }
+
+    private String validateRestKitParameters(CommonValidatorVO commonValidatorVO,String actionName)
+    {
+        //  System.out.println("inside validateRestKitParameters---");
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        String error = "";
+        InputValiDatorUtils inputValiDatorUtils = new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        //Validation for Rest Mandatory parameters
+
+            List<InputFields> inputMandatoryFieldsList = new ArrayList<InputFields>();
+        //inputMandatoryFieldsList.addAll(inputValiDatorUtils.getRestTransactionMandatoryParameters());
+        // Payment type and card type is already getting validated in getConditionalParameterListForRest(); hence getRestTransactionMandatoryParameters() commented
+        inputMandatoryFieldsList.addAll(inputValiDatorUtils.getConditionalParameterListForRest(merchantDetailsVO.getAutoSelectTerminal(), merchantDetailsVO.getIpWhiteListed(), commonValidatorVO.getTerminalId()));
+        if (commonValidatorVO.getMerchantDetailsVO().getHostedPaymentPage().equalsIgnoreCase("N"))
+        {
+        //validate all parameters
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputMandatoryFieldsList, errorList, false);
+        error = error + inputValiDatorUtils.getError(errorList, inputMandatoryFieldsList, actionName);
+        transactionLogger.debug("error1-----" + error);
+        }
+        else {
+            //validate all parameters
+            ValidationErrorList errorList = new ValidationErrorList();
+            inputValidator.RestInputValidations(commonValidatorVO, inputMandatoryFieldsList, errorList, true);
+            error = error + inputValiDatorUtils.getError(errorList, inputMandatoryFieldsList, actionName);
+            transactionLogger.debug("error1-----" + error);
+        }
+        //validate address field validation
+        List<InputFields> inputFlagBasedAddressValidation = new ArrayList<InputFields>();
+        inputFlagBasedAddressValidation.addAll(inputValiDatorUtils.getAddressFieldValidation());
+        ValidationErrorList addressValidationError = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputFlagBasedAddressValidation, addressValidationError, true);
+        error = error + inputValiDatorUtils.getError(addressValidationError,inputFlagBasedAddressValidation,actionName);
+        transactionLogger.debug("error2-----"+error);
+
+        //Validation for Rest Optional parameters
+        List<InputFields> inputOptionalFieldsList = new ArrayList<InputFields>();
+        inputOptionalFieldsList.addAll(inputValiDatorUtils.getRestTransactionOptionalParameters());
+        ValidationErrorList errorList1 = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputOptionalFieldsList, errorList1, true);
+        error = error + inputValiDatorUtils.getError(errorList1,inputOptionalFieldsList,actionName);
+        transactionLogger.debug("error3-----"+error);
+
+        return error;
+    }
+
+    private String validateRestKitParametersStep2(CommonValidatorVO commonValidatorVO,String actionName)
+    {
+       // System.out.println("inside validateRestKitParametersStep2---");
+        String error="";
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        error = error+validateMandatoryDetailsBasedOnPaymentMode(commonValidatorVO, actionName);
+        transactionLogger.debug("error4-----"+error);
+
+        if (commonValidatorVO.getMerchantDetailsVO().getMultiCurrencySupport().equals("Y"))
+        {
+            List<InputFields> inputMultiCurrencyFieldList = new ArrayList<InputFields>();
+            inputMultiCurrencyFieldList.addAll(inputValiDatorUtils.getDKConditionalParam());
+            ValidationErrorList errorList3 = new ValidationErrorList();
+            inputValidator.InputValidations(commonValidatorVO, inputMultiCurrencyFieldList, errorList3, false);
+            error = error + inputValiDatorUtils.getError(errorList3,inputMultiCurrencyFieldList,actionName);
+        }
+
+        transactionLogger.debug("error5-----"+error);
+        return error;
+    }
+
+    private String validateRestKitWithTokenParameters(CommonValidatorVO commonValidatorVO,String actionName)
+    {
+        String error ="";
+        InputValiDatorUtils inputValiDatorUtils=new InputValiDatorUtils();
+        InputValidator inputValidator = new InputValidator();
+
+        log.debug("Mandatory parameters validation::");
+        List<InputFields> inputMandatoryFieldsList = new ArrayList<InputFields>();
+        inputMandatoryFieldsList.addAll(inputValiDatorUtils.getRestRecurringAndTokenMandatoryParameters());
+        ValidationErrorList errorListForAccount = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputMandatoryFieldsList, errorListForAccount, false);
+        error = error + inputValiDatorUtils.getError(errorListForAccount, inputMandatoryFieldsList, actionName);
+
+        //validate address field validation
+        List<InputFields> inputFlagBasedAddressValidation = new ArrayList<InputFields>();
+        inputFlagBasedAddressValidation.addAll(inputValiDatorUtils.getAddressFieldValidation());
+        ValidationErrorList addressValidationError = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputFlagBasedAddressValidation, addressValidationError, true);
+        error = error + inputValiDatorUtils.getError(addressValidationError,inputFlagBasedAddressValidation,actionName);
+
+        //Validation for Rest Mandatory parameters
+        List<InputFields> inputFieldsListOptional = new ArrayList<InputFields>();
+        inputFieldsListOptional.addAll(inputValiDatorUtils.getRestTransactionRecurringOptionalParameters());
+        ValidationErrorList errorList1 = new ValidationErrorList();
+        inputValidator.RestInputValidations(commonValidatorVO, inputFieldsListOptional, errorList1, true);
+        error = error+ inputValiDatorUtils.getError(errorList1,inputFieldsListOptional,actionName);
+        return error;
+    }
+
+    public MerchantDetailsVO getMerchantConfigDetailsByLogin(String memberId) throws PZDBViolationException, PZConstraintViolationException
+    {
+        MerchantDetailsVO merchantDetailsVO = null;
+        MerchantDAO merchantDAO=new MerchantDAO();
+
+        //merchantDetailsVO = new MerchantDetailsVO();
+        merchantDetailsVO = merchantDAO.getMemberDetails(memberId);
+
+        return merchantDetailsVO;
+    }
+
+    private ErrorCodeListVO getErrorVO(ErrorName errorName)
+    {
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO =new ErrorCodeListVO();
+        errorCodeVO = errorCodeUtils.getErrorCodeFromName(errorName);
+        errorCodeListVO.addListOfError(errorCodeVO);
+        return errorCodeListVO;
+    }
+
+    public CommonValidatorVO performRestTokenChecks(CommonValidatorVO commonValidatorVO, TokenDetailsVO tokenDetailsVO) throws PZConstraintViolationException, PZDBViolationException
+    {
+        log.debug("Inside performRestTokenChecksNew::");
+        MerchantDetailsVO merchantDetailsVO= commonValidatorVO.getMerchantDetailsVO();
+        GenericTransDetailsVO genericTransDetailsVO = commonValidatorVO.getTransDetailsVO();
+        TerminalVO terminalVO = null;
+        LimitChecker limitChecker = new LimitChecker();
+        PaymentChecker paymentChecker = new PaymentChecker();
+        TransactionHelper transactionHelper = new TransactionHelper();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeListVO errorCodeListVO = null;
+        Functions functions = new Functions();
+        TerminalManager terminalManager = new TerminalManager();
+        String error = "";
+
+        if(!functions.isValueNull(tokenDetailsVO.getTerminalId()) && "Y".equals(merchantDetailsVO.getAutoSelectTerminal()))
+        {
+            terminalVO = terminalManager.getCardIdAndPaymodeIdFromPaymentBrand(commonValidatorVO.getMerchantDetailsVO().getMemberId(), tokenDetailsVO.getPaymentType(), tokenDetailsVO.getCardType(), tokenDetailsVO.getCurrency());
+        }
+        else if(functions.isValueNull(tokenDetailsVO.getTerminalId()))
+        {
+            terminalVO = terminalManager.getMemberTerminalDetails(tokenDetailsVO.getTerminalId(), commonValidatorVO.getMerchantDetailsVO().getMemberId());
+        }
+
+        if(terminalVO ==  null)
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_INVALID_TERMINAL);
+            if (commonValidatorVO.getErrorCodeListVO() != null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return commonValidatorVO;
+        }
+
+        if("N".equalsIgnoreCase(terminalVO.getIsActive()))
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_TERMINAL_ACTIVE_CHECK);
+            if (commonValidatorVO.getErrorCodeListVO() != null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return commonValidatorVO;
+        }
+
+        commonValidatorVO.setTerminalVO(terminalVO);
+        commonValidatorVO.setTerminalId(terminalVO.getTerminalId());
+        genericTransDetailsVO.setCurrency(terminalVO.getCurrency());
+        commonValidatorVO.setTransDetailsVO(genericTransDetailsVO);
+
+        if("N".equals(terminalVO.getIsTokenizationActive()))
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_TOKEN_ALLOWED);
+            error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+            commonValidatorVO.setErrorMsg(error);
+            if (commonValidatorVO.getErrorCodeListVO() != null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return commonValidatorVO;
+        }
+
+        //Transaction limit checking
+        limitChecker.checkTransactionAmountNew(genericTransDetailsVO.getAmount(), terminalVO.getMax_transaction_amount(), terminalVO.getMin_transaction_amount(), commonValidatorVO);
+
+        if(genericTransDetailsVO.getCurrency().equals("JPY") && !paymentChecker.isAmountValidForJPY(genericTransDetailsVO.getCurrency(),genericTransDetailsVO.getAmount()))
+        {
+            error = error + "JPY Currency does not have cent value after decimal. Please give .00 as decimal value";
+            errorCodeListVO = getErrorVO(ErrorName.SYS_JPY_CURRENCY_CHECK);
+            PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,errorCodeListVO,null, null);
+        }
+
+        //Unique order chacking
+        String uniqueorder = null;
+        String fromtype = GatewayAccountService.getGatewayAccount(terminalVO.getAccountId()).getGateway();
+        uniqueorder = transactionHelper.checkorderuniqueness(merchantDetailsVO.getMemberId(), fromtype, genericTransDetailsVO.getOrderId());
+        if (!uniqueorder.equals(""))
+        {
+            error = error + (commonValidatorVO.getTransDetailsVO().getOrderId()+"-Duplicate Order Id " + uniqueorder);
+            errorCodeListVO = getErrorVO(ErrorName.SYS_UNIQUEORDER);
+            PZExceptionHandler.raiseConstraintViolationException("RestTransactionHelper.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,errorCodeListVO, null, null);
+        }
+
+        commonValidatorVO.getTransDetailsVO().setFromtype(fromtype);
+        if(merchantDetailsVO.getIsBlacklistTransaction().equalsIgnoreCase("Y"))
+        {
+            if(!transactionHelper.isIpAddressBlocked(commonValidatorVO.getAddressDetailsVO().getIp(),commonValidatorVO.getMerchantDetailsVO().getMemberId()))
+            {
+                error = error + "Your IpAddress is Blocked:::Please contact support for further assistance";
+                errorCodeListVO = getErrorVO(ErrorName.SYS_BLOCKEDIP);
+                PZExceptionHandler.raiseConstraintViolationException("RestTransactionHelper.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }
+
+            if(!transactionHelper.isEmailAddressBlocked(commonValidatorVO.getAddressDetailsVO().getEmail()))
+            {
+                error = error + "Your EmailAddress is Blocked:::Please contact support for further assistance";
+                errorCodeListVO = getErrorVO(ErrorName.SYS_BLOCKEDEMAIL);
+                PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }
+
+            if(!transactionHelper.isCountryBlocked(commonValidatorVO.getAddressDetailsVO().getCountry(), commonValidatorVO.getAddressDetailsVO().getTelnocc(),merchantDetailsVO.getMemberId(),terminalVO.getAccountId()))
+            {
+                error = error + "Your Country is Blocked:::Please contact support for further assistance";
+                errorCodeListVO = getErrorVO(ErrorName.SYS_BLOCKEDCOUNTRY);
+                PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }
+
+            if(!transactionHelper.isNameBlocked(commonValidatorVO.getAddressDetailsVO().getFirstname()+" "+commonValidatorVO.getAddressDetailsVO().getLastname()))
+            {
+                error = error + "Your Name is Blocked:::Please contact support for further assistance";
+                errorCodeListVO = getErrorVO(ErrorName.SYS_BLOCKEDNAME);
+                PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }
+        }
+        return commonValidatorVO;
+    }
+    private String merchantActivationChecks(CommonValidatorVO commonValidatorVO) throws PZConstraintViolationException
+    {
+        Functions functions = new Functions();
+        PaymentChecker paymentChecker = new PaymentChecker();
+        String error = "";
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+
+        //IP Whitelist check
+        if("Y".equals(commonValidatorVO.getPartnerDetailsVO().getAddressvalidation()))
+        {
+            if ("Y".equals((commonValidatorVO.getMerchantDetailsVO().getIsIpWhiteListedCheckForAPIs())))
+            {
+                transactionLogger.debug("ip address--------" + commonValidatorVO.getMerchantDetailsVO().getMemberId() + "---" + commonValidatorVO.getAddressDetailsVO().getIp());
+                if (!paymentChecker.isIpWhitelistedForTransaction(commonValidatorVO.getMerchantDetailsVO().getMemberId(), commonValidatorVO.getAddressDetailsVO().getIp()))
+                {
+                    error = "Merchant's IP is not white listed with us. Kindly Contact the Paymentz Support Desk.";
+                    errorCodeListVO = getErrorVO(ErrorName.SYS_IPWHITELIST_CHECK);
+                    PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+            }
+        }
+        //Activation check
+        if (!"Y".equals(commonValidatorVO.getMerchantDetailsVO().getActivation()))
+        {
+            error = "Error- The Merchant Account is not set to LIVE mode.<BR><BR> This could happen if there is any pending formality from the Merchant Side. Please contact support so that they can activate your account.";
+            errorCodeListVO = getErrorVO(ErrorName.SYS_MEMBER_ACTIVATION_CHECK);
+            PZExceptionHandler.raiseConstraintViolationException("RestCommonInputValidator.class", "performCommonSystemChecksStep1()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+        }
+        if (functions.isEmptyOrNull(error))
+            commonValidatorVO.setErrorMsg(error);
+
+        return error;
+    }
+
+    public CommonValidatorVO performRestPartnerLoginValidation(CommonValidatorVO commonValidatorVO) throws PZDBViolationException
+    {
+        String error = "";
+        if (functions.isValueNull(commonValidatorVO.getMerchantDetailsVO().getKey())){
+
+            if (!ESAPI.validator().isValidInput("Key", commonValidatorVO.getMerchantDetailsVO().getKey(), "alphanum", 100, false))
+            {
+                error = error + "-1" + "_" + "invalid secret key, secret key should not be empty";
+            }
+        }
+        else {
+            error = validateRestKitMerchantLoginParameters(commonValidatorVO, "REST");
+        }
+
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        MerchantDAO merchantDAO = new MerchantDAO();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        PartnerManager partnerManager = new PartnerManager();
+        PartnerDetailsVO partnerDetailsVO = new PartnerDetailsVO();
+        String password = merchantDetailsVO.getPassword();
+        String key = merchantDetailsVO.getKey();
+        String etoken = merchantDetailsVO.getEtoken();
+
+        if (functions.isValueNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+
+        partnerDetailsVO = partnerManager.getPartnerDetails(commonValidatorVO.getParetnerId());
+
+        merchantDetailsVO.setPassword(password);
+        merchantDetailsVO.setEtoken(etoken);
+        merchantDetailsVO.setKey(key);
+
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        commonValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+
+        return commonValidatorVO;
+    }
+
+    public CommonValidatorVO performFraudGetNewAuthTokenValidation(CommonValidatorVO commonValidatorVO) throws PZDBViolationException
+    {
+        String error = "";
+        String userName = "";
+        String role = "";
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        String token = commonValidatorVO.getAuthToken();
+        String partnerId = commonValidatorVO.getParetnerId();
+        AuthFunctions authFunctions = new AuthFunctions();
+        MerchantDetailsVO merchantDetailsVO = new MerchantDetailsVO();
+        MerchantDAO merchantDAO = new MerchantDAO();
+        error = validateGetNewAuthTokenParameters(commonValidatorVO, "REST");
+
+        if (functions.isValueNull(error))
+            commonValidatorVO.setErrorMsg(error);
+        else
+        {
+            userName = authFunctions.getUserName(token);
+            if (!functions.isValueNull(userName))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_TOKEN_GENERATION_FAILED);
+                if(commonValidatorVO.getErrorCodeListVO()!=null)
+                    commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return commonValidatorVO;
+
+            }
+
+            role = authFunctions.getUserRole(token);
+            if (!functions.isValueNull(role))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_TOKEN_GENERATION_FAILED);
+                if(commonValidatorVO.getErrorCodeListVO()!=null)
+                    commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return commonValidatorVO;
+            }
+
+            //  merchantDetailsVO = merchantDAO.getMemberDetailsByLogin(userName);
+           /* if (!partnerId.equals(merchantDetailsVO.getPartnerId()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_MEMBERID_PARTNERID);
+                if(commonValidatorVO.getErrorCodeListVO()!=null)
+                    commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return commonValidatorVO;
+            }*/
+            merchantDetailsVO.setLogin(userName);
+            merchantDetailsVO.setRole(role);
+            commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        }
+
+        return commonValidatorVO;
+    }
+
+    public CommonValidatorVO performRestPartnerAuthTokenValidation(CommonValidatorVO commonValidatorVO) throws PZDBViolationException
+    {
+        String error = "";
+        error = validateRestKitMerchantAuthTokenParameters(commonValidatorVO, "REST");
+        MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+        MerchantDAO merchantDAO = new MerchantDAO();
+        PartnerDAO partnerDAO = new PartnerDAO();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        PartnerManager partnerManager = new PartnerManager();
+        PartnerDetailsVO partnerDetailsVO = null;
+        String password = merchantDetailsVO.getPassword();
+        String sKey = merchantDetailsVO.getKey();
+        String loginName = merchantDetailsVO.getLogin();
+
+       // System.out.println("Error is ::"+error);
+
+        if (functions.isValueNull(error))
+        {
+            commonValidatorVO.setErrorMsg(error);
+            return commonValidatorVO;
+        }
+
+        if (functions.isValueNull(merchantDetailsVO.getLogin()))
+        {
+            partnerDetailsVO = partnerDAO.getPartnerDetailsByLogin(merchantDetailsVO.getLogin());
+            if (!loginName.equalsIgnoreCase(partnerDetailsVO.getPartnerName()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_LOGIN);
+                if (commonValidatorVO.getErrorCodeListVO() != null)
+                    commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return commonValidatorVO;
+            }
+        }
+        if (functions.isValueNull(sKey))
+        {
+            boolean isKey = partnerDAO.authenticatePartnerViaKey(loginName, sKey,commonValidatorVO.getParetnerId());
+            if (!isKey)
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_TOKEN_GENERATION_FAILED);
+                if (commonValidatorVO.getErrorCodeListVO() != null)
+                    commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+                return commonValidatorVO;
+            }
+        }
+
+        /*partnerDetailsVO = partnerManager.getPartnerDetails(commonValidatorVO.getParetnerId());
+        if (partnerDetailsVO == null)
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_PARTNERID);
+            if (commonValidatorVO.getErrorCodeListVO() != null)
+                commonValidatorVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return commonValidatorVO;
+        }*/
+
+        merchantDetailsVO.setPassword(password);
+
+        merchantDetailsVO.setKey(sKey);
+        merchantDetailsVO.setLogin(loginName);
+        commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+        commonValidatorVO.setPartnerDetailsVO(partnerDetailsVO);
+
+        return commonValidatorVO;
+
+    }
+
+
+
+
+}

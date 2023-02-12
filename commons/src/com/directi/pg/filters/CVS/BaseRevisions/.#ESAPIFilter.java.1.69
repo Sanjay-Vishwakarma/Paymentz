@@ -1,0 +1,820 @@
+package com.directi.pg.filters;
+
+
+import com.auth.AuthFunctions;
+import com.directi.pg.*;
+import com.manager.MerchantModuleManager;
+import com.manager.enums.MerchantModuleEnum;
+import com.payment.checkers.PaymentChecker;
+import org.apache.axis.utils.StringUtils;
+import org.apache.log4j.MDC;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.Logger;
+import org.owasp.esapi.User;
+import org.owasp.esapi.errors.AuthenticationException;
+
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.net.URLDecoder;
+import java.util.*;
+/**
+ * Created by IntelliJ IDEA.
+ * User: Acer
+ * Date: Feb 14, 2012
+ * Time: 10:12:47 AM
+ * To change this template use File | Settings | File Templates.
+ */
+public class ESAPIFilter implements Filter {
+
+    private final Logger logger = ESAPI.getLogger("ESAPIFilter");
+    //private final SystemAccessLogger accessLogger = new SystemAccessLogger("ESAPIFilter");
+
+    private static final String[] obfuscate = { "password" };
+
+    private static final Set<String> excludedFiles = new HashSet<String>();
+    private static final Set<String> virtualFiles = new HashSet<String>();
+    private static final Set<String> apiFiles = new HashSet<String>();
+    static{
+        excludedFiles.add("Logout.jsp");
+        excludedFiles.add("index.jsp");
+        excludedFiles.add("Login");
+        excludedFiles.add("forgotpwd.jsp");
+        excludedFiles.add("ForgotPwd");
+        excludedFiles.add("signup.jsp");
+        excludedFiles.add("loginerror.jsp");
+        excludedFiles.add("thankyou.jsp");
+        excludedFiles.add("newloginname.jsp");
+        excludedFiles.add("NewMerchant");
+        excludedFiles.add("fpwdsentmail.jsp");
+        excludedFiles.add("sessionout.jsp");
+        excludedFiles.add("virtualLogin.jsp");
+        excludedFiles.add("virtualLogout.jsp");
+        excludedFiles.add("redirecturl.jsp");
+        excludedFiles.add("help.jsp");
+        excludedFiles.add("PreviewServlet");
+        excludedFiles.add("RejectedExportTransaction");
+        //excludedFiles.add("blank.jsp");
+        excludedFiles.add("SendFile");
+        excludedFiles.add("ViewKycDocument");
+        excludedFiles.add("verifyMail.jsp");
+        excludedFiles.add("VerifyMail");
+        excludedFiles.add("cookie-policy.jsp");
+        excludedFiles.add("BulkPayOutUpload");
+        excludedFiles.add("UploadBulkCards");
+        apiFiles.add("GetDetails");
+    }
+    static{
+        virtualFiles.add("virtualTerminal.jsp");
+        virtualFiles.add("virtualSingleCall.jsp");
+        virtualFiles.add("VirtualTerminal");
+        virtualFiles.add("VirtualConfirm");
+        virtualFiles.add("virtualConfirm.jsp");
+        virtualFiles.add("ExportTransactions");
+        virtualFiles.add("ExportActionHistory");
+        virtualFiles.add("VirtualSingleCall");
+        virtualFiles.add("ExportPayoutTransactions");
+
+    }
+    /**
+     * Called by the web container to indicate to a filter that it is being
+     * placed into service. The servlet container calls the init method exactly
+     * once after instantiating the filter. The init method must complete
+     * successfully before the filter is asked to do any filtering work.
+     *
+     * @param filterConfig
+     *            configuration object
+     */
+    public void init(FilterConfig filterConfig) {
+        String path = filterConfig.getInitParameter("resourceDirectory");
+        if ( path != null ) {
+            ESAPI.securityConfiguration().setResourceDirectory( path );
+        }
+    }
+
+    /**
+     * The doFilter method of the Filter is called by the container each time a
+     * request/response pair is passed through the chain due to a client request
+     * for a resource at the end of the chain. The FilterChain passed in to this
+     * method allows the Filter to pass on the request and response to the next
+     * entity in the chain.
+     *
+     * @param req
+     *            Request object to be processed
+     * @param resp
+     *            Response object
+     * @param chain
+     *            current FilterChain
+     * @exception IOException
+     *                if any occurs
+     */
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws IOException {
+        HttpServletRequest request = (HttpServletRequest) req;
+        HttpServletResponse response = (HttpServletResponse) resp;
+        request.setAttribute("role","merchant");
+        ESAPI.httpUtilities().setCurrentHTTP(request, response);
+        String partner=null;
+        String companyname=null;
+        PaymentChecker paymentChecker = new PaymentChecker();
+        HttpSession session = request.getSession(true);
+        session.setAttribute("valid", "true");
+
+        try {
+            // figure out who the current user is
+
+            try {
+
+                MDC.put("ip", Functions.getIpAddress(request));
+
+                HashMap<String,String> map = new HashMap<String, String>();
+
+                for(Object key : request.getParameterMap().keySet())
+                {
+                    map.put((String) key,request.getParameter((String) key));
+                    if(request.getParameterMap().keySet().contains("password"))
+                        map.put("password","");
+
+                    if(request.getParameterMap().keySet().contains("cardnumber"))
+                        map.put("cardnumber","");
+
+                    if(request.getParameterMap().keySet().contains("expiry_month"))
+                        map.put("expiry_month","");
+
+                    if(request.getParameterMap().keySet().contains("expiry_year"))
+                        map.put("expiry_year","");
+
+                    if(request.getParameterMap().keySet().contains("cvv"))
+                        map.put("cvv","");
+
+                    if(request.getParameterMap().keySet().contains("conpasswd"))
+                        map.put("conpasswd","");
+
+                    if(request.getParameterMap().keySet().contains("passwd"))
+                        map.put("passwd","");
+
+                    if(request.getParameterMap().keySet().contains("lastfour"))
+                        map.put("lastfour","");
+
+                    if(request.getParameterMap().keySet().contains("firstsix"))
+                        map.put("firstsix","");
+                }
+                MDC.put("request",map);
+                MDC.put("filepath",ESAPI.httpUtilities().getCurrentRequest().getRequestURI()+" Module Name - MERCHANT");
+
+
+               /* if(excludedFiles.contains(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+                {
+                    ESAPI.httpUtilities().setNoCacheHeaders( response );
+                    Functions.setCookie(request);
+                }*/
+                String language_check= (String)session.getAttribute("language_property");
+
+                Functions functions = new Functions();
+                String language_property = "";
+                if(functions.isValueNull(language_check)){
+                    language_property =language_check;
+                }else
+                {
+                    String multiLanguage = "";
+                    if (functions.isValueNull(request.getHeader("Accept-Language")))
+                    {
+                        multiLanguage = request.getHeader("Accept-Language");
+                        String sLanguage[] = multiLanguage.split(",");
+
+                        if (functions.isValueNull(sLanguage[0]))
+                        {
+                            if ("ja".equalsIgnoreCase(sLanguage[0]))
+                            {
+                                language_property = "com.directi.pg.MerchantLanguage_jp";
+
+                            }
+
+                            else
+                            {
+                                language_property = "com.directi.pg.MerchantLanguage_en";
+                            }
+                        }
+                        else
+                        {
+                            language_property = "com.directi.pg.MerchantLanguage_en";
+                        }
+                    }
+                    else
+                    {
+                        language_property = "com.directi.pg.MerchantLanguage_en";
+                    }
+                }
+                session.setAttribute("language_property",language_property);
+
+                if("Login".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+                {
+                    ESAPI.httpUtilities().setNoCacheHeaders( response );
+                }
+
+                if("index.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())) || "virtualTerminal.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())) || "signup.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+                {
+
+                    logger.error(Logger.SECURITY_FAILURE, "insude index.jsp of ESAPIFilter...");
+                    ESAPI.httpUtilities().setNoCacheHeaders( response );
+
+                    if (!ESAPI.validator().isValidInput("partnerid ",request.getParameter("partnerid"),"Numbers",3,true))
+                    {
+                        //response.sendRedirect(req.getScheme()+"://"+Functions.getIpAddress(request));
+                        logger.error(Logger.SECURITY_FAILURE,"inside if---index.jsp of ESAPIFilter...");
+                        response.sendRedirect("/merchant/sessionout.jsp");
+                        ESAPI.httpUtilities().setNoCacheHeaders( response );
+                        return;
+                    }
+                    else
+                    {
+                        logger.error(Logger.SECURITY_FAILURE,"inside---else index.jsp of ESAPIFilter...");
+                        partner= req.getParameter("partnerid");
+                    }
+                    if (!ESAPI.validator().isValidInput("fromtype ",request.getParameter("fromtype"),"SafeString",25,true))
+                    {
+                        logger.error(Logger.SECURITY_FAILURE,"inside---if(from type) index.jsp of ESAPIFilter...");
+                        response.sendRedirect("/merchant/sessionout.jsp");
+                        ESAPI.httpUtilities().setNoCacheHeaders( response );
+                        return;
+                    }
+                    else
+                    {
+                        logger.error(Logger.SECURITY_FAILURE,"inside---else(from type) index.jsp of ESAPIFilter...");
+                        companyname= req.getParameter("fromtype");
+                    }
+
+                    String hostname=req.getRemoteHost();
+                    String ipaddress=Functions.getIpAddress(request);
+                    String forwardedhostname =Functions.getForwardedHost(request);
+                    if(partner!=null && companyname!=null)
+                    {
+                        if(paymentChecker.isPartnerexistindb(partner, ipaddress, companyname))
+                        {
+                            logger.error(Logger.SECURITY_FAILURE,"inside partner block of ESAPIFilter...");
+                            session.setAttribute("logo", Merchants.logoHash.get(partner));
+                            session.setAttribute("icon", Merchants.iconHash.get(partner));
+                            session.setAttribute("defaulttheme",Merchants.defaultTheme.get(partner));
+                            session.setAttribute("currenttheme",Merchants.currentTheme.get(partner));
+                            session.setAttribute("company",companyname);
+                            session.setAttribute("hostname",hostname);
+                            session.setAttribute("partnerid",partner);
+                            session.setAttribute("ispcilogo",Merchants.pciLogoHash.get(partner));
+                            session.setAttribute("favicon",Merchants.faviconHash.get(partner));
+                            session.setAttribute("language_property",language_property);
+                        }
+                        else
+                        {
+                            session.setAttribute("language_property",language_property);
+                            response.sendRedirect("/merchant/sessionout.jsp");
+                            ESAPI.httpUtilities().setNoCacheHeaders( response );
+                            return;
+                        }
+                    }
+                    else if (!StringUtils.isEmpty(forwardedhostname))
+                    {
+                        Partner partnerClass = new Partner();
+                        Hashtable partnerDetails = partnerClass.getPartnerDetailsByHost(forwardedhostname);
+                        session.setAttribute("logo", partnerDetails.get("LOGO"));
+                        session.setAttribute("icon", partnerDetails.get("ICON"));
+                        session.setAttribute("company",partnerDetails.get("PARTNERNAME"));
+                        session.setAttribute("partnerid",partnerDetails.get("PARTNERID"));
+                        session.setAttribute("defaulttheme",partnerDetails.get("DEFAULTTHEME"));
+                        session.setAttribute("currenttheme",partnerDetails.get("CURRENTTHEME"));
+                        session.setAttribute("currenttheme", partnerDetails.get("CURRENTTHEME"));
+                        session.setAttribute("favicon",partnerDetails.get("FAVICON"));
+                        session.setAttribute("ispcilogo",partnerDetails.get("ispcilogo"));
+                        session.setAttribute("hostname",hostname);
+                        session.setAttribute("language_property",language_property);
+                        logger.debug(Logger.EVENT_SUCCESS,"----"+partnerDetails.get("LOGO")+"----"+partnerDetails.get("PARTNERNAME")+"----"+partnerDetails.get("PARTNERID")+"------"+partnerDetails.get("ICON")+"-----"+partnerDetails.get("DEFAULTTHEME")+"------"+partnerDetails.get("CURRENTTHEME"));
+                    }
+                    else
+                    {
+                        Enumeration enum1 = request.getParameterNames();
+                        if(enum1.hasMoreElements())
+                        {
+                            session.setAttribute("language_property",language_property);
+                            response.sendRedirect("/merchant/sessionout.jsp");
+                            ESAPI.httpUtilities().setNoCacheHeaders( response );
+                            return;
+                        }
+                        else
+                        {
+                            logger.error(Logger.SECURITY_FAILURE, "inside else of partner block of ESAPIFilter...");
+                            session.setAttribute("logo", Merchants.adminPartnerHash.get("logo"));
+                            session.setAttribute("icon", Merchants.adminPartnerHash.get("icon"));
+                            session.setAttribute("company",Merchants.adminPartnerHash.get("fromtype"));
+                            session.setAttribute("partnerid",Merchants.adminPartnerHash.get("partnerid"));
+                            session.setAttribute("ispcilogo", Merchants.adminPartnerHash.get("ispcilogo"));
+                            session.setAttribute("favicon", Merchants.adminPartnerHash.get("faviconName"));
+                            session.setAttribute("language_property",language_property);
+                        }
+                    }
+
+                }
+                logger.debug(Logger.SECURITY_SUCCESS, "URL::::" + ESAPI.httpUtilities().getCurrentRequest().getRequestURI());
+                System.out.println("URL::::" + ESAPI.httpUtilities().getCurrentRequest().getRequestURI());
+
+                System.out.println("referer:::::::::::" + request.getHeader("referer"));
+                logger.debug(Logger.SECURITY_SUCCESS,"referer:::::::::::" + request.getHeader("referer"));
+
+
+                if(apiFiles.contains(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+                {
+                    logger.debug(Logger.SECURITY_SUCCESS, ESAPI.httpUtilities().getCurrentRequest().getRequestURI());
+                    ESAPI.authenticator().login(request, response);
+                    //Functions.getNewSession(request);
+
+                    User user = ESAPI.httpUtilities().getSessionAttribute("ESAPIUserSessionKey");
+                    ESAPI.httpUtilities().setNoCacheHeaders(response);
+                    if(!Functions.validateAPIToken(request.getParameter("ctoken"),user))
+                    {
+                        session.setAttribute("language_property",language_property);
+                        response.sendRedirect("/partner/logout.jsp");
+                        ESAPI.httpUtilities().setNoCacheHeaders( response );
+                        return;
+                    }
+                    logger.debug(Logger.SECURITY_SUCCESS,"API file check done");
+                }
+                else if("PopulateApplication".contains(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI()))|| (functions.isValueNull(request.getHeader("referer")) && getFileName(request.getHeader("referer")).contains("PopulateApplication"))||(functions.isValueNull(request.getParameter("copyiframe")) && request.getParameter("copyiframe").contains("PopulateApplication")))
+                {
+                    String pageno=request.getParameter("pageNoInJSP");
+                    AuthFunctions authFunctions=new AuthFunctions();
+                    String token=request.getParameter("token");
+                    String fileName="";
+
+
+                    if(token==null && (getFileName(request.getHeader("referer"))).contains("PopulateApplication"))
+                    {
+                         fileName = URLDecoder.decode(getFileName(request.getHeader("referer")), "UTF-8");
+                          String ctokenSplit[] = fileName.split("token=");
+                           for(String splits2: ctokenSplit) {
+                                int length = splits2.length();
+                                if(length>40){
+                                    token = splits2;
+                                    continue;
+                                }
+                        }
+                    }else if(functions.isValueNull(request.getParameter("copyiframe")) && request.getParameter("copyiframe").contains("PopulateApplication")){
+                        fileName = URLDecoder.decode(request.getParameter("copyiframe"), "UTF-8");
+                        String ctokenSplit[] = fileName.split("token=");
+                        for(String splits2: ctokenSplit) {
+                            int length = splits2.length();
+                            if(length>40){
+                                token = splits2;
+                                continue;
+                            }else if(length==0){
+                                token=ctokenSplit[1];
+                                continue;
+                            }
+                        }
+                    }
+                    if(functions.isValueNull(token))
+                    {
+                        String userName = authFunctions.getUserName(token);
+                        String role = authFunctions.getUserRole(token);
+                        String merchantId = authFunctions.getMerchantId(token);
+                        String partnerId = authFunctions.getPartnerId(token);
+                        logger.error(Logger.SECURITY_SUCCESS,"userName:::"+userName+"--role--"+role+"--merchantId--"+merchantId+"--partnerId--"+partnerId);
+                        boolean isTokenValid = authFunctions.verifyToken(token, userName, role);
+                        if(isTokenValid==true)
+                        {
+                            logger.error(Logger.SECURITY_SUCCESS,"inside isTokenValid");
+                            try
+                            {
+                                Merchants merchants = new Merchants();
+                                MerchantModuleManager merchantModuleManager = new MerchantModuleManager();
+                                request.setAttribute("role", role);
+                                DefaultUser user = (DefaultUser) ESAPI.authenticator().getUser(userName);
+                                session = request.getSession();
+                                session.setAttribute("ESAPIUserSessionKey", user);
+                                session.setAttribute("role", role);
+                                session.setAttribute("fileName", fileName);
+                                session.setAttribute("username", userName);
+                                session.setAttribute("merchantid", merchantId);
+                                session.setAttribute("partnerid", partnerId);
+                                session.setAttribute("pageno", pageno);
+                                session.setAttribute("password", "");
+                                session.setAttribute("language_property", "com.directi.pg.MerchantLanguage_en");
+                                session.setAttribute("MerchantModuleAccessVO", merchants.getMerchantModulesAccessDetail(merchantId));
+                                Member member = merchants.authenticate(userName, partnerId, request);
+                                String userId = merchantId;
+                                if(member.getMemberUser()!=null)
+                                {
+                                    session.setAttribute("role","submerchant");
+                                    userId = String.valueOf(member.getMemberUser().getUserId());
+                                }
+                                if (member.activation.equalsIgnoreCase("Y") || member.activation.equalsIgnoreCase("T"))
+                                {
+                                    session.setAttribute("activation", member.activation);
+                                }
+                                String hostname=req.getRemoteHost();
+                                session.setAttribute("moduleset", merchantModuleManager.getMerchantAccessModuleSet(userId));
+                                ESAPI.authenticator().getUser(userName).getCSRFToken();
+                                session.setAttribute("logo", Merchants.logoHash.get(partnerId));
+                                session.setAttribute("icon", Merchants.iconHash.get(partnerId));
+                                session.setAttribute("defaulttheme",Merchants.defaultTheme.get(partnerId));
+                                session.setAttribute("currenttheme",Merchants.currentTheme.get(partnerId));
+                                session.setAttribute("company",companyname);
+                                session.setAttribute("hostname",hostname);
+                                session.setAttribute("ispcilogo",Merchants.pciLogoHash.get(partnerId));
+                                session.setAttribute("favicon",Merchants.faviconHash.get(partnerId));
+                                session.setAttribute("language_property",language_property);
+                            }catch (Exception e){
+                                logger.error(Logger.SECURITY_FAILURE,"Exception--->",e);
+                            }
+                        }else {
+                            response.sendRedirect("/merchant/sessionout.jsp");
+                            ESAPI.httpUtilities().setNoCacheHeaders( response );
+                            return;
+                        }
+                    }/*else {
+                        response.sendRedirect("/merchant/sessionout.jsp");
+                        ESAPI.httpUtilities().setNoCacheHeaders( response );
+                        return;
+                    }*/
+                }
+
+               else if(!excludedFiles.contains(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+                {
+                    ESAPI.authenticator().login(request, response);
+                    Functions.getNewSession(request);
+                    User user =  (User)ESAPI.httpUtilities().getSessionAttribute("ESAPIUserSessionKey");
+
+                    //Check Module Access
+                    checkAccess(request, response);
+
+                    ESAPI.httpUtilities().setNoCacheHeaders( response );
+
+                    if(virtualFiles.contains(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+                    {
+                        if(!Functions.validateVirtualCSRF(request.getParameter("ctoken"),user))
+                        {
+                            response.sendRedirect("/merchant/virtualLogout.jsp");
+                            ESAPI.httpUtilities().setNoCacheHeaders( response );
+                            return;
+                        }
+                    }
+
+                    else if(!Functions.validateCSRF(request.getParameter("ctoken"),user))
+                    {
+                        session.setAttribute("language_property",language_property);
+                        logger.error(Logger.SECURITY_FAILURE,"good one...");
+                        response.sendRedirect("/merchant/sessionout.jsp");
+                        ESAPI.httpUtilities().setNoCacheHeaders( response );
+                        return;
+                    }
+                }
+
+                if("Logout.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+                {
+                    User user =  (User)ESAPI.httpUtilities().getSessionAttribute("ESAPIUserSessionKey");
+                    ESAPI.httpUtilities().setNoCacheHeaders( response );
+
+                    //System.out.println("inside Logout---");
+
+                    if(request.getParameter("ctoken")==null || request.getParameter("ctoken").equals("")||!Functions.validateCSRFAnonymos(request.getParameter("ctoken"),user))
+                    {
+                        request.getSession().invalidate();
+                        ESAPI.authenticator().logout();
+                        session.setAttribute("language_property",language_property);
+                        response.sendRedirect("/merchant/index.jsp");
+                        ESAPI.httpUtilities().setNoCacheHeaders( response );
+                        return;
+                    }
+
+                }
+                response.setHeader("X-Frame-Options", "SAMEORIGIN");
+
+            } catch( AuthenticationException e ) {
+                ESAPI.authenticator().logout();
+                logger.error(Logger.SECURITY_FAILURE,"good one1...");
+                request.setAttribute("message", "Authentication failed");
+                if(virtualFiles.contains(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+                    response.sendRedirect("/merchant/sessionout.jsp");
+                else
+                    response.sendRedirect("/merchant/sessionout.jsp");
+				/*RequestDispatcher dispatcher = request.getRequestDispatcher("/merchant/index.jsp");
+				dispatcher.forward(request, response);*/
+                ESAPI.httpUtilities().setNoCacheHeaders( response );
+                return;
+            }
+
+            // log this request, obfuscating any parameter named password
+            //ESAPI.httpUtilities().logHTTPRequest(request, logger, Arrays.asList(obfuscate));
+
+
+            // check access to this URL
+			/*if ( !ESAPI.accessController().isAuthorizedForURL(request.getRequestURI()) ) {
+				request.setAttribute("message", "Unauthorized" );
+				RequestDispatcher dispatcher = request.getRequestDispatcher("WEB-INF/index.jsp");
+				dispatcher.forward(request, response);
+				return;
+			}*/
+
+            // check for CSRF attacks
+            //ESAPI.httpUtilities().checkCSRFToken();
+
+            // forward this request on to the web application
+            chain.doFilter(request, response);
+
+            // set up response with content type
+            ESAPI.httpUtilities().setContentType( response );
+
+            // set no-cache headers on every response
+            // only do this if the entire site should not be cached
+            // otherwise you should do this strategically in your controller or actions
+            ESAPI.httpUtilities().setNoCacheHeaders(response);
+
+        } catch (Exception e) {
+
+            logger.error( Logger.SECURITY_FAILURE, "Error in ESAPI security filter: " + e.getMessage(), e );
+            request.setAttribute("message", e.getMessage() );
+
+        } finally {
+            // VERY IMPORTANT
+            // clear out the ThreadLocal variables in the authenticator
+            // some containers could possibly reuse this thread without clearing the User
+            //ESAPI.clearCurrent();
+        }
+    }
+
+    private String getFileName(String requestURI)
+    {
+        String filename = null;
+        Functions functions = new Functions();
+        if(functions.isValueNull(requestURI))
+        {
+            filename = requestURI.substring(requestURI.lastIndexOf("/") + 1);
+        }
+
+        return filename;  //To change body of created methods use File | Settings | File Templates.
+    }
+
+
+    private void checkAccess(HttpServletRequest req, HttpServletResponse resp) throws IOException
+    {
+        HttpSession session = req.getSession();
+        User user =  (User)ESAPI.httpUtilities().getSessionAttribute("ESAPIUserSessionKey");
+        Set<String> moduleSet =(Set)session.getAttribute("moduleset");
+        if("DashBoard".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.DASHBOARD.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+            }
+        }
+        if("accountSummary.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.ACCOUNT_SUMMARY.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+            }
+        }
+        if("charges.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.CHARGES_SUMMARY.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+            }
+        }
+        if("transactionSummary.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.TRANSACTION_SUMMARY.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+            }
+        }
+        if("reports.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.REPORTS_SUMMARY.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+            }
+        }
+        if("generatekey.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.GENERATE_KEY.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+        if("MerchantProfile".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.MERCHANT_PROFILE.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+        if("PopulateSpeedOption".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.ORGANISATION_PROFILE.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("MerchantTemplate".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.CHECKOUT_PAGE.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("merchantConfigDetails.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.MERCHANT_CONFIG.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("ListMerchantFraudRule".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.FRAUD_RULE_CONFIG.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("whitelist.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.WHITELIST_DETAILS.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("blockCountry.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.BLACKLIST_DETAILS.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("transactions.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.TRANSACTION_MANAGEMENT.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("pod.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.CAPTURE.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("reverselist.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.REVERSAL.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("payoutlist.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.PAYOUT.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("GenerateInvoice".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.GENERATE_INVOICE.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("invoice.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.INVOICE_HISTORY.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("InvoiceConfiguration".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.INVOICE_CONFIGURATION.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("listmerchantregistercard.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.REGISTRATION_HISTORY.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("newcardregistration.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.REGISTER_CARD.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("virtualSingleCall.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum. VIRTUAL_TERMINAL.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        if("memberChildList.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.USER_MANAGEMENT.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+
+        /*if("PopulateApplication".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.MERCHANT_APPLICATION.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }*/
+
+        if("recurringModule.jsp".equals(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+        {
+            if (!moduleSet.contains(MerchantModuleEnum.RECURRING_MODULE.name()) && user.getRoles().contains("submerchant"))
+            {
+                resp.sendRedirect("/merchant/sessionout.jsp");
+                return;
+
+            }
+        }
+    }
+
+    /**
+     * Called by the web container to indicate to a filter that it is being
+     * taken out of service. This method is only called once all threads within
+     * the filter's doFilter method have exited or after a timeout period has
+     * passed. After the web container calls this method, it will not call the
+     * doFilter method again on this instance of the filter.N
+     */
+    public void destroy() {
+        // finalize
+    }
+}

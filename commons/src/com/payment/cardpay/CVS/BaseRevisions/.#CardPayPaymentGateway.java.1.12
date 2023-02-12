@@ -1,0 +1,883 @@
+package com.payment.cardpay;
+
+
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.GenericRequestVO;
+import com.directi.pg.core.valueObjects.GenericResponseVO;
+import com.payment.Enum.PZProcessType;
+import com.payment.common.core.*;
+import com.payment.exceptionHandler.*;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.ResourceBundle;
+
+/**
+ * Created by Admin on 7/24/2018.
+ */
+public class CardPayPaymentGateway extends AbstractPaymentGateway
+{
+    private static CardPayLogger transactionLogger = new CardPayLogger(CardPayPaymentGateway.class.getName());
+
+    private static final ResourceBundle RB = LoadProperties.getProperty("com.directi.pg.cardpay");
+
+    public static final String GATEWAY_TYPE = "cardpay";
+
+    public CardPayPaymentGateway(String accountId)
+    {
+        this.accountId = accountId;
+    }
+
+
+    public static void main(String[] args)
+    {
+        try
+        {
+
+
+            String test_url = "https://sandbox.cardpay.com/MI/cardpayment.html";
+            String request_params =
+                    "<order wallet_id=\"14599\" number=\"652355\" description=\"Best ever seen T-Shirts\" currency=\"USD\" amount=\"100\" email=\"<emailaddress>\" ip=\"45.64.195.218\" is_two_phase=\"false\"  return_url=\"http://localhost:8081/transaction/ZotapayFrontEndServlet\" >\n"  +
+                            "<card num=\"4000000000000077\" holder=\"Rihen Dedhia\" cvv=\"123\" expires=\"02/2020\"/>\n" +
+                            /*"<billing country=\"USA\" state=\"NY\" zip=\"10001\" city=\"New York\" street=\"450 W. 33 Street\" phone=\"+1 (212) 210-2100\"/>" +*/
+                            "</order>";
+            //System.out.println("request_params--------------"+request_params);
+            String orderXML = Base64.encode(request_params.getBytes());
+            String secret_word = "flAc9K5b21QV";
+            String sha512 = CardPayUtils.sha512(request_params + secret_word);
+            //System.out.println("orderXML------------" + orderXML);
+            //System.out.println("sha512------------" + sha512);
+
+
+          /*  String test_url = "https://cardpay.com/MI/cardpayment.html";
+            String request_params =
+                    "<order wallet_id=\"14901\" number=\"85474\" description=\"Best ever seen T-Shirts\" currency=\"JPY\" amount=\"20\" email=\"<emailaddress>\" ip=\"106.51.227.117\" is_two_phase=\"false\"  return_url=\"http://jp.highlow.local/app_dev.php/my-account/deposit/transactorld/verify?iframe=\" >\n"  +
+                    "<card num=\"4000000000000002\" holder=\"Rihen Dedhia\" cvv=\"123\" expires=\"01/2020\"/>\n" +
+                  *//*  "<billing country=\"USA\" state=\"NY\" zip=\"10001\" city=\"New York\" street=\"450 W. 33 Street\" phone=\"+1 (212) 210-2100\"/>" +*//*
+                    "</order>";
+
+           // String req=" <order wallet_id=\"14901\" number=\"58240\"  description=\"RTSD22232\" currency=\"JPY\" amount=\"20.00\"  email=\"support@domain.com\" ip=\"106.51.227.117\"  is_two_phase=\"false\" return_url=\"http://jp.highlow.local/app_dev.php/my-account/deposit/transactorld/verify?iframe=\" >";
+            System.out.println("request_params--------------"+request_params);
+            String orderXML = Base64.encode(request_params.getBytes());
+            //String secret_word = "flAc9K5b21QV";
+            String secret_word = "g4mHwKoT6Q89";
+            String sha512 = CardPayUtils.sha512(request_params + secret_word);
+            System.out.println("orderXML------------" + orderXML);
+            System.out.println("sha512------------" + sha512);*/
+
+
+            String req1="orderXML="+URLEncoder.encode(orderXML,"UTF-8")+"&sha512="+URLEncoder.encode(sha512,"UTF-8")+"";
+            System.out.println("req---------------"+req1);
+            String response= CardPayUtils.doPostHTTPSURLConnectionClient(test_url, req1);
+            System.out.println("response------------" + response);
+
+
+
+//            THIS IS FOR 3D TRANSACTION
+
+    /*        String test_url = "https://sandbox.cardpay.com/MI/cardpayment.html";
+            String PaRes ="PFBhUmVzPjxzdGF0dXM+WTwvc3RhdHVzPjxNRD5hNDRHZ2UxRDU2RjdGYTZoQzZmaGM4SGg8L01EPjwvUGFSZXM+";
+            String MD="a44Gge1D56F7Fa6hC6fhc8Hh";
+            String req_param="PaRes="+URLEncoder.encode(PaRes,"UTF-8")+"&MD="+URLEncoder.encode(MD,"UTF-8")+"";
+            System.out.println("req_param---------------"+req_param);
+            String response= CardPayUtils.doPostHTTPSURLConnectionClient(test_url, req_param);
+            System.out.println("response------------" + response);
+*/
+
+         /*   String order_test_url="https://sandbox.cardpay.com/MI/service/order-change-status";
+            String password="Test@1234";
+            String shaPassword=CardPayUtils.sha256(password.trim());
+            System.out.println("shaPassword--------------"+shaPassword);
+            String order_request=
+                    "client_login="+ URLEncoder.encode("aashay.gandhi@transactworld.com", "UTF-8") +
+                    "&client_password="+ URLEncoder.encode(shaPassword, "UTF-8") +
+                    "&id="+ URLEncoder.encode("1211989", "UTF-8") +
+                    "&status_to="+ URLEncoder.encode("payout", "UTF-8") +
+                    "&amount="+ URLEncoder.encode("25", "UTF-8") +
+                    "&reason="+ URLEncoder.encode("winner winner", "UTF-8") ;
+
+            System.out.println("order_request----------------"+order_request);
+            String order_response= CardPayUtils.doPostHTTPSURLConnectionClient(order_test_url, order_request);*/
+
+/*
+           String login="aashay.gandhi@transactworld.com";
+            String password="Test@1234";
+
+            String clientPass = login+":"+password;
+
+            String clientCredentials = new String(org.apache.commons.codec.binary.Base64.encodeBase64(clientPass.getBytes()));
+          String order_response= CardPayUtils.doGetHTTPSURLConnectionClient("https://sandbox.cardpay.com/MI/api/v2/payments/56817","Basic",clientCredentials);
+            System.out.println("order_response------------" + order_response);*/
+
+        }
+        catch (Exception e){
+            System.out.println("error----------------" + e);
+        }
+    }
+
+
+    @Override
+    public String getMaxWaitDays() {   return null;   }
+
+
+    @Override
+    public GenericResponseVO processSale(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        transactionLogger.error("-----inside processSale-----");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        CommCardDetailsVO commCardDetailsVO = commRequestVO.getCardDetailsVO();
+        CommMerchantVO commMerchantVO = commRequestVO.getCommMerchantVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        CommAddressDetailsVO commAddressDetailsVO = commRequestVO.getAddressDetailsVO();
+        Functions functions = new Functions();
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String addressRequired=gatewayAccount.getAddressValidation();
+
+        transactionLogger.debug("addressRequired-----"+addressRequired);
+
+
+
+
+        boolean isTest = gatewayAccount.isTest();
+        String orderDesc = commTransactionDetailsVO.getOrderId();
+        if (orderDesc.equals(trackingID))
+        {
+            orderDesc = commTransactionDetailsVO.getMerchantOrderId();
+        }
+        if (!functions.isValueNull(orderDesc))
+        {
+            orderDesc = commTransactionDetailsVO.getOrderDesc();
+        }
+
+        String ip="";
+        if(functions.isValueNull(commAddressDetailsVO.getCardHolderIpAddress())){
+            ip=commAddressDetailsVO.getCardHolderIpAddress();
+        }else {
+            ip=commAddressDetailsVO.getIp();
+        }
+        String state="NA";
+        String street="NA";
+        String city="NA";
+        if(functions.isValueNull(commAddressDetailsVO.getState()))
+           state=commAddressDetailsVO.getState();
+        if(functions.isValueNull(commAddressDetailsVO.getStreet()))
+            street=commAddressDetailsVO.getStreet();
+        if(functions.isValueNull(commAddressDetailsVO.getCity()))
+            city=commAddressDetailsVO.getCity();
+
+        transactionLogger.debug("redirect url------------"+commTransactionDetailsVO.getRedirectUrl());
+        try{
+            String amount=commTransactionDetailsVO.getAmount();
+            if("JPY".equalsIgnoreCase(commTransactionDetailsVO.getCurrency())){
+                double amt= Double.parseDouble(commTransactionDetailsVO.getAmount());
+                double roundOff=Math.round(amt);
+                int value=(int)roundOff;
+                amount=String.valueOf(value);
+            }
+
+            String address="";
+            if("Y".equalsIgnoreCase(addressRequired)){
+                address= "<billing country=\""+ commAddressDetailsVO.getCountry() +"\"" +
+                        " state=\""+state+ "\" " +
+                        " zip=\"" + commAddressDetailsVO.getZipCode() +"\" " +
+                        " city=\""+city+"\" " +
+                        " street=\""+street+"\"" +
+                        " phone=\""+ commAddressDetailsVO.getPhone() +"\" />";
+            }
+            String saleParams =
+                        "<order wallet_id=\""+gatewayAccount.getMerchantId()+"\"" +
+                            " number=\""+ trackingID +"\" " +
+                            " description=\""+ orderDesc + "\"" +
+                            " currency=\""+commTransactionDetailsVO.getCurrency()+"\"" +
+                            " amount=\""+ amount +"\" " +
+                            " email=\"" + commAddressDetailsVO.getEmail() +"\"" +
+                            " ip=\"" + ip +"\" " +
+                            " is_two_phase=\"false\"" +    //false means direct sale
+                            " return_url=\""+commTransactionDetailsVO.getRedirectUrl()+"\" >\n"  +
+                        "<card num=\"" + commCardDetailsVO.getCardNum() +"\"" +
+                            " holder=\""+ commAddressDetailsVO.getFirstname() +" " +commAddressDetailsVO.getLastname()+"\"\n"+
+                            " cvv=\""+ commCardDetailsVO.getcVV() +"\"" +
+                            " expires=\""+ commCardDetailsVO.getExpMonth() +"/"+ commCardDetailsVO.getExpYear() +"\" />\n" +
+                                address+
+                        "</order>";
+
+            transactionLogger.error("saleParams ----- " + saleParams);
+
+            String orderXML = Base64.encode(saleParams.getBytes());
+            String secret_word = gatewayAccount.getFRAUD_FTP_PATH();
+            String sha512 = CardPayUtils.sha512(saleParams.trim() + secret_word.trim());
+            transactionLogger.error("secret_word------------" + secret_word);
+            transactionLogger.error("orderXML------------" + orderXML);
+            transactionLogger.error("sha512------------" + sha512);
+
+            String saleRequest="orderXML="+URLEncoder.encode(orderXML,"UTF-8")+"&sha512="+URLEncoder.encode(sha512,"UTF-8")+"";
+            transactionLogger.error("saleRequest---------------" +saleRequest);
+
+            String termUrl = "";
+            transactionLogger.error("host url----"+commMerchantVO.getHostUrl());
+            if (functions.isValueNull(commMerchantVO.getHostUrl()))
+            {
+                termUrl = "https://"+commMerchantVO.getHostUrl()+RB.getString("HOST_URL");
+                transactionLogger.error("from host url----"+termUrl);
+            }
+            else
+            {
+                termUrl = RB.getString("RETURN_URL");
+                transactionLogger.error("from RB----"+termUrl);
+            }
+
+            String saleResponse = "";
+
+            if (isTest)
+            {
+                saleResponse = CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("TEST_URL") , saleRequest);
+            }
+            else
+            {
+                saleResponse = CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("LIVE_URL") , saleRequest);
+            }
+            transactionLogger.error("saleResponse------" + saleResponse);
+
+            if(functions.isValueNull(saleResponse)){
+                commResponseVO=CardPayUtils.readXmlResponse(saleResponse,gatewayAccount.getDisplayName());
+                if("pending3DConfirmation".equalsIgnoreCase(commResponseVO.getStatus())){
+                    commResponseVO.setTransactionType(PZProcessType.THREE_D_SALE.toString());
+                    commResponseVO.setTerURL(termUrl+trackingID);
+
+                }else {
+                    commResponseVO.setTransactionType(PZProcessType.SALE.toString());
+                }
+            }else {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark(" Error");
+                commResponseVO.setDescription(" Error");
+            }
+            commResponseVO.setCurrency(commTransactionDetailsVO.getCurrency());
+            commResponseVO.setTmpl_Amount(commAddressDetailsVO.getTmpl_amount());
+            commResponseVO.setTmpl_Currency(commAddressDetailsVO.getTmpl_currency());
+        }
+        catch (Exception e){
+            transactionLogger.error("Exception-----", e);
+        }
+
+
+        return commResponseVO;
+    }
+
+    @Override
+    public GenericResponseVO processAuthentication(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException, PZDBViolationException, PZConstraintViolationException, PZGenericConstraintViolationException
+    {
+        transactionLogger.error("-----inside processAuthentication-----");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        CommCardDetailsVO commCardDetailsVO = commRequestVO.getCardDetailsVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        CommMerchantVO commMerchantVO = commRequestVO.getCommMerchantVO();
+        CommAddressDetailsVO commAddressDetailsVO = commRequestVO.getAddressDetailsVO();
+        Functions functions = new Functions();
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+
+        String addressRequired=gatewayAccount.getAddressValidation();
+
+        transactionLogger.debug("addressRequired-----"+addressRequired);
+        boolean isTest = gatewayAccount.isTest();
+        String orderDesc = commTransactionDetailsVO.getOrderId();
+        if (orderDesc.equals(trackingID))
+        {
+            orderDesc = commTransactionDetailsVO.getMerchantOrderId();
+        }
+        if (!functions.isValueNull(orderDesc))
+        {
+            orderDesc = commTransactionDetailsVO.getOrderDesc();
+        }
+
+        String ip="";
+        if(functions.isValueNull(commAddressDetailsVO.getCardHolderIpAddress())){
+            ip=commAddressDetailsVO.getCardHolderIpAddress();
+        }else {
+            ip=commAddressDetailsVO.getIp();
+        }
+        String state="NA";
+        String street="NA";
+        String city="NA";
+        if(functions.isValueNull(commAddressDetailsVO.getState()))
+            state=commAddressDetailsVO.getState();
+        if(functions.isValueNull(commAddressDetailsVO.getStreet()))
+            street=commAddressDetailsVO.getStreet();
+        if(functions.isValueNull(commAddressDetailsVO.getCity()))
+            city=commAddressDetailsVO.getCity();
+        try{
+            String amount=commTransactionDetailsVO.getAmount();
+            if("JPY".equalsIgnoreCase(commTransactionDetailsVO.getCurrency())){
+                double amt= Double.parseDouble(commTransactionDetailsVO.getAmount());
+                double roundOff=Math.round(amt);
+                int value=(int)roundOff;
+                amount=String.valueOf(value);
+            }
+
+            String address="";
+            if("Y".equalsIgnoreCase(addressRequired)){
+                address= "<billing country=\""+ commAddressDetailsVO.getCountry() +"\"" +
+                        " state=\""+state+ "\" " +
+                        " zip=\"" + commAddressDetailsVO.getZipCode() +"\" " +
+                        " city=\""+city+"\" " +
+                        " street=\""+street+"\"" +
+                        " phone=\""+ commAddressDetailsVO.getPhone() +"\" />";
+            }
+
+            String authParams =
+                    "<order wallet_id=\""+gatewayAccount.getMerchantId()+"\"" +
+                        " number=\""+ trackingID +"\" " +
+                        " description=\""+ orderDesc + "\"" +
+                        " currency=\""+commTransactionDetailsVO.getCurrency()+"\"" +
+                        " amount=\""+ amount +"\" " +
+                        " email=\"" + commAddressDetailsVO.getEmail() +"\"" +
+                        " ip=\"" +ip+"\"" +
+                        " is_two_phase=\"true\" " +    //false means direct sale
+                        " return_url=\""+commTransactionDetailsVO.getRedirectUrl()+"\" >\n"  +
+
+                    "<card num=\"" + commCardDetailsVO.getCardNum() +"\"" +
+                        " holder=\""+ commAddressDetailsVO.getFirstname() +" " +commAddressDetailsVO.getLastname()+"\"\n"+
+                        " cvv=\""+ commCardDetailsVO.getcVV() +"\"" +
+                        " expires=\""+ commCardDetailsVO.getExpMonth() +"/"+ commCardDetailsVO.getExpYear() +"\" />\n" +
+                        address+
+                            "</order>";
+
+            transactionLogger.error("authParams ----- " + authParams);
+
+            String orderXML = Base64.encode(authParams.getBytes());
+            String secret_word = gatewayAccount.getFRAUD_FTP_PATH();
+            String sha512 = CardPayUtils.sha512(authParams + secret_word);
+            transactionLogger.error("orderXML------------" + orderXML);
+            transactionLogger.error("sha512------------" + sha512);
+
+            String authRequest="orderXML="+URLEncoder.encode(orderXML,"UTF-8")+"&sha512="+URLEncoder.encode(sha512,"UTF-8")+"";
+            transactionLogger.error("authRequest---------------" +authRequest);
+
+            String termUrl = "";
+            transactionLogger.error("host url----"+commMerchantVO.getHostUrl());
+            if (functions.isValueNull(commMerchantVO.getHostUrl()))
+            {
+                termUrl = "https://"+commMerchantVO.getHostUrl()+RB.getString("HOST_URL");
+                transactionLogger.error("from host url----"+termUrl);
+            }
+            else
+            {
+                termUrl = RB.getString("RETURN_URL");
+                transactionLogger.error("from RB----"+termUrl);
+            }
+
+            String authResponse = "";
+
+            if (isTest)
+            {
+                authResponse = CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("TEST_URL") , authRequest);
+            }
+            else
+            {
+                authResponse = CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("LIVE_URL") , authRequest);
+            }
+
+            transactionLogger.error("authResponse------" + authResponse);
+
+            if(functions.isValueNull(authResponse)){
+                commResponseVO=CardPayUtils.readXmlResponse(authResponse,gatewayAccount.getDisplayName());
+                if("pending3DConfirmation".equalsIgnoreCase(commResponseVO.getStatus())){
+                    commResponseVO.setTransactionType(PZProcessType.THREE_D_AUTH.toString());
+                    commResponseVO.setTerURL(termUrl+trackingID);
+                }else {
+                    commResponseVO.setTransactionType(PZProcessType.AUTH.toString());
+                }
+            }else {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark(" Error");
+                commResponseVO.setDescription(" Error");
+            }
+            commResponseVO.setCurrency(commTransactionDetailsVO.getCurrency());
+            commResponseVO.setTmpl_Amount(commAddressDetailsVO.getTmpl_amount());
+            commResponseVO.setTmpl_Currency(commAddressDetailsVO.getTmpl_currency());
+        }
+        catch (Exception e){
+            transactionLogger.error("Exception-----", e);
+        }
+
+
+        return commResponseVO;
+    }
+
+    @Override
+    public GenericResponseVO processCapture(String trackingID, GenericRequestVO requestVO) throws PZConstraintViolationException, PZTechnicalViolationException, PZDBViolationException
+    {
+        transactionLogger.error("-----inside processCapture-----");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        CommCardDetailsVO commCardDetailsVO = commRequestVO.getCardDetailsVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        CommAddressDetailsVO commAddressDetailsVO = commRequestVO.getAddressDetailsVO();
+        Functions functions = new Functions();
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String shaPassword=CardPayUtils.sha256(gatewayAccount.getFRAUD_FTP_PASSWORD().trim());
+
+        boolean isTest = gatewayAccount.isTest();
+
+
+        try{
+
+            String captureRequest=
+                    "client_login="+URLEncoder.encode(gatewayAccount.getFRAUD_FTP_USERNAME(), "UTF-8")+
+                    "&client_password="+URLEncoder.encode(shaPassword, "UTF-8")+
+                    "&id="+URLEncoder.encode(commTransactionDetailsVO.getPreviousTransactionId(), "UTF-8")+
+                    "&status_to="+URLEncoder.encode("capture","UTF-8");
+
+            transactionLogger.error("captureRequest----" + captureRequest);
+
+
+            String captureResponse = "";
+
+            if (isTest)
+            {
+                captureResponse = CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("ORDER_STATUS_TEST_URL") , captureRequest);
+            }
+            else
+            {
+                captureResponse = CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("ORDER_STATUS_LIVE_URL") , captureRequest);
+            }
+
+
+            transactionLogger.error("captureResponse------" + captureResponse);
+            if(functions.isValueNull(captureResponse)){
+                commResponseVO=CardPayUtils.readXmlStatusResponse(captureResponse,gatewayAccount.getDisplayName());
+                commResponseVO.setTransactionType(PZProcessType.CAPTURE.toString());
+            }else {
+                 commResponseVO.setStatus("fail");
+                 commResponseVO.setRemark(" Error");
+                 commResponseVO.setDescription(" Error");
+            }
+        }
+        catch (Exception e){
+            transactionLogger.error("Exception-----", e);
+        }
+
+
+        return commResponseVO;
+    }
+
+    @Override
+    public GenericResponseVO processVoid(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException, PZConstraintViolationException, PZDBViolationException
+    {
+        transactionLogger.error("-----inside processVoid-----");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        CommCardDetailsVO commCardDetailsVO = commRequestVO.getCardDetailsVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        CommAddressDetailsVO commAddressDetailsVO = commRequestVO.getAddressDetailsVO();
+        Functions functions = new Functions();
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String shaPassword=CardPayUtils.sha256(gatewayAccount.getFRAUD_FTP_PASSWORD().trim());
+        boolean isTest = gatewayAccount.isTest();
+
+        try{
+
+            String voidRequest=
+                    "client_login="+URLEncoder.encode(gatewayAccount.getFRAUD_FTP_USERNAME(), "UTF-8")+
+                    "&client_password="+URLEncoder.encode(shaPassword, "UTF-8") +
+                    "&id="+URLEncoder.encode(commTransactionDetailsVO.getPreviousTransactionId(), "UTF-8")+
+                    "&status_to="+URLEncoder.encode("void","UTF-8");
+
+            transactionLogger.error("voidRequest----" + voidRequest);
+
+
+            String voidResponse = "";
+
+            if (isTest)
+            {
+                voidResponse = CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("ORDER_STATUS_TEST_URL") , voidRequest);
+            }
+            else
+            {
+                voidResponse = CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("ORDER_STATUS_LIVE_URL") , voidRequest);
+            }
+
+
+            transactionLogger.error("voidResponse------" + voidResponse);
+            if(functions.isValueNull(voidResponse)){
+                commResponseVO=CardPayUtils.readXmlStatusResponse(voidResponse,gatewayAccount.getDisplayName());
+                commResponseVO.setTransactionType(PZProcessType.CANCEL.toString());
+            }else {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark(" Error");
+                commResponseVO.setDescription(" Error");
+            }
+
+
+        }
+        catch (Exception e){
+            transactionLogger.error("Exception-----", e);
+        }
+
+
+        return commResponseVO;
+    }
+
+    @Override
+    public GenericResponseVO processRefund(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException, PZConstraintViolationException, PZDBViolationException
+    {
+        transactionLogger.error("-----inside processRefund-----");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        CommCardDetailsVO commCardDetailsVO = commRequestVO.getCardDetailsVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        CommAddressDetailsVO commAddressDetailsVO = commRequestVO.getAddressDetailsVO();
+        Functions functions = new Functions();
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String shaPassword=CardPayUtils.sha256(gatewayAccount.getFRAUD_FTP_PASSWORD().trim());
+        boolean isTest = gatewayAccount.isTest();
+
+        try{
+            String amount=commTransactionDetailsVO.getAmount();
+            if("JPY".equalsIgnoreCase(commTransactionDetailsVO.getCurrency())){
+                double amt= Double.parseDouble(commTransactionDetailsVO.getAmount());
+                double roundOff=Math.round(amt);
+                int value=(int)roundOff;
+                amount=String.valueOf(value);
+            }
+            String refundRequest=
+                    "client_login="+URLEncoder.encode(gatewayAccount.getFRAUD_FTP_USERNAME(), "UTF-8")+
+                    "&client_password="+URLEncoder.encode(shaPassword, "UTF-8")+
+                    "&id="+ URLEncoder.encode(commTransactionDetailsVO.getPreviousTransactionId(), "UTF-8")+
+                    "&status_to="+URLEncoder.encode("refund", "UTF-8")+
+                    "&amount="+amount+
+                    "&reason="+commTransactionDetailsVO.getOrderDesc();
+
+            transactionLogger.error("refundRequest----" + refundRequest);
+
+
+            String refundResponse = "";
+
+            if (isTest)
+            {
+                refundResponse = CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("ORDER_STATUS_TEST_URL") , refundRequest);
+            }
+            else
+            {
+                refundResponse = CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("ORDER_STATUS_LIVE_URL") , refundRequest);
+            }
+
+
+            transactionLogger.error("refundResponse------" + refundResponse);
+            if(functions.isValueNull(refundResponse)){
+                commResponseVO=CardPayUtils.readXmlStatusResponse(refundResponse,gatewayAccount.getDisplayName());
+                commResponseVO.setTransactionType(PZProcessType.REFUND.toString());
+            }else {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark(" Error");
+                commResponseVO.setDescription(" Error");
+            }
+
+
+
+        }
+        catch (Exception e){
+            transactionLogger.error("Exception-----", e);
+        }
+
+
+        return commResponseVO;
+    }
+
+
+    @Override
+    public GenericResponseVO processPayout(String trackingId, GenericRequestVO requestVO) throws PZConstraintViolationException, PZTechnicalViolationException, PZGenericConstraintViolationException
+    {
+        transactionLogger.error("-----inside processPayout-----");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        CommCardDetailsVO commCardDetailsVO = commRequestVO.getCardDetailsVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        CommAddressDetailsVO commAddressDetailsVO = commRequestVO.getAddressDetailsVO();
+        Functions functions = new Functions();
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String shaPassword=CardPayUtils.sha256(gatewayAccount.getFRAUD_FTP_PASSWORD().trim());
+        boolean isTest = gatewayAccount.isTest();
+
+        transactionLogger.debug("transaction id --------------- "+commTransactionDetailsVO.getPaymentId()+"---"+commTransactionDetailsVO.getOrderId());
+        try{
+            String amount=commTransactionDetailsVO.getAmount();
+            if("JPY".equalsIgnoreCase(commTransactionDetailsVO.getCurrency())){
+                double amt= Double.parseDouble(commTransactionDetailsVO.getAmount());
+                double roundOff=Math.round(amt);
+                int value=(int)roundOff;
+                amount=String.valueOf(value);
+            }
+
+            String payoutRequest=
+                    "client_login="+URLEncoder.encode(gatewayAccount.getFRAUD_FTP_USERNAME(), "UTF-8")+
+                    "&client_password="+URLEncoder.encode(shaPassword, "UTF-8")+
+                    "&id="+URLEncoder.encode(commTransactionDetailsVO.getPaymentId(), "UTF-8")+
+                    "&status_to="+URLEncoder.encode("payout", "UTF-8")+
+                    "&amount="+amount+
+                    "&reason="+commTransactionDetailsVO.getOrderDesc();
+
+            transactionLogger.error("payoutRequest----" + payoutRequest);
+
+
+            String payoutResponse = "";
+
+            if (isTest)
+            {
+                payoutResponse = CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("ORDER_STATUS_TEST_URL") , payoutRequest);
+            }
+            else
+            {
+                payoutResponse = CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("ORDER_STATUS_LIVE_URL") , payoutRequest);
+            }
+
+
+            transactionLogger.error("payoutResponse------" + payoutResponse);
+            if(functions.isValueNull(payoutResponse)){
+                commResponseVO=CardPayUtils.readXmlStatusResponse(payoutResponse,gatewayAccount.getDisplayName());
+                commResponseVO.setTransactionType(PZProcessType.PAYOUT.toString());
+            }else {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark(" Error");
+                commResponseVO.setDescription(" Error");
+            }
+
+        }
+        catch (Exception e){
+            transactionLogger.error("Exception-----", e);
+        }
+
+
+        return commResponseVO;
+    }
+
+    @Override
+    public GenericResponseVO processInquiry(GenericRequestVO requestVO) throws PZTechnicalViolationException, PZDBViolationException, PZConstraintViolationException
+    {
+        transactionLogger.error("-----inside processInquiry-----");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        CommCardDetailsVO commCardDetailsVO = commRequestVO.getCardDetailsVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        CommAddressDetailsVO commAddressDetailsVO = commRequestVO.getAddressDetailsVO();
+        Functions functions = new Functions();
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+
+        String is3dSupported = gatewayAccount.get_3DSupportAccount();
+        boolean isTest = gatewayAccount.isTest();
+
+        try{
+
+        }
+        catch (Exception e){
+            transactionLogger.error("Exception-----", e);
+        }
+
+
+        return commResponseVO;
+    }
+
+
+    public GenericResponseVO process3DSaleConfirmation(String PaRes, String MD,CommRequestVO commRequestVO)
+    {
+        transactionLogger.error("-----inside process3DSaleConfirmation-----");
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        Functions functions = new Functions();
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+
+        boolean isTest = gatewayAccount.isTest();
+        String saleConfirmationResponse="";
+
+        try{
+            String saleConfirmation="PaRes="+URLEncoder.encode(PaRes,"UTF-8")+"&MD="+URLEncoder.encode(MD, "UTF-8")+"";
+
+            transactionLogger.error("saleConfirmation---Request----"+saleConfirmation);
+            if (isTest)
+            {
+                saleConfirmationResponse= CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("TEST_URL"), saleConfirmation);
+            }
+            else
+            {
+                saleConfirmationResponse= CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("LIVE_URL"), saleConfirmation);
+            }
+
+            transactionLogger.error("saleConfirmation----Response------------" + saleConfirmationResponse);
+
+            if(functions.isValueNull(saleConfirmationResponse)){
+                commResponseVO=CardPayUtils.readXmlResponse(saleConfirmationResponse,gatewayAccount.getDisplayName());
+               commResponseVO.setTransactionType(PZProcessType.THREE_D_SALE.toString());
+            }else {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark(" Error");
+                commResponseVO.setDescription(" Error");
+            }
+            commResponseVO.setTmpl_Amount(commRequestVO.getAddressDetailsVO().getTmpl_amount());
+            commResponseVO.setTmpl_Currency(commRequestVO.getAddressDetailsVO().getTmpl_currency());
+        }
+        catch (Exception e){
+            transactionLogger.error("Exception-----", e);
+        }
+
+
+        return commResponseVO;
+
+
+    }
+
+    public GenericResponseVO process3DAuthConfirmation(String PaRes, String MD,CommRequestVO commRequestVO)
+    {
+        transactionLogger.error("-----inside process3DAuthConfirmation-----");
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        Functions functions = new Functions();
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+
+        boolean isTest = gatewayAccount.isTest();
+        String authConfirmationResponse="";
+
+
+        try{
+
+            String authConfirmation="PaRes="+URLEncoder.encode(PaRes,"UTF-8")+"&MD="+URLEncoder.encode(MD,"UTF-8")+"";
+
+            transactionLogger.error("authConfirmation----Request----"+authConfirmation);
+            if (isTest)
+            {
+                authConfirmationResponse= CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("TEST_URL"), authConfirmation);
+            }
+            else
+            {
+                authConfirmationResponse= CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("LIVE_URL"), authConfirmation);
+            }
+
+            transactionLogger.error("authConfirmation----Response-----" + authConfirmationResponse);
+
+            if(functions.isValueNull(authConfirmationResponse)){
+                commResponseVO=CardPayUtils.readXmlResponse(authConfirmationResponse,gatewayAccount.getDisplayName());
+                commResponseVO.setTransactionType(PZProcessType.THREE_D_AUTH.toString());
+            }else {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark(" Error");
+                commResponseVO.setDescription(" Error");
+            }
+            commResponseVO.setTmpl_Amount(commRequestVO.getAddressDetailsVO().getTmpl_amount());
+            commResponseVO.setTmpl_Currency(commRequestVO.getAddressDetailsVO().getTmpl_currency());
+        }
+        catch (Exception e){
+            transactionLogger.error("Exception-----", e);
+        }
+
+
+        return commResponseVO;
+    }
+
+
+    //Common3dFrontEndServlet
+    @Override
+    public GenericResponseVO processCommon3DSaleConfirmation(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException, PZConstraintViolationException, PZDBViolationException, UnsupportedEncodingException
+    {
+        transactionLogger.error("-----inside process3DSaleConfirmation-----");
+        Comm3DRequestVO comm3DRequestVO=(Comm3DRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        Functions functions = new Functions();
+        String PaRes=comm3DRequestVO.getPaRes();
+        String MD=comm3DRequestVO.getMd();
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+
+        boolean isTest = gatewayAccount.isTest();
+        String saleConfirmationResponse="";
+
+        try{
+            String saleConfirmation="PaRes="+URLEncoder.encode(PaRes,"UTF-8")+"&MD="+URLEncoder.encode(MD, "UTF-8")+"";
+
+            transactionLogger.error("-----3D Sale Request-----"+saleConfirmation);
+            if (isTest)
+            {
+                saleConfirmationResponse= CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("TEST_URL"), saleConfirmation);
+            }
+            else
+            {
+                saleConfirmationResponse= CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("LIVE_URL"), saleConfirmation);
+            }
+
+            transactionLogger.error("-----3D Sale Response-----" + saleConfirmationResponse);
+
+            if(functions.isValueNull(saleConfirmationResponse)){
+                commResponseVO=CardPayUtils.readXmlResponse(saleConfirmationResponse,gatewayAccount.getDisplayName());
+                commResponseVO.setTransactionType(PZProcessType.THREE_D_SALE.toString());
+            }else {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark(" Error");
+                commResponseVO.setDescription(" Error");
+            }
+            commResponseVO.setTmpl_Amount(comm3DRequestVO.getAddressDetailsVO().getTmpl_amount());
+            commResponseVO.setTmpl_Currency(comm3DRequestVO.getAddressDetailsVO().getTmpl_currency());
+        }
+        catch (Exception e){
+            transactionLogger.error("Exception-----", e);
+        }
+        return commResponseVO;
+    }
+
+    @Override
+    public GenericResponseVO processCommon3DAuthConfirmation(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException, PZConstraintViolationException, PZDBViolationException, UnsupportedEncodingException
+    {
+        transactionLogger.error("-----inside process3DAuthConfirmation-----");
+        Comm3DRequestVO comm3DRequestVO=(Comm3DRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        Functions functions = new Functions();
+        String PaRes=comm3DRequestVO.getPaRes();
+        String MD=comm3DRequestVO.getMd();
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest = gatewayAccount.isTest();
+        String authConfirmationResponse="";
+
+
+        try{
+
+            String authConfirmation="PaRes="+URLEncoder.encode(PaRes,"UTF-8")+"&MD="+URLEncoder.encode(MD,"UTF-8")+"";
+
+            transactionLogger.error("-----3D Auth Request-----"+authConfirmation);
+            if (isTest)
+            {
+                authConfirmationResponse= CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("TEST_URL"), authConfirmation);
+            }
+            else
+            {
+                authConfirmationResponse= CardPayUtils.doPostHTTPSURLConnectionClient(RB.getString("LIVE_URL"), authConfirmation);
+            }
+
+            transactionLogger.error("-----3D Auth Response------" + authConfirmationResponse);
+
+            if(functions.isValueNull(authConfirmationResponse)){
+                commResponseVO=CardPayUtils.readXmlResponse(authConfirmationResponse,gatewayAccount.getDisplayName());
+                commResponseVO.setTransactionType(PZProcessType.THREE_D_AUTH.toString());
+            }else {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark(" Error");
+                commResponseVO.setDescription(" Error");
+            }
+            commResponseVO.setTmpl_Amount(comm3DRequestVO.getAddressDetailsVO().getTmpl_amount());
+            commResponseVO.setTmpl_Currency(comm3DRequestVO.getAddressDetailsVO().getTmpl_currency());
+        }
+        catch (Exception e){
+            transactionLogger.error("Exception-----", e);
+        }
+        return commResponseVO;
+    }
+}

@@ -1,0 +1,726 @@
+package com.invoice.helper;
+
+import com.directi.pg.*;
+import com.invoice.dao.InvoiceEntry;
+import com.invoice.validators.InvoiceInputValidator;
+import com.invoice.vo.InvoiceVO;
+import com.invoice.vo.ProductList;
+import com.manager.PartnerManager;
+import com.manager.TerminalManager;
+import com.manager.vo.MerchantDetailsVO;
+import com.manager.vo.PartnerDetailsVO;
+import com.manager.vo.TerminalVO;
+import com.payment.checkers.PaymentChecker;
+import com.payment.exceptionHandler.PZConstraintViolationException;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.constraintType.PZConstraintExceptionEnum;
+import com.payment.exceptionHandler.constraintType.PZDBExceptionEnum;
+import com.payment.exceptionHandler.errorcode.ErrorCodeUtils;
+import com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorName;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeListVO;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeVO;
+import com.payment.validators.RestCommonInputValidator;
+import org.owasp.esapi.ESAPI;
+
+import java.security.NoSuchAlgorithmException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+/**
+ * Created by Sneha on 2/9/2017.
+ */
+public class InvoiceHelper
+{
+    private static Logger log = new Logger(InvoiceHelper.class.getName());
+    private static TransactionLogger transactionLogger = new TransactionLogger(InvoiceHelper.class.getName());
+
+    private static Functions functions = new Functions();
+
+    public InvoiceVO performCancelRemindInvoiceVerification(InvoiceVO invoiceVO) throws PZDBViolationException, PZConstraintViolationException, NoSuchAlgorithmException
+    {
+        RestCommonInputValidator restCommonInputValidator = new RestCommonInputValidator();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        String error = "";
+        MerchantDetailsVO merchantDetailsVO = invoiceVO.getMerchantDetailsVO();
+        PartnerDetailsVO partnerDetailsVO = new PartnerDetailsVO();
+        PartnerManager partnerManager = new PartnerManager();
+
+        merchantDetailsVO = restCommonInputValidator.getMerchantConfigDetailsByLogin(invoiceVO.getMemberid());
+        if (merchantDetailsVO == null || merchantDetailsVO.getMemberId() == null)
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_TOID_INVALID);
+            error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+            invoiceVO.setErrorMsg(error);
+            if (invoiceVO.getErrorCodeListVO() != null)
+                invoiceVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return invoiceVO;
+        }
+
+        partnerDetailsVO = partnerManager.getPartnerDetails(merchantDetailsVO.getPartnerId());
+
+        invoiceVO.setMerchantDetailsVO(merchantDetailsVO);
+        invoiceVO.setPartnerDetailsVO(partnerDetailsVO);
+        invoiceVO = merchantActivationChecks(invoiceVO);
+
+        if(!isOrderUniqueInInvoice(merchantDetailsVO.getMemberId(), invoiceVO.getDescription()))
+        {
+            error = "Duplicate Order Id ";
+            errorCodeListVO = getErrorVO(ErrorName.SYS_UNIQUEORDER_INVOICE);
+            PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performCancelRegenerateRemindInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,errorCodeListVO, null, null);
+        }
+
+        String uniqueTransOrderId = checkorderuniqueness(merchantDetailsVO.getMemberId(), invoiceVO.getDescription());
+        if (functions.isValueNull(uniqueTransOrderId))
+        {
+            error = invoiceVO.getDescription()+"-Duplicate Order Id OR " + uniqueTransOrderId;
+            errorCodeListVO = getErrorVO(ErrorName.SYS_UNIQUEORDER_INVOICE);
+            PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performCancelRegenerateRemindInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,errorCodeListVO, null, null);
+        }
+        return invoiceVO;
+    }
+
+    public InvoiceVO performRegenerateInvoiceVerification(InvoiceVO invoiceVO) throws PZDBViolationException, PZConstraintViolationException, NoSuchAlgorithmException
+    {
+        RestCommonInputValidator restCommonInputValidator = new RestCommonInputValidator();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        String error = "";
+        MerchantDetailsVO merchantDetailsVO = invoiceVO.getMerchantDetailsVO();
+        PartnerDetailsVO partnerDetailsVO = new PartnerDetailsVO();
+        PartnerManager partnerManager = new PartnerManager();
+
+        merchantDetailsVO = restCommonInputValidator.getMerchantConfigDetailsByLogin(invoiceVO.getMemberid());
+        if (merchantDetailsVO == null || merchantDetailsVO.getMemberId() == null)
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_TOID_INVALID);
+            error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+            invoiceVO.setErrorMsg(error);
+            if (invoiceVO.getErrorCodeListVO() != null)
+                invoiceVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return invoiceVO;
+        }
+
+        partnerDetailsVO = partnerManager.getPartnerDetails(merchantDetailsVO.getPartnerId());
+
+        invoiceVO.setMerchantDetailsVO(merchantDetailsVO);
+        invoiceVO.setPartnerDetailsVO(partnerDetailsVO);
+        invoiceVO = merchantActivationChecks(invoiceVO);
+
+        if (!Checksum.verifyChecksumV2(invoiceVO.getInvoiceno(), merchantDetailsVO.getMemberId(), merchantDetailsVO.getKey(), invoiceVO.getRedirecturl(), invoiceVO.getChecksum(), invoiceVO.getMerchantDetailsVO().getChecksumAlgo()))
+        {
+            error = "Checksum illegal access, checkSum mismatch";
+            errorCodeListVO = getErrorVO(ErrorName.SYS_INVALID_CHECKSUM);
+            PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performCancelRegenerateRemindInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,errorCodeListVO, null, null);
+        }
+
+        if(!isOrderUniqueInInvoice(merchantDetailsVO.getMemberId(), invoiceVO.getDescription()))
+        {
+            error = "Duplicate Order Id ";
+            errorCodeListVO = getErrorVO(ErrorName.SYS_UNIQUEORDER_INVOICE);
+            PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performCancelRegenerateRemindInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,errorCodeListVO, null, null);
+        }
+
+        String uniqueTransOrderId = checkorderuniqueness(merchantDetailsVO.getMemberId(), invoiceVO.getDescription());
+        if (functions.isValueNull(uniqueTransOrderId))
+        {
+            error = invoiceVO.getDescription()+"-Duplicate Order Id OR " + uniqueTransOrderId;
+            errorCodeListVO = getErrorVO(ErrorName.SYS_UNIQUEORDER_INVOICE);
+            PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performCancelRegenerateRemindInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,errorCodeListVO, null, null);
+        }
+        return invoiceVO;
+    }
+
+    public InvoiceVO performGenerateInvoiceVerification(InvoiceVO invoiceVO) throws PZDBViolationException, PZConstraintViolationException, NoSuchAlgorithmException
+    {
+        log.debug("inside performGenerateInvoiceVerification::::");
+        Functions functions = new Functions();
+        RestCommonInputValidator restCommonInputValidator = new RestCommonInputValidator();
+        InvoiceInputValidator commonInputValidator = new InvoiceInputValidator();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        TerminalManager terminalManager = new TerminalManager();
+        PartnerManager partnerManager = new PartnerManager();
+        String error = "";
+        MerchantDetailsVO merchantDetailsVO = invoiceVO.getMerchantDetailsVO();
+        PartnerDetailsVO partnerDetailsVO = null;
+
+        String userid=merchantDetailsVO.getUserid();
+        String role=merchantDetailsVO.getRole();
+        merchantDetailsVO = restCommonInputValidator.getMerchantConfigDetailsByLogin(invoiceVO.getMemberid());
+        if (merchantDetailsVO == null || merchantDetailsVO.getMemberId() == null)
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_TOID_INVALID);
+            error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+            invoiceVO.setErrorMsg(error);
+            if (invoiceVO.getErrorCodeListVO() != null)
+                invoiceVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return invoiceVO;
+        }
+        if("submerchant".equalsIgnoreCase(role)){
+            merchantDetailsVO.setLogin(invoiceVO.getMerchantDetailsVO().getLogin());
+            merchantDetailsVO.setRole(role);
+        }
+        invoiceVO.setMerchantDetailsVO(merchantDetailsVO);
+        partnerDetailsVO = partnerManager.getPartnerDetails(invoiceVO.getMerchantDetailsVO().getPartnerId());
+        invoiceVO.setPartnerDetailsVO(partnerDetailsVO);
+        invoiceVO = merchantActivationChecks(invoiceVO);
+        log.debug("invoiceVO.getChecksum():::"+invoiceVO.getChecksum());
+        //Don't  remove below comment. Below if condition is used to solved PCI business logic defect about Quntity.
+        //if (!Checksum.verifyMD5GenerateInvoiceChecksumV2(merchantDetailsVO.getMemberId(), merchantDetailsVO.getKey(), invoiceVO.getDescription(), invoiceVO.getAmount(), invoiceVO.getRedirecturl(), invoiceVO.getQuantityTotal(), invoiceVO.getChecksum()))
+        if (!Checksum.verifyChecksumV3(merchantDetailsVO.getMemberId(), merchantDetailsVO.getKey(), invoiceVO.getDescription(), invoiceVO.getAmount(), invoiceVO.getRedirecturl(), invoiceVO.getChecksum(), invoiceVO.getMerchantDetailsVO().getChecksumAlgo()))
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_INVALID_CHECKSUM);
+            error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+            invoiceVO.setErrorMsg(error);
+            if (invoiceVO.getErrorCodeListVO() != null)
+                invoiceVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return invoiceVO;
+        }
+        //check for products
+        if(invoiceVO.getProductList() != null && invoiceVO.getProductList().size()>0)
+        {
+            double sumOfProductTotal=0;
+            String sumOfProductTotalStr="";
+            double productAmountTotal=0;
+            double quantityTotal=0;
+            double taxAmount=0;
+            for(ProductList productList:invoiceVO.getProductList())
+            {
+                taxAmount=0;
+                productAmountTotal=0;
+                sumOfProductTotal+=Double.parseDouble(productList.getProductTotal());
+                if(functions.isValueNull(productList.getQuantity()))
+                {
+                    quantityTotal += Double.parseDouble(productList.getQuantity());
+                    productAmountTotal = (Double.parseDouble(productList.getProductAmount()) * Double.parseDouble(productList.getQuantity()));
+                    if(functions.isValueNull(productList.getTax()) && !"0.00".equalsIgnoreCase(productList.getTax()) &&  !"0.0".equalsIgnoreCase(productList.getTax()) && !"0".equalsIgnoreCase(productList.getTax()))
+                        taxAmount=((productAmountTotal* Double.parseDouble(productList.getTax()))/100);
+                    productAmountTotal=productAmountTotal+taxAmount;
+                }else
+                {
+                    if(functions.isValueNull(productList.getTax()) && !"0.00".equalsIgnoreCase(productList.getTax()) &&  !"0.0".equalsIgnoreCase(productList.getTax()) && !"0".equalsIgnoreCase(productList.getTax()))
+                        taxAmount=((Double.parseDouble(productList.getProductAmount()) * Double.parseDouble(productList.getTax()))/100);
+                    productAmountTotal = Double.parseDouble(productList.getProductAmount())+taxAmount;
+                }
+                String productAmountTotalStr=String.format("%.2f",productAmountTotal);
+                transactionLogger.error("productAmountTotalStr-------->"+productAmountTotalStr);
+                if(!productAmountTotalStr.equalsIgnoreCase(productList.getProductTotal()))
+                {
+                    errorCodeListVO = getErrorVO(ErrorName.SYS_PRODUCT_DETAILS_CHECK);
+                    PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+            }
+            //Don't  remove below comment. Below if condition is used to solved PCI business logic defect about Quntity.
+            /*if(Double.parseDouble(invoiceVO.getQuantityTotal())!=quantityTotal)
+            {
+                errorCodeListVO = getErrorVO(ErrorName.SYS_PRODUCT_DETAILS_CHECK);
+                PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }*/
+            sumOfProductTotalStr=String.format("%.2f",sumOfProductTotal);
+            transactionLogger.error("productAmountTotalStr-------->"+sumOfProductTotalStr);
+            if(!invoiceVO.getAmount().equalsIgnoreCase(sumOfProductTotalStr))
+            {
+                errorCodeListVO = getErrorVO(ErrorName.SYS_PRODUCT_DETAILS_CHECK);
+                PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }
+
+        }
+        //Merchant level address validation checks if Partner level add validation is Y
+        /*if("Y".equals(invoiceVO.getPartnerDetailsVO().getAddressValidationInvoice()))
+        {
+            if ("Y".equals(invoiceVO.getMerchantDetailsVO().getAddressValidationInvoice()))
+            {
+                error = commonInputValidator.validateRestFlagBasedAddressField(invoiceVO, "REST");
+                if (functions.isValueNull(error))
+                {
+                    invoiceVO.setErrorMsg(error);
+                    return invoiceVO;
+                }
+            }
+        }*/
+        if(functions.isValueNull(invoiceVO.getTerminalid()) || functions.isValueNull(invoiceVO.getPaymodeid()) || functions.isValueNull(invoiceVO.getCardTypeId()))
+        {
+            LimitChecker limitChecker = new LimitChecker();
+            TerminalVO terminalVO = null;
+
+            if("N".equals(merchantDetailsVO.getAutoSelectTerminal()))
+            {
+                if (functions.isValueNull(invoiceVO.getTerminalid()))
+                {
+                    if ("merchant".equalsIgnoreCase(role))
+                    terminalVO = terminalManager.getMemberTerminalDetails(invoiceVO.getTerminalid(), invoiceVO.getMemberid(), invoiceVO.getCurrency());
+                    else if ("submerchant".equalsIgnoreCase(role))
+                        terminalVO=terminalManager.getMemberUserTerminalDetails(invoiceVO.getTerminalid(),invoiceVO.getMemberid(),invoiceVO.getCurrency(),userid);
+                }
+                else
+                {
+                    error = "Invalid request";
+                    errorCodeListVO = getErrorVO(ErrorName.VALIDATION_TERMINALID);
+                    PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+            }
+            else if("Y".equals(merchantDetailsVO.getAutoSelectTerminal()))
+            {
+                if (functions.isValueNull(invoiceVO.getPaymodeid()) || functions.isValueNull(invoiceVO.getCardTypeId()))
+                {
+                    if (!ESAPI.validator().isValidInput("paymentMode", invoiceVO.getPaymodeid(), "Numbers", 10, false))
+                    {
+                        error = "Invalid request";
+                        errorCodeListVO = getErrorVO(ErrorName.VALIDATION_PAYMENT_MODE);
+                        PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                    }
+                    if (!ESAPI.validator().isValidInput("paymentBrand", invoiceVO.getCardTypeId(), "Numbers", 10, false))
+                    {
+                        error = "Invalid request";
+                        errorCodeListVO = getErrorVO(ErrorName.VALIDATION_PAYMENT_BRAND);
+                        PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                    }
+                    if ("merchant".equalsIgnoreCase(role))
+                    terminalVO = terminalManager.getCardIdAndPaymodeIdFromPaymentBrand(invoiceVO.getMemberid(), invoiceVO.getPaymodeid(), invoiceVO.getCardTypeId(), invoiceVO.getCurrency());
+                    else if ("submerchant".equalsIgnoreCase(role))
+                        terminalVO=terminalManager.getCardIdAndPaymodeIdFromPaymentBrandMemberUser(invoiceVO.getMemberid(),invoiceVO.getPaymodeid(),invoiceVO.getCardTypeId(),invoiceVO.getCurrency(),userid);
+                }
+                else
+                {
+                    error = "Invalid request";
+                    errorCodeListVO = getErrorVO(ErrorName.VALIDATION_PAYMENT_BRAND);
+                    PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+            }
+
+            if (terminalVO == null)
+            {
+                error = "Invalid request";
+                errorCodeListVO = getErrorVO(ErrorName.SYS_INVALID_TERMINAL_MODE_BRAND);
+                PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }
+            if ("N".equalsIgnoreCase(terminalVO.getIsActive()))
+            {
+                error = "Terminal Id provided by you is not active for your account. Please check your Technical specification.";
+                errorCodeListVO = getErrorVO(ErrorName.SYS_TERMINAL_ACTIVE_CHECK);
+                PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }
+            if("Y".equals(terminalVO.getAddressValidation()))
+            {
+                error = commonInputValidator.validateRestFlagBasedAddressField(invoiceVO, "REST");
+                if(functions.isValueNull(error))
+                {
+                    invoiceVO.setErrorMsg(error);
+                    return invoiceVO;
+                }
+            }
+            limitChecker.checkTransactionAmount(invoiceVO.getAmount(), terminalVO.getMax_transaction_amount(), terminalVO.getMin_transaction_amount());
+
+            PaymentChecker paymentChecker = new PaymentChecker();
+            if ("JPY".equals(invoiceVO.getCurrency()) && !paymentChecker.isAmountValidForJPY(invoiceVO.getCurrency(), invoiceVO.getAmount()))
+            {
+                error = "JPY Currency does not have cent value after decimal. Please give .00 as decimal value";
+                errorCodeListVO = getErrorVO(ErrorName.SYS_JPY_CURRENCY_CHECK);
+                PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }
+            invoiceVO.setTerminalid(terminalVO.getTerminalId());
+        }
+        else
+        {
+
+            if ("merchant".equalsIgnoreCase(role))
+            {
+                if (!terminalManager.isGatewayCurrencyExistWithMember(invoiceVO.getMemberid(), invoiceVO.getCurrency()))
+                {
+                    error = "Invalid Currency";
+                    errorCodeListVO = getErrorVO(ErrorName.SYS_CURRENCY_CHECK);
+                    PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+            }
+            else if ("submerchant".equalsIgnoreCase(role))
+            {
+                if (!terminalManager.isGatewayCurrencyExistWithMemberUser(invoiceVO.getMemberid(),invoiceVO.getCurrency(),userid))
+                {
+                    error = "Invalid Currency";
+                    errorCodeListVO = getErrorVO(ErrorName.SYS_CURRENCY_CHECK);
+                    PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+            }
+        }
+
+        if(!isOrderUniqueInInvoice(merchantDetailsVO.getMemberId(), invoiceVO.getDescription()))
+        {
+            error = "Duplicate Order Id ";
+            errorCodeListVO = getErrorVO(ErrorName.SYS_UNIQUEORDER_INVOICE);
+            PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,errorCodeListVO, null, null);
+        }
+
+        String uniqueTransOrderId = checkorderuniqueness(merchantDetailsVO.getMemberId(), invoiceVO.getDescription());
+        if (functions.isValueNull(uniqueTransOrderId))
+        {
+            error = invoiceVO.getDescription()+"-Duplicate Order Id OR " + uniqueTransOrderId;
+            errorCodeListVO = getErrorVO(ErrorName.SYS_UNIQUEORDER_INVOICE);
+            PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,errorCodeListVO, null, null);
+        }
+
+        if (merchantDetailsVO.getIsBlacklistTransaction().equalsIgnoreCase("Y"))
+        {
+            if (!isEmailAddressBlocked(invoiceVO.getEmail()))
+            {
+                error = "Your EmailAddress is Blocked:::Please contact support for further assistance";
+                errorCodeListVO = getErrorVO(ErrorName.SYS_BLOCKEDEMAIL);
+                PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }
+
+            if (!isCountryBlocked(invoiceVO.getCountry(), invoiceVO.getTelCc()))
+            {
+                error = "Your Country is Blocked:::Please contact support for further assistance";
+                errorCodeListVO = getErrorVO(ErrorName.SYS_BLOCKEDCOUNTRY);
+                PZExceptionHandler.raiseConstraintViolationException("TransactionHelper.class", "performGenerateInvoiceVerification()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+            }
+        }
+
+        InvoiceEntry invoiceEntry = new InvoiceEntry();
+        boolean isCurrency = false;
+
+        isCurrency = invoiceEntry.getMerchantCurrency(invoiceVO.getMemberid(),invoiceVO.getCurrency());
+        //System.out.println("iscurrency----"+isCurrency);
+        if (!isCurrency)
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_INVALID_CURRENCY);
+            error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+            invoiceVO.setErrorMsg(error);
+            if (invoiceVO.getErrorCodeListVO() != null)
+                invoiceVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+
+            return invoiceVO;
+        }
+        try
+        {
+            double totalSum = 0.00;
+            if(invoiceVO.getProductList() != null)
+            {
+                for (ProductList prod : invoiceVO.getProductList())
+                {
+                    transactionLogger.debug("list --------" + prod.getProductDescription()+"amount"+prod.getProductAmount());
+
+                    double total = Double.parseDouble(prod.getProductAmount()) * Double.parseDouble(prod.getQuantity());
+                    totalSum = totalSum + total;
+                }
+                transactionLogger.debug("invoice amount --------" + invoiceVO.getAmount() + "-total Amount--" + Math.round(totalSum*100.0)/100.0);
+
+                if (Double.parseDouble(invoiceVO.getAmount()) < Math.round(totalSum*100.0)/100.0)
+                {
+                    transactionLogger.debug("Inside error --------");
+
+                    errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_GRAND_TOTAL_AMOUNT);
+                    error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+                    invoiceVO.setErrorMsg(error);
+                    if (invoiceVO.getErrorCodeListVO() != null)
+                        invoiceVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+
+                    return invoiceVO;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            log.error("Exception::::",e);
+        }
+
+        return invoiceVO;
+    }
+
+    public InvoiceVO merchantActivationChecks(InvoiceVO invoiceVO) throws PZConstraintViolationException
+    {
+        Functions functions = new Functions();
+        PaymentChecker paymentChecker = new PaymentChecker();
+        String error = "";
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+
+        //IP Whitelist check
+        if("Y".equals(invoiceVO.getPartnerDetailsVO().getIpWhitelistInvoice()))
+        {
+            if ("Y".equals((invoiceVO.getMerchantDetailsVO().getIpWhitelistInvoice())))
+            {
+                transactionLogger.debug("MerchantId and ip address--------" + invoiceVO.getMerchantDetailsVO().getMemberId() + "---" + invoiceVO.getMerchantIpAddress());
+                if (!paymentChecker.isIpWhitelistedForTransaction(invoiceVO.getMerchantDetailsVO().getMemberId(), invoiceVO.getMerchantIpAddress()))
+                {
+                    error = "Merchant's IP is not white listed with us. Kindly Contact the Admin Support Desk.";
+                    errorCodeListVO = getErrorVO(ErrorName.SYS_IPWHITELIST_CHECK);
+                    PZExceptionHandler.raiseConstraintViolationException("InvoiceHelper.class", "merchantActivationChecks()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+                }
+            }
+        }
+        //Activation check
+        if (!"Y".equals(invoiceVO.getMerchantDetailsVO().getActivation()))
+        {
+            error = "Error- The Merchant Account is not set to LIVE mode.<BR><BR> This could happen if there is any pending formality from the Merchant Side. Please contact support so that they can activate your account.";
+            errorCodeListVO = getErrorVO(ErrorName.SYS_MEMBER_ACTIVATION_CHECK);
+            PZExceptionHandler.raiseConstraintViolationException("InvoiceHelper.class", "merchantActivationChecks()", null, "Common", error, PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, errorCodeListVO, null, null);
+        }
+        if (functions.isValueNull(error))
+            invoiceVO.setErrorMsg(error);
+
+        return invoiceVO;
+    }
+
+    private ErrorCodeListVO getErrorVO(ErrorName errorName)
+    {
+        ErrorCodeVO errorCodeVO=new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO =new ErrorCodeListVO();
+        errorCodeVO = errorCodeUtils.getErrorCodeFromName(errorName);
+        errorCodeListVO.addListOfError(errorCodeVO);
+        return errorCodeListVO;
+    }
+
+    public boolean isOrderUniqueInInvoice(String toid, String orderid)
+    {
+        transactionLogger.debug("checkUniqueOrderInInvoice---");
+        Connection con = null;
+        boolean oredrIdUnique = true;
+
+        try
+        {
+            con = Database.getConnection();
+
+            StringBuffer query2 = new StringBuffer("SELECT orderid FROM invoice WHERE memberid=? AND orderid=?");
+            PreparedStatement pstmt1 = con.prepareStatement(query2.toString());
+            pstmt1.setString(1, toid);
+            pstmt1.setString(2, orderid);
+            log.debug("order unique query---" + pstmt1);
+            ResultSet rs1 = pstmt1.executeQuery();
+            if (rs1.next())
+            {
+                oredrIdUnique = false;
+            }
+        }
+        catch (Exception e)
+        {
+            oredrIdUnique = false;
+            log.error("Exception occur", e);
+        }
+        finally
+        {
+            Database.closeConnection(con);
+        }
+        return oredrIdUnique;
+    }
+
+    public String checkorderuniqueness(String toid, String description)
+    {
+        transactionLogger.debug("checkorderuniqueness---");
+        String str = "";
+        Connection con = null;
+        try
+        {
+            con = Database.getConnection();
+            String transaction_table = "transaction_common";
+            transactionLogger.debug("InputValidatorUtils.OrderUniqueness ::: DB Call"+transaction_table);
+            String query2 = "select trackingid from " + transaction_table + " where toid = ? and description = ? order by dtstamp desc";
+            PreparedStatement pstmt1 = con.prepareStatement(query2);
+            pstmt1.setString(1, toid);
+            pstmt1.setString(2, description);
+            log.debug("order unique query---" + pstmt1);
+            transactionLogger.debug("order unique query---"+pstmt1);
+            ResultSet rs1 = pstmt1.executeQuery();
+            if (rs1.next())
+            {
+                str = "Your Transaction is already being processed. Kindly try to place transaction with unique orderId.";
+            }
+        }
+        catch (Exception e)
+        {
+            log.error("Exception occur", e);
+            transactionLogger.error("Exception occur", e);
+        }
+        finally
+        {
+            Database.closeConnection(con);
+        }
+        return str;
+    }
+
+    public boolean isEmailAddressBlocked(String emailAddress)throws PZDBViolationException
+    {
+        boolean isEmailBlocked = true;
+        Connection conn = null;
+        ResultSet rs = null;
+        try
+        {
+            conn = Database.getConnection();
+            String query = "SELECT id FROM blacklist_email WHERE emailAddress=?";
+            PreparedStatement p = conn.prepareStatement(query);
+            p.setString(1, emailAddress);
+
+            rs = p.executeQuery();
+            if(rs.next())
+            {
+                isEmailBlocked = false;
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("TransactionHelper.java","isEmailAddressBlocked()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE,null,se.getMessage(),se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("TransactionHelper.java", "isEmailAddressBlocked()", null, "Common", "SQL Exception thrown:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return isEmailBlocked;
+    }
+
+    public boolean isCountryBlocked(String countryCode,String telnocc)throws PZDBViolationException
+    {
+        boolean isCountryBlocked = true;
+        Connection conn = null;
+        ResultSet rs = null;
+        try
+        {
+            conn = Database.getConnection();
+            String query = "SELECT id FROM blacklist_country WHERE country_code=? OR telnocc=?";
+            PreparedStatement p = conn.prepareStatement(query);
+            p.setString(1,countryCode);
+            p.setString(2,telnocc);
+
+            rs = p.executeQuery();
+            if(rs.next())
+            {
+                isCountryBlocked = false;
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("TransactionHelper.java","isCountryBlocked()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE,null,se.getMessage(),se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("TransactionHelper.java","isCountryBlocked()",null,"Common","SQL Exception thrown:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE,null,e.getMessage(),e.getCause());
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return isCountryBlocked;
+    }
+
+    public boolean isNameBlocked(String name) throws PZDBViolationException
+    {
+        boolean isNameBlocked = true;
+        Connection conn = null;
+        ResultSet rs = null;
+        try
+        {
+            conn = Database.getConnection();
+            String query = "SELECT id FROM blacklist_name WHERE name=?";
+            PreparedStatement p = conn.prepareStatement(query);
+            p.setString(1, name);
+            rs = p.executeQuery();
+            if (rs.next())
+            {
+                isNameBlocked = false;
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("TransactionHelper.java", "isNameBlocked()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("TransactionHelper.java", "isNameBlocked()", null, "Common", "SQL Exception thrown:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return isNameBlocked;
+    }
+
+    public InvoiceVO performInquiryInvoiceVerification(InvoiceVO invoiceVO) throws PZConstraintViolationException, PZDBViolationException, NoSuchAlgorithmException
+    {
+        RestCommonInputValidator commonInputValidator = new RestCommonInputValidator();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        String error = "";
+        MerchantDetailsVO merchantDetailsVO = invoiceVO.getMerchantDetailsVO();
+
+        merchantDetailsVO = commonInputValidator.getMerchantConfigDetailsByLogin(invoiceVO.getMemberid());
+        if (merchantDetailsVO == null || merchantDetailsVO.getMemberId() == null)
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_TOID_INVALID);
+            error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+            invoiceVO.setErrorMsg(error);
+            if (invoiceVO.getErrorCodeListVO() != null)
+                invoiceVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+            return invoiceVO;
+        }
+        invoiceVO.setMerchantDetailsVO(merchantDetailsVO);
+
+
+        invoiceVO = merchantActivationChecks(invoiceVO);
+        return invoiceVO;
+    }
+    public InvoiceVO performChecksumVerification(InvoiceVO invoiceVO) throws PZConstraintViolationException, PZDBViolationException, NoSuchAlgorithmException
+    {
+        MerchantDetailsVO merchantDetailsVO = invoiceVO.getMerchantDetailsVO();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        String error = "";
+
+        if (!Checksum.verifyChecksumWithV4( merchantDetailsVO.getMemberId(), merchantDetailsVO.getKey(), invoiceVO.getInvoiceAction(),invoiceVO.getChecksum()))
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_INVALID_CHECKSUM);
+            error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+            invoiceVO.setErrorMsg(error);
+            if (invoiceVO.getErrorCodeListVO() != null)
+                invoiceVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+
+        }
+        return invoiceVO;
+    }
+
+    public InvoiceVO performSystemChecksForSetInvoiceConfig(InvoiceVO invoiceVO) throws PZConstraintViolationException, PZDBViolationException, NoSuchAlgorithmException
+    {
+        MerchantDetailsVO merchantDetailsVO = invoiceVO.getMerchantDetailsVO();
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        String error = "";
+
+        if (!Checksum.verifyChecksumWithV4( merchantDetailsVO.getMemberId(), merchantDetailsVO.getKey(), invoiceVO.getInvoiceAction(),invoiceVO.getChecksum()))
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_INVALID_CHECKSUM);
+            error = errorCodeVO.getErrorCode() + " " + errorCodeVO.getErrorDescription();
+            invoiceVO.setErrorMsg(error);
+            if (invoiceVO.getErrorCodeListVO() != null)
+                invoiceVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+
+            return invoiceVO;
+        }
+
+        InvoiceEntry invoiceEntry = new InvoiceEntry();
+        boolean isCurrency = false;
+
+        isCurrency = invoiceEntry.getMerchantCurrency(invoiceVO.getMemberid(),invoiceVO.getCurrency());
+        if (!isCurrency)
+        {
+            errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.VALIDATION_CURRENCY);
+            error = errorCodeVO.getErrorCode() + "_" + errorCodeVO.getErrorDescription();
+            invoiceVO.setErrorMsg(error);
+            if (invoiceVO.getErrorCodeListVO() != null)
+                invoiceVO.getErrorCodeListVO().addListOfError(errorCodeVO);
+
+            return invoiceVO;
+        }
+
+        return invoiceVO;
+    }
+
+
+}

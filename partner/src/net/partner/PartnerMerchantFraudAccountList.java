@@ -1,0 +1,210 @@
+package net.partner;
+
+import com.directi.pg.*;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.codecs.Codec;
+import org.owasp.esapi.codecs.MySQLCodec;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Hashtable;
+import java.util.*;
+
+
+/**
+ * Created by Sneha on 9/9/15.
+ */
+public class PartnerMerchantFraudAccountList extends HttpServlet
+{
+    private static Logger logger = new Logger(PartnerMerchantFraudAccountList.class.getName());
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doProcess(request, response);
+    }
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doProcess(request, response);
+    }
+    public void doProcess(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+
+        HttpSession session = req.getSession();
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+        PartnerFunctions partner=new PartnerFunctions();
+        if (!partner.isLoggedInPartner(session))
+        {
+            res.sendRedirect("/partner/Logout.jsp");
+            return;
+        }
+
+        Connection conn = null;
+        ResultSet rs=null;
+        int records=15;
+        int pageno=1;
+
+        StringBuffer errorMessage = new StringBuffer();
+        Functions functions = new Functions();
+        Hashtable hash = null;
+
+        String memberId=req.getParameter("memberid");
+        String partnerId = (String) session.getAttribute("merchantid");//req.getParameter("partnerid");
+        String pid = req.getParameter("pid");
+
+        String errormsg = "";
+        String EOL = "<BR>";
+        if (!ESAPI.validator().isValidInput("pid", req.getParameter("pid"), "Numbers", 10, true))
+        {
+            errormsg = "Invalid Partner ID." + EOL ;
+        }
+        try
+        {
+            validateOptionalParameter(req);
+        }
+        catch (ValidationException e)
+        {
+            errormsg = errormsg + e.getMessage() + EOL;
+
+        }
+
+        if(functions.isValueNull(errormsg)){
+            req.setAttribute("error",errormsg);
+            RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantFraudAccount.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+
+
+        if(!functions.isValueNull(errormsg))
+        {
+            try
+            {
+                if (functions.isValueNull(pid) && !partner.isPartnerSuperpartnerMapped(pid, partnerId))
+                {
+                    req.setAttribute("error", "Invalid Partner Mapping.");
+                    RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantFraudAccount.jsp?ctoken=" + user.getCSRFToken());
+                    rd.forward(req, res);
+                    return;
+                }
+
+                if (functions.isValueNull(memberId))
+                {
+                    if (functions.isValueNull(pid) && !partner.isPartnerMemberMapped(memberId, pid))
+                    {
+                        req.setAttribute("error", "Invalid Partner Member Mapping");
+                        RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantFraudAccount.jsp?ctoken=" + user.getCSRFToken());
+                        rd.forward(req, res);
+                        return;
+                    }
+                    else if (!functions.isValueNull(pid) && !partner.isPartnerSuperpartnerMembersMapped(memberId, req.getParameter("partnerid")))
+                    {
+                        req.setAttribute("error", "Invalid Partner Member Mapping");
+                        RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantFraudAccount.jsp?ctoken=" + user.getCSRFToken());
+                        rd.forward(req, res);
+                        return;
+                    }
+
+                }
+
+            }
+            catch (Exception e)
+            {
+                logger.error("Exception---" + e);
+            }
+        }
+        int start = 0; // start index
+        int end = 0; // end index
+        pageno = Functions.convertStringtoInt(req.getParameter("SPageno"), 1);
+        records = Functions.convertStringtoInt(req.getParameter("SRecords"), 15);
+        start = (pageno - 1) * records;
+        end = records;
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+
+        try
+        {
+            //conn = Database.getConnection();
+            conn = Database.getRDBConnection();
+            StringBuffer qry = null;
+            StringBuffer countQry = null;
+            if(functions.isValueNull(pid))
+            {
+                qry = new StringBuffer("select map.fssubaccountid,merchantfraudserviceid,map.memberid,subaccountname,subusername,map.submerchantUsername,map.isactive,map.isvisible,m.partnerId from merchant_fssubaccount_mappping as map , fsaccount_subaccount_mapping as sub, members as m\n" +
+                        "where map.fssubaccountid = sub.fssubaccountid and m.memberid=map.memberid and m.partnerId=" + ESAPI.encoder().encodeForSQL(me, pid));
+
+                countQry = new StringBuffer("select count(*) from merchant_fssubaccount_mappping as map,members as m where merchantfraudserviceid>0 and m.memberid=map.memberid and m.partnerId=" + ESAPI.encoder().encodeForSQL(me, pid));
+            }
+            else{
+                qry = new StringBuffer("select map.fssubaccountid,merchantfraudserviceid,map.memberid,subaccountname,subusername,map.submerchantUsername,map.isactive,map.isvisible,m.partnerId from members as m , merchant_fssubaccount_mappping as map , fsaccount_subaccount_mapping as sub, partners as p \n" +
+                        "where m.partnerId = p.partnerId and map.fssubaccountid = sub.fssubaccountid and m.memberid=map.memberid and (m.partnerId=" + ESAPI.encoder().encodeForSQL(me, partnerId)+" OR p.superadminid="+ ESAPI.encoder().encodeForSQL(me, partnerId)+")");
+
+                countQry = new StringBuffer("select count(*) from merchant_fssubaccount_mappping as map,members as m, partners as p where merchantfraudserviceid>0 and m.memberid=map.memberid and m.partnerId = p.partnerId and (m.partnerId=" + ESAPI.encoder().encodeForSQL(me, partnerId)+" OR p.superadminid = " + ESAPI.encoder().encodeForSQL(me, partnerId)+")");
+            }
+            if(functions.isValueNull(memberId))
+            {
+                qry.append(" and map.memberid=" + ESAPI.encoder().encodeForSQL(me,memberId));
+                countQry.append(" and map.memberid=" + ESAPI.encoder().encodeForSQL(me,memberId));
+            }
+            qry.append(" order by merchantfraudserviceid desc LIMIT " + start + "," + end);
+
+            logger.debug("Query:-" + qry);
+            logger.debug("CountQuery:-" + countQry);
+
+            hash = Database.getHashFromResultSetForTransactionEntry(Database.executeQuery(qry.toString(), conn));
+
+            rs = Database.executeQuery(countQry.toString(), conn);
+            rs.next();
+            int totalrecords = rs.getInt(1);
+
+            hash.put("totalrecords", "" + totalrecords);
+            hash.put("records", "0");
+
+            if (totalrecords > 0)
+                hash.put("records", "" + (hash.size() - 2));
+
+            req.setAttribute("transdetails", hash);
+
+        }
+        catch (SystemError systemError)
+        {
+            logger.error("SystemError::", systemError);
+            //errorMessage.append("Could Not Fetching Data,Some Internal Exception");
+            Functions.ShowMessage("Error", "Internal System Error while getting list of Transactions");
+        }
+        catch (SQLException e)
+        {
+            logger.error("SQLException::", e);
+            //errorMessage.append("Could Not Fetching Data,Some Internal Exception");
+            Functions.ShowMessage("Error", "Internal System Error while getting list of Transactions");
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closeConnection(conn);
+        }
+        req.setAttribute("message",errorMessage.toString());
+        RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantFraudAccount.jsp?ctoken="+user.getCSRFToken());
+        rd.forward(req, res);
+    }
+
+    private void validateOptionalParameter(HttpServletRequest req) throws ValidationException
+    {
+        InputValidator inputValidator = new InputValidator();
+        List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+        inputFieldsListMandatory.add(InputFields.PAGENO);
+        inputFieldsListMandatory.add(InputFields.RECORDS);
+        inputFieldsListMandatory.add(InputFields.MEMBERID);
+        inputFieldsListMandatory.add(InputFields.PID);
+        inputValidator.InputValidations(req,inputFieldsListMandatory,true);
+    }
+}

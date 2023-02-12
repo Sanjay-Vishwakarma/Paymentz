@@ -1,0 +1,568 @@
+/**
+ * CountryType.java
+ *
+ * This file was auto-generated from WSDL
+ * by the Apache Axis 1.4 Apr 22, 2006 (06:55:48 PDT) WSDL2Java emitter.
+ */
+
+package com.payment.payhost.core.za.co.paygate.www.PayHOST;
+
+public class CountryType implements java.io.Serializable {
+    private org.apache.axis.types.Token _value_;
+    private static java.util.HashMap _table_ = new java.util.HashMap();
+
+    // Constructor
+    protected CountryType(org.apache.axis.types.Token value) {
+        _value_ = value;
+        _table_.put(_value_,this);
+    }
+
+    public static final org.apache.axis.types.Token _ABW = new org.apache.axis.types.Token("ABW");
+    public static final org.apache.axis.types.Token _AFG = new org.apache.axis.types.Token("AFG");
+    public static final org.apache.axis.types.Token _AGO = new org.apache.axis.types.Token("AGO");
+    public static final org.apache.axis.types.Token _AIA = new org.apache.axis.types.Token("AIA");
+    public static final org.apache.axis.types.Token _ALA = new org.apache.axis.types.Token("ALA");
+    public static final org.apache.axis.types.Token _ALB = new org.apache.axis.types.Token("ALB");
+    public static final org.apache.axis.types.Token _AND = new org.apache.axis.types.Token("AND");
+    public static final org.apache.axis.types.Token _ARE = new org.apache.axis.types.Token("ARE");
+    public static final org.apache.axis.types.Token _ARG = new org.apache.axis.types.Token("ARG");
+    public static final org.apache.axis.types.Token _ARM = new org.apache.axis.types.Token("ARM");
+    public static final org.apache.axis.types.Token _ASM = new org.apache.axis.types.Token("ASM");
+    public static final org.apache.axis.types.Token _ATA = new org.apache.axis.types.Token("ATA");
+    public static final org.apache.axis.types.Token _ATF = new org.apache.axis.types.Token("ATF");
+    public static final org.apache.axis.types.Token _ATG = new org.apache.axis.types.Token("ATG");
+    public static final org.apache.axis.types.Token _AUS = new org.apache.axis.types.Token("AUS");
+    public static final org.apache.axis.types.Token _AUT = new org.apache.axis.types.Token("AUT");
+    public static final org.apache.axis.types.Token _AZE = new org.apache.axis.types.Token("AZE");
+    public static final org.apache.axis.types.Token _BDI = new org.apache.axis.types.Token("BDI");
+    public static final org.apache.axis.types.Token _BEL = new org.apache.axis.types.Token("BEL");
+    public static final org.apache.axis.types.Token _BEN = new org.apache.axis.types.Token("BEN");
+    public static final org.apache.axis.types.Token _BES = new org.apache.axis.types.Token("BES");
+    public static final org.apache.axis.types.Token _BFA = new org.apache.axis.types.Token("BFA");
+    public static final org.apache.axis.types.Token _BGD = new org.apache.axis.types.Token("BGD");
+    public static final org.apache.axis.types.Token _BGR = new org.apache.axis.types.Token("BGR");
+    public static final org.apache.axis.types.Token _BHR = new org.apache.axis.types.Token("BHR");
+    public static final org.apache.axis.types.Token _BHS = new org.apache.axis.types.Token("BHS");
+    public static final org.apache.axis.types.Token _BIH = new org.apache.axis.types.Token("BIH");
+    public static final org.apache.axis.types.Token _BLM = new org.apache.axis.types.Token("BLM");
+    public static final org.apache.axis.types.Token _BLR = new org.apache.axis.types.Token("BLR");
+    public static final org.apache.axis.types.Token _BLZ = new org.apache.axis.types.Token("BLZ");
+    public static final org.apache.axis.types.Token _BMU = new org.apache.axis.types.Token("BMU");
+    public static final org.apache.axis.types.Token _BOL = new org.apache.axis.types.Token("BOL");
+    public static final org.apache.axis.types.Token _BRA = new org.apache.axis.types.Token("BRA");
+    public static final org.apache.axis.types.Token _BRB = new org.apache.axis.types.Token("BRB");
+    public static final org.apache.axis.types.Token _BRN = new org.apache.axis.types.Token("BRN");
+    public static final org.apache.axis.types.Token _BTN = new org.apache.axis.types.Token("BTN");
+    public static final org.apache.axis.types.Token _BVT = new org.apache.axis.types.Token("BVT");
+    public static final org.apache.axis.types.Token _BWA = new org.apache.axis.types.Token("BWA");
+    public static final org.apache.axis.types.Token _CAF = new org.apache.axis.types.Token("CAF");
+    public static final org.apache.axis.types.Token _CAN = new org.apache.axis.types.Token("CAN");
+    public static final org.apache.axis.types.Token _CCK = new org.apache.axis.types.Token("CCK");
+    public static final org.apache.axis.types.Token _CHE = new org.apache.axis.types.Token("CHE");
+    public static final org.apache.axis.types.Token _CHL = new org.apache.axis.types.Token("CHL");
+    public static final org.apache.axis.types.Token _CHN = new org.apache.axis.types.Token("CHN");
+    public static final org.apache.axis.types.Token _CIV = new org.apache.axis.types.Token("CIV");
+    public static final org.apache.axis.types.Token _CMR = new org.apache.axis.types.Token("CMR");
+    public static final org.apache.axis.types.Token _COD = new org.apache.axis.types.Token("COD");
+    public static final org.apache.axis.types.Token _COG = new org.apache.axis.types.Token("COG");
+    public static final org.apache.axis.types.Token _COK = new org.apache.axis.types.Token("COK");
+    public static final org.apache.axis.types.Token _COL = new org.apache.axis.types.Token("COL");
+    public static final org.apache.axis.types.Token _COM = new org.apache.axis.types.Token("COM");
+    public static final org.apache.axis.types.Token _CPV = new org.apache.axis.types.Token("CPV");
+    public static final org.apache.axis.types.Token _CRI = new org.apache.axis.types.Token("CRI");
+    public static final org.apache.axis.types.Token _CUB = new org.apache.axis.types.Token("CUB");
+    public static final org.apache.axis.types.Token _CUW = new org.apache.axis.types.Token("CUW");
+    public static final org.apache.axis.types.Token _CXR = new org.apache.axis.types.Token("CXR");
+    public static final org.apache.axis.types.Token _CYM = new org.apache.axis.types.Token("CYM");
+    public static final org.apache.axis.types.Token _CYP = new org.apache.axis.types.Token("CYP");
+    public static final org.apache.axis.types.Token _CZE = new org.apache.axis.types.Token("CZE");
+    public static final org.apache.axis.types.Token _DEU = new org.apache.axis.types.Token("DEU");
+    public static final org.apache.axis.types.Token _DJI = new org.apache.axis.types.Token("DJI");
+    public static final org.apache.axis.types.Token _DMA = new org.apache.axis.types.Token("DMA");
+    public static final org.apache.axis.types.Token _DNK = new org.apache.axis.types.Token("DNK");
+    public static final org.apache.axis.types.Token _DOM = new org.apache.axis.types.Token("DOM");
+    public static final org.apache.axis.types.Token _DZA = new org.apache.axis.types.Token("DZA");
+    public static final org.apache.axis.types.Token _ECU = new org.apache.axis.types.Token("ECU");
+    public static final org.apache.axis.types.Token _EGY = new org.apache.axis.types.Token("EGY");
+    public static final org.apache.axis.types.Token _ERI = new org.apache.axis.types.Token("ERI");
+    public static final org.apache.axis.types.Token _ESH = new org.apache.axis.types.Token("ESH");
+    public static final org.apache.axis.types.Token _ESP = new org.apache.axis.types.Token("ESP");
+    public static final org.apache.axis.types.Token _EST = new org.apache.axis.types.Token("EST");
+    public static final org.apache.axis.types.Token _ETH = new org.apache.axis.types.Token("ETH");
+    public static final org.apache.axis.types.Token _FIN = new org.apache.axis.types.Token("FIN");
+    public static final org.apache.axis.types.Token _FJI = new org.apache.axis.types.Token("FJI");
+    public static final org.apache.axis.types.Token _FLK = new org.apache.axis.types.Token("FLK");
+    public static final org.apache.axis.types.Token _FRA = new org.apache.axis.types.Token("FRA");
+    public static final org.apache.axis.types.Token _FRO = new org.apache.axis.types.Token("FRO");
+    public static final org.apache.axis.types.Token _FSM = new org.apache.axis.types.Token("FSM");
+    public static final org.apache.axis.types.Token _GAB = new org.apache.axis.types.Token("GAB");
+    public static final org.apache.axis.types.Token _GBR = new org.apache.axis.types.Token("GBR");
+    public static final org.apache.axis.types.Token _GEO = new org.apache.axis.types.Token("GEO");
+    public static final org.apache.axis.types.Token _GGY = new org.apache.axis.types.Token("GGY");
+    public static final org.apache.axis.types.Token _GHA = new org.apache.axis.types.Token("GHA");
+    public static final org.apache.axis.types.Token _GIB = new org.apache.axis.types.Token("GIB");
+    public static final org.apache.axis.types.Token _GIN = new org.apache.axis.types.Token("GIN");
+    public static final org.apache.axis.types.Token _GLP = new org.apache.axis.types.Token("GLP");
+    public static final org.apache.axis.types.Token _GMB = new org.apache.axis.types.Token("GMB");
+    public static final org.apache.axis.types.Token _GNB = new org.apache.axis.types.Token("GNB");
+    public static final org.apache.axis.types.Token _GNQ = new org.apache.axis.types.Token("GNQ");
+    public static final org.apache.axis.types.Token _GRC = new org.apache.axis.types.Token("GRC");
+    public static final org.apache.axis.types.Token _GRD = new org.apache.axis.types.Token("GRD");
+    public static final org.apache.axis.types.Token _GRL = new org.apache.axis.types.Token("GRL");
+    public static final org.apache.axis.types.Token _GTM = new org.apache.axis.types.Token("GTM");
+    public static final org.apache.axis.types.Token _GUF = new org.apache.axis.types.Token("GUF");
+    public static final org.apache.axis.types.Token _GUM = new org.apache.axis.types.Token("GUM");
+    public static final org.apache.axis.types.Token _GUY = new org.apache.axis.types.Token("GUY");
+    public static final org.apache.axis.types.Token _HKG = new org.apache.axis.types.Token("HKG");
+    public static final org.apache.axis.types.Token _HMD = new org.apache.axis.types.Token("HMD");
+    public static final org.apache.axis.types.Token _HND = new org.apache.axis.types.Token("HND");
+    public static final org.apache.axis.types.Token _HRV = new org.apache.axis.types.Token("HRV");
+    public static final org.apache.axis.types.Token _HTI = new org.apache.axis.types.Token("HTI");
+    public static final org.apache.axis.types.Token _HUN = new org.apache.axis.types.Token("HUN");
+    public static final org.apache.axis.types.Token _IDN = new org.apache.axis.types.Token("IDN");
+    public static final org.apache.axis.types.Token _IMN = new org.apache.axis.types.Token("IMN");
+    public static final org.apache.axis.types.Token _IND = new org.apache.axis.types.Token("IND");
+    public static final org.apache.axis.types.Token _IOT = new org.apache.axis.types.Token("IOT");
+    public static final org.apache.axis.types.Token _IRL = new org.apache.axis.types.Token("IRL");
+    public static final org.apache.axis.types.Token _IRN = new org.apache.axis.types.Token("IRN");
+    public static final org.apache.axis.types.Token _IRQ = new org.apache.axis.types.Token("IRQ");
+    public static final org.apache.axis.types.Token _ISL = new org.apache.axis.types.Token("ISL");
+    public static final org.apache.axis.types.Token _ISR = new org.apache.axis.types.Token("ISR");
+    public static final org.apache.axis.types.Token _ITA = new org.apache.axis.types.Token("ITA");
+    public static final org.apache.axis.types.Token _JAM = new org.apache.axis.types.Token("JAM");
+    public static final org.apache.axis.types.Token _JEY = new org.apache.axis.types.Token("JEY");
+    public static final org.apache.axis.types.Token _JOR = new org.apache.axis.types.Token("JOR");
+    public static final org.apache.axis.types.Token _JPN = new org.apache.axis.types.Token("JPN");
+    public static final org.apache.axis.types.Token _KAZ = new org.apache.axis.types.Token("KAZ");
+    public static final org.apache.axis.types.Token _KEN = new org.apache.axis.types.Token("KEN");
+    public static final org.apache.axis.types.Token _KGZ = new org.apache.axis.types.Token("KGZ");
+    public static final org.apache.axis.types.Token _KHM = new org.apache.axis.types.Token("KHM");
+    public static final org.apache.axis.types.Token _KIR = new org.apache.axis.types.Token("KIR");
+    public static final org.apache.axis.types.Token _KNA = new org.apache.axis.types.Token("KNA");
+    public static final org.apache.axis.types.Token _KOR = new org.apache.axis.types.Token("KOR");
+    public static final org.apache.axis.types.Token _KWT = new org.apache.axis.types.Token("KWT");
+    public static final org.apache.axis.types.Token _LAO = new org.apache.axis.types.Token("LAO");
+    public static final org.apache.axis.types.Token _LBN = new org.apache.axis.types.Token("LBN");
+    public static final org.apache.axis.types.Token _LBR = new org.apache.axis.types.Token("LBR");
+    public static final org.apache.axis.types.Token _LBY = new org.apache.axis.types.Token("LBY");
+    public static final org.apache.axis.types.Token _LCA = new org.apache.axis.types.Token("LCA");
+    public static final org.apache.axis.types.Token _LIE = new org.apache.axis.types.Token("LIE");
+    public static final org.apache.axis.types.Token _LKA = new org.apache.axis.types.Token("LKA");
+    public static final org.apache.axis.types.Token _LSO = new org.apache.axis.types.Token("LSO");
+    public static final org.apache.axis.types.Token _LTU = new org.apache.axis.types.Token("LTU");
+    public static final org.apache.axis.types.Token _LUX = new org.apache.axis.types.Token("LUX");
+    public static final org.apache.axis.types.Token _LVA = new org.apache.axis.types.Token("LVA");
+    public static final org.apache.axis.types.Token _MAC = new org.apache.axis.types.Token("MAC");
+    public static final org.apache.axis.types.Token _MAF = new org.apache.axis.types.Token("MAF");
+    public static final org.apache.axis.types.Token _MAR = new org.apache.axis.types.Token("MAR");
+    public static final org.apache.axis.types.Token _MCO = new org.apache.axis.types.Token("MCO");
+    public static final org.apache.axis.types.Token _MDA = new org.apache.axis.types.Token("MDA");
+    public static final org.apache.axis.types.Token _MDG = new org.apache.axis.types.Token("MDG");
+    public static final org.apache.axis.types.Token _MDV = new org.apache.axis.types.Token("MDV");
+    public static final org.apache.axis.types.Token _MEX = new org.apache.axis.types.Token("MEX");
+    public static final org.apache.axis.types.Token _MHL = new org.apache.axis.types.Token("MHL");
+    public static final org.apache.axis.types.Token _MKD = new org.apache.axis.types.Token("MKD");
+    public static final org.apache.axis.types.Token _MLI = new org.apache.axis.types.Token("MLI");
+    public static final org.apache.axis.types.Token _MLT = new org.apache.axis.types.Token("MLT");
+    public static final org.apache.axis.types.Token _MMR = new org.apache.axis.types.Token("MMR");
+    public static final org.apache.axis.types.Token _MNE = new org.apache.axis.types.Token("MNE");
+    public static final org.apache.axis.types.Token _MNG = new org.apache.axis.types.Token("MNG");
+    public static final org.apache.axis.types.Token _MNP = new org.apache.axis.types.Token("MNP");
+    public static final org.apache.axis.types.Token _MOZ = new org.apache.axis.types.Token("MOZ");
+    public static final org.apache.axis.types.Token _MRT = new org.apache.axis.types.Token("MRT");
+    public static final org.apache.axis.types.Token _MSR = new org.apache.axis.types.Token("MSR");
+    public static final org.apache.axis.types.Token _MTQ = new org.apache.axis.types.Token("MTQ");
+    public static final org.apache.axis.types.Token _MUS = new org.apache.axis.types.Token("MUS");
+    public static final org.apache.axis.types.Token _MWI = new org.apache.axis.types.Token("MWI");
+    public static final org.apache.axis.types.Token _MYS = new org.apache.axis.types.Token("MYS");
+    public static final org.apache.axis.types.Token _MYT = new org.apache.axis.types.Token("MYT");
+    public static final org.apache.axis.types.Token _NAM = new org.apache.axis.types.Token("NAM");
+    public static final org.apache.axis.types.Token _NCL = new org.apache.axis.types.Token("NCL");
+    public static final org.apache.axis.types.Token _NER = new org.apache.axis.types.Token("NER");
+    public static final org.apache.axis.types.Token _NFK = new org.apache.axis.types.Token("NFK");
+    public static final org.apache.axis.types.Token _NGA = new org.apache.axis.types.Token("NGA");
+    public static final org.apache.axis.types.Token _NIC = new org.apache.axis.types.Token("NIC");
+    public static final org.apache.axis.types.Token _NIU = new org.apache.axis.types.Token("NIU");
+    public static final org.apache.axis.types.Token _NLD = new org.apache.axis.types.Token("NLD");
+    public static final org.apache.axis.types.Token _NOR = new org.apache.axis.types.Token("NOR");
+    public static final org.apache.axis.types.Token _NPL = new org.apache.axis.types.Token("NPL");
+    public static final org.apache.axis.types.Token _NRU = new org.apache.axis.types.Token("NRU");
+    public static final org.apache.axis.types.Token _NZL = new org.apache.axis.types.Token("NZL");
+    public static final org.apache.axis.types.Token _OMN = new org.apache.axis.types.Token("OMN");
+    public static final org.apache.axis.types.Token _PAK = new org.apache.axis.types.Token("PAK");
+    public static final org.apache.axis.types.Token _PAN = new org.apache.axis.types.Token("PAN");
+    public static final org.apache.axis.types.Token _PCN = new org.apache.axis.types.Token("PCN");
+    public static final org.apache.axis.types.Token _PER = new org.apache.axis.types.Token("PER");
+    public static final org.apache.axis.types.Token _PHL = new org.apache.axis.types.Token("PHL");
+    public static final org.apache.axis.types.Token _PLW = new org.apache.axis.types.Token("PLW");
+    public static final org.apache.axis.types.Token _PNG = new org.apache.axis.types.Token("PNG");
+    public static final org.apache.axis.types.Token _POL = new org.apache.axis.types.Token("POL");
+    public static final org.apache.axis.types.Token _PRI = new org.apache.axis.types.Token("PRI");
+    public static final org.apache.axis.types.Token _PRK = new org.apache.axis.types.Token("PRK");
+    public static final org.apache.axis.types.Token _PRT = new org.apache.axis.types.Token("PRT");
+    public static final org.apache.axis.types.Token _PRY = new org.apache.axis.types.Token("PRY");
+    public static final org.apache.axis.types.Token _PSE = new org.apache.axis.types.Token("PSE");
+    public static final org.apache.axis.types.Token _PYF = new org.apache.axis.types.Token("PYF");
+    public static final org.apache.axis.types.Token _QAT = new org.apache.axis.types.Token("QAT");
+    public static final org.apache.axis.types.Token _REU = new org.apache.axis.types.Token("REU");
+    public static final org.apache.axis.types.Token _ROU = new org.apache.axis.types.Token("ROU");
+    public static final org.apache.axis.types.Token _RUS = new org.apache.axis.types.Token("RUS");
+    public static final org.apache.axis.types.Token _RWA = new org.apache.axis.types.Token("RWA");
+    public static final org.apache.axis.types.Token _SAU = new org.apache.axis.types.Token("SAU");
+    public static final org.apache.axis.types.Token _SDN = new org.apache.axis.types.Token("SDN");
+    public static final org.apache.axis.types.Token _SEN = new org.apache.axis.types.Token("SEN");
+    public static final org.apache.axis.types.Token _SGP = new org.apache.axis.types.Token("SGP");
+    public static final org.apache.axis.types.Token _SGS = new org.apache.axis.types.Token("SGS");
+    public static final org.apache.axis.types.Token _SHN = new org.apache.axis.types.Token("SHN");
+    public static final org.apache.axis.types.Token _SJM = new org.apache.axis.types.Token("SJM");
+    public static final org.apache.axis.types.Token _SLB = new org.apache.axis.types.Token("SLB");
+    public static final org.apache.axis.types.Token _SLE = new org.apache.axis.types.Token("SLE");
+    public static final org.apache.axis.types.Token _SLV = new org.apache.axis.types.Token("SLV");
+    public static final org.apache.axis.types.Token _SMR = new org.apache.axis.types.Token("SMR");
+    public static final org.apache.axis.types.Token _SOM = new org.apache.axis.types.Token("SOM");
+    public static final org.apache.axis.types.Token _SPM = new org.apache.axis.types.Token("SPM");
+    public static final org.apache.axis.types.Token _SRB = new org.apache.axis.types.Token("SRB");
+    public static final org.apache.axis.types.Token _SSD = new org.apache.axis.types.Token("SSD");
+    public static final org.apache.axis.types.Token _STP = new org.apache.axis.types.Token("STP");
+    public static final org.apache.axis.types.Token _SUR = new org.apache.axis.types.Token("SUR");
+    public static final org.apache.axis.types.Token _SVK = new org.apache.axis.types.Token("SVK");
+    public static final org.apache.axis.types.Token _SVN = new org.apache.axis.types.Token("SVN");
+    public static final org.apache.axis.types.Token _SWE = new org.apache.axis.types.Token("SWE");
+    public static final org.apache.axis.types.Token _SWZ = new org.apache.axis.types.Token("SWZ");
+    public static final org.apache.axis.types.Token _SXM = new org.apache.axis.types.Token("SXM");
+    public static final org.apache.axis.types.Token _SYC = new org.apache.axis.types.Token("SYC");
+    public static final org.apache.axis.types.Token _SYR = new org.apache.axis.types.Token("SYR");
+    public static final org.apache.axis.types.Token _TCA = new org.apache.axis.types.Token("TCA");
+    public static final org.apache.axis.types.Token _TCD = new org.apache.axis.types.Token("TCD");
+    public static final org.apache.axis.types.Token _TGO = new org.apache.axis.types.Token("TGO");
+    public static final org.apache.axis.types.Token _THA = new org.apache.axis.types.Token("THA");
+    public static final org.apache.axis.types.Token _TJK = new org.apache.axis.types.Token("TJK");
+    public static final org.apache.axis.types.Token _TKL = new org.apache.axis.types.Token("TKL");
+    public static final org.apache.axis.types.Token _TKM = new org.apache.axis.types.Token("TKM");
+    public static final org.apache.axis.types.Token _TLS = new org.apache.axis.types.Token("TLS");
+    public static final org.apache.axis.types.Token _TON = new org.apache.axis.types.Token("TON");
+    public static final org.apache.axis.types.Token _TTO = new org.apache.axis.types.Token("TTO");
+    public static final org.apache.axis.types.Token _TUN = new org.apache.axis.types.Token("TUN");
+    public static final org.apache.axis.types.Token _TUR = new org.apache.axis.types.Token("TUR");
+    public static final org.apache.axis.types.Token _TUV = new org.apache.axis.types.Token("TUV");
+    public static final org.apache.axis.types.Token _TWN = new org.apache.axis.types.Token("TWN");
+    public static final org.apache.axis.types.Token _TZA = new org.apache.axis.types.Token("TZA");
+    public static final org.apache.axis.types.Token _UGA = new org.apache.axis.types.Token("UGA");
+    public static final org.apache.axis.types.Token _UKR = new org.apache.axis.types.Token("UKR");
+    public static final org.apache.axis.types.Token _UMI = new org.apache.axis.types.Token("UMI");
+    public static final org.apache.axis.types.Token _URY = new org.apache.axis.types.Token("URY");
+    public static final org.apache.axis.types.Token _USA = new org.apache.axis.types.Token("USA");
+    public static final org.apache.axis.types.Token _UZB = new org.apache.axis.types.Token("UZB");
+    public static final org.apache.axis.types.Token _VAT = new org.apache.axis.types.Token("VAT");
+    public static final org.apache.axis.types.Token _VCT = new org.apache.axis.types.Token("VCT");
+    public static final org.apache.axis.types.Token _VEN = new org.apache.axis.types.Token("VEN");
+    public static final org.apache.axis.types.Token _VGB = new org.apache.axis.types.Token("VGB");
+    public static final org.apache.axis.types.Token _VIR = new org.apache.axis.types.Token("VIR");
+    public static final org.apache.axis.types.Token _VNM = new org.apache.axis.types.Token("VNM");
+    public static final org.apache.axis.types.Token _VUT = new org.apache.axis.types.Token("VUT");
+    public static final org.apache.axis.types.Token _WLF = new org.apache.axis.types.Token("WLF");
+    public static final org.apache.axis.types.Token _WSM = new org.apache.axis.types.Token("WSM");
+    public static final org.apache.axis.types.Token _YEM = new org.apache.axis.types.Token("YEM");
+    public static final org.apache.axis.types.Token _ZAF = new org.apache.axis.types.Token("ZAF");
+    public static final org.apache.axis.types.Token _ZMB = new org.apache.axis.types.Token("ZMB");
+    public static final org.apache.axis.types.Token _ZWE = new org.apache.axis.types.Token("ZWE");
+    public static final CountryType ABW = new CountryType(_ABW);
+    public static final CountryType AFG = new CountryType(_AFG);
+    public static final CountryType AGO = new CountryType(_AGO);
+    public static final CountryType AIA = new CountryType(_AIA);
+    public static final CountryType ALA = new CountryType(_ALA);
+    public static final CountryType ALB = new CountryType(_ALB);
+    public static final CountryType AND = new CountryType(_AND);
+    public static final CountryType ARE = new CountryType(_ARE);
+    public static final CountryType ARG = new CountryType(_ARG);
+    public static final CountryType ARM = new CountryType(_ARM);
+    public static final CountryType ASM = new CountryType(_ASM);
+    public static final CountryType ATA = new CountryType(_ATA);
+    public static final CountryType ATF = new CountryType(_ATF);
+    public static final CountryType ATG = new CountryType(_ATG);
+    public static final CountryType AUS = new CountryType(_AUS);
+    public static final CountryType AUT = new CountryType(_AUT);
+    public static final CountryType AZE = new CountryType(_AZE);
+    public static final CountryType BDI = new CountryType(_BDI);
+    public static final CountryType BEL = new CountryType(_BEL);
+    public static final CountryType BEN = new CountryType(_BEN);
+    public static final CountryType BES = new CountryType(_BES);
+    public static final CountryType BFA = new CountryType(_BFA);
+    public static final CountryType BGD = new CountryType(_BGD);
+    public static final CountryType BGR = new CountryType(_BGR);
+    public static final CountryType BHR = new CountryType(_BHR);
+    public static final CountryType BHS = new CountryType(_BHS);
+    public static final CountryType BIH = new CountryType(_BIH);
+    public static final CountryType BLM = new CountryType(_BLM);
+    public static final CountryType BLR = new CountryType(_BLR);
+    public static final CountryType BLZ = new CountryType(_BLZ);
+    public static final CountryType BMU = new CountryType(_BMU);
+    public static final CountryType BOL = new CountryType(_BOL);
+    public static final CountryType BRA = new CountryType(_BRA);
+    public static final CountryType BRB = new CountryType(_BRB);
+    public static final CountryType BRN = new CountryType(_BRN);
+    public static final CountryType BTN = new CountryType(_BTN);
+    public static final CountryType BVT = new CountryType(_BVT);
+    public static final CountryType BWA = new CountryType(_BWA);
+    public static final CountryType CAF = new CountryType(_CAF);
+    public static final CountryType CAN = new CountryType(_CAN);
+    public static final CountryType CCK = new CountryType(_CCK);
+    public static final CountryType CHE = new CountryType(_CHE);
+    public static final CountryType CHL = new CountryType(_CHL);
+    public static final CountryType CHN = new CountryType(_CHN);
+    public static final CountryType CIV = new CountryType(_CIV);
+    public static final CountryType CMR = new CountryType(_CMR);
+    public static final CountryType COD = new CountryType(_COD);
+    public static final CountryType COG = new CountryType(_COG);
+    public static final CountryType COK = new CountryType(_COK);
+    public static final CountryType COL = new CountryType(_COL);
+    public static final CountryType COM = new CountryType(_COM);
+    public static final CountryType CPV = new CountryType(_CPV);
+    public static final CountryType CRI = new CountryType(_CRI);
+    public static final CountryType CUB = new CountryType(_CUB);
+    public static final CountryType CUW = new CountryType(_CUW);
+    public static final CountryType CXR = new CountryType(_CXR);
+    public static final CountryType CYM = new CountryType(_CYM);
+    public static final CountryType CYP = new CountryType(_CYP);
+    public static final CountryType CZE = new CountryType(_CZE);
+    public static final CountryType DEU = new CountryType(_DEU);
+    public static final CountryType DJI = new CountryType(_DJI);
+    public static final CountryType DMA = new CountryType(_DMA);
+    public static final CountryType DNK = new CountryType(_DNK);
+    public static final CountryType DOM = new CountryType(_DOM);
+    public static final CountryType DZA = new CountryType(_DZA);
+    public static final CountryType ECU = new CountryType(_ECU);
+    public static final CountryType EGY = new CountryType(_EGY);
+    public static final CountryType ERI = new CountryType(_ERI);
+    public static final CountryType ESH = new CountryType(_ESH);
+    public static final CountryType ESP = new CountryType(_ESP);
+    public static final CountryType EST = new CountryType(_EST);
+    public static final CountryType ETH = new CountryType(_ETH);
+    public static final CountryType FIN = new CountryType(_FIN);
+    public static final CountryType FJI = new CountryType(_FJI);
+    public static final CountryType FLK = new CountryType(_FLK);
+    public static final CountryType FRA = new CountryType(_FRA);
+    public static final CountryType FRO = new CountryType(_FRO);
+    public static final CountryType FSM = new CountryType(_FSM);
+    public static final CountryType GAB = new CountryType(_GAB);
+    public static final CountryType GBR = new CountryType(_GBR);
+    public static final CountryType GEO = new CountryType(_GEO);
+    public static final CountryType GGY = new CountryType(_GGY);
+    public static final CountryType GHA = new CountryType(_GHA);
+    public static final CountryType GIB = new CountryType(_GIB);
+    public static final CountryType GIN = new CountryType(_GIN);
+    public static final CountryType GLP = new CountryType(_GLP);
+    public static final CountryType GMB = new CountryType(_GMB);
+    public static final CountryType GNB = new CountryType(_GNB);
+    public static final CountryType GNQ = new CountryType(_GNQ);
+    public static final CountryType GRC = new CountryType(_GRC);
+    public static final CountryType GRD = new CountryType(_GRD);
+    public static final CountryType GRL = new CountryType(_GRL);
+    public static final CountryType GTM = new CountryType(_GTM);
+    public static final CountryType GUF = new CountryType(_GUF);
+    public static final CountryType GUM = new CountryType(_GUM);
+    public static final CountryType GUY = new CountryType(_GUY);
+    public static final CountryType HKG = new CountryType(_HKG);
+    public static final CountryType HMD = new CountryType(_HMD);
+    public static final CountryType HND = new CountryType(_HND);
+    public static final CountryType HRV = new CountryType(_HRV);
+    public static final CountryType HTI = new CountryType(_HTI);
+    public static final CountryType HUN = new CountryType(_HUN);
+    public static final CountryType IDN = new CountryType(_IDN);
+    public static final CountryType IMN = new CountryType(_IMN);
+    public static final CountryType IND = new CountryType(_IND);
+    public static final CountryType IOT = new CountryType(_IOT);
+    public static final CountryType IRL = new CountryType(_IRL);
+    public static final CountryType IRN = new CountryType(_IRN);
+    public static final CountryType IRQ = new CountryType(_IRQ);
+    public static final CountryType ISL = new CountryType(_ISL);
+    public static final CountryType ISR = new CountryType(_ISR);
+    public static final CountryType ITA = new CountryType(_ITA);
+    public static final CountryType JAM = new CountryType(_JAM);
+    public static final CountryType JEY = new CountryType(_JEY);
+    public static final CountryType JOR = new CountryType(_JOR);
+    public static final CountryType JPN = new CountryType(_JPN);
+    public static final CountryType KAZ = new CountryType(_KAZ);
+    public static final CountryType KEN = new CountryType(_KEN);
+    public static final CountryType KGZ = new CountryType(_KGZ);
+    public static final CountryType KHM = new CountryType(_KHM);
+    public static final CountryType KIR = new CountryType(_KIR);
+    public static final CountryType KNA = new CountryType(_KNA);
+    public static final CountryType KOR = new CountryType(_KOR);
+    public static final CountryType KWT = new CountryType(_KWT);
+    public static final CountryType LAO = new CountryType(_LAO);
+    public static final CountryType LBN = new CountryType(_LBN);
+    public static final CountryType LBR = new CountryType(_LBR);
+    public static final CountryType LBY = new CountryType(_LBY);
+    public static final CountryType LCA = new CountryType(_LCA);
+    public static final CountryType LIE = new CountryType(_LIE);
+    public static final CountryType LKA = new CountryType(_LKA);
+    public static final CountryType LSO = new CountryType(_LSO);
+    public static final CountryType LTU = new CountryType(_LTU);
+    public static final CountryType LUX = new CountryType(_LUX);
+    public static final CountryType LVA = new CountryType(_LVA);
+    public static final CountryType MAC = new CountryType(_MAC);
+    public static final CountryType MAF = new CountryType(_MAF);
+    public static final CountryType MAR = new CountryType(_MAR);
+    public static final CountryType MCO = new CountryType(_MCO);
+    public static final CountryType MDA = new CountryType(_MDA);
+    public static final CountryType MDG = new CountryType(_MDG);
+    public static final CountryType MDV = new CountryType(_MDV);
+    public static final CountryType MEX = new CountryType(_MEX);
+    public static final CountryType MHL = new CountryType(_MHL);
+    public static final CountryType MKD = new CountryType(_MKD);
+    public static final CountryType MLI = new CountryType(_MLI);
+    public static final CountryType MLT = new CountryType(_MLT);
+    public static final CountryType MMR = new CountryType(_MMR);
+    public static final CountryType MNE = new CountryType(_MNE);
+    public static final CountryType MNG = new CountryType(_MNG);
+    public static final CountryType MNP = new CountryType(_MNP);
+    public static final CountryType MOZ = new CountryType(_MOZ);
+    public static final CountryType MRT = new CountryType(_MRT);
+    public static final CountryType MSR = new CountryType(_MSR);
+    public static final CountryType MTQ = new CountryType(_MTQ);
+    public static final CountryType MUS = new CountryType(_MUS);
+    public static final CountryType MWI = new CountryType(_MWI);
+    public static final CountryType MYS = new CountryType(_MYS);
+    public static final CountryType MYT = new CountryType(_MYT);
+    public static final CountryType NAM = new CountryType(_NAM);
+    public static final CountryType NCL = new CountryType(_NCL);
+    public static final CountryType NER = new CountryType(_NER);
+    public static final CountryType NFK = new CountryType(_NFK);
+    public static final CountryType NGA = new CountryType(_NGA);
+    public static final CountryType NIC = new CountryType(_NIC);
+    public static final CountryType NIU = new CountryType(_NIU);
+    public static final CountryType NLD = new CountryType(_NLD);
+    public static final CountryType NOR = new CountryType(_NOR);
+    public static final CountryType NPL = new CountryType(_NPL);
+    public static final CountryType NRU = new CountryType(_NRU);
+    public static final CountryType NZL = new CountryType(_NZL);
+    public static final CountryType OMN = new CountryType(_OMN);
+    public static final CountryType PAK = new CountryType(_PAK);
+    public static final CountryType PAN = new CountryType(_PAN);
+    public static final CountryType PCN = new CountryType(_PCN);
+    public static final CountryType PER = new CountryType(_PER);
+    public static final CountryType PHL = new CountryType(_PHL);
+    public static final CountryType PLW = new CountryType(_PLW);
+    public static final CountryType PNG = new CountryType(_PNG);
+    public static final CountryType POL = new CountryType(_POL);
+    public static final CountryType PRI = new CountryType(_PRI);
+    public static final CountryType PRK = new CountryType(_PRK);
+    public static final CountryType PRT = new CountryType(_PRT);
+    public static final CountryType PRY = new CountryType(_PRY);
+    public static final CountryType PSE = new CountryType(_PSE);
+    public static final CountryType PYF = new CountryType(_PYF);
+    public static final CountryType QAT = new CountryType(_QAT);
+    public static final CountryType REU = new CountryType(_REU);
+    public static final CountryType ROU = new CountryType(_ROU);
+    public static final CountryType RUS = new CountryType(_RUS);
+    public static final CountryType RWA = new CountryType(_RWA);
+    public static final CountryType SAU = new CountryType(_SAU);
+    public static final CountryType SDN = new CountryType(_SDN);
+    public static final CountryType SEN = new CountryType(_SEN);
+    public static final CountryType SGP = new CountryType(_SGP);
+    public static final CountryType SGS = new CountryType(_SGS);
+    public static final CountryType SHN = new CountryType(_SHN);
+    public static final CountryType SJM = new CountryType(_SJM);
+    public static final CountryType SLB = new CountryType(_SLB);
+    public static final CountryType SLE = new CountryType(_SLE);
+    public static final CountryType SLV = new CountryType(_SLV);
+    public static final CountryType SMR = new CountryType(_SMR);
+    public static final CountryType SOM = new CountryType(_SOM);
+    public static final CountryType SPM = new CountryType(_SPM);
+    public static final CountryType SRB = new CountryType(_SRB);
+    public static final CountryType SSD = new CountryType(_SSD);
+    public static final CountryType STP = new CountryType(_STP);
+    public static final CountryType SUR = new CountryType(_SUR);
+    public static final CountryType SVK = new CountryType(_SVK);
+    public static final CountryType SVN = new CountryType(_SVN);
+    public static final CountryType SWE = new CountryType(_SWE);
+    public static final CountryType SWZ = new CountryType(_SWZ);
+    public static final CountryType SXM = new CountryType(_SXM);
+    public static final CountryType SYC = new CountryType(_SYC);
+    public static final CountryType SYR = new CountryType(_SYR);
+    public static final CountryType TCA = new CountryType(_TCA);
+    public static final CountryType TCD = new CountryType(_TCD);
+    public static final CountryType TGO = new CountryType(_TGO);
+    public static final CountryType THA = new CountryType(_THA);
+    public static final CountryType TJK = new CountryType(_TJK);
+    public static final CountryType TKL = new CountryType(_TKL);
+    public static final CountryType TKM = new CountryType(_TKM);
+    public static final CountryType TLS = new CountryType(_TLS);
+    public static final CountryType TON = new CountryType(_TON);
+    public static final CountryType TTO = new CountryType(_TTO);
+    public static final CountryType TUN = new CountryType(_TUN);
+    public static final CountryType TUR = new CountryType(_TUR);
+    public static final CountryType TUV = new CountryType(_TUV);
+    public static final CountryType TWN = new CountryType(_TWN);
+    public static final CountryType TZA = new CountryType(_TZA);
+    public static final CountryType UGA = new CountryType(_UGA);
+    public static final CountryType UKR = new CountryType(_UKR);
+    public static final CountryType UMI = new CountryType(_UMI);
+    public static final CountryType URY = new CountryType(_URY);
+    public static final CountryType USA = new CountryType(_USA);
+    public static final CountryType UZB = new CountryType(_UZB);
+    public static final CountryType VAT = new CountryType(_VAT);
+    public static final CountryType VCT = new CountryType(_VCT);
+    public static final CountryType VEN = new CountryType(_VEN);
+    public static final CountryType VGB = new CountryType(_VGB);
+    public static final CountryType VIR = new CountryType(_VIR);
+    public static final CountryType VNM = new CountryType(_VNM);
+    public static final CountryType VUT = new CountryType(_VUT);
+    public static final CountryType WLF = new CountryType(_WLF);
+    public static final CountryType WSM = new CountryType(_WSM);
+    public static final CountryType YEM = new CountryType(_YEM);
+    public static final CountryType ZAF = new CountryType(_ZAF);
+    public static final CountryType ZMB = new CountryType(_ZMB);
+    public static final CountryType ZWE = new CountryType(_ZWE);
+    public org.apache.axis.types.Token getValue() { return _value_;}
+    public static CountryType fromValue(org.apache.axis.types.Token value)
+          throws java.lang.IllegalArgumentException {
+        CountryType enumeration = (CountryType)
+            _table_.get(value);
+        if (enumeration==null) throw new java.lang.IllegalArgumentException();
+        return enumeration;
+    }
+    public static CountryType fromString(java.lang.String value)
+          throws java.lang.IllegalArgumentException {
+        try {
+            return fromValue(new org.apache.axis.types.Token(value));
+        } catch (Exception e) {
+            throw new java.lang.IllegalArgumentException();
+        }
+    }
+    public boolean equals(java.lang.Object obj) {return (obj == this);}
+    public int hashCode() { return toString().hashCode();}
+    public java.lang.String toString() { return _value_.toString();}
+    public java.lang.Object readResolve() throws java.io.ObjectStreamException { return fromValue(_value_);}
+    public static org.apache.axis.encoding.Serializer getSerializer(
+           java.lang.String mechType, 
+           java.lang.Class _javaType,  
+           javax.xml.namespace.QName _xmlType) {
+        return 
+          new org.apache.axis.encoding.ser.EnumSerializer(
+            _javaType, _xmlType);
+    }
+    public static org.apache.axis.encoding.Deserializer getDeserializer(
+           java.lang.String mechType, 
+           java.lang.Class _javaType,  
+           javax.xml.namespace.QName _xmlType) {
+        return 
+          new org.apache.axis.encoding.ser.EnumDeserializer(
+            _javaType, _xmlType);
+    }
+    // Type metadata
+    private static org.apache.axis.description.TypeDesc typeDesc =
+        new org.apache.axis.description.TypeDesc(CountryType.class);
+
+    static {
+        typeDesc.setXmlType(new javax.xml.namespace.QName("http://www.paygate.co.za/PayHOST", "CountryType"));
+    }
+    /**
+     * Return type metadata object
+     */
+    public static org.apache.axis.description.TypeDesc getTypeDesc() {
+        return typeDesc;
+    }
+
+}

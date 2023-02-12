@@ -1,0 +1,377 @@
+package com.directi.pg.core;
+
+import com.directi.pg.Logger;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: jignesh.r
+ * Date: Feb 27, 2007
+ * Time: 3:19:29 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class GatewayType
+{
+
+    private static Logger log = new Logger(GatewayType.class.getName());
+    private String pgTypeId;
+    private String gateway;
+    private String currency;
+    private String name;
+    private int chargePercentage;
+    private int taxPercentage;
+    private int withdrawalCharge;
+    private int reversalCharge;
+    private int chargebackCharge;
+    private int chargesAccount;
+    private int taxAccount;
+    private int highRiskAmount;
+    private String address;
+    private String tableName;
+    private String partnerId;
+    private String agentId;
+    private String time_difference_normal;
+    private String time_difference_daylight;
+    private String bank_ipaddress;
+    private String templatename;
+    private String pspCode;
+    private String key;
+    private String wsService;
+    private String wsPassword;
+    private String bank_emailid;
+    private String excessCapturePercentage;
+    private String isCvvOptional;
+    private String timeAdjustment;
+    private String dailyCardLimit;
+    private String weeklyCardLimit;
+    private String monthlyCardLimit;
+
+    public GatewayType()
+    {
+
+    }
+
+    public GatewayType(ResultSet rs) throws SQLException
+    {
+        pgTypeId = rs.getString("pgTypeId");
+        gateway = rs.getString("gateway");
+        currency = rs.getString("currency");
+        name = rs.getString("name");
+
+        chargePercentage = rs.getInt("chargepercentage");
+        taxPercentage = rs.getInt("taxPercentage");
+        withdrawalCharge = rs.getInt("withdrawalcharge");
+        reversalCharge = rs.getInt("reversalcharge");
+        chargebackCharge = rs.getInt("chargebackcharge");
+        chargesAccount = rs.getInt("chargesaccount");
+        taxAccount = rs.getInt("taxaccount");
+        highRiskAmount = rs.getInt("highriskamount");
+        address = rs.getString("address");
+        time_difference_normal = rs.getString("time_difference_normal");
+        time_difference_daylight = rs.getString("time_difference_daylight");
+        partnerId = rs.getString("partnerid");
+        agentId = rs.getString("agentid");
+        bank_ipaddress = rs.getString("bank_ipaddress");
+        templatename = rs.getString("templatename");
+        pspCode = rs.getString("pspcode");
+        key = rs.getString("key");
+        wsService = rs.getString("wsservice");
+        wsPassword = rs.getString("wspassword");
+        bank_emailid = rs.getString("bank_emailid");
+        excessCapturePercentage = rs.getString("excessCapturePercentage");
+        isCvvOptional = rs.getString("isCvvOptional");
+        timeAdjustment = rs.getString("time_adjustment");
+        tableName = rs.getString("gateway_table_name");
+    }
+
+    public static Logger getLog()
+    {
+        return log;
+    }
+
+    public String getPspCode()
+    {
+        return pspCode;
+    }
+
+    public void setPspCode(String pspCode)
+    {
+        this.pspCode = pspCode;
+    }
+
+    public String getKey()
+    {
+        return key;
+    }
+
+    public void setKey(String key)
+    {
+        this.key = key;
+    }
+
+    public String getWsService()
+    {
+        return wsService;
+    }
+
+    public void setWsService(String wsService)
+    {
+        this.wsService = wsService;
+    }
+
+    public String getWsPassword()
+    {
+        return wsPassword;
+    }
+
+    public void setWsPassword(String wsPassword)
+    {
+        this.wsPassword = wsPassword;
+    }
+
+    public String getIsCvvOptional()
+    {
+        return isCvvOptional;
+    }
+
+    public void setIsCvvOptional(String isCvvOptional)
+    {
+        this.isCvvOptional = isCvvOptional;
+    }
+
+    public int getHighRiskAmount()
+    {
+        return highRiskAmount;
+    }
+
+    public void setHighRiskAmount(int highRiskAmount)
+    {
+        this.highRiskAmount = highRiskAmount;
+    }
+
+    public String getAddress()
+    {
+        return address;
+    }
+
+    public void setAddress(String address)
+    {
+        this.address = address;
+    }
+
+    public int getChargesAccount()
+    {
+        return chargesAccount;
+    }
+
+    public void setChargesAccount(int chargesAccount)
+    {
+        this.chargesAccount = chargesAccount;
+    }
+
+    public int getTaxAccount()
+    {
+        return taxAccount;
+    }
+
+    public void setTaxAccount(int taxAccount)
+    {
+        this.taxAccount = taxAccount;
+    }
+
+    public int getTaxPercentage()
+    {
+        return taxPercentage;
+    }
+
+    public void setTaxPercentage(int taxPercentage)
+    {
+        this.taxPercentage = taxPercentage;
+    }
+
+    public String getCurrency()
+    {
+        return currency;
+    }
+
+    public void setCurrency(String currency)
+    {
+        this.currency = currency;
+    }
+
+    public int getChargebackCharge()
+    {
+        return chargebackCharge;
+    }
+
+    public void setChargebackCharge(int chargebackCharge)
+    {
+        this.chargebackCharge = chargebackCharge;
+    }
+
+    public int getChargePercentage()
+    {
+        return chargePercentage;
+    }
+
+    public void setChargePercentage(int chargePercentage)
+    {
+        this.chargePercentage = chargePercentage;
+    }
+
+    public int getReversalCharge()
+    {
+        return reversalCharge;
+    }
+
+    public void setReversalCharge(int reversalCharge)
+    {
+        this.reversalCharge = reversalCharge;
+    }
+
+    public int getWithdrawalCharge()
+    {
+        return withdrawalCharge;
+    }
+
+    public void setWithdrawalCharge(int withdrawalCharge)
+    {
+        this.withdrawalCharge = withdrawalCharge;
+    }
+
+    public String getGateway()
+    {
+        return gateway;
+    }
+
+    public void setGateway(String gateway)
+    {
+        this.gateway = gateway;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+
+    public String getPgTypeId()
+    {
+        return pgTypeId;
+    }
+
+    public void setPgTypeId(String pgTypeId)
+    {
+        this.pgTypeId = pgTypeId;
+    }
+
+    public String getTime_difference_normal()
+    {
+        return time_difference_normal;
+    }
+
+    public void setTime_difference_normal(String time_difference_normal)
+    {
+        this.time_difference_normal = time_difference_normal;
+    }
+
+    public String getTime_difference_daylight()
+    {
+        return time_difference_daylight;
+    }
+
+    public void setTime_difference_daylight(String time_difference_daylight)
+    {
+        this.time_difference_daylight = time_difference_daylight;
+    }
+
+    public String getTableName()
+    {
+        return tableName;
+    }
+
+    public void setTableName(String tableName)
+    {
+        this.tableName = tableName;
+    }
+
+    public String getPartnerId()
+    {
+        return partnerId;
+    }
+
+    public void setPartnerId(String partnerId)
+    {
+        this.partnerId = partnerId;
+    }
+
+    public String getAgentId()
+    {
+        return agentId;
+    }
+    public void setAgentId(String agentId)
+    {
+        this.agentId = agentId;
+    }
+
+    public String getBank_ipaddress()
+    {
+        return bank_ipaddress;
+    }
+
+    public void setBank_ipaddress(String bank_ipaddress)
+    {
+        this.bank_ipaddress = bank_ipaddress;
+    }
+
+    public String getTemplatename()
+    {
+        return templatename;
+    }
+
+    public void setTemplatename(String templatename)
+    {
+        this.templatename = templatename;
+    }
+
+    public String getBank_emailid()
+    {
+        return bank_emailid;
+    }
+
+    public void setBank_emailid(String bank_emailid)
+    {
+        this.bank_emailid = bank_emailid;
+    }
+
+    public String toString()
+    {
+        return " { " + " pgTypeId=" + pgTypeId + " gateway=" + gateway + " currency=" + currency + " name=" + name + " chargePercentage=" + chargePercentage + " taxPercentage=" + taxPercentage + " withdrawalCharge=" + withdrawalCharge + " reversalCharge=" + reversalCharge + " chargebackCharge=" + chargebackCharge + " chargesAccount=" + chargesAccount + " taxAccount=" + taxAccount + " address=" + address + " highRiskAmount=" + highRiskAmount + " } ";
+    }
+
+    public String getExcessCapturePercentage()
+    {
+        return excessCapturePercentage;
+    }
+
+    public void setExcessCapturePercentage(String excessCapturePercentage)
+    {
+        this.excessCapturePercentage = excessCapturePercentage;
+    }
+
+    public String getTimeAdjustment()
+    {
+        return timeAdjustment;
+    }
+
+    public void setTimeAdjustment(String timeAdjustment)
+    {
+        this.timeAdjustment = timeAdjustment;
+    }
+}

@@ -1,0 +1,301 @@
+package net.partner;
+
+import com.directi.pg.Database;
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.SystemError;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: mukesh.a
+ * Date: 3/2/14
+ * Time: 11:00 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class listGatewayAccountDetails extends HttpServlet
+{
+    private static Logger log = new Logger(listGatewayAccountDetails.class.getName());
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        //doPost(request, response);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+
+        log.debug("Entering in listGatewayAccountDetails");
+        HttpSession session = req.getSession();
+
+        PartnerFunctions partner=new PartnerFunctions();
+        if (!partner.isLoggedInPartner(session))
+        {
+            res.sendRedirect("/partner/Logout.jsp");
+            return;
+        }
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+
+        ServletContext application = getServletContext();
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement pstmt = null;
+        PreparedStatement pstmt1 = null;
+        int counter = 1;
+        int records=15;
+        int pageno=1;
+
+        String accountid= null;
+        String merchantid = null;
+        Functions functions = new Functions();
+        HashMap hash = null;
+        try
+        {
+            //validateOptionalParameter(req);
+
+            InputValidator inputValidator = new InputValidator();
+            List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+
+            inputFieldsListMandatory.add(InputFields.ACCOUNTID_SMALL);
+            //inputFieldsListMandatory.add(InputFields.MERCHANTID);
+            inputFieldsListMandatory.add(InputFields.PAGENO);
+            inputFieldsListMandatory.add(InputFields.RECORDS);
+            inputFieldsListMandatory.add(InputFields.PID);
+
+            inputValidator.InputValidations(req, inputFieldsListMandatory, true);
+        }
+        catch (ValidationException e)
+        {
+            log.error("Enter valid input",e);
+            req.setAttribute("message",e.getMessage());
+            RequestDispatcher rd = req.getRequestDispatcher("/gatewayAccountInterface.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+
+        if (!ESAPI.validator().isValidInput("merchantid", req.getParameter("merchantid"), "Description", 200, true))
+        {
+            req.setAttribute("message","Invalid Merchant ID");
+            RequestDispatcher rd = req.getRequestDispatcher("/gatewayAccountInterface.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+
+        if (!ESAPI.validator().isValidInput("pid", req.getParameter("pid"), "Numbers", 10, true))
+        {
+            req.setAttribute("message","Invalid Partner ID");
+            RequestDispatcher rd = req.getRequestDispatcher("/gatewayAccountInterface.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+
+        accountid = req.getParameter("accountid");
+        merchantid = req.getParameter("merchantid");
+        int start = 0; // start index
+        int end = 0; // end index
+
+        /*try
+        {
+            validateOptionalParameter(req);
+        }
+        catch(ValidationException e)
+        {
+            log.error("Invalid page no or records",e);
+            pageno = 1;
+            records = 15;
+        }*/
+        String pid = req.getParameter("pid");
+        String partnerid=(String)session.getAttribute("merchantid");
+        String partner_id = "";
+        try
+        {
+            if (functions.isValueNull(pid) && partner.isPartnerSuperpartnerMapped(pid, partnerid))
+            {
+                partner_id = pid;
+
+                /*if (functions.isValueNull(merchantid) && !partner.isPartnerMemberMapped(merchantid, pid))
+                {
+                    req.setAttribute("message", "Invalid Partner Member Mapping");
+                    RequestDispatcher rd = req.getRequestDispatcher("/gatewayAccountInterface.jsp?ctoken=" + user.getCSRFToken());
+                    rd.forward(req, res);
+                    return;
+                }*/
+            }
+            else if (!functions.isValueNull(pid))
+            {
+                /*if (functions.isValueNull(merchantid) && !partner.isPartnerSuperpartnerMembersMapped(merchantid, partnerid))
+                {
+                    req.setAttribute("message", "Invalid Partner Member Mapping");
+                    RequestDispatcher rd = req.getRequestDispatcher("/gatewayAccountInterface.jsp?ctoken=" + user.getCSRFToken());
+                    rd.forward(req, res);
+                    return;
+                }
+               */ String Roles = partner.getRoleofPartner(partnerid);
+                if (Roles.contains("superpartner"))
+                {
+                    LinkedHashMap<Integer, String> memberHash = new LinkedHashMap();
+                    memberHash =partner.getPartnerDetails(partnerid);
+                    partner_id = partnerid;
+                    for(int partnerID : memberHash.keySet())
+                    {
+                        partner_id+= "," + Integer.toString(partnerID);
+                    }
+                }
+                else
+                {
+                    partner_id = partnerid;
+                }
+            }
+            else
+            {
+                req.setAttribute("message", "Invalid Partner Mapping");
+                RequestDispatcher rd = req.getRequestDispatcher("/gatewayAccountInterface.jsp?ctoken=" + user.getCSRFToken());
+                rd.forward(req, res);
+                return;
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        try
+        {
+            pageno = Functions.convertStringtoInt(ESAPI.validator().getValidInput("Spageno", req.getParameter("SPageno"), "Numbers", 3, true), 1);
+            records = Functions.convertStringtoInt(ESAPI.validator().getValidInput("Srecord", req.getParameter("SRecords"), "Numbers", 3, true), Integer.parseInt((String) application.getAttribute("NOOFRECORDSPERPAGE")));
+        }
+        catch (ValidationException e)
+        {
+            log.error("Invalid page no or records",e);
+            pageno =1;
+            records = 10;
+        }
+
+
+        start = (pageno - 1) * records;
+        end = records;
+        //Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+
+        try
+        {
+            conn = Database.getRDBConnection();
+            //StringBuilder query = new StringBuilder("SELECT ga.accountid,ga.merchantid,ga.pgtypeid,ga.aliasname,gt.currency,gt.gateway,gt.name FROM gateway_accounts AS ga JOIN gateway_type AS gt ON ga.pgtypeid=gt.pgtypeid JOIN gateway_account_partner_mapping AS gacpm ON ga.accountid=gacpm.accountid");
+            StringBuilder query = new StringBuilder("SELECT ga.accountid,ga.merchantid,ga.pgtypeid,ga.aliasname,gt.currency,gt.gateway,gt.name,gacpm.partnerid  FROM gateway_accounts AS ga JOIN gateway_type AS gt ON ga.pgtypeid=gt.pgtypeid JOIN gateway_account_partner_mapping AS gacpm ON ga.accountid=gacpm.accountid");
+            StringBuilder countquery = new StringBuilder("SELECT count(*) FROM gateway_accounts AS ga JOIN gateway_type AS gt ON ga.pgtypeid=gt.pgtypeid JOIN gateway_account_partner_mapping AS gacpm ON ga.accountid=gacpm.accountid");
+            if (functions.isValueNull(partnerid))
+            {
+                query.append(" AND gacpm.partnerid IN ( "+ partner_id + ")");
+                countquery.append(" AND gacpm.partnerid IN ( "+ partner_id + ")");
+            }
+            if (functions.isValueNull(accountid))
+            {
+                query.append(" and ga.accountid = ?");
+                countquery.append(" and ga.accountid = ? ");
+            }
+            if (functions.isValueNull(merchantid))
+            {
+                query.append(" and ga.merchantid LIKE '%" +merchantid+ "%'");
+                countquery.append(" and ga.merchantid LIKE'%" +merchantid+ "%'");
+            }
+            query.append(" order by ga.accountid desc");
+            query.append(" LIMIT ? , ? ");
+
+            pstmt = conn.prepareStatement(query.toString());
+            pstmt1 = conn.prepareStatement(countquery.toString());
+
+           /* if (functions.isValueNull(partnerid))
+            {
+                pstmt.setString(counter, partnerid);
+                pstmt1.setString(counter, partnerid);
+                counter++;
+            }*/
+            if (functions.isValueNull(accountid))
+            {
+                pstmt.setString(counter, accountid);
+                pstmt1.setString(counter, accountid);
+                counter++;
+            }
+            /*if (functions.isValueNull(merchantid))
+            {
+                pstmt.setString(counter, merchantid);
+                pstmt1.setString(counter, merchantid);
+                counter++;
+            }*/
+            pstmt.setInt(counter, start);
+            counter++;
+            pstmt.setInt(counter, end);
+            counter++;
+
+            log.debug("query:::::"+pstmt);
+            log.debug("countquery:::::"+pstmt1);
+
+            //hash = Database.getHashFromResultSetForTransactionEntry(rs1);
+            hash = Database.getHashMapFromResultSetForTransactionEntry(pstmt.executeQuery());
+
+            rs = pstmt1.executeQuery();
+            rs.next();
+            int totalrecords = rs.getInt(1);
+
+            hash.put("totalrecords", "" + totalrecords);
+            hash.put("records", "0");
+
+            if (totalrecords > 0)
+            {
+                hash.put("records", "" + (hash.size() - 2));
+            }
+            req.setAttribute("transdetails", hash);
+            log.debug("forward to jsp"+hash);
+
+        }
+        catch (SystemError s)
+        {
+            log.error("System error while performing select query",s);
+            Functions.ShowMessage("Error", "Internal System Error while getting list of Transactions");
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL error",e);
+            Functions.ShowMessage("Error", "Internal System Error while getting list of Transactions");
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(pstmt);
+            Database.closePreparedStatement(pstmt1);
+            Database.closeConnection(conn);
+        }
+        RequestDispatcher rd = req.getRequestDispatcher("/gatewayAccountInterface.jsp?ctoken="+user.getCSRFToken());
+        rd.forward(req, res);
+    }
+    /*private void validateOptionalParameter(HttpServletRequest req) throws ValidationException
+    {
+        InputValidator inputValidator = new InputValidator();
+        List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+
+        inputFieldsListMandatory.add(InputFields.ACCOUNTID_SMALL);
+        inputFieldsListMandatory.add(InputFields.MERCHANTID);
+        inputFieldsListMandatory.add(InputFields.PAGENO);
+        inputFieldsListMandatory.add(InputFields.RECORDS);
+
+        inputValidator.InputValidations(req,inputFieldsListMandatory,true);
+    }*/
+}

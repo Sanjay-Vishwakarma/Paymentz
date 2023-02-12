@@ -1,0 +1,5 @@
+Hi <#NAME#>,Pls Pay Your Invoice at <#LIVEURL#>transaction/PayInvoice?inv=<#INVOICENO#>&ct=<#CTOKEN#>&t=<#TERMINALID#>
+ Sincerely Yours,
+<#MERCHANTCOMPANYNAME#> Team
+
+

@@ -1,0 +1,17 @@
+/AccountRuleChangeRequestVO.java/1.1/Wed Aug 12 00:21:50 2015//
+/AccountRuleMappingVO.java/1.1/Mon Jul 13 20:23:20 2015//
+/FSAccountDetailsVO.java/1.1/Mon Jul 13 20:23:20 2015//
+/FSSubAccountDetailsVO.java/1.1/Mon Jul 13 20:23:20 2015//
+/FraudAccountDetailsVO.java/1.3/Fri Dec 21 19:53:36 2018//
+/FraudRuleChangeIntimationVO.java/1.1/Tue Aug 11 00:45:56 2015//
+/FraudRuleChangeRequestVO.java/1.1/Wed Aug 12 00:21:50 2015//
+/FraudRuleChangeTrackerVO.java/1.2/Fri Aug 28 01:53:08 2015//
+/FraudSystemAccountRuleVO.java/1.4/Wed Jan 23 19:45:28 2019//
+/FraudSystemAccountVO.java/1.3/Fri Aug 28 01:54:58 2015//
+/FraudSystemSubAccountRuleVO.java/1.4/Wed Jan 23 19:45:28 2019//
+/FraudSystemSubAccountVO.java/1.4/Mon Dec 10 19:28:44 2018//
+/MerchantFSSubAccountMappingVO.java/1.1/Mon Jul 13 20:23:20 2015//
+/MerchantFraudAccountVO.java/1.5/Mon Jan 14 19:46:58 2019//
+/RuleMasterVO.java/1.3/Thu Dec 06 19:29:30 2018//
+/SubAccountRuleChangeRequestVO.java/1.2/Wed Aug 12 00:22:04 2015//
+/SubAccountRuleMappingVO.java/1.1/Mon Jul 13 20:23:20 2015//

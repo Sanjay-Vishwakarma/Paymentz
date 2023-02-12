@@ -1,0 +1,46 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>GDPR Cookie Consent Popup Demo</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="text/javascript" src="jquery.min.v2.2.4.js"></script>
+    <script type="text/javascript" src="jquery.ihavecookies.js"></script>
+    <script type="text/javascript">
+    $(document).ready(function() {
+        $('body').ihavecookies({
+            title: '&#x1F36A; Accept Cookies & Privacy Policy?',
+            message: 'There are no cookies used on this site, but if there were this message could be customised to provide more details. Click the <strong>accept</strong> button below to see the optional callback in action...',
+            delay: 600,
+            expires: 1,
+            link: '/#',
+            /*onAccept: function(){
+                alert('Yay! You clicked the accept button. This is an optional callback function that can be set on accept.');
+            },*/
+            uncheckBoxes: true
+        });
+    });
+    </script>
+    <!-- <link href="https://fonts.googleapis.com/css?family=Roboto+Slab|Quicksand:400,500" rel="stylesheet"> -->
+
+    <link href="quicksand_font.css" rel="stylesheet">    
+    <link href="cookies_popup.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>GDPR Cookie Consent Popup</h1>
+
+        <p>When you load this page you will see an example of the cookie message popup in the bottom right corner.</p>
+        <p>If you don't see it, clear your cookies or delete the cookie called <code>cookieControl</code>.</p>
+
+        <h3>Checkboxes</h3>
+
+        <p>With the recent EU regulations, visitors now must be able to opt-in to marketing, preferences, etc themselves. The plugin has an option that enables checkboxes to be unchecked automatically on page load.</p>
+
+        <ul>
+            <li><input type="checkbox" id="opt1" value="Y" checked> <label for="opt1">Checked by default &dash; remains checked</label>
+            <li><input type="checkbox" id="opt2" value="Y"> <label for="opt2">Unchecked by default &dash; remains unchecked</label>
+            <li><input type="checkbox" id="opt3" value="Y" class="ihavecookies" checked> <label for="opt3">Checked by default &dash; <em>ihavecookies</em> automatically unchecks this on page load because is has the class <code>ihavecookies</code> applied to it.</label>
+        </ul>
+    </div>
+</body>
+</html>

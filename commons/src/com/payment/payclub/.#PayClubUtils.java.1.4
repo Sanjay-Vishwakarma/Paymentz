@@ -1,0 +1,496 @@
+package com.payment.payclub;
+
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.TransactionLogger;
+import com.payment.common.core.*;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.PZTechnicalViolationException;
+import com.payment.exceptionHandler.constraintType.PZTechnicalExceptionEnum;
+import com.payment.utils.SSLUtils;
+import com.payment.validators.vo.CommonValidatorVO;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.*;
+import java.net.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+/**
+ * Created by Admin on 19-Jul-18.
+ */
+public class PayClubUtils
+{
+    public final static String charset = "UTF-8";
+
+    private static Logger log = new Logger(PayClubUtils.class.getName());
+    private static TransactionLogger transactionLogger = new TransactionLogger(PayClubUtils.class.getName());
+
+    public static String sendPOST(String POST_URL,String POST_PARAMS)
+    {
+        transactionLogger.debug("Inside sendPOST ---");
+        StringBuffer response = new StringBuffer();
+        try
+        {
+            URL obj = new URL(POST_URL);
+            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+            System.setProperty("https.protocols", "TLSv1.2");
+            con.setRequestMethod("POST");
+            con.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US)");
+            con.setDoOutput(true);
+            OutputStream os = con.getOutputStream();
+            os.write(POST_PARAMS.getBytes());
+            os.flush();
+            os.close();
+
+            int responseCode = con.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK)
+            {
+                BufferedReader in = new BufferedReader(new InputStreamReader(
+                con.getInputStream()));
+                String inputLine;
+
+                while ((inputLine = in.readLine()) != null)
+                {
+                    response.append(inputLine);
+                }
+                in.close();
+            }
+            else
+            {
+                transactionLogger.debug("POST request not worked");
+            }
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        return response.toString();
+    }
+
+    public Comm3DResponseVO readSalesJsonResponse(String jsonResponseString)throws PZTechnicalViolationException
+    {
+        transactionLogger.debug("Inside readSalesJsonResponse in PayClubUtils---");
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        Date date = new Date();
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        try
+        {
+            JSONObject jObject = new JSONObject(jsonResponseString);
+
+            String transactionNum="";
+            String signMsg="";
+            String remark="";
+            String mid="";
+            String currency="";
+            String responceCode="";
+            String orderNumber="";
+            String amount="";
+            String payResult="";
+            String payInfo="";
+
+            if(jObject.has("p_trans_num")){
+                transactionNum=jObject.getString("p_trans_num");
+            }
+            if(jObject.has("p_signmsg")){
+                signMsg=jObject.getString("p_signmsg");
+            }
+            if(jObject.has("p_remark")){
+                remark=jObject.getString("p_remark");
+            }
+            if(jObject.has("p_mid")){
+                mid=jObject.getString("p_mid");
+            }
+            if(jObject.has("p_currency")){
+                currency=jObject.getString("p_currency");
+            }
+            if(jObject.has("p_responseCode")){
+                responceCode=jObject.getString("p_responseCode");
+            }
+            if(jObject.has("p_order_num")){
+                orderNumber=jObject.getString("p_order_num");
+            }
+            if(jObject.has("p_amount")){
+                amount=jObject.getString("p_amount");
+            }
+            if(jObject.has("p_pay_result")){
+                payResult=jObject.getString("p_pay_result");
+            }
+            if(jObject.has("p_pay_info")){
+                payInfo=jObject.getString("p_pay_info");
+            }
+
+            transactionLogger.debug("p_trans_num ---"+transactionNum);
+            transactionLogger.debug("p_signmsg ---"+signMsg);
+            transactionLogger.debug("p_remark ---"+remark);
+            transactionLogger.debug("p_mid ---"+mid);
+            transactionLogger.debug("p_currency ---"+currency);
+            transactionLogger.debug("p_responseCode ---"+responceCode);
+            transactionLogger.debug("p_order_num ---"+orderNumber);
+            transactionLogger.debug("p_amount ---"+amount);
+            transactionLogger.debug("p_pay_result ---"+payResult);
+            transactionLogger.debug("p_pay_info ---"+payInfo);
+
+
+            if(payResult.equals("1"))
+            {
+                commResponseVO.setStatus("success");
+            }
+            else if(payResult.equals("0"))
+            {
+                commResponseVO.setStatus("fail");
+            }
+            else if(payResult.equals("-1"))
+            {
+                commResponseVO.setStatus("Processing");
+            }
+
+            commResponseVO.setTransactionId(transactionNum);
+            commResponseVO.setRemark(payInfo);
+            commResponseVO.setDescription(payInfo);
+            commResponseVO.setAmount(amount);
+            commResponseVO.setCurrency(currency);
+            commResponseVO.setMerchantId(mid);
+            commResponseVO.setResponseTime(String.valueOf(dateFormat.format(date)));
+        }
+        catch (JSONException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException("PayClubUtils.java","getPayClubResponseVOInquiry()",null,"common","Technical Exception:::",PZTechnicalExceptionEnum.PARSE_CONFIG_EXCEPTION,null,e.getMessage(),e.getCause());
+        }
+
+        return commResponseVO;
+            }
+
+    public CommResponseVO readRefundJsonResponse(String jsonResponseString)throws PZTechnicalViolationException
+    {
+        transactionLogger.debug("Inside readRefundJsonResponse in PayClubUtils ---");
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        Date date = new Date();
+        CommResponseVO commResponseVO = new CommResponseVO();
+        try
+        {
+            JSONObject jObject = new JSONObject(jsonResponseString);
+
+            String mid="";
+            String transactionNum="";
+            String refundNumber="";
+            String refundCode="";
+            String refundDescription="";
+            String refundReason="";
+            String remark="";
+
+
+            if(jObject.has("p_mid")){
+                mid=jObject.getString("p_mid");
+            }
+            if(jObject.has("p_trans_num")){
+                transactionNum=jObject.getString("p_trans_num");
+            }
+            if(jObject.has("p_refund_num")){
+                refundNumber=jObject.getString("p_refund_num");
+            }
+            if(jObject.has("p_code")){
+                refundCode=jObject.getString("p_code");
+            }
+            if(jObject.has("p_desc")){
+                refundDescription=jObject.getString("p_desc");
+            }
+            if(jObject.has("p_refund_reason")){
+                refundReason=jObject.getString("p_refund_reason");
+            }
+            if(jObject.has("p_remark")){
+                remark=jObject.getString("p_remark");
+            }
+
+            transactionLogger.debug("p_mid ---"+mid);
+            transactionLogger.debug("p_trans_num ---"+transactionNum);
+            transactionLogger.debug("p_refund_num ---"+refundNumber);
+            transactionLogger.debug("p_code ---"+refundCode);
+            transactionLogger.debug("p_desc ---"+refundDescription);
+            transactionLogger.debug("p_refund_reason ---"+refundReason);
+            transactionLogger.debug("p_remark ---"+remark);
+
+
+            if(refundCode.equals("1")||refundCode.equals("00"))
+            {
+                commResponseVO.setStatus("success");
+            }
+          /*  else if(refundCode.equals("0"))
+            {
+                commResponseVO.setStatus("fail");
+            }*/
+            else if(refundCode.equals("-1"))
+            {
+                commResponseVO.setStatus("Processing");
+            }
+            else
+            {
+                commResponseVO.setStatus("failed");
+            }
+
+            commResponseVO.setMerchantId(mid);
+            commResponseVO.setTransactionId(transactionNum);
+            commResponseVO.setAuthCode(refundNumber);
+            commResponseVO.setErrorCode(refundCode);
+            commResponseVO.setDescription(refundDescription);
+            commResponseVO.setRemark(remark);
+            commResponseVO.setResponseTime(String.valueOf(dateFormat.format(date)));
+        }
+        catch (JSONException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException("PayClubUtils.java","getPayClubResponseVOInquiry()",null,"common","Technical Exception:::",PZTechnicalExceptionEnum.PARSE_CONFIG_EXCEPTION,null,e.getMessage(),e.getCause());
+        }
+
+        return commResponseVO;
+    }
+
+    public CommResponseVO readInquiryJsonResponse(String jsonResponseString)throws PZTechnicalViolationException
+    {
+        transactionLogger.debug("Inside readInquiryJsonResponse in PayClubUtils ---");
+        Functions functions = new Functions();
+        CommResponseVO commResponseVO = new CommResponseVO();
+        try
+        {
+            JSONObject jObject = new JSONObject(jsonResponseString);
+
+            String desc="";
+            String mid="";
+            String accountNumber="";
+            String orderNumber="";
+            String transactionNum="";
+            String currency="";
+            String amount="";
+            String queryResult="";
+            String transDate="";
+
+            if(jObject.has("p_desc")){
+                desc=jObject.getString("p_desc");   // only comes when p_query_result=2
+            }
+            if(jObject.has("p_mid")){
+                mid=jObject.getString("p_mid");
+            }
+            if(jObject.has("p_account_num")){
+                accountNumber=jObject.getString("p_account_num");
+            }
+            if(jObject.has("p_order_num")){
+                orderNumber=jObject.getString("p_order_num");
+            }
+            if(jObject.has("p_trans_num")){
+                transactionNum=jObject.getString("p_trans_num");
+            }
+            if(jObject.has("p_currency")){
+                currency=jObject.getString("p_currency");
+            }
+            if(jObject.has("p_amount")){
+                amount=jObject.getString("p_amount");
+            }
+            if(jObject.has("p_query_result")){
+                queryResult=jObject.getString("p_query_result");
+            }
+            if(jObject.has("p_trans_date")){
+                transDate=jObject.getString("p_trans_date");
+            }
+
+                transactionLogger.debug("p_desc ---"+desc);
+                transactionLogger.debug("p_mid ---"+mid);
+                transactionLogger.debug("p_account_num ---"+accountNumber);
+                transactionLogger.debug("p_order_num ---"+orderNumber);
+                transactionLogger.debug("p_trans_num ---" + transactionNum);
+                transactionLogger.debug("p_currency ---"+currency);
+                transactionLogger.debug("p_amount ---"+amount);
+                transactionLogger.debug("p_query_result ---"+queryResult);
+
+            if(queryResult.equals("1"))
+            {
+                commResponseVO.setStatus("success");
+                commResponseVO.setTransactionStatus("success");
+                commResponseVO.setRemark("-");  // no remark from query response in success case
+                commResponseVO.setDescription("-"); // no description from query responce in success case
+            }
+            else if(queryResult.equals("0") || queryResult.equals("2"))
+            {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setTransactionStatus("fail");
+                commResponseVO.setRemark(desc);
+                commResponseVO.setDescription(desc);
+            }
+            else if(queryResult.equals("-1"))
+            {
+                commResponseVO.setStatus("Processing");
+                commResponseVO.setTransactionStatus("Processing");
+            }
+            if(functions.isValueNull(transDate))
+                commResponseVO.setBankTransactionDate(transDate);
+            else
+                commResponseVO.setBankTransactionDate("-");
+            commResponseVO.setMerchantId(mid);
+            commResponseVO.setTransactionId(transactionNum);
+            commResponseVO.setCurrency(currency);
+            commResponseVO.setAmount(amount);
+            commResponseVO.setAuthCode(queryResult);
+            commResponseVO.setTransactionType("Inquiry");
+        }
+        catch (JSONException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException("PayClubUtils.java","getPayClubResponseVOInquiry()",null,"common","Technical Exception:::",PZTechnicalExceptionEnum.PARSE_CONFIG_EXCEPTION,null,e.getMessage(),e.getCause());
+        }
+
+        return commResponseVO;
+    }
+
+    public static String SHA256forSales(String MERCHANT_ID, String ACCOUNT_NUMBER, String ORDER_NO, String T_CURRENCY, String T_AMOUNT,String SIGN_KEY) throws PZTechnicalViolationException
+    {
+        String sha = MERCHANT_ID.trim() + ACCOUNT_NUMBER.trim() + ORDER_NO.trim() + T_CURRENCY.trim() + T_AMOUNT.trim()+ SIGN_KEY;
+        sha.trim();
+        StringBuffer hexString = new StringBuffer();
+        try
+        {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(sha.getBytes("UTF-8"));
+            for (int i = 0; i < hash.length; i++)
+            {
+                String hex = Integer.toHexString(0xff & hash[i]);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(PayClubPaymentGateway.class.getName(), "SHA256forSales()", null, "common", "NoSuchAlgorithm Exception while placing transaction", PZTechnicalExceptionEnum.NOSUCH_ALGO_EXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(PayClubPaymentGateway.class.getName(), "SHA256forSales()", null, "common", "UnsupportedEncodingException  while placing transaction", PZTechnicalExceptionEnum.UNSUPPORTED_ENCOADING_EXCEPTION, null, e.getMessage(), e.getCause());
+        }
+
+        return hexString.toString().trim();
+    }
+
+    public static String SHA256forRefund(String MERCHANT_ID, String ACCOUNT_NUMBER, String ORDERNUMBER, String REFUND_TYPE, String SIGN_KEY) throws PZTechnicalViolationException
+    {
+        String sha = MERCHANT_ID.trim() + ACCOUNT_NUMBER.trim() + ORDERNUMBER.trim() + REFUND_TYPE.trim() + SIGN_KEY;
+        sha.trim();
+
+        StringBuffer hexString = new StringBuffer();
+        try
+        {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(sha.getBytes("UTF-8"));
+            for (int i = 0; i < hash.length; i++)
+            {
+                String hex = Integer.toHexString(0xff & hash[i]);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(PayClubPaymentGateway.class.getName(), "SHA256forRefund()", null, "common", "NoSuchAlgorithm Exception while placing transaction", PZTechnicalExceptionEnum.NOSUCH_ALGO_EXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(PayClubPaymentGateway.class.getName(), "SHA256forRefund()", null, "common", "UnsupportedEncodingException  while placing transaction", PZTechnicalExceptionEnum.UNSUPPORTED_ENCOADING_EXCEPTION, null, e.getMessage(), e.getCause());
+        }
+
+        return hexString.toString().toLowerCase().trim();
+    }
+
+    public static String SHA256forInquiry(String MERCHANT_ID, String ACCOUNT_NUMBER,String SIGN_KEY) throws PZTechnicalViolationException
+    {
+        String sha = MERCHANT_ID.trim() + ACCOUNT_NUMBER.trim() + SIGN_KEY;
+        sha.trim();
+
+        StringBuffer hexString = new StringBuffer();
+        try
+        {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(sha.getBytes("UTF-8"));
+            for (int i = 0; i < hash.length; i++)
+            {
+                String hex = Integer.toHexString(0xff & hash[i]);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(PayClubUtils.class.getName(), "SHA256forInquiry()", null, "common", "NoSuchAlgorithm Exception while placing transaction", PZTechnicalExceptionEnum.NOSUCH_ALGO_EXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(PayClubUtils.class.getName(), "SHA256forInquiry()", null, "common", "UnsupportedEncodingException  while placing transaction", PZTechnicalExceptionEnum.UNSUPPORTED_ENCOADING_EXCEPTION, null, e.getMessage(), e.getCause());
+        }
+
+        return hexString.toString().toLowerCase().trim();
+    }
+
+    public static boolean getAmountComparison(String refundAmount, String previousTransactionAmountAmount)
+    {
+        boolean result=false;
+        float rfAmount=Float.valueOf(refundAmount);
+        float previousAmount=Float.valueOf(previousTransactionAmountAmount);
+        if (rfAmount==previousAmount)
+        {
+            result=true;
+        }
+        return result;
+    }
+
+    public static CommRequestVO getpayclubRequestVO(CommonValidatorVO commonValidatorVO)
+    {
+        CommRequestVO commRequestVO = new CommRequestVO();
+        CommAddressDetailsVO addressDetailsVO = new CommAddressDetailsVO();
+        CommTransactionDetailsVO transDetailsVO = new CommTransactionDetailsVO();
+        CommCardDetailsVO cardDetailsVO = new CommCardDetailsVO();
+        CommMerchantVO commMerchantVO=new CommMerchantVO();
+
+        commMerchantVO.setAccountId(commonValidatorVO.getMerchantDetailsVO().getAccountId());
+        commMerchantVO.setHostUrl(commonValidatorVO.getMerchantDetailsVO().getHostUrl());
+
+
+        addressDetailsVO.setPhone(commonValidatorVO.getAddressDetailsVO().getPhone());
+        addressDetailsVO.setEmail(commonValidatorVO.getAddressDetailsVO().getEmail());
+        addressDetailsVO.setFirstname(commonValidatorVO.getAddressDetailsVO().getFirstname());
+        addressDetailsVO.setLastname(commonValidatorVO.getAddressDetailsVO().getLastname());
+        addressDetailsVO.setCardHolderIpAddress(commonValidatorVO.getAddressDetailsVO().getCardHolderIpAddress());
+        addressDetailsVO.setStreet(commonValidatorVO.getAddressDetailsVO().getStreet());
+        addressDetailsVO.setState(commonValidatorVO.getAddressDetailsVO().getState());
+        addressDetailsVO.setCity(commonValidatorVO.getAddressDetailsVO().getCity());
+        addressDetailsVO.setZipCode(commonValidatorVO.getAddressDetailsVO().getZipCode());
+        addressDetailsVO.setCountry(commonValidatorVO.getAddressDetailsVO().getCountry());
+        addressDetailsVO.setCustomerid(commonValidatorVO.getAddressDetailsVO().getCustomerid());
+        addressDetailsVO.setLanguage(commonValidatorVO.getAddressDetailsVO().getLanguage());
+
+        transDetailsVO.setAmount(commonValidatorVO.getTransDetailsVO().getAmount());
+        transDetailsVO.setPaymentType(commonValidatorVO.getPaymentType());
+        transDetailsVO.setCardType(commonValidatorVO.getCardType());
+        transDetailsVO.setCurrency(commonValidatorVO.getTransDetailsVO().getCurrency());
+        transDetailsVO.setOrderId(commonValidatorVO.getTransDetailsVO().getOrderId());
+        transDetailsVO.setOrderDesc(commonValidatorVO.getTransDetailsVO().getOrderDesc());
+
+
+        commRequestVO.setTransDetailsVO(transDetailsVO);
+        commRequestVO.setAddressDetailsVO(addressDetailsVO);
+        commRequestVO.setCardDetailsVO(cardDetailsVO);
+        commRequestVO.setCommMerchantVO(commMerchantVO);
+        return commRequestVO;
+    }
+
+
+
+}
+
+
+

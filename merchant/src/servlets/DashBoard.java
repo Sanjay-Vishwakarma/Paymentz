@@ -1,0 +1,379 @@
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccountService;
+import com.manager.DateManager;
+import com.manager.dao.MerchantDAO;
+import com.manager.vo.merchantmonitoring.DateVO;
+import org.owasp.esapi.User;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.*;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: admin
+ * Date: Sep 13, 2018
+ * Time: 11:34:45 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class DashBoard extends HttpServlet
+{
+    private static Logger logger = new Logger(DashBoard.class.getName());
+    private static final ResourceBundle RB = LoadProperties.getProperty("com.directi.pg.CurrencyColor");
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        try {
+            logger.debug("Inside dashboard........");
+            HttpSession session = req.getSession();
+            Merchants merchants = new Merchants();
+            Functions functions = new Functions();
+            if (!merchants.isLoggedIn(session)) {
+                res.sendRedirect("/merchant/Logout.jsp");
+                return;
+            }
+
+            User user = (User) session.getAttribute("ESAPIUserSessionKey");
+            logger.debug("CSRF successful ");
+            res.setContentType("text/html");
+
+            MerchantDAO merchantDAO = new MerchantDAO();
+            DateManager dateManager = new DateManager();
+
+            String merchantId = (String) session.getAttribute("merchantid");//IMP
+            String charttoken = Functions.getFormattedDate("yyMMddHHmmss");
+            String currency = req.getParameter("currency");
+            String payBrand = req.getParameter("payBrand");
+            String payMode = req.getParameter("payMode");
+            String singleCurrency = req.getParameter("currency");
+            String datefilter= req.getParameter("datefilter");
+            String status= req.getParameter("status");
+            String last="";
+           // String totalSalesAmount = "";
+           // String totalSettledAmount = "";
+          //  String withdrawamount="0.00";
+          //  String totalRefundAmount = "";
+         //   String totalChargeBackAmount = "";
+         //   String totalDeclinedAmount = "";
+
+            StringBuffer sb = new StringBuffer();
+            StringBuffer colorFromCurrencyProperties = new StringBuffer();
+            StringBuffer stringBufferSalesBarChart = new StringBuffer();
+            StringBuffer stringBufferValidStatusChart = new StringBuffer();
+            StringBuffer stringBufferSalesPerCurrencyChart = new StringBuffer();
+            StringBuffer stringbuffersales= new StringBuffer();
+           // StringBuffer stringbufferwithdraw= new StringBuffer();
+            StringBuffer stringbufferDeclined= new StringBuffer();
+
+            HashMap<String, String> hashMapSalesBarChart = new LinkedHashMap();
+            HashMap<String, String> hashMapSalesPerCurrencyChart=null;
+            HashMap<String,String> payBrandList = merchantDAO.getValidPayBrandListForMerchant(merchantId);
+            HashMap<String,String> payModeList = merchantDAO.getValidPayModeListForMerchant(merchantId);
+
+             HashMap terminalList= (HashMap) session.getAttribute("terminallist");
+             if(terminalList!=null)
+            {
+                Iterator it = terminalList.entrySet().iterator();
+                while (it.hasNext())
+                {
+
+                    Map.Entry pair = (Map.Entry) it.next();
+                    MerchantTerminalVo merchantTerminalVo = (MerchantTerminalVo) pair.getValue();
+
+                    if("CP".equals(merchantTerminalVo.getPaymodeName()))
+                    {
+                        payModeList.put(merchantTerminalVo.getPaymodeId(), GatewayAccountService.getPaymentTypes(merchantTerminalVo.getPaymodeId()));
+                        break;
+                    }
+                }
+            }
+
+            Calendar cal = Calendar.getInstance();
+            cal.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), 1, 0, 0, 0);
+            //String lastYearTime = String.valueOf(cal.getTimeInMillis() / 1000); //IMP
+
+            List<String> currencyList = new ArrayList<>();
+            List<String> currencyListDb =  merchantDAO.getValidCurrencyListForMerchant(merchantId);
+
+            if (functions.isValueNull(singleCurrency)) {
+                currencyList.add(singleCurrency);
+            }
+            else {
+                currencyList =  currencyListDb;
+            }
+            if (currencyList.size()> 0) {
+                last = currencyList.get(currencyList.size() -1);
+                for (String color : currencyList) {
+                    colorFromCurrencyProperties.append(RB.getString(color));
+                    if (!last.equals(color)) {
+                        colorFromCurrencyProperties.append(",");
+                    }
+                }
+            }
+            if(!functions.isValueNull(currency))
+            {
+                if(currencyListDb!=null && currencyListDb.size()>0)
+                    currency =  currencyListDb.get(0);
+            }
+
+            DateVO dateVOs= new DateVO();
+            if (functions.isValueNull(datefilter))
+            {
+                dateVOs= dateManager.getDateRangeNew(datefilter);
+            }
+
+            String dashboard_value= req.getParameter("submit");
+            Hashtable<String,String>totalSalesAmount = merchantDAO.getTotalSalesAmount(merchantId, currency, payBrand, payMode, dateVOs,dashboard_value,status);
+            logger.error("totalSalesAmount from dashboard:::: "+totalSalesAmount);
+            if ( totalSalesAmount.size()>0)
+            {
+                for (Map.Entry<String,String> entry: totalSalesAmount.entrySet())
+                {
+                    String salesAmount= entry.getKey();
+                    String salesCount= entry.getValue();
+                    stringbuffersales.append(salesAmount+ "," +salesCount);
+                }
+            }
+            String []hashtablesale= stringbuffersales.toString().split(",");
+            HashMap<String,String> totalAmount= new HashMap<>();
+            if (functions.isValueNull(dashboard_value))
+            {
+                totalAmount= merchantDAO.getTotalAmountAndCount(merchantId, currency, payBrand, payMode,dateVOs,dashboard_value,status);
+            }
+            logger.error("totalAmount from DashBoard::: "+totalAmount);
+
+
+           /* Hashtable<String,String> totalSettledAmount = merchantDAO.getTotalSettledAmount(merchantId, currency, payBrand, payMode);
+            logger.error("totalSettledAmount from dashboard:::: "+totalSettledAmount);
+            if (totalSettledAmount.size()>0)
+            {
+                for (Map.Entry<String,String> entry: totalSettledAmount.entrySet())
+                {
+                    String settledAmount= entry.getKey();
+                    String settledCount= entry.getValue();
+                    stringbuffersettled.append(settledAmount+ ","+ settledCount);
+                }
+            }
+            String[] hashtablesettled= stringbuffersettled.toString().split(",");*/
+
+           /* Hashtable<String,String> withdrawamount = merchantDAO.getWithdrawAmount(merchantId, currency, payBrand, payMode,dateVOs,dashboard_value);
+            logger.error("withdrawamountfrom dashboard::: "+withdrawamount);
+            if (withdrawamount.size()>0)
+            {
+                for (Map.Entry<String,String> entry: withdrawamount.entrySet())
+                {
+                    String withdrawAmt= entry.getKey();
+                    String withdrawCount= entry.getValue();
+                    stringbufferwithdraw.append(withdrawAmt+ "," +withdrawCount);
+                }
+            }
+            String[] hashtablewithdraw= stringbufferwithdraw.toString().split(",");*/
+
+            /*Hashtable<String,String> totalRefundAmount = merchantDAO.getTotalTotalRefundAmount(merchantId, currency, payBrand, payMode);
+            logger.error("totalRefundAmount from Dashboard:::: "+totalRefundAmount);
+            if (totalRefundAmount.size()>0)
+            {
+                for (Map.Entry<String,String> entry: totalRefundAmount.entrySet())
+                {
+                    String refundAmt= entry.getKey();
+                    String refundCount= entry.getValue();
+                    stringbufferRefund.append(refundAmt+ "," +refundCount);
+                }
+            }
+            String[] hashtablerefund= stringbufferRefund.toString().split(",");*/
+
+           /* Hashtable<String,String> totalChargeBackAmount = merchantDAO.getTotalChargebackAmount(merchantId, currency, payBrand, payMode);
+            logger.error("totalChargeBackAmount from Dashboard::: "+totalChargeBackAmount);
+            if (totalChargeBackAmount.size()>0)
+            {
+                for (Map.Entry<String,String> entry: totalChargeBackAmount.entrySet())
+                {
+                    String chargebackAmt= entry.getKey();
+                    String chargebackCount= entry.getValue();
+                    stringbufferChargeback.append(chargebackAmt+ "," +chargebackCount);
+                }
+            }
+            String[] hashtablechargeback= stringbufferChargeback.toString().split(",");*/
+
+           /* Hashtable<String,String> totalDeclinedAmount = merchantDAO.getTotalDeclinedAmount(merchantId, currency, payBrand, payMode,dateVOs,dashboard_value,status );
+            logger.error("totalDeclinedAmount from Dashboard::: "+totalDeclinedAmount);
+            if (totalDeclinedAmount.size()>0)
+            {
+                for (Map.Entry<String,String> entry: totalDeclinedAmount.entrySet())
+                {
+                    String declinedAmt= entry.getKey();
+                    String declinedCount= entry.getValue();
+                    stringbufferDeclined.append(declinedAmt+ "," +declinedCount);
+                }
+            }
+            String[] hashtabledeclined= stringbufferDeclined.toString().split(",");*/
+
+           /* Hashtable<String,String> hashtableCapturesuccess= merchantDAO.getTotalCaptureAmount(merchantId, currency,payBrand, payMode);
+            logger.error("hashtableCapturesuccess from Dashboard::: "+hashtableCapturesuccess);
+
+           if (hashtableCapturesuccess.size()>0)
+            {
+                for (Map.Entry<String,String> entry: hashtableCapturesuccess.entrySet())
+                {
+                    String captureAmount= entry.getKey();
+                    String captureCount= entry.getValue();
+                    stringbuffercapturesuccess.append( captureAmount +","+ captureCount);
+                }
+           }
+            String []hashtablecapture= stringbuffercapturesuccess.toString().split(",");*/
+
+            /*Hashtable<String,String> hashtablePayoutSuccessful= merchantDAO.getTotalPayoutSuccessAmount(merchantId,currency,payBrand,payMode);
+            logger.error("hashtablePayoutSuccessful from dashboard::: "+hashtablePayoutSuccessful);
+
+            if (hashtablePayoutSuccessful.size()>0)
+            {
+                for (Map.Entry<String,String> entry: hashtablePayoutSuccessful.entrySet())
+                {
+                    String payoutsuccessAmount= entry.getKey();
+                    String payoutsuccessCount= entry.getValue();
+                    stringbufferpayoutsuccess.append(payoutsuccessAmount +","+ payoutsuccessCount);
+                }
+            }
+            String[] hashtablepayoutsuccess= stringbufferpayoutsuccess.toString().split(",");
+
+            Hashtable<String,String> hashtablePayoutFailed = merchantDAO.getTotalPayoutFailedAmount(merchantId,currency,payBrand,payMode);
+            logger.error("hashtablePayoutFailed from Dashboard:::: "+hashtablePayoutFailed);
+
+            if (hashtablePayoutFailed.size()>0)
+            {
+                for (Map.Entry<String,String> entry: hashtablePayoutFailed.entrySet())
+                {
+                    String pauoutfailedAmount= entry.getKey();
+                    String payoutfailedCount= entry.getValue();
+                    stringbufferpayoutfailed.append(pauoutfailedAmount +","+ payoutfailedCount);
+                }
+            }
+            String[] hashtablepayoutfailed= stringbufferpayoutfailed.toString().split(",");
+*/
+            /*if(!functions.isValueNull(withdrawamount)){
+                withdrawamount="0.00";
+            }*/
+
+            if (functions.isValueNull(dashboard_value) || functions.isValueNull(status) || (functions.isValueNull(dateVOs.getDateLabel())))
+            {
+                hashMapSalesPerCurrencyChart = merchantDAO.getSalesPerCurrencyChartForMerchant(merchantId, currency, payBrand, payMode, dateVOs, dashboard_value,status);
+            }
+            logger.error("Sales per currency Chart ----- "+hashMapSalesPerCurrencyChart);
+
+            if (hashMapSalesPerCurrencyChart!= null && hashMapSalesPerCurrencyChart.size() > 0) {
+                for (Map.Entry<String, String> entry : hashMapSalesPerCurrencyChart.entrySet()){
+                    String countAmount = entry.getKey();
+                    String countryName = entry.getValue();
+                    stringBufferSalesPerCurrencyChart.append("{ value: " + countryName + " , label: '" + countAmount + "'},");
+                }
+            }
+            else {
+                String blankData= "No Data To Display";
+                stringBufferSalesPerCurrencyChart.append("{ value: " + 00 + " , label: '" + blankData + "'},");
+            }
+            String salesPerCurrencyDonutChartJsonStr = "data : [" + stringBufferSalesPerCurrencyChart.toString() + "],";
+            logger.error("salesPerCurrencyDonutChartJsonStr Chart---- "+salesPerCurrencyDonutChartJsonStr);
+
+            //-----------------------
+            HashMap<String, String> hashMapValidStatusChart = merchantDAO.getValidStatusChartForMerchant(merchantId, currency, payBrand, payMode,dateVOs,dashboard_value,status);
+            logger.error("Status Chart---- "+hashMapValidStatusChart);
+
+            if (hashMapValidStatusChart.size() > 0) {
+                for (Map.Entry<String, String> entry : hashMapValidStatusChart.entrySet()){
+                    String countStatus = entry.getKey();
+                    String statusName = entry.getValue();
+                    stringBufferValidStatusChart.append("{ value: " + statusName + " , label: '" + countStatus + "'},");
+                }
+            }
+            else {
+                String blankData= "No Data To Display";
+                stringBufferValidStatusChart.append("{ value: " + 0.00 + " , label: '" + blankData + "'},");
+            }
+            String statusChartDonutChartJsonStr = "data : [" +stringBufferValidStatusChart.toString() + "],";
+            logger.error("statusChartDonutChartJsonStr---- "+statusChartDonutChartJsonStr);
+            //-----------------------
+
+
+
+           /* if (functions.isValueNull(datefilter) && datefilter.equalsIgnoreCase("Last_six_Month"))
+            {
+                //dateVOs = dateManager.getMonthlyLineChartQuarter();
+                System.out.println("List of dateVOs>>>>>  "+dateVOs.toString());
+            }*/
+
+
+            /*for (DateVO dateVO : dateVOs) {
+                System.out.println("datevo inside for loop in Dashboard.java+  "+dateVO);
+                String salesBarData = merchantDAO.getMonthlyTransactionDetailsForMerchant(merchantId, dateVO, currency, payBrand, payMode);
+                logger.error("Currency per amount--- " +salesBarData);
+                hashMapSalesBarChart.put(dateVO.getDateLabel(), salesBarData);
+            }
+            logger.error("sales bar per month---"+hashMapSalesBarChart);
+
+            for (Map.Entry<String, String> entry : hashMapSalesBarChart.entrySet()) {
+                String month = entry.getKey();
+                String hashMapFinal = entry.getValue();
+                stringBufferSalesBarChart.append("{x: '" + month + "', " + hashMapFinal + " },");
+            }*/
+            if (functions.isValueNull(dashboard_value) || functions.isValueNull(status) || (functions.isValueNull(dateVOs.getDateLabel())))
+            {
+                stringBufferSalesBarChart.append( merchantDAO.getMonthlyTransactionDetailsForMerchantNew(merchantId, dateVOs, currency,payBrand,payMode,dashboard_value,status));
+            }
+            else
+            {
+                stringBufferSalesBarChart.append( merchantDAO.getMonthlyTransactionDetailsForMerchantNew(merchantId, dateVOs, currency,payBrand,payMode,dashboard_value,status));
+            }
+            logger.error("stringBufferSalesBarChart---"+stringBufferSalesBarChart);
+            logger.error("stringBufferSalesBarChart size ++ "+stringBufferSalesBarChart.length());
+
+            for (String s:currencyList) {
+                sb.append("'"+s+"',");
+            }
+            String salesBarChartJsonStr = "data : [" + stringBufferSalesBarChart.toString() + "],";
+            String salesBar= stringBufferSalesBarChart.toString();
+            if (functions.isValueNull(salesBar) && salesBar.contains(" "))
+            {
+                String blankdata="No Data To Display";
+                sb.append("'"+blankdata+"'");
+            }
+            String salesBarChartLabelJsonStr =" "+sb+" ";
+            logger.error("salesBarChartJsonStr--- " +salesBarChartJsonStr);
+
+            req.setAttribute("list", currencyList);
+            req.setAttribute("listDb",currencyListDb);
+            req.setAttribute("colorFromCurrencyProperties",colorFromCurrencyProperties);
+            req.setAttribute("payBrandList", payBrandList);
+            req.setAttribute("payModeList", payModeList);
+            req.setAttribute("hashtablesale", hashtablesale);
+          //  req.setAttribute("hashtablewithdraw", hashtablewithdraw);
+         //   req.setAttribute("hashtabledeclined", hashtabledeclined);
+            req.setAttribute("salesPerCurrencyDonutChartJsonStr", salesPerCurrencyDonutChartJsonStr);
+            req.setAttribute("hashMapSalesPerCurrencyChart", hashMapSalesPerCurrencyChart);
+            req.setAttribute("statusChartDonutChartJsonStr", statusChartDonutChartJsonStr);
+            req.setAttribute("salesBarChartJsonStr", salesBarChartJsonStr);
+            req.setAttribute("salesBarChartLabelJsonStr", salesBarChartLabelJsonStr);
+            req.setAttribute("hashMapValidStatusChart", hashMapValidStatusChart);
+            req.setAttribute("totalAmount",totalAmount);
+            req.setAttribute("datelabel",datefilter);
+            req.setAttribute("dashboard_value",dashboard_value);
+            req.setAttribute("status",status);
+            session.setAttribute("charttoken", charttoken);
+
+
+            RequestDispatcher rd = req.getRequestDispatcher("/dashBoard.jsp?ctoken=" + user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+        catch (Exception e) {
+            logger.error("Exception in Merchant Dashboard  ", e);
+        }
+    }
+}

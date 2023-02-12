@@ -1,0 +1,421 @@
+<%--
+  Created by IntelliJ IDEA.
+  User: Sanjay
+  Date: 2/19/2022
+  Time: 3:43 PM
+  To change this template use File | Settings | File Templates.
+--%>
+
+<%@ page import="org.owasp.esapi.ESAPI" %>
+
+<%@ page import="com.directi.pg.Functions,com.directi.pg.LoadProperties" %>
+<%@ page import="com.directi.pg.Logger" %>
+<%@ page import="com.manager.enums.TemplatePreference" %>
+<%@ page import="org.owasp.esapi.ESAPI" %>
+<%@ page import="java.util.Hashtable" %>
+<%@ page import="org.apache.commons.lang.StringUtils" %>
+<%@ page import="java.util.ResourceBundle" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="com.manager.MerchantConfigManager" %>
+
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ include file="ietest.jsp" %>
+<%@ include file="Top.jsp" %>
+<%!
+    private static Logger log = new Logger("merchantCheckoutConfig.jsp");
+%>
+<%
+    String company = ESAPI.encoder().encodeForHTML((String) session.getAttribute("company"));
+    session.setAttribute("submit", "Checkout Config");
+%>
+
+<%
+    Functions functions = new Functions();
+    String memberid = (String) session.getAttribute("merchantid");
+
+    MerchantConfigManager merchantConfigManager = new MerchantConfigManager();
+    Map<String, Object> merchantTemplateSetting = merchantConfigManager.getSavedMemberTemplateDetails(memberid);
+
+
+%>
+<html>
+<head>
+    <title><%=company%> Merchant Settings > Checkout Config</title>
+    <style type="text/css">
+        @media (max-width: 640px) {
+            #smalltable {
+                width: 100% !important;
+            }
+        }
+
+        @media (min-width: 641px) {
+            #flightid {
+                width: inherit;
+            }
+        }
+    </style>
+    <script>
+        var lablevalues = new Array();
+        function ChangeFunction(Value, lable)
+        {
+            console.log("Value" + Value + "lable" + lable);
+            var finalvalue = lable + "=" + Value;
+            console.log("finalvalue" + finalvalue);
+            lablevalues.push(finalvalue);
+            console.log(lablevalues);
+            document.getElementById("onchangedvalue").value = lablevalues;
+        }
+
+        function change(dropdown, input)
+        {
+            var val = dropdown.options[dropdown.selectedIndex].value;
+            if (val.trim() === 'N')
+            {
+
+                document.getElementById(input).disabled = true;
+
+            }
+            else
+            {
+                document.getElementById(input).disabled = false;
+            }
+        }
+    </script>
+    <script type="text/javascript">
+        function mySave()
+        {
+            document.getElementById('myformnameSave').submit();
+        }
+    </script>
+</head>
+<body class="bodybackground">
+<div class="content-page">
+    <div class="content">
+
+        <div class="page-heading">
+            <div class="pull-right">
+                <div class="btn-group">
+                    <form action="/merchant/addMerchantLogo.jsp?ctoken=<%=ctoken%>" method="POST">
+                        <button class="btn-xs" type="submit" value="" name="submit" name="B1"
+                                style="background: transparent;border: 0;">
+                            <img style="height: 45px;width: 200px;" src="/merchant/images/addnewmerchantlogo.png">
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <br>
+            <br>
+
+            <form action="/merchant/servlet/MerchantCheckoutConfig?ctoken=<%=ctoken%>" method="post"
+                  name="myformnameSave"
+                  id="myformnameSave">
+                <input type="hidden" value="" name="onchangedvalue" id="onchangedvalue">
+                <input type=hidden name="memberid" value="<%=memberid%>">
+
+                <div class="row reporttable">
+                    <div class="col-md-12">
+                        <div class="widget">
+                            <%
+                                String style = "td1";
+                                String error = (String) request.getAttribute("errormessage");
+                                if (functions.isValueNull(error))
+                                {
+                                    out.println("<h5 class=\"bg-infoorange\" style=\"text-align: center;\"><i class=\"fa fa-exclamation-triangle\"></i>&nbsp;&nbsp;" + error + "</h5>");
+                                }
+
+                            %>
+                            <div class="widget-header">
+                                <h2><i class="fa fa-table"></i>&nbsp;&nbsp;<strong>Checkout Template Colors</strong>
+                                </h2>
+
+                                <div class="additional-btn">
+                                    <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                                    <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                                    <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+                                </div>
+                            </div>
+                            &nbsp;
+                            <center>
+                                <div class="widget-content padding" style="overflow-x: auto;">
+                                    <table align=center width="50%"
+                                           class="display table table table-striped table-bordered table-hover dataTable"
+                                           style="font-family:Open Sans;font-size: 13px;font-weight: 600;width: 100%;">
+                                        <thead>
+                                        <tr>
+                                            <td valign="middle" align="center"
+                                                style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                                                <b>Body&nbsp;&&nbsp;Footer
+                                                    &nbsp;Color
+                                                </b></td>
+                                            <td valign="middle" align="center"
+                                                style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                                                <b>Header&nbsp;BackGround
+                                                    &nbsp;Color
+                                                </b></td>
+                                            <td valign="middle" align="center"
+                                                style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                                                <b>Navigation&nbsp;Bar
+                                                </b></td>
+                                            <td valign="middle" align="center"
+                                                style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                                                <b>Button&nbsp;Font
+                                                    &nbsp;Color
+                                                </b></td>
+                                            <td valign="middle" align="center"
+                                                style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                                                <b>Header&nbsp;Font
+                                                    &nbsp;Color
+                                                </b></td>
+                                        </tr>
+                                        </thead>
+
+                                        <tbody>
+                                        <tr>
+                                            <td valign="middle" data-label="Body & Footer Color" align="center"
+                                                class="<%=style%>">
+                                        <span class="input-icon">
+                                            <input type="color"
+                                                   style="position: absolute;width: 26px;height: 25px;margin-left: 95px;"
+                                                   id="<%=TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.toString()%>_picker"
+                                                   onchange="colorPicker('<%=TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.toString()%>_picker','<%=TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.toString()%>');"
+                                                   value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.toString()) && functions.isValueNull(merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.toString()).toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.toString()):"#4d95ac"%>"></span>
+                                                <input type="text" class="form-control"
+                                                       id='<%=TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.toString()%>'
+                                                       name='<%=TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.toString()%>'
+                                                       value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_BODYNFOOTER_COLOR.toString()):""%>"/>
+
+                                            </td>
+                                            <td valign="middle" data-label="Header Background Color" align="center"
+                                                class="<%=style%>">
+                                      <span class="input-icon">
+                                            <input type="color"
+                                                   style="position: absolute;width: 26px;height: 25px;margin-left: 95px;"
+                                                   id="<%=TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.toString()%>_picker"
+                                                   onchange="colorPicker('<%=TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.toString()%>_picker','<%=TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.toString()%>');"
+                                                   value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.toString()) && functions.isValueNull(merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.toString()).toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.toString()):"#4d95ac"%>"></span>
+                                                <input id='<%=TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.toString()%>'
+                                                       name='<%=TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.toString()%>'
+                                                       class="form-control"
+                                                       value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_HEADERBACKGROUND_COLOR.toString()):""%>"/>
+                                            </td>
+                                            <td valign="middle" data-label="Navigation Bar" align="center"
+                                                class="<%=style%>">
+                                        <span class="input-icon">
+                                            <input type="color"
+                                                   style="position: absolute;width: 26px;height: 25px;margin-left: 95px;"
+                                                   id="<%=TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.toString()%>_picker"
+                                                   onchange="colorPicker('<%=TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.toString()%>_picker','<%=TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.toString()%>');"
+                                                   value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.toString()) && functions.isValueNull(merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.toString()).toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.toString()):"#4d95ac"%>"></span>
+                                                <input id='<%=TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.toString()%>'
+                                                       name='<%=TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.toString()%>'
+                                                       class="form-control"
+                                                       value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_COLOR.toString()):""%>"/>
+                                            </td>
+                                            <td valign="middle" data-label="Button Font Color" align="center"
+                                                class="<%=style%>">
+                                        <span class="input-icon">
+                                            <input type="color"
+                                                   style="position: absolute;width: 26px;height: 25px;margin-left: 95px;"
+                                                   id="<%=TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.toString()%>_picker"
+                                                   onchange="colorPicker('<%=TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.toString()%>_picker','<%=TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.toString()%>');"
+                                                   value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.toString()) && functions.isValueNull(merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.toString()).toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.toString()):"#4d95ac"%>"></span>
+                                                <input id='<%=TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.toString()%>'
+                                                       name='<%=TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.toString()%>'
+                                                       class="form-control"
+                                                       value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_BUTTON_FONT_COLOR.toString()):""%>"/>
+                                            </td>
+                                            <td valign="middle" data-label="Header Font Color" align="center"
+                                                class="<%=style%>">
+                                        <span class="input-icon">
+                                            <input type="color"
+                                                   style="position: absolute;width: 26px;height: 25px;margin-left: 95px;"
+                                                   id="<%=TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.toString()%>_picker"
+                                                   onchange="colorPicker('<%=TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.toString()%>_picker','<%=TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.toString()%>');"
+                                                   value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.toString()) && functions.isValueNull(merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.toString()).toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.toString()):"#4d95ac"%>"></span>
+                                                <input id='<%=TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.toString()%>'
+                                                       name='<%=TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.toString()%>'
+                                                       class="form-control"
+                                                       value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_HEADER_FONT_COLOR.toString()):""%>"/>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+
+                                        <tbody>
+                                        <thead>
+                                        <tr>
+                                            <td valign="middle" align="center"
+                                                style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                                                <b>Full Background Color
+                                                </b></td>
+                                            <td valign="middle" align="center"
+                                                style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                                                <b>Label&nbsp;Font
+                                                    &nbsp;Color
+                                                </b></td>
+                                            <td valign="middle" align="center"
+                                                style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                                                <b>Navigation&nbsp;Bar&nbsp;Font&nbsp;Color
+                                                </b></td>
+                                            <td valign="middle" align="center"
+                                                style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                                                <b>Button&nbsp;Color
+                                                </b></td>
+                                            <td valign="middle" align="center"
+                                                style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                                                <b>Icon&nbsp;Color
+                                                </b></td>
+                                        </tr>
+                                        </thead>
+
+                                        </tbody>
+                                        <tbody>
+                                        <tr>
+                                            <td valign="middle" data-label="Full Background Color" align="center"
+                                                class="<%=style%>">
+                                        <span class="input-icon">
+                                            <input type="color"
+                                                   style="position: absolute;width: 26px;height: 25px;margin-left: 95px;"
+                                                   id="<%=TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.toString()%>_picker"
+                                                   onchange="colorPicker('<%=TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.toString()%>_picker','<%=TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.toString()%>');"
+                                                   value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.toString()) && functions.isValueNull(merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.toString()).toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.toString()):"#4d95ac"%>"></span>
+                                                <input type="text" class="form-control"
+                                                       id='<%=TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.toString()%>'
+                                                       name='<%=TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.toString()%>'
+                                                       value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_FULLBACKGROUND_COLOR.toString()):""%>"/>
+                                            </td>
+
+                                            <td valign="middle" data-label="Label Font Color" align="center"
+                                                class="<%=style%>">
+                                        <span class="input-icon">
+                                            <input type="color"
+                                                   style="position: absolute;width: 26px;height: 25px;margin-left: 95px;"
+                                                   id="<%=TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.toString()%>_picker"
+                                                   onchange="colorPicker('<%=TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.toString()%>_picker','<%=TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.toString()%>');"
+                                                   value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.toString()) && functions.isValueNull(merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.toString()).toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.toString()):"#4d95ac"%>"></span>
+                                                <input id='<%=TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.toString()%>'
+                                                       name='<%=TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.toString()%>'
+                                                       class="form-control"
+                                                       value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_LABEL_FONT_COLOR.toString()):""%>"/>
+                                            </td>
+
+                                            <td valign="middle" data-label="Navigation Bar Font Color" align="center"
+                                                class="<%=style%>">
+                                        <span class="input-icon">
+                                            <input type="color"
+                                                   style="position: absolute;width: 26px;height: 25px;margin-left: 95px;"
+                                                   id="<%=TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.toString()%>_picker"
+                                                   onchange="colorPicker('<%=TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.toString()%>_picker','<%=TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.toString()%>');"
+                                                   value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.toString()) && functions.isValueNull(merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.toString()).toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.toString()):"#4d95ac"%>"></span>
+                                                <input id='<%=TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.toString()%>'
+                                                       name='<%=TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.toString()%>'
+                                                       class="form-control"
+                                                       value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_NAVIGATIONBAR_FONT_COLOR.toString()):""%>"/>
+                                            </td>
+
+                                            <td valign="middle" data-label="Button Color" align="center"
+                                                class="<%=style%>">
+                                        <span class="input-icon">
+                                            <input type="color"
+                                                   style="position: absolute;width: 26px;height: 25px;margin-left: 95px;"
+                                                   id="<%=TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.toString()%>_picker"
+                                                   onchange="colorPicker('<%=TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.toString()%>_picker','<%=TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.toString()%>');"
+                                                   value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.toString()) && functions.isValueNull(merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.toString()).toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.toString()):"#4d95ac"%>"></span>
+                                                <input id='<%=TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.toString()%>'
+                                                       name='<%=TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.toString()%>'
+                                                       class="form-control"
+                                                       value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_BUTTON_COLOR.toString()):""%>"/>
+                                            </td>
+
+                                            <td valign="middle" data-label="Icon Color" align="center"
+                                                class="<%=style%>">
+                                        <span class="input-icon">
+                                            <input type="color"
+                                                   style="position: absolute;width: 26px;height: 25px;margin-left: 95px;"
+                                                   id="<%=TemplatePreference.NEW_CHECKOUT_ICON_COLOR.toString()%>_picker"
+                                                   onchange="colorPicker('<%=TemplatePreference.NEW_CHECKOUT_ICON_COLOR.toString()%>_picker','<%=TemplatePreference.NEW_CHECKOUT_ICON_COLOR.toString()%>');"
+                                                   value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_ICON_COLOR.toString()) && functions.isValueNull(merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_ICON_COLOR.toString()).toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_ICON_COLOR.toString()):"#4d95ac"%>"></span>
+                                                <input id='<%=TemplatePreference.NEW_CHECKOUT_ICON_COLOR.toString()%>'
+                                                       name='<%=TemplatePreference.NEW_CHECKOUT_ICON_COLOR.toString()%>'
+                                                       class="form-control"
+                                                       value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_ICON_COLOR.toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_ICON_COLOR.toString()):""%>"/>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                        <tbody>
+                                        <thead>
+                                        <tr>
+                                            <td valign="middle" align="center"
+                                                style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                                                <b>Timer&nbsp;Color
+                                                </b></td>
+                                            <td valign="middle" align="center"
+                                                style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;">
+                                                <b>Box&nbsp;Shadow
+                                                </b></td>
+                                        </tr>
+                                        </thead>
+                                        </tbody>
+                                        <tbody>
+                                        <tr>
+                                            <td valign="middle" data-label="Timer Color" align="center"
+                                                class="<%=style%>">
+                                        <span class="input-icon">
+                                            <input type="color"
+                                                   style="position: absolute;width: 26px;height: 25px;margin-left: 95px;"
+                                                   id="<%=TemplatePreference.NEW_CHECKOUT_TIMER_COLOR.toString()%>_picker"
+                                                   onchange="colorPicker('<%=TemplatePreference.NEW_CHECKOUT_TIMER_COLOR.toString()%>_picker','<%=TemplatePreference.NEW_CHECKOUT_TIMER_COLOR.toString()%>');"
+                                                   value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_TIMER_COLOR.toString()) && functions.isValueNull(merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_TIMER_COLOR.toString()).toString()) )?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_TIMER_COLOR.toString()):"#4d95ac"%>"></span>
+                                                <input type="text" class="form-control"
+                                                       id='<%=TemplatePreference.NEW_CHECKOUT_TIMER_COLOR.toString()%>'
+                                                       name='<%=TemplatePreference.NEW_CHECKOUT_TIMER_COLOR.toString()%>'
+                                                       value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_TIMER_COLOR.toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_TIMER_COLOR.toString()):""%>"/>
+                                            </td>
+
+                                            <td valign="middle" data-label="Label Font Color" align="center"
+                                                class="<%=style%>">
+                                        <span class="input-icon">
+                                            <input type="color"
+                                                   style="position: absolute;width: 26px;height: 25px;margin-left: 95px;"
+                                                   id="<%=TemplatePreference.NEW_CHECKOUT_BOX_SHADOW.toString()%>_picker"
+                                                   onchange="colorPicker('<%=TemplatePreference.NEW_CHECKOUT_BOX_SHADOW.toString()%>_picker','<%=TemplatePreference.NEW_CHECKOUT_BOX_SHADOW.toString()%>');"
+                                                   value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_BOX_SHADOW.toString()) && functions.isValueNull(merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_BOX_SHADOW.toString()).toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_BOX_SHADOW.toString()):"#4d95ac"%>"></span>
+                                                <input id='<%=TemplatePreference.NEW_CHECKOUT_BOX_SHADOW.toString()%>'
+                                                       name='<%=TemplatePreference.NEW_CHECKOUT_BOX_SHADOW.toString()%>'
+                                                       class="form-control"
+                                                       value="<%=(merchantTemplateSetting!=null && merchantTemplateSetting.containsKey(TemplatePreference.NEW_CHECKOUT_BOX_SHADOW.toString()))?merchantTemplateSetting.get(TemplatePreference.NEW_CHECKOUT_BOX_SHADOW.toString()):""%>"/>
+                                            </td>
+                                    </table>
+                                    <td align="center" colspan="2">
+                                        <button type="submit" value="Save" class="buttonform btn btn-default"
+                                                name="Save"
+                                                onclick="mySave()" style="background-color: #98A3A3;">
+                                            Save
+                                        </button>
+                                    </td>
+                                    <BR>
+                                    <BR>
+                                </div>
+                            </center>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src="/merchant/cookies/jquery.ihavecookies.js"></script>
+<script type="text/javascript" src="/merchant/cookies/cookies_popup.js"></script>
+<link href="/merchant/cookies/quicksand_font.css" rel="stylesheet">
+<link href="/merchant/cookies/cookies_popup.css" rel="stylesheet">
+<script>
+    //onload
+    function colorPicker(first, to)
+    {
+        console.log("first ++++" + first);
+        console.log("to ++++" + to);
+        $("#" + to).val($("#" + first).val());
+    }
+</script>
+</body>
+</html>
+

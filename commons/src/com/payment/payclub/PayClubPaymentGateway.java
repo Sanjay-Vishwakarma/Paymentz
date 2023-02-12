@@ -1,0 +1,677 @@
+package com.payment.payclub;
+
+import com.directi.pg.Functions;
+import com.directi.pg.LoadProperties;
+import com.directi.pg.Logger;
+import com.directi.pg.TransactionLogger;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.*;
+import com.payment.common.core.*;
+import com.payment.exceptionHandler.PZConstraintViolationException;
+import com.payment.exceptionHandler.PZGenericConstraintViolationException;
+import com.payment.exceptionHandler.PZTechnicalViolationException;
+import com.payment.exceptionHandler.constraint.PZGenericConstraint;
+import com.payment.exceptionHandler.errorcode.ErrorCodeUtils;
+import com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorName;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeListVO;
+import org.codehaus.jettison.json.JSONObject;
+
+import java.util.ResourceBundle;
+
+/**
+ * Created by Jitendra on 19-Jul-18.
+ */
+public class PayClubPaymentGateway extends AbstractPaymentGateway
+{
+    public static final String GATEWAY_TYPE = "payclub";
+    final static ResourceBundle RB = LoadProperties.getProperty("com.directi.pg.payclub");
+    private static TransactionLogger transactionLogger = new TransactionLogger(PayClubPaymentGateway.class.getName());
+    private static Logger log = new Logger(PayClubPaymentGateway.class.getName());
+
+    public PayClubPaymentGateway(String accountId)
+    {
+        this.accountId = accountId;
+    }
+
+    public GenericResponseVO processSale(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException, PZConstraintViolationException
+    {
+        transactionLogger.error("Inside processSale ---");
+
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+       // CommResponseVO commResponseVO = new CommResponseVO();
+        PayClubUtils payClubUtils= new PayClubUtils();
+        Functions functions = new Functions();
+
+        GenericTransDetailsVO genericTransDetailsVO = commRequestVO.getTransDetailsVO();
+        GenericCardDetailsVO genericCardDetailsVO = commRequestVO.getCardDetailsVO();
+        GenericAddressDetailsVO addressDetailsVO = commRequestVO.getAddressDetailsVO();
+        CommMerchantVO commMerchantVO=commRequestVO.getCommMerchantVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String merchantId = gatewayAccount.getMerchantId();             // provided by payclub
+        String accountNumber = gatewayAccount.getFRAUD_FTP_USERNAME();  // provided by payclub
+        String signKey= gatewayAccount.getFRAUD_FTP_PASSWORD();         // provided by payclub
+        String transactionType = "SALE";    // provided by payclub
+        String orderId = trackingID;
+        String amount = genericTransDetailsVO.getAmount();
+        String cardNumber = genericCardDetailsVO.getCardNum();
+        String expiryMonth = genericCardDetailsVO.getExpMonth();
+        String expiryYear = genericCardDetailsVO.getExpYear();
+        String cvv=genericCardDetailsVO.getcVV();
+        String issuingBank="issuingBank";
+        String firstname=addressDetailsVO.getFirstname();
+        String lastname=addressDetailsVO.getLastname();
+        String email=addressDetailsVO.getEmail();
+        String phone=addressDetailsVO.getPhone();
+        String ip="";
+        boolean isTest = gatewayAccount.isTest();
+        if (functions.isValueNull(addressDetailsVO.getCardHolderIpAddress()))
+            ip= addressDetailsVO.getCardHolderIpAddress();
+        else
+            ip=addressDetailsVO.getIp();
+
+        String transUrl="";
+        String returnUrl="";
+        String country=addressDetailsVO.getCountry();
+        String state=addressDetailsVO.getState();
+        String city=addressDetailsVO.getCity();
+        String address=addressDetailsVO.getStreet();
+        String zip=addressDetailsVO.getZipCode();
+        String dispalyName="";
+        String is3dSupported= gatewayAccount.get_3DSupportAccount();
+        if(functions.isValueNull(gatewayAccount.getDisplayName()))
+        {
+            dispalyName=gatewayAccount.getDisplayName();
+        }
+
+        String productName=orderId;
+        String productDesc=genericTransDetailsVO.getOrderDesc();
+        String saleResponse="";
+        String currency = "";
+        String tmpl_amount = "";
+        String tmpl_currency = "";
+        String p_client_id ="csid";
+        String p_notification_url = RB.getString("NOTIFY_URL") + trackingID;
+        String remark="test remartk";
+        String p_payment_type="";
+        String p_trans_url=RB.getString("NOTIFY_URL") + trackingID;
+        String termUrl=RB.getString("TERM_URL") + trackingID;
+
+        if (functions.isValueNull(genericTransDetailsVO.getCurrency())) {
+            currency = genericTransDetailsVO.getCurrency();
+        }
+        if (functions.isValueNull(addressDetailsVO.getTmpl_amount())) {
+            tmpl_amount = addressDetailsVO.getTmpl_amount();
+        }
+        if (functions.isValueNull(addressDetailsVO.getTmpl_currency())) {
+            tmpl_currency = addressDetailsVO.getTmpl_currency();
+        }
+
+        String signMsg=payClubUtils.SHA256forSales(merchantId, accountNumber, orderId, currency, amount, signKey);
+        transactionLogger.error("signMsg ---" + signMsg);
+
+        try
+        {
+            transactionLogger.error("is3dSupported ===== " + is3dSupported);
+            if(is3dSupported.equalsIgnoreCase("Y")||is3dSupported.equalsIgnoreCase("O"))
+            {
+               String url="";
+                if(isTest)
+                {
+                    url=RB.getString("TEST_3DSALE_URL");
+
+                }
+                else
+                {
+                    url=RB.getString("LIVE_3DSALE_URL");
+                }
+                transactionLogger.error("Sale Url---> " + trackingID +  " ---- " +url);
+                transactionType="3DSALE";
+                p_payment_type="MC";
+
+                String saleRequest = "p_mid=" + merchantId +
+                        "&p_account_num=" + accountNumber +
+                        "&p_transaction_type=" + transactionType +
+                        "&p_order_num=" + orderId +
+                        "&p_currency=" + currency +
+                        "&p_amount=" + amount +
+                        "&p_card_num=" + cardNumber +      // card detail
+                        "&p_card_expmonth=" + expiryMonth +
+                        "&p_card_expyear=" + expiryYear +
+                        "&p_card_csc=" + cvv +
+                        "&p_card_issuingbank=" + issuingBank +
+                        "&p_firstname=" + firstname +
+                        "&p_lastname=" + lastname +
+                        "&p_user_email=" + email +
+                        "&p_user_phone=" + phone +
+                        "&p_user_ipaddress=" + ip +
+                        "&p_trans_url=" + termUrl +
+                        "&p_return_url=" + "" +
+                        "&p_bill_country=" + country +     // billing detail
+                        "&p_bill_state=" + state +
+                        "&p_bill_city=" + city +
+                        "&p_bill_address=" + address +
+                        "&p_bill_zip=" + zip +
+                        "&p_ship_firstname=" + firstname +     // shipping detail
+                        "&p_ship_lastname=" + lastname +
+                        "&p_ship_country=" + country +
+                        "&p_ship_state=" + state +
+                        "&p_ship_city=" + city +
+                        "&p_ship_address=" + address +
+                        "&p_ship_zip=" + zip +
+                        "&p_product_name=" + productName +     // product detail
+                        "&p_product_num=" + productName +
+                        "&p_product_desc=" + productDesc +
+                        "&p_signmsg=" + signMsg +
+                        "&p_notification_url=" + p_notification_url +
+                        "&success_url=" + termUrl +
+                        "&p_jump_url=" + termUrl;
+
+                String saleRequestLog = "p_mid=" + merchantId +
+                        "&p_account_num=" + accountNumber +
+                        "&p_transaction_type=" + transactionType +
+                        "&p_order_num=" + orderId +
+                        "&p_currency=" + currency +
+                        "&p_amount=" + amount +
+                        "&p_card_num=" + functions.maskingPan(cardNumber) +      // card detail
+                        "&p_card_expmonth=" + functions.maskingNumber(expiryMonth) +
+                        "&p_card_expyear=" + functions.maskingNumber(expiryYear) +
+                        "&p_card_csc=" + functions.maskingNumber(cvv) +
+                        "&p_card_issuingbank=" + issuingBank +
+                        "&p_firstname=" + firstname +
+                        "&p_lastname=" + lastname +
+                        "&p_user_email=" + email +
+                        "&p_user_phone=" + phone +
+                        "&p_user_ipaddress=" + ip +
+                        "&p_trans_url=" + "" +
+                        "&p_return_url=" + "" +
+                        "&p_bill_country=" + country +     // billing detail
+                        "&p_bill_state=" + state +
+                        "&p_bill_city=" + city +
+                        "&p_bill_address=" + address +
+                        "&p_bill_zip=" + zip +
+                        "&p_ship_firstname=" + firstname +     // shipping detail
+                        "&p_ship_lastname=" + lastname +
+                        "&p_ship_country=" + country +
+                        "&p_ship_state=" + state +
+                        "&p_ship_city=" + city +
+                        "&p_ship_address=" + address +
+                        "&p_ship_zip=" + zip +
+                        "&p_product_name=" + productName +     // product detail
+                        "&p_product_num=" + productName +
+                        "&p_product_desc=" + productDesc +
+                        "&p_signmsg=" + signMsg +
+                        "&p_notification_url=" + p_notification_url +
+                        "&success_url=" + termUrl +
+                        "&p_jump_url=" + termUrl;
+
+                transactionLogger.error("PayClub SaleRequest ---- " + trackingID + " ---- " + saleRequestLog);
+
+                saleResponse = PayClubUtils.sendPOST(url, saleRequest);
+
+                transactionLogger.error("PayClub SaleResponse ---- " + trackingID + "----" + saleResponse);
+
+                if(functions.isValueNull(saleResponse) && saleResponse.contains("{"))
+                {
+                    JSONObject responseJSON = new JSONObject(saleResponse);
+                    String p_redirect_url = "";
+                    String p_pay_result = "";
+                    String p_pay_info = "";
+                    String p_threeds_status = "";
+                    String p_responseCode = "";
+                    String p_trans_num = "";
+                    String p_billAddress = "";
+
+                    if(responseJSON.has("p_redirect_url") && functions.isValueNull(responseJSON.getString("p_redirect_url")))
+                    {
+                        p_redirect_url = responseJSON.getString("p_redirect_url");
+                    }
+                    if(responseJSON.has("p_pay_result") && functions.isValueNull(responseJSON.getString("p_pay_result")))
+                    {
+                        p_pay_result = responseJSON.getString("p_pay_result");
+                    }
+                    if(responseJSON.has("p_pay_info") && functions.isValueNull(responseJSON.getString("p_pay_info")))
+                    {
+                        p_pay_info = responseJSON.getString("p_pay_info");
+                    }
+                    if(responseJSON.has("p_threeds_status") && functions.isValueNull(responseJSON.getString("p_threeds_status")))
+                    {
+                        p_threeds_status = responseJSON.getString("p_threeds_status");
+                    }
+                    if(responseJSON.has("p_responseCode") && functions.isValueNull(responseJSON.getString("p_responseCode")))
+                    {
+                        p_responseCode = responseJSON.getString("p_responseCode");
+                    }
+                    if(responseJSON.has("p_trans_num") && functions.isValueNull(responseJSON.getString("p_trans_num")))
+                    {
+                        p_trans_num = responseJSON.getString("p_trans_num");
+                    }
+                    if(responseJSON.has("p_billAddress") && functions.isValueNull(responseJSON.getString("p_billAddress")))
+                    {
+                        p_billAddress = responseJSON.getString("p_billAddress");
+                    }
+
+
+                    if("2".equalsIgnoreCase(p_pay_result) && "1".equalsIgnoreCase(p_threeds_status) && functions.isValueNull(p_redirect_url))
+                    {
+                        commResponseVO.setStatus("pending3DConfirmation");
+                        commResponseVO.setUrlFor3DRedirect(p_redirect_url);
+                    }
+                    else if("1".equalsIgnoreCase(p_pay_result))
+                    {
+                        commResponseVO.setStatus("Success");
+                        commResponseVO.setTransactionStatus("Success");
+                        commResponseVO.setRemark(p_pay_info);
+                        commResponseVO.setDescription(p_pay_info);
+                        commResponseVO.setErrorCode(p_responseCode);
+                        commResponseVO.setTransactionId(p_trans_num);
+                        if (functions.isValueNull(p_billAddress))
+                        {
+                            commResponseVO.setDescriptor(p_billAddress);
+                        }
+                        else
+                        {
+                            commResponseVO.setDescriptor(dispalyName);
+                        }
+                    }
+                    else if(!functions.isValueNull(p_redirect_url) && "0".equalsIgnoreCase(p_pay_result))
+                    {
+                        commResponseVO.setStatus("fail");
+                        commResponseVO.setDescription(p_pay_info);
+                        commResponseVO.setRemark(p_pay_info);
+                    }
+                    else
+                    {
+                        commResponseVO.setStatus("pending");
+                        commResponseVO.setDescription(p_pay_info);
+                        commResponseVO.setRemark(p_pay_info);
+                        commResponseVO.setTransactionStatus("pending");
+                    }
+                }
+                return commResponseVO;
+            }
+            else
+            {
+
+                String saleRequest = "p_mid=" + merchantId +
+                    "&p_account_num=" + accountNumber +
+                    "&p_transaction_type=" + transactionType +
+                    "&p_order_num=" + orderId +
+                    "&p_currency=" + currency +
+                    "&p_amount=" + amount +
+                    "&p_card_num=" + cardNumber +      // card detail
+                    "&p_card_expmonth=" + expiryMonth +
+                    "&p_card_expyear=" + expiryYear +
+                    "&p_card_csc=" + cvv +
+                    "&p_card_issuingbank=" + issuingBank +
+                    "&p_firstname=" + firstname +
+                    "&p_lastname=" + lastname +
+                    "&p_user_email=" + email +
+                    "&p_user_phone=" + phone +
+                    "&p_user_ipaddress=" + ip +
+                    "&p_trans_url=" + "" +
+                    "&p_return_url=" + "" +
+                    "&p_bill_country=" + country +     // billing detail
+                    "&p_bill_state=" + state +
+                    "&p_bill_city=" + city +
+                    "&p_bill_address=" + address +
+                    "&p_bill_zip=" + zip +
+                    "&p_ship_firstname=" + firstname +     // shipping detail
+                    "&p_ship_lastname=" + lastname +
+                    "&p_ship_country=" + country +
+                    "&p_ship_state=" + state +
+                    "&p_ship_city=" + city +
+                    "&p_ship_address=" + address +
+                    "&p_ship_zip=" + zip +
+                    "&p_product_name=" + productName +     // product detail
+                    "&p_product_num=" + productName +
+                    "&p_product_desc=" + productDesc +
+                    "&p_signmsg=" + signMsg;
+
+                String saleRequestLog = "p_mid=" + merchantId +
+                    "&p_account_num=" + accountNumber +
+                    "&p_transaction_type=" + transactionType +
+                    "&p_order_num=" + orderId +
+                    "&p_currency=" + currency +
+                    "&p_amount=" + amount +
+                    "&p_card_num=" + functions.maskingPan(cardNumber) +      // card detail
+                    "&p_card_expmonth=" + functions.maskingNumber(expiryMonth) +
+                    "&p_card_expyear=" + functions.maskingNumber(expiryYear) +
+                    "&p_card_csc=" + functions.maskingNumber(cvv) +
+                    "&p_card_issuingbank=" + issuingBank +
+                    "&p_firstname=" + firstname +
+                    "&p_lastname=" + lastname +
+                    "&p_user_email=" + email +
+                    "&p_user_phone=" + phone +
+                    "&p_user_ipaddress=" + ip +
+                    "&p_trans_url=" + "" +
+                    "&p_return_url=" + "" +
+                    "&p_bill_country=" + country +     // billing detail
+                    "&p_bill_state=" + state +
+                    "&p_bill_city=" + city +
+                    "&p_bill_address=" + address +
+                    "&p_bill_zip=" + zip +
+                    "&p_ship_firstname=" + firstname +     // shipping detail
+                    "&p_ship_lastname=" + lastname +
+                    "&p_ship_country=" + country +
+                    "&p_ship_state=" + state +
+                    "&p_ship_city=" + city +
+                    "&p_ship_address=" + address +
+                    "&p_ship_zip=" + zip +
+                    "&p_product_name=" + productName +     // product detail
+                    "&p_product_num=" + productName +
+                    "&p_product_desc=" + productDesc +
+                    "&p_signmsg=" + signMsg;
+
+                transactionLogger.error("PayClub SaleRequest ---- " + trackingID + "----" + saleRequestLog);
+                if (isTest)
+                {
+                    transactionLogger.error("Inside isTest ---- for " + trackingID + "---- " + RB.getString("TEST_SALE_URL"));
+                    saleResponse = PayClubUtils.sendPOST(RB.getString("TEST_SALE_URL"), saleRequest);
+                }
+                else
+                {
+                    transactionLogger.error("inside isLive ----for " + trackingID + " ---- " + RB.getString("LIVE_SALE_URL"));
+                    saleResponse = PayClubUtils.sendPOST(RB.getString("LIVE_SALE_URL"), saleRequest);
+                }
+                transactionLogger.error("PayClub SaleResponse ----" + trackingID + " ---- " + saleResponse);
+
+                if (functions.isValueNull(saleResponse))
+                {
+                    commResponseVO = payClubUtils.readSalesJsonResponse(saleResponse);
+                    if (commResponseVO.getStatus().equals("success") || commResponseVO.getStatus().equals("Processing"))
+                    {
+                        if (!functions.isValueNull(commResponseVO.getDescriptor()))
+                            commResponseVO.setDescriptor(dispalyName);
+                    }
+                    commResponseVO.setTmpl_Amount(tmpl_amount);
+                    commResponseVO.setTmpl_Currency(tmpl_currency);
+                    if (!functions.isValueNull(commResponseVO.getCurrency()))
+                    {
+                        commResponseVO.setCurrency(currency);
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            transactionLogger.error("Exception while Sale -----for "+trackingID+ "----", e);
+        }
+
+        return commResponseVO;
+    }
+
+    public GenericResponseVO processAuthentication(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        errorCodeListVO.addListOfError(errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_FUNCTIONALITY_NOT_ALLOWED));
+        PZGenericConstraint genConstraint = new PZGenericConstraint(PayClubPaymentGateway.class.getName(), "processAuthentication", null, "common", "This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::", errorCodeListVO);
+        throw new PZGenericConstraintViolationException(genConstraint, "This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::", null);
+    }
+
+    public GenericResponseVO processRefund(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException, PZConstraintViolationException
+    {
+        transactionLogger.error("Inside processRefund ---");
+
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        CommResponseVO commResponseVO = new CommResponseVO();
+        PayClubUtils payClubUtils= new PayClubUtils();
+        Functions functions = new Functions();
+
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        CommCardDetailsVO commCardDetailsVO = commRequestVO.getCardDetailsVO();
+        CommAddressDetailsVO addressDetailsVO = commRequestVO.getAddressDetailsVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+
+        String merchantId = gatewayAccount.getMerchantId();
+        String accountNumber = gatewayAccount.getFRAUD_FTP_USERNAME();
+        String signKey= gatewayAccount.getFRAUD_FTP_PASSWORD();
+        String transactionType ="REFUND";
+        String refundType="";
+        String refundAmount=commTransactionDetailsVO.getAmount();
+        String refundReason="Refund Reason";
+        String currency="";
+        String previousTransactionAmountAmount=commTransactionDetailsVO.getPreviousTransactionAmount();
+        transactionLogger.error("previousTransactionAmountAmount --- " + previousTransactionAmountAmount);
+        boolean comparison=payClubUtils.getAmountComparison(refundAmount,previousTransactionAmountAmount);
+        String tmpl_amount = "";
+        String tmpl_currency = "";
+        if (functions.isValueNull(commTransactionDetailsVO.getCurrency())) {
+            currency = commTransactionDetailsVO.getCurrency();
+        }
+        if (functions.isValueNull(addressDetailsVO.getTmpl_amount())) {
+            tmpl_amount = addressDetailsVO.getTmpl_amount();
+        }
+        if (functions.isValueNull(addressDetailsVO.getTmpl_currency())) {
+            tmpl_currency = addressDetailsVO.getTmpl_currency();
+        }
+        if(comparison==true)
+        {
+            refundType="1";
+        }
+        else
+        {
+            refundType="2";
+        }
+
+        String previousId=commTransactionDetailsVO.getPreviousTransactionId();
+        transactionLogger.error("previousId --- " + previousId);
+        String refundResponce="";
+        String p_remark = "";
+
+        String signMsg=payClubUtils.SHA256forRefund(merchantId, accountNumber, previousId, refundType,signKey);
+        transactionLogger.error(("signMsg --- " + signMsg));
+
+        try
+        {
+            String refundRequest = "p_mid=" + merchantId +
+                    "&p_account_num=" + accountNumber +
+                    "&p_transaction_type=" + transactionType +
+                    "&p_refund_type=" + refundType +
+                    "&p_trans_num=" + previousId +
+                    "&p_refund_amount=" + refundAmount +
+                    "&p_refund_reason=" + refundReason +
+                    "&p_order_currency=" + currency +
+                    "&p_order_amount=" + previousTransactionAmountAmount +
+                    "&p_signmsg=" + signMsg +
+                    "&p_remark=" + p_remark;
+
+            transactionLogger.error("PayClub Refund Request ---- " + trackingID + " ---- " + refundRequest);
+            refundResponce = PayClubUtils.sendPOST(RB.getString("LIVE_REFUND_URL"), refundRequest);
+            transactionLogger.error("PayClub Refund Response ---- " + trackingID + " ---- " + refundResponce);
+            commResponseVO = payClubUtils.readRefundJsonResponse(refundResponce);
+            commResponseVO.setCurrency(currency);
+            commResponseVO.setTmpl_Amount(tmpl_amount);
+            commResponseVO.setTmpl_Currency(tmpl_currency);
+        }
+        catch (Exception e)
+        {
+            transactionLogger.error("Exception while Refund ----for "+trackingID+ "----", e);
+        }
+
+        return commResponseVO;
+    }
+
+    public GenericResponseVO processInquiry(GenericRequestVO requestVO) throws PZConstraintViolationException
+    {
+        transactionLogger.error("Inside processInquiry ---");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        CommResponseVO commResponseVO = new CommResponseVO();
+        PayClubUtils payClubUtils= new PayClubUtils();
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        CommCardDetailsVO commCardDetailsVO = commRequestVO.getCardDetailsVO();
+        CommAddressDetailsVO addressDetailsVO = commRequestVO.getAddressDetailsVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest = gatewayAccount.isTest();
+        Functions functions = new Functions();
+
+        String merchantId = gatewayAccount.getMerchantId();
+        String accountNumber = gatewayAccount.getFRAUD_FTP_USERNAME();
+        String signKey= gatewayAccount.getFRAUD_FTP_PASSWORD();
+        String previousId=commTransactionDetailsVO.getOrderId();
+        transactionLogger.debug("previousId ---"+previousId);
+        String transactionType ="CHECK";
+        String inquiryResponse="";
+        String dispalyName="";
+        if(functions.isValueNull(gatewayAccount.getDisplayName()))
+        {
+            dispalyName=gatewayAccount.getDisplayName();
+        }
+
+        try
+        {
+            String signMsg=payClubUtils.SHA256forInquiry(merchantId, accountNumber,signKey);
+            transactionLogger.debug("signMsg ---"+signMsg);
+
+            String inquiryRequest = "p_mid=" + merchantId +
+                    "&p_account_num=" + accountNumber +
+                    "&p_transaction_type=" + transactionType +
+                    "&p_order_num=" + previousId +
+                    "&p_signmsg=" + signMsg;
+
+            transactionLogger.error("Inquiry Request ---for "+previousId+ "----" + inquiryRequest);
+            if(isTest)
+            {
+                transactionLogger.error("Inside isTest ----for "+previousId+ "----" + RB.getString("TEST_INQUIRY_URL"));
+                inquiryResponse = PayClubUtils.sendPOST(RB.getString("TEST_INQUIRY_URL"), inquiryRequest);
+            }
+            else
+            {
+                transactionLogger.error("inside isLive ----for "+previousId+ "----" + RB.getString("LIVE_INQUIRY_URL"));
+                inquiryResponse = PayClubUtils.sendPOST(RB.getString("LIVE_INQUIRY_URL"), inquiryRequest);
+            }
+            transactionLogger.error("inquiryResponse ----for "+previousId+ "----" + inquiryResponse);
+
+            if (functions.isValueNull(inquiryResponse))
+            {
+                commResponseVO = payClubUtils.readInquiryJsonResponse(inquiryResponse);
+                if (!functions.isValueNull(commResponseVO.getDescriptor()))
+                    commResponseVO.setDescriptor(dispalyName);
+            }
+        }
+        catch (PZTechnicalViolationException e)
+        {
+            transactionLogger.error("PZTechnicalViolationException--->",e);
+        }
+
+        return  commResponseVO;
+    }
+
+
+
+   /* public static void main(String[] args)
+    {
+
+        PayClubUtils payClubUtils=new PayClubUtils();
+        String order="T2019040314583660520608";
+
+
+        try
+        {
+           *//* String signMsg=payClubUtils.SHA256forSales("81094", "40000148", order, "USD", "10.00", "vf6nljz0f0x08N4");
+            String saleRequest = "p_mid=" + "81094" +
+                    "&p_account_num=" + "40000148" +
+                    "&p_transaction_type=" + "3DSALE" +
+                    "&p_order_num=" +order  +
+                    "&p_currency=" + "USD" +
+                    "&p_amount=" + "10.00" +
+                    "&p_card_num=" +"4111111111111111"  +      // card detail
+                    "&p_card_expmonth=" +"12"  +
+                    "&p_card_expyear=" +"2030"  +
+                    "&p_card_csc=" +  "123"+
+                    "&p_card_issuingbank=" + "issuingBank" +
+                    "&p_firstname=" + "Jitendra" +
+                    "&p_lastname=" + "pal" +
+                    "&p_user_email=" +"<emailaddress>"  +
+                    "&p_user_phone=" + "9854785236" +
+                    "&p_user_ipaddress=" + "127.0.0.1" +
+                    "&p_trans_url=" + "" +
+                    "&p_return_url=" + "https://staging.<hostname>.com//transaction/TojikaFrontEndServlet?trackingId="+order +
+                    "&p_bill_country=" + "IN" +     // billing detail
+                    "&p_bill_state=" + "MH" +
+                    "&p_bill_city=" + "Mumbai" +
+                    "&p_bill_address=" +  "Malad"+
+                    "&p_bill_zip=" + "400072" +
+                    "&p_ship_firstname=" + "jitendra" +     // shipping detail
+                    "&p_ship_lastname=" + "pal" +
+                    "&p_ship_country=" +"IN"  +
+                    "&p_ship_state=" + "MH" +
+                    "&p_ship_city=" + "Mumbai" +
+                    "&p_ship_address=" +  "Malad"+
+                    "&p_ship_zip=" + "400072" +
+                    "&p_product_name=" + "84933" +     // product detail
+                    "&p_product_num=" + "84933" +
+                    "&p_product_desc=" + "Test" +
+                    "&p_signmsg=" +signMsg ;
+
+            System.out.println("saleRequest ---"+saleRequest);
+
+            String saleResponse=PayClubUtils.sendPOST("https://int1.payclub.com/payment_test.jsp", saleRequest);
+            System.out.println("saleResponse  ---- "+saleResponse);
+*//*
+
+
+            // Inquiry
+            //T2019040216333151694019
+            String signMsg=payClubUtils.SHA256forInquiry("81094", "40000148", "vf6nljz0f0x08N4");
+            System.out.println("signMsg ----"+signMsg);
+            System.out.println(" online ---  67df5a079434ab7683b7d136ed6183e908bf3edd15f58895b833dd4ad23fdec0");
+
+            String inquiryRequest = "p_mid=" + "81094" +
+                    "&p_account_num=" + "40000148" +
+                    "&p_transaction_type=" + "CHECK" +
+                    "&p_order_num=" + order +
+                    "&p_signmsg=" + signMsg;
+
+            System.out.println("inquiryRequest ---"+inquiryRequest);
+
+            String inquiryResponse = PayClubUtils.sendPOST("https://ac1.payclub.com/test_order_list.jsp", inquiryRequest);
+            System.out.println("inquiryResponse ---"+inquiryResponse);
+
+        }
+        catch (PZTechnicalViolationException e)
+        {
+            e.printStackTrace();
+        }
+
+    }*/
+ /* public static void main(String[] args)
+  {
+      // refund
+      PayClubUtils payClubUtils=new PayClubUtils();
+      String order="84590";
+      try
+      {
+          String signMsg=payClubUtils.SHA256forRefund("81094", "4000014", order, "full refund","vf6nljz0f0x08N4");
+
+          String refundRequest = "p_mid=" +"81094"  +
+                  "&p_account_num=" + "4000014" +
+                  "&p_transaction_type=" +  "REFUND"+
+                  "&p_refund_type=" + "full refund" +
+                  "&p_trans_num=" + "T1222" +
+                  "&p_refund_amount=" + "10.00" +
+                  "&p_refund_reason=" + "test" +
+                  "&p_currency=" + "USD" +
+                  "&p_amount=" + "10.00" +
+                  "&p_signmsg="+signMsg ;
+
+          System.out.println("request ----"+refundRequest);
+
+
+      }
+      catch (PZTechnicalViolationException e)
+      {
+          e.printStackTrace();
+      }
+
+  }*/
+
+    @Override
+    public String getMaxWaitDays()
+    {
+        return null;
+    }
+}

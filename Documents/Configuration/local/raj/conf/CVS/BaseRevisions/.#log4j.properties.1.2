@@ -1,0 +1,79 @@
+#Global settings
+log4j.additivity.test=true
+
+#root category
+log4j.rootCategory=DEBUG, Default
+
+########### APPENDERS ############
+
+### Default Appender: The server.log file appender
+log4j.appender.Default=org.apache.log4j.RollingFileAppender
+log4j.appender.Default.File=${catalina.base}/logs/log4j.log
+log4j.appender.Default.layout=org.apache.log4j.PatternLayout
+log4j.appender.Default.layout.ConversionPattern=[%d{DATE}] %p %c %x %m%n%n
+log4j.appender.Default.Append=true
+log4j.appender.Default.MaxFileSize=5MB
+log4j.appender.Default.MaxBackupIndex=20
+
+log4j.logger.transactionlog=DEBUG,transactionProcess
+########### APPENDERS ############
+
+
+### Default Appender: The server.log file appender
+log4j.appender.transactionProcess=org.apache.log4j.RollingFileAppender
+log4j.appender.transactionProcess.File=${catalina.base}/logs/transaction.log
+log4j.appender.transactionProcess.layout=org.apache.log4j.PatternLayout
+log4j.appender.transactionProcess.layout.ConversionPattern=[%d{DATE}] %p %c %x  %m%n%n
+log4j.appender.transactionProcess.Append=true
+log4j.appender.transactionProcess.MaxFileSize=5MB
+log4j.additivity.transactionlog=false
+log4j.appender.transactionProcess.MaxBackupIndex=20
+
+
+log4j.loggerFactory=org.owasp.esapi.reference.Log4JLoggerFactory
+
+
+
+### Esapi Appender: The security.log file appender
+log4j.appender.Esapi=org.apache.log4j.RollingFileAppender
+log4j.appender.Esapi.File=${catalina.base}/logs/security.log
+log4j.appender.Esapi.layout=org.apache.log4j.PatternLayout
+log4j.appender.Esapi.layout.ConversionPattern=[%d{DATE}] %p %c %x %m%n%n
+log4j.appender.Esapi.Append=true
+log4j.appender.Esapi.MaxFileSize=5MB
+log4j.appender.Esapi.MaxBackupIndex=20
+
+#log4j.logger.Login=DEBUG, Esapi
+#log4j.additivity.Login = false
+
+log4j.logger.Authenticator=DEBUG, Esapi
+log4j.additivity.Authenticator = false
+
+log4j.logger.DefaultUser=DEBUG, Esapi
+log4j.additivity.DefaultUser = false
+
+log4j.logger.ESAPIFilter=DEBUG, Esapi
+log4j.additivity.ESAPIFilter = false
+
+log4j.logger.Functions=DEBUG, Esapi
+log4j.additivity.Functions = false
+
+#log4j.logger.JavaEncryptor=DEBUG, Esapi
+#log4j.additivity.JavaEncryptor = false
+
+log4j.logger.PaymentzEncryptor=DEBUG, Esapi
+log4j.additivity.PaymentzEncryptor = false
+
+log4j.logger.SecurityProviderLoader=DEBUG, Esapi
+log4j.additivity.SecurityProviderLoader = false
+
+log4j.logger.org.apache.catalina.core.ContainerBase.[Catalina].[localhost]=INFO,Default
+log4j.logger.org.apache.catalina.core=INFO, Default
+log4j.logger.org.apache.catalina.session=INFO, Default
+log4j.logger.org.apache=INFO, Default
+
+
+
+
+log4j.additivity.org.apache.commons.digester.Digester = false
+log4j.additivity.org.apache = false

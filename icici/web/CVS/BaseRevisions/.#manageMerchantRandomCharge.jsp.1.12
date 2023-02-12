@@ -1,0 +1,262 @@
+<%@ page import="com.directi.pg.Functions"%>
+<%@ include file="index.jsp"%>
+<%@ include file="functions.jsp"%>
+<%@ page import="com.directi.pg.Logger"%>
+<%@ page import="servlets.ChargesUtils" %>
+<%@ page import="com.manager.BankManager" %>
+<%@ page import="java.util.TreeMap" %>
+<%@ page import="com.manager.dao.MerchantDAO" %>
+<%@ page import="com.manager.TerminalManager" %>
+<%@ page import="com.manager.vo.BankWireManagerVO" %>
+<%@ page import="org.owasp.esapi.ESAPI" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: Kiran
+  Date: 23/7/15
+  Time: 7:07 PM
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%!
+  Logger logger=new Logger("manageMerchantRandomCharge.jsp");
+%>
+<html>
+<head>
+  <title> Merchant Random Charges</title>
+  <script src="/icici/css/jquery-1.12.4.min.js"></script>
+  <script src="/icici/css/jquery-ui.min.js"></script>
+  <script src="/icici/javascript/gateway-account-member-terminalid1.js"></script>
+
+  <%--<script src="/icici/javascript/autocomplete.js"></script>--%>
+</head>
+<body>
+<%
+  ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+  if (com.directi.pg.Admin.isLoggedIn(session))
+  {
+    BankManager bankManager = new BankManager();
+    MerchantDAO merchantDAO = new MerchantDAO();
+    TerminalManager terminalManager = new TerminalManager();
+
+    TreeMap<String, BankWireManagerVO> bankWiresMap = bankManager.getBankWiresForRandomCharges();
+    TreeMap<Integer,String> memberMap = merchantDAO.getMemberDetailsForRejectedTransaction();
+    TreeMap<Integer,Integer> terminalMap = terminalManager.getTerminals();
+    String bankWireId=request.getParameter("bankwireid");
+    String memberid=nullToStr(request.getParameter("memberid"));
+    String terminalId=nullToStr(request.getParameter("terminalid"));
+%>
+<div class="row">
+  <div class="col-lg-12">
+    <div class="panel panel-default" >
+      <div class="panel-heading" >
+        Add Merchant Random Charges
+        <div style="float: right;">
+          <form action="/icici/listMerchantRandomCharges.jsp?ctoken=<%=ctoken%>" method="POST">
+            <button type="submit" value="Random Charges list" name="submit" class="addnewmember">
+              <i class="fa fa-sign-in"></i>
+              &nbsp;&nbsp;Random Charges list
+            </button>
+          </form>
+        </div>
+      </div>
+      <form action="/icici/servlet/ManageMerchantRandomCharge?ctoken=<%=ctoken%>" method="post" name="forms">
+        <input type="hidden" value="<%=ctoken%>" name="ctoken" id="ctoken">
+        <table align="center" width="65%" cellpadding="2" cellspacing="2">
+          <tbody>
+          <tr>
+            <td>
+              <table border="0" cellpadding="5" cellspacing="0" width="100%" align="center">
+                <tbody>
+                <tr><td colspan="4">&nbsp;</td>
+                <tr>
+                <tr><td align="center" colspan="4" class="textb">
+                  <%
+                    String message=(String)request.getAttribute("statusMsg");
+                    Functions functions=new Functions();
+                    if(functions.isValueNull(message) )
+                    {
+                      out.println(message);
+                    }
+                  %>
+                </td>
+                </tr>
+                <tr><td colspan="4">&nbsp;</td>
+                <tr>
+                <tr>
+                  <td width="4%" class="textb">&nbsp;</td>
+                  <td width="11%" class="textb">BankWire Id*</td>
+                  <td width="3%" class="textb">:</td>
+                  <td width="12%" class="textb">
+                    <select name="bankwireid" class="txtbox" style="width: 165px">
+                      <option value="" selected>Select Bank WireID</option>
+                      <%
+                        for (String bankId : bankWiresMap.keySet())
+                        {
+                          BankWireManagerVO bankWireManagerVO = bankWiresMap.get(bankId);
+                          String accountId =bankWireManagerVO.getAccountId();
+                          String MID = bankWireManagerVO.getMid();
+                          String value = bankId + "-" + accountId + "-" + MID;
+                          String isSelected = "";
+                          if (bankId.equalsIgnoreCase(bankWireId))
+                            isSelected = "selected";
+                      %>
+                      <option value="<%=bankId%>" <%=isSelected%>> <%=value%></option>
+                      <%
+                          //out.println("<option value=\""+rs.getInt("bankwiremanagerId")+"\">"+rs.getInt("bankwiremanagerId")+" - "+rs.getString("accountid")+"("+rs.getString("MID")+")"+"</option>");
+                        }
+                      %>
+                    </select>
+                  </td>
+                </tr>
+                <tr><td colspan="4">&nbsp;</td>
+                <tr>
+                  <td width="4%" class="textb">&nbsp;</td>
+                  <td width="11%" class="textb" for="mid"> Member Id *</td>
+                  <td width="3%" class="textb">:</td>
+                  <td width="12%" class="textb">
+                    <input name="memberid" id="memberid1" value="<%=memberid%>" class="txtbox" style="width: 165px" autocomplete="on">
+                    <%--<select name="memberid" class="txtbox" style="width: 165px">
+                      <option value="" selected></option>
+                      <%
+                        for (Integer memberId : memberMap.keySet()){
+                          String companyName = memberMap.get(memberId);
+                      %>
+                      <option value="<%=memberId%>"> <%=memberId + "-" + companyName%></option>
+                      <%
+                        }
+                      %>
+                    </select>--%>
+                  </td>
+                </tr>
+                <tr><td colspan="4">&nbsp;</td>
+                <tr>
+                  <td style="padding: 3px" class="textb">&nbsp;</td>
+                  <td style="padding: 3px" class="textb">Terminal Id *</td>
+                  <td style="padding: 3px" class="textb">:</td>
+                  <td style="padding: 3px">
+                    <input name="terminalid" id="tid3" value="<%=terminalId%>" class="txtbox" style="width: 165px" autocomplete="on">
+                    <%--<select name="terminalid" style="width: 165px" class="txtbox">
+                      <option value=" " selected></option>
+                      <%
+                        for (Integer terminalId : terminalMap.keySet())
+                        {
+                      %>
+                      <option value="<%=terminalId%>"> <%=terminalId%></option>
+                      <%
+                        }
+                      %>
+                    </select>--%>
+                  </td>
+                </tr>
+                <tr><td colspan="4">&nbsp;</td>
+                <tr>
+                  <td style="padding: 3px" class="textb">&nbsp;</td>
+                  <td style="padding: 3px" class="textb">Charge Value Type *</td>
+                  <td style="padding: 3px" class="textb">:</td>
+                  <td style="padding: 3px">
+                    <select name="chargevaluetype" style="width: 165px" class="txtbox">
+                      <%
+                        for (ChargesUtils.unit unit: ChargesUtils.unit.values()){
+                          out.println("<option value=\""+unit.name()+"\">"+unit.name()+"</option>");
+                        }
+                      %>
+                    </select>
+                  </td>
+                </tr>
+                <tr><td colspan="4">&nbsp;</td>
+                <tr>
+                  <td style="padding: 3px" class="textb">&nbsp;</td>
+                  <td style="padding: 3px" class="textb">Charge Type*</td>
+                  <td style="padding: 3px" class="textb">:</td>
+                  <td style="padding: 3px">
+                    <select name="chargetype" style="width: 165px" class="txtbox">
+                      <option value="Added">Added</option>
+                      <option value="Deducted" selected="">Deducted</option>
+                    </select>
+                  </td>
+                </tr>
+                <tr><td colspan="4">&nbsp;</td>
+                <tr>
+                  <td style="padding: 3px" width="2%" class="textb">&nbsp;</td>
+                  <td style="padding: 3px" width="43%" class="textb">Charge Name*</td>
+                  <td style="padding: 3px" width="5%" class="textb">:</td>
+                  <td style="padding: 3px" width="50%" class="textb">
+                    <input class="txtbox"  style="width: 165px" maxlength="255" type="text" name="chargename">
+                  </td>
+                </tr>
+                <tr><td>&nbsp;</td></tr>
+                <tr>
+                  <td style="padding: 3px" class="textb">&nbsp;</td>
+                  <td style="padding: 3px" class="textb" >Charge Rate *</td>
+                  <td style="padding: 3px" class="textb">:</td>
+                  <td style="padding: 3px"><input class="txtbox" maxlength="20" style="width: 165px" type="text" name="chargerate"></td>
+                </tr>
+                <tr><td>&nbsp;</td></tr>
+                <tr>
+                  <td style="padding: 3px" class="textb">&nbsp;</td>
+                  <td style="padding: 3px" class="textb">Charge Counter</td>
+                  <td style="padding: 3px" class="textb">:</td>
+                  <td style="padding: 3px"><input class="txtbox" maxlength="20" style="width: 165px" type="text" name="chargecounter"></td>
+                </tr>
+                <tr><td>&nbsp;</td></tr>
+                <tr>
+                  <td style="padding: 3px" class="textb">&nbsp;</td>
+                  <td style="padding: 3px" class="textb">Charge Amount *</td>
+                  <td style="padding: 3px" class="textb">:</td>
+                  <td style="padding: 3px"><input class="txtbox" maxlength="20" style="width: 165px" type="text" name="chargeamount"></td>
+                </tr>
+                <tr><td>&nbsp;</td></tr>
+                <tr>
+                  <td style="padding: 3px" class="textb">&nbsp;</td>
+                  <td style="padding: 3px" class="textb">Charge Value *</td>
+                  <td style="padding: 3px" class="textb">:</td>
+                  <td style="padding: 3px"><input class="txtbox" maxlength="20" style="width: 165px" type="text" name="chargevalue"></td>
+                </tr>
+                <tr><td>&nbsp;</td></tr>
+                <tr>
+                  <td style="padding: 3px" class="textb">&nbsp;</td>
+                  <td style="padding: 3px" class="textb">Charge Remark*</td>
+                  <td style="padding: 3px" class="textb">:</td>
+                  <td style="padding: 3px">
+                    <input class="txtbox" style="width: 165px" maxlength="255" type="text" name="chargeremark"></td>
+                </tr>
+                <tr><td>&nbsp;</td></tr>
+                <tr>
+                  <td style="padding: 3px" width="2%" class="textb">&nbsp;</td>
+                  <td style="padding: 3px" width="43%" class="textb"></td>
+                  <td style="padding: 3px" width="5%" class="textb"></td>
+                  <td style="padding: 3px" width="50%" class="textb">
+                    <button type="submit" class="buttonform">
+                      <i class="fa fa-sign-in"></i>
+                      &nbsp;&nbsp;Add Charge
+                    </button>
+                  </td>
+                </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </form>
+    </div>
+  </div>
+</div>
+<%
+  }
+  else
+  {
+    response.sendRedirect("/icici/logout.jsp");
+    return;
+  }
+%>
+</body>
+</html>
+<%!
+  public static String nullToStr(String str)
+  {
+    if(str == null)
+      return "";
+    return str;
+  }
+%>

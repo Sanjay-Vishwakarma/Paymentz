@@ -1,0 +1,91 @@
+    package com.payment.Enum;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: admin
+ * Date: 9/7/14
+ * Time: 2:47 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public enum PaymentModeEnum
+{
+    SELECT(0),
+    CREDIT_CARD_PAYMODE(1),
+    VIRTUAL_ACCOUNT_PAYMODE(2),
+    WALLET_PAYMODE(3),
+    DEBIT_CARD_PAYMODE(4),
+    NETBANKING_PAYMODE(5),
+    VOUCHERS_PAYMODE(6),
+    ACH(7),
+    CHK(8),
+    SEPA(9),
+    SEPA_EXPRESS(10),
+    NETELLER(11),
+    SKRILL(12),
+    PREPAID_CARD_PAYMODE(13),
+    POSTPAID_CARD_PAYMODE(14),
+    EXCHANGER(15),
+    CLEARSETTLE_PAYMODE(16),
+    WalletIndia_PAYMODE(17),
+    UPI_PAYMODE(18),
+    NetBankingIndia_PAYMODE(19),
+    CRYPTO_PAYMODE(20),
+    ROMCARD(21),
+    TOJIKA(22),
+    PLMP(23),
+    OneRoad(24),
+    CupUpi(25),
+    BITCOIN(26),
+    //MULA(25),
+    PAYG(27),
+    PayBoutique(29),
+    ZOTA(30),
+    eCheck(31),
+    BankTransfer(33),
+    NetBankingBangla(35),
+    WalletBangla(36),
+    CardPresent(32),
+    KCP(37),
+    Triple000(38),
+    Zhixinfu(39),
+    TWD(40),
+    MobileMoneyAfrica(41),
+    Giftpay(42),
+    QKBANK(43),
+    DOKU(44),
+    Wealthpay(45),
+    FASTPAY(47),
+    BankTransferAfrica(48),
+    DBT(49),
+    ES(46),
+    GiftCardAfrica(50),
+    GPAY(51),
+    MTNMOMO(52),
+    TIGERPAY(53),
+    CajaRural(54),
+    CARD(55),
+    BDMobileBanking(56),
+    WalletAfrica(57),
+    SMARTFASTPAY(58),
+    CASH(59),
+    CREDIT_CARD_INDIA(101),
+    UPI(102),
+   // WALLETINDIA_PAYMODE(103),
+    DEBIT_CARD_INDIA(104),
+   // NETBANKINGINDIA_PAYMODE(105),
+
+
+    ;
+
+    private int payMode;
+
+    PaymentModeEnum(int paymode)
+    {
+        this.payMode = paymode;
+    }
+
+    public int getValue() {
+        return payMode;
+    }
+
+}

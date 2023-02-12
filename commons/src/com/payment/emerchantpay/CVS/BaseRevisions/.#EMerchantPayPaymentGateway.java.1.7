@@ -1,0 +1,624 @@
+package com.payment.emerchantpay;
+
+import com.directi.pg.Functions;
+import com.directi.pg.LoadProperties;
+import com.directi.pg.TransactionLogger;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.*;
+import com.payment.common.core.*;
+import com.payment.ecomprocessing.ECPUtils;
+import com.payment.exceptionHandler.PZConstraintViolationException;
+import com.payment.exceptionHandler.PZGenericConstraintViolationException;
+import com.payment.exceptionHandler.PZTechnicalViolationException;
+import com.payment.exceptionHandler.constraint.PZGenericConstraint;
+import com.payment.exceptionHandler.errorcode.ErrorCodeUtils;
+import com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorName;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeListVO;
+import org.apache.commons.lang3.StringEscapeUtils;
+
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.ResourceBundle;
+
+/**
+ * Created by Admin on 1/28/2020.
+ */
+public class EMerchantPayPaymentGateway extends AbstractPaymentGateway
+{
+    public static final String GATEWAY_TYPE="emerchant";
+    private static TransactionLogger transactionLogger=new TransactionLogger(EMerchantPayPaymentGateway.class.getName());
+    private static final ResourceBundle RB= LoadProperties.getProperty("com.directi.pg.emerchantpay");
+    Functions functions=new Functions();
+    public EMerchantPayPaymentGateway(String accountId)
+    {
+        this.accountId=accountId;
+    }
+    public GenericResponseVO processSale(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        Comm3DResponseVO commResponseVO=new Comm3DResponseVO();
+        CommRequestVO commRequestVO= (CommRequestVO) requestVO;
+        CommAddressDetailsVO commAddressDetailsVO=commRequestVO.getAddressDetailsVO();
+        CommTransactionDetailsVO commTransactionDetailsVO=commRequestVO.getTransDetailsVO();
+        CommMerchantVO commMerchantVO=commRequestVO.getCommMerchantVO();
+        GenericCardDetailsVO cardDetailsVO=commRequestVO.getCardDetailsVO();
+
+        String transactionType_fromResponse="",responseCode="",transactionid_fromResponse="",amount_fromResponse="",status_fromResponse="",authorization_code="",timestamp_fromResponse="",currency_fromResponse="",sent_to_acquirer="",descriptor_fromResponse="",notificationUrlNew="",acs_url="",unique_id="",technical_message="",message="",mode="";
+        GatewayAccount gatewayAccount= GatewayAccountService.getGatewayAccount(accountId);
+
+        boolean isTest=gatewayAccount.isTest();
+        String mid=gatewayAccount.getMerchantId();
+        String is3dSupported= gatewayAccount.get_3DSupportAccount();
+        String username=gatewayAccount.getFRAUD_FTP_USERNAME();
+        String password=gatewayAccount.getFRAUD_FTP_PASSWORD();
+        String attemptThreeD = commRequestVO.getAttemptThreeD();
+        String saleUrl="";
+        String successUrl="";
+        String failedUrl="";
+        String notificationUrl="";
+        String description=commTransactionDetailsVO.getOrderId();
+        String customerIp=commAddressDetailsVO.getCardHolderIpAddress();
+        String currency=commTransactionDetailsVO.getCurrency();
+        String amount="";
+        if("JPY".equalsIgnoreCase(currency))
+            amount=EMerchantPayUtils.getJPYAmount(commTransactionDetailsVO.getAmount());
+        else if("KWD".equalsIgnoreCase(currency))
+            amount=EMerchantPayUtils.getKWDSupportedAmount(commTransactionDetailsVO.getAmount());
+        else
+            amount=EMerchantPayUtils.getCentAmount(commTransactionDetailsVO.getAmount());
+        String billing_first_name=commAddressDetailsVO.getFirstname();
+        String billing_last_name=commAddressDetailsVO.getLastname();
+        String card_holder=commAddressDetailsVO.getFirstname()+" "+commAddressDetailsVO.getLastname();
+        String card_number=cardDetailsVO.getCardNum();
+        String cvv=cardDetailsVO.getcVV();
+        String expiration_month=cardDetailsVO.getExpMonth();
+        String expiration_year=cardDetailsVO.getExpYear();
+        String customerId=commAddressDetailsVO.getCustomerid();
+        String customer_email=commAddressDetailsVO.getEmail();
+        String customer_phone=commAddressDetailsVO.getPhone();
+        String birth_date=commAddressDetailsVO.getBirthdate();
+        String address1=commAddressDetailsVO.getStreet();
+        String zip_code=commAddressDetailsVO.getZipCode();
+        String city=commAddressDetailsVO.getCity();
+        String state=commAddressDetailsVO.getState();
+        String country="";
+        if(functions.isValueNull(commAddressDetailsVO.getCountry()))
+        {
+            country = commAddressDetailsVO.getCountry();
+            transactionLogger.error("country.length()--->"+country.length());
+            if(country.length()==3)
+                country= EMerchantPayUtils.getCountryTwoDigit(country);
+        }
+        String token="";
+        HashMap<String,String> tokenMap=EMerchantPayUtils.getToken(currency,isTest,accountId);
+        if(isTest)
+        {
+            saleUrl=RB.getString("SALE_TEST_URL");
+        }else
+        {
+            saleUrl=RB.getString("SALE_LIVE_URL");
+        }
+        if(functions.isValueNull(commMerchantVO.getHostUrl()))
+        {
+            successUrl="https://"+commMerchantVO.getHostUrl()+RB.getString("HOST_URL")+trackingID+"&status=success";
+            failedUrl="https://"+commMerchantVO.getHostUrl()+RB.getString("HOST_URL")+trackingID+"&status=failed";
+        }else
+        {
+            successUrl=RB.getString("TERM_URL")+trackingID+"&status=success";
+            failedUrl=RB.getString("TERM_URL")+trackingID+"&status=failed";
+        }
+        notificationUrl=RB.getString("NOTIFY_URL");
+
+        StringBuffer saleRequest=new StringBuffer("<?xml version='1.0' encoding='UTF-8'?>");
+        saleRequest.append("<payment_transaction>");
+        if(("Only3D".equalsIgnoreCase(attemptThreeD)) || "O".equals(is3dSupported) || "3D".equalsIgnoreCase(attemptThreeD) || "Y".equalsIgnoreCase(is3dSupported))
+        {
+            token=tokenMap.get("3D_token");
+            saleUrl+=token;
+            saleRequest.append("<transaction_type>sale3d</transaction_type>"
+                            +"<return_success_url>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(successUrl))+"</return_success_url>"
+                            +"<return_failure_url>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(failedUrl))+"</return_failure_url>"
+            );
+        }else
+        {
+            token=tokenMap.get("non3D_token");
+            saleUrl+=token;
+            saleRequest.append("<transaction_type>sale</transaction_type>");
+        }
+        saleRequest.append("<transaction_id>"+ StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(trackingID)) + "</transaction_id>"
+                        + "<usage>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(description)) + "</usage>"
+                        + "<remote_ip>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(customerIp)) + "</remote_ip>"
+                        + "<notification_url>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(notificationUrl)) + "</notification_url>"
+                        + "<amount>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(amount)) + "</amount>"
+                        + "<currency>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(currency)) + "</currency>"
+                        + "<card_holder>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(card_holder)) + "</card_holder>"
+                        + "<card_number>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(card_number)) + "</card_number>"
+                        + "<cvv>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(cvv)) + "</cvv>"
+                        + "<expiration_month>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(expiration_month)) + "</expiration_month>"
+                        + "<expiration_year>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(expiration_year)) + "</expiration_year>"
+                        + "<consumer_id>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(customerId)) + "</consumer_id>"
+                        + "<customer_email>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(customer_email)) + "</customer_email>"
+                        + "<customer_phone>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(customer_phone)) + "</customer_phone>"
+                        + "<birth_date>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(birth_date)) + "</birth_date>"
+                        + "<billing_address>"
+                        + "<first_name>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(billing_first_name)) + "</first_name>"
+                        + "<last_name>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(billing_last_name)) + "</last_name>"
+                        + "<address1>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(address1)) + "</address1>"
+                        + "<zip_code>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(zip_code)) + "</zip_code>"
+                        + "<city>" +StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(city)) + "</city>"
+                        + "<state>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(state)) + "</state>"
+                        + "<country>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(country)) + "</country>"
+                        + "</billing_address>"
+                        + "</payment_transaction>"
+
+        );
+        if(functions.isValueNull(token))
+        {
+            transactionLogger.error("Sale Request ---for--" + trackingID + "--" + saleRequest.toString());
+            String response = EMerchantPayUtils.doPostHTTPSURLConnectionClient(saleUrl, saleRequest.toString(), "Basic", username, password);
+            transactionLogger.error("Sale Response ---for--" + trackingID + "--" + response);
+            Map<String, String> responseMap = EMerchantPayUtils.readSoapResponse(response);
+            if (responseMap != null)
+            {
+                transactionType_fromResponse = responseMap.get("transaction_type");
+                status_fromResponse = responseMap.get("status");
+                authorization_code = responseMap.get("authorization_code");
+                unique_id = responseMap.get("unique_id");
+                transactionid_fromResponse = responseMap.get("transaction_id");
+                responseCode = responseMap.get("response_code");
+                technical_message = responseMap.get("technical_message");
+                message = responseMap.get("message");
+                mode = responseMap.get("mode");
+                timestamp_fromResponse = responseMap.get("timestamp");
+                amount_fromResponse = responseMap.get("amount");
+                currency_fromResponse = responseMap.get("currency");
+                sent_to_acquirer = responseMap.get("sent_to_acquirer");
+                descriptor_fromResponse = responseMap.get("descriptor");
+                acs_url = responseMap.get("redirect_url");
+
+                if (status_fromResponse.equalsIgnoreCase("approved") || responseCode.equalsIgnoreCase("00"))
+                {
+                    commResponseVO.setStatus("success");
+                    commResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                    commResponseVO.setRemark(message);
+                    commResponseVO.setDescription(technical_message);
+                    commResponseVO.setTransactionType(transactionType_fromResponse);
+                    commResponseVO.setErrorCode(responseCode);
+                    commResponseVO.setTransactionId(unique_id);
+                    commResponseVO.setResponseHashInfo(authorization_code);
+                }
+                else if (status_fromResponse.equalsIgnoreCase("pending_async"))
+                {
+                    commResponseVO.setStatus("pending3DConfirmation");
+                    commResponseVO.setUrlFor3DRedirect(acs_url);
+                    //commResponseVO.setTerURL(notificationUrlNew);
+                    commResponseVO.setTransactionId(unique_id);
+                    commResponseVO.setRemark(message);
+                    commResponseVO.setDescription("3D Authentication Pending " +
+                            "/ " + technical_message);
+                    commResponseVO.setTransactionType(transactionType_fromResponse);
+                    commResponseVO.setErrorCode(responseCode);
+                    commResponseVO.setMethod("GET");
+                }
+                else if (status_fromResponse.equalsIgnoreCase("pending"))
+                {
+                    commResponseVO.setStatus("pending");
+                    commResponseVO.setTransactionId(unique_id);
+                    commResponseVO.setRemark(message);
+                    commResponseVO.setDescription("Transaction is Pending / " + technical_message);
+                    commResponseVO.setTransactionType(transactionType_fromResponse);
+                    commResponseVO.setErrorCode(responseCode);
+                }
+                else
+                {
+                    commResponseVO.setStatus("failed");
+                    commResponseVO.setTransactionId(unique_id);
+                    commResponseVO.setRemark(message);
+                    commResponseVO.setDescription("Transaction Declined " + technical_message);
+                    commResponseVO.setErrorCode(responseCode);
+                }
+            }
+            else
+            {
+                commResponseVO.setStatus("failed");
+                commResponseVO.setRemark("Transaction Declined");
+            }
+        }else
+        {
+            commResponseVO.setStatus("fail");
+            commResponseVO.setRemark("SYS:Invalid Token");
+        }
+        commResponseVO.setCurrency(currency_fromResponse);
+        commResponseVO.setBankTransactionDate(timestamp_fromResponse);
+        return commResponseVO;
+    }
+    public GenericResponseVO processAuthentication(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        errorCodeListVO.addListOfError(errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_FUNCTIONALITY_NOT_ALLOWED));
+        PZGenericConstraint genConstraint = new PZGenericConstraint("BillDeskPaymentGateway", "processAuthentication", null, "common", "This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::", errorCodeListVO);
+        throw new PZGenericConstraintViolationException(genConstraint, "This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::", null);
+
+    }
+    public GenericResponseVO processRefund(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException, PZConstraintViolationException
+    {
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+
+        Functions functions = new Functions();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String username = gatewayAccount.getFRAUD_FTP_USERNAME();
+        String password = gatewayAccount.getFRAUD_FTP_PASSWORD();
+        String refundUrl="",currency="",amount="",remote_ip="",description="",
+                transactionType_fromResponse="",responseCode_fromResponse="",status_fromResponse="",
+                authorizationCode_fromResponse="",transactionId_fromResponse="",message_fromResponse="",
+                mode_fromResponse="",timestamp_fromResponse="",amount_fromResponse="",currency_fromResponse="",
+                sentToAcquirer_fromResponse="",descriptor_fromResponse="",unique_id="",technical_message="";
+        String refundCount = commRequestVO.getCount();
+        String reference_id=commTransactionDetailsVO.getPreviousTransactionId();
+
+        GenericTransDetailsVO transDetailsVO = commRequestVO.getTransDetailsVO();
+        GenericAddressDetailsVO addressDetailsVO = commRequestVO.getAddressDetailsVO();
+        CommMerchantVO commMerchantVO = commRequestVO.getCommMerchantVO();
+        String is3dSupported = EMerchantPayUtils.checkPreviousTransaction3D_Non3D(trackingID);
+
+        if (functions.isValueNull(transDetailsVO.getCurrency())) {
+            currency = transDetailsVO.getCurrency();
+        }
+        amount=transDetailsVO.getAmount();
+        transactionLogger.error("amount ---"+amount);
+
+        if(currency.equals("JPY")){
+            amount=EMerchantPayUtils.getJPYAmount(amount);
+        }
+        else if(currency.equals("KWD")){
+            amount=EMerchantPayUtils.getKWDSupportedAmount(amount);
+        }
+        else{
+            amount=EMerchantPayUtils.getCentAmount(amount);
+        }
+        transactionLogger.error("amount after formatting in EMerchantPay ---"+amount);
+        if (functions.isValueNull(addressDetailsVO.getCardHolderIpAddress())) {
+            remote_ip=addressDetailsVO.getCardHolderIpAddress();
+        }
+        else {
+            remote_ip=addressDetailsVO.getIp();
+        }
+        if(functions.isValueNull(commTransactionDetailsVO.getOrderDesc()))
+            description=commTransactionDetailsVO.getOrderDesc();
+        boolean isTest = gatewayAccount.isTest();
+        String mid= gatewayAccount.getMerchantId();
+        String token="";
+        HashMap<String,String> tokenMap=EMerchantPayUtils.getToken(currency, isTest,accountId);
+        if("Y".equalsIgnoreCase(is3dSupported))
+            token=tokenMap.get("3D_token");
+        else
+            token=tokenMap.get("non3D_token");
+        if(isTest)
+        {
+            refundUrl=RB.getString("SALE_TEST_URL")+token+"/";
+        }else
+        {
+            refundUrl=RB.getString("SALE_LIVE_URL")+token+"/";
+        }
+        StringBuffer refundRequest=new StringBuffer("<?xml version='1.0' encoding='UTF-8'?>");
+        String transaction_type="refund";
+
+        refundRequest.append("<payment_transaction>" +
+                        "<transaction_type>"+transaction_type+"</transaction_type>" +
+                        "<transaction_id>"+trackingID+"_R"+refundCount+"</transaction_id>" +
+                        "<usage>"+description+"</usage>" +
+                        "<remote_ip>"+remote_ip+"</remote_ip>" +
+                        "<reference_id>"+StringEscapeUtils.escapeXml(reference_id)+"</reference_id>" +
+                        "<amount>"+amount+"</amount>" +
+                        "<currency>"+currency+"</currency>" +
+                        "</payment_transaction>"
+
+        );
+        if(functions.isValueNull(token))
+        {
+            transactionLogger.error("Refund Request ---for--" + trackingID + "--" + refundRequest.toString());
+            String response = EMerchantPayUtils.doPostHTTPSURLConnectionClient(refundUrl, refundRequest.toString(), "Basic", username, password);
+            transactionLogger.error("Refund Response ---for--" + trackingID + "--" + response);
+            Map<String, String> responseMap = EMerchantPayUtils.readSoapResponse(response);
+            if (responseMap != null)
+            {
+
+                transactionType_fromResponse = responseMap.get("transaction_type");
+                status_fromResponse = responseMap.get("status");
+                authorizationCode_fromResponse = responseMap.get("authorization_code");
+                unique_id = responseMap.get("unique_id");
+                transactionId_fromResponse = responseMap.get("transaction_id");
+                responseCode_fromResponse = responseMap.get("response_code");
+                technical_message = responseMap.get("technical_message");
+                message_fromResponse = responseMap.get("message");
+                mode_fromResponse = responseMap.get("mode");
+                timestamp_fromResponse = responseMap.get("timestamp");
+                amount_fromResponse = responseMap.get("amount");
+                currency_fromResponse = responseMap.get("currency");
+                sentToAcquirer_fromResponse = responseMap.get("sent_to_acquirer");
+                descriptor_fromResponse = responseMap.get("descriptor");
+
+
+                if (status_fromResponse.equalsIgnoreCase("approved") || responseCode_fromResponse.equalsIgnoreCase("00"))
+                {
+                    commResponseVO.setStatus("success");
+                    commResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                }
+                else
+                {
+                    commResponseVO.setStatus("fail");
+                }
+                commResponseVO.setTransactionId(unique_id);
+                commResponseVO.setRemark(message_fromResponse);
+                commResponseVO.setDescription(technical_message);
+                commResponseVO.setTransactionType(transactionType_fromResponse);
+                commResponseVO.setErrorCode(responseCode_fromResponse);
+                commResponseVO.setCurrency(currency);
+            }
+            else
+            {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark("SYS:Transaction Declined");
+            }
+        }else
+        {
+            commResponseVO.setStatus("fail");
+            commResponseVO.setRemark("SYS:Invalid Token");
+        }
+        return commResponseVO;
+    }
+    public GenericResponseVO processQuery(String trackingID, GenericRequestVO requestVO) throws PZConstraintViolationException
+    {
+        transactionLogger.error("Inside processInquiry ---");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        Functions functions = new Functions();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String userName = gatewayAccount.getFRAUD_FTP_USERNAME();
+        String password = gatewayAccount.getFRAUD_FTP_PASSWORD();
+
+        GenericAddressDetailsVO addressDetailsVO = commRequestVO.getAddressDetailsVO();
+        CommMerchantVO commMerchantVO = commRequestVO.getCommMerchantVO();
+        ECPUtils ecpUtils=new ECPUtils();
+        String currency = commTransactionDetailsVO.getCurrency();
+
+        boolean isTest = gatewayAccount.isTest();
+        transactionLogger.error("token ---" );
+        String inquiryUrl="";
+        Map<String,String> responseMap;
+        String status_fromResponse = "";
+        String  unique_id = "";
+        String message_fromResponse = "";
+        String amount_fromResponse = "";
+        String currency_fromResponse = "";
+        String transaction_date="";
+        String unique_idFromResponse="";
+        String auth_code_FromResponse="";
+        String transaction_type="";
+        unique_id = commTransactionDetailsVO.getPreviousTransactionId();
+        String is3dSupported = EMerchantPayUtils.checkPreviousTransaction3D_Non3D(trackingID);
+        String token="";
+        HashMap<String,String> tokenMap=EMerchantPayUtils.getToken(currency, isTest,accountId);
+        if("Y".equalsIgnoreCase(is3dSupported))
+            token=tokenMap.get("3D_token");
+        else
+            token=tokenMap.get("non3D_token");
+        transactionLogger.error("unique_id --------------"+unique_id);
+        try
+        {
+            if(isTest)
+            {
+                inquiryUrl=RB.getString("INQUIRY_TEST_URL")+token;
+            }else
+            {
+                inquiryUrl=RB.getString("INQUIRY_LIVE_URL")+token;
+            }
+            String inquiryRequest =
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
+                            "<reconcile>" +
+                            "<unique_id>" + unique_id + "</unique_id>" +
+                            "</reconcile>";
+
+            transactionLogger.error("inquiryRequest ---" + inquiryRequest);
+            String inquiryResponse = EMerchantPayUtils.doPostHTTPSURLConnectionClient(inquiryUrl,inquiryRequest.toString(),"Basic",userName,password);
+            transactionLogger.error("inquiryResponse ---" + inquiryResponse);
+
+            responseMap=ecpUtils.readSoapResponse(inquiryResponse);
+            if (responseMap!=null)
+            {
+                status_fromResponse = responseMap.get("status");
+
+                message_fromResponse = responseMap.get("message");
+                transaction_date = responseMap.get("timestamp");
+                amount_fromResponse = responseMap.get("amount");
+                currency_fromResponse = responseMap.get("currency");
+                unique_idFromResponse = responseMap.get("unique_id");
+                auth_code_FromResponse = responseMap.get("authorization_code");
+                transaction_type = responseMap.get("transaction_type");
+
+
+                if (functions.isValueNull(status_fromResponse) && status_fromResponse.equalsIgnoreCase("error"))
+                {
+                    transactionLogger.debug("inside if for fail");
+                    commResponseVO.setStatus("fail");
+                    commResponseVO.setTransactionStatus("fail");
+                }
+                else
+                {
+                    transactionLogger.debug("inside else for success");
+                    commResponseVO.setStatus("success");
+                    commResponseVO.setBankTransactionDate(transaction_date);
+                    commResponseVO.setTransactionStatus("success");
+                }
+                commResponseVO.setAmount(commTransactionDetailsVO.getAmount());
+                commResponseVO.setCurrency(currency);
+                commResponseVO.setMerchantId(GatewayAccountService.getGatewayAccount(accountId).getMerchantId());
+                commResponseVO.setRemark(message_fromResponse);
+                commResponseVO.setDescription(message_fromResponse);
+                commResponseVO.setTransactionId(unique_id);
+                if("sale".equalsIgnoreCase(transaction_type) || "sale3d".equalsIgnoreCase(transaction_type))
+                    commResponseVO.setTransactionType("SALE");
+                else if("authorize".equalsIgnoreCase(transaction_type) || "authorize3d".equalsIgnoreCase(transaction_type))
+                    commResponseVO.setTransactionType("AUTH");
+
+                if( functions.isValueNull(auth_code_FromResponse)){
+                    commResponseVO.setAuthCode(auth_code_FromResponse);
+                }
+                else{
+                    commResponseVO.setAuthCode("-");
+                }
+                if( functions.isValueNull(message_fromResponse)){
+                    commResponseVO.setDescription(message_fromResponse);
+                }
+                else{
+                    commResponseVO.setDescription("-");
+                }
+            }
+            else
+            {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark("SYS:Transaction Declined");
+            }
+        }
+        catch(Exception e)
+        {
+            transactionLogger.error("Exception-----",e);
+        }
+        return commResponseVO;
+    }
+    public GenericResponseVO processPayout(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        transactionLogger.error("--- Inside EMerchantPayPaymentGateway Payout ---");
+        CommResponseVO commResponseVO = new CommResponseVO();
+        CommTransactionDetailsVO transactionDetailsVO=((CommRequestVO)requestVO).getTransDetailsVO();
+        CommAddressDetailsVO addressDetailsVO=((CommRequestVO)requestVO).getAddressDetailsVO();
+        CommCardDetailsVO cardDetailsVO= ((CommRequestVO)requestVO).getCardDetailsVO();
+        String responseCode="",transactionType_fromResponse="",status_fromResponse="",transactionid_fromResponse="",
+                timestamp_fromResponse="",amount_fromResponse="",currency_fromResponse="",sent_to_acquirer="",
+                descriptor_fromResponse="",authorization_code="",unique_id="",technical_message="",message="",mode="";
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest = gatewayAccount.isTest();
+        String username=gatewayAccount.getFRAUD_FTP_USERNAME();
+        String password=gatewayAccount.getFRAUD_FTP_PASSWORD();
+        String payoutUrl="";
+        String token="";
+        String country="";
+        if(functions.isValueNull(addressDetailsVO.getCountry()))
+        {
+            country = addressDetailsVO.getCountry();
+            if(country.length()==3)
+                country= EMerchantPayUtils.getCountryTwoDigit(country);
+        }
+        String currency=transactionDetailsVO.getCurrency();
+        String amount=transactionDetailsVO.getAmount();
+        if(currency.equals("JPY")){
+            amount=EMerchantPayUtils.getJPYAmount(amount);
+        }
+        else if(currency.equals("KWD")){
+            amount=EMerchantPayUtils.getKWDSupportedAmount(amount);
+        }
+        else{
+            amount=EMerchantPayUtils.getCentAmount(amount);
+        }
+        HashMap<String,String> tokenMap=EMerchantPayUtils.getToken(transactionDetailsVO.getCurrency(), isTest,accountId);
+        token=tokenMap.get("payout_token");
+        if(isTest)
+        {
+            payoutUrl=RB.getString("SALE_TEST_URL")+token;
+        }else
+        {
+            payoutUrl=RB.getString("SALE_LIVE_URL")+token;
+        }
+        transactionLogger.error("payout Url--->"+payoutUrl);
+        StringBuffer payoutRequest=new StringBuffer("<?xml version='1.0' encoding='UTF-8'?>");
+
+        payoutRequest.append("<payment_transaction>"+
+                "<transaction_type>payout</transaction_type>"+
+                "<transaction_id>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(trackingID))+"</transaction_id>"+
+                "<usage>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(transactionDetailsVO.getOrderDesc()))+"</usage>"+
+                "<remote_ip>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(addressDetailsVO.getIp()))+"</remote_ip>"+
+                "<amount>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(amount))+"</amount>"+
+                "<currency>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(currency))+"</currency>"+
+                "<card_holder>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(addressDetailsVO.getFirstname()))+" "+addressDetailsVO.getLastname()+"</card_holder>"+
+                "<card_number>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(cardDetailsVO.getCardNum()))+"</card_number>"+
+                "<expiration_month>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(cardDetailsVO.getExpMonth()))+"</expiration_month>"+
+                "<expiration_year>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(cardDetailsVO.getExpYear()))+"</expiration_year>"+
+                "<cvv>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(cardDetailsVO.getcVV()))+"</cvv>"+
+                "<customer_email>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(addressDetailsVO.getEmail()))+"</customer_email>"+
+                "<customer_phone>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(addressDetailsVO.getPhone()))+"</customer_phone>"+
+                "<birth_date>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(addressDetailsVO.getBirthdate()))+"</birth_date>"+
+                "<billing_address>"+
+                "<first_name>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(addressDetailsVO.getFirstname()))+"</first_name>"+
+                "<last_name>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(addressDetailsVO.getLastname()))+"</last_name>"+
+                "<address1>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(addressDetailsVO.getStreet()))+"</address1>"+
+                "<zip_code>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(addressDetailsVO.getZipCode()))+"</zip_code>"+
+                "<city>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(addressDetailsVO.getCity()))+"</city>"+
+                "<state>"+StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(addressDetailsVO.getState())) + "</state>" +
+                "<country>" + StringEscapeUtils.escapeXml(EMerchantPayUtils.isNull(country)) + "</country>" +
+                "</billing_address>" +
+                "</payment_transaction>");
+        if(functions.isValueNull(token))
+        {
+            transactionLogger.error("payout request----for--" + trackingID + "--" + payoutRequest);
+            String response = EMerchantPayUtils.doPostHTTPSURLConnectionClient(payoutUrl, payoutRequest.toString(), "Basic", username, password);
+            transactionLogger.error("payout response----for--" + trackingID + "--" + response);
+            Map<String, String> responseMap = EMerchantPayUtils.readSoapResponse(response);
+            if (responseMap != null)
+            {
+                transactionType_fromResponse = responseMap.get("transaction_type");
+                status_fromResponse = responseMap.get("status");
+                authorization_code = responseMap.get("authorization_code");
+                unique_id = responseMap.get("unique_id");
+                transactionid_fromResponse = responseMap.get("transaction_id");
+                responseCode = responseMap.get("response_code");
+                technical_message = responseMap.get("technical_message");
+                message = responseMap.get("message");
+                mode = responseMap.get("mode");
+                timestamp_fromResponse = responseMap.get("timestamp");
+                amount_fromResponse = responseMap.get("amount");
+                currency_fromResponse = responseMap.get("currency");
+                sent_to_acquirer = responseMap.get("sent_to_acquirer");
+                descriptor_fromResponse = responseMap.get("descriptor");
+                if (status_fromResponse.equalsIgnoreCase("approved") || responseCode.equalsIgnoreCase("00"))
+                {
+                    commResponseVO.setStatus("success");
+                    commResponseVO.setRemark(message);
+                    commResponseVO.setDescription(technical_message);
+                    commResponseVO.setTransactionType(transactionType_fromResponse);
+                    commResponseVO.setErrorCode(responseCode);
+                    commResponseVO.setTransactionId(unique_id);
+                    commResponseVO.setResponseHashInfo(authorization_code);
+                }
+                else
+                {
+                    commResponseVO.setStatus("failed");
+                    commResponseVO.setTransactionId(unique_id);
+                    commResponseVO.setRemark(message);
+                    commResponseVO.setDescription("Transaction Declined " + technical_message);
+                    commResponseVO.setErrorCode(responseCode);
+                }
+            }
+            else
+            {
+                commResponseVO.setStatus("fail");
+                commResponseVO.setRemark("Transaction Declined");
+                commResponseVO.setDescription("Transaction Declined");
+            }
+        }else
+        {
+            commResponseVO.setStatus("fail");
+            commResponseVO.setRemark("SYS:Invalid Token");
+        }
+        return commResponseVO;
+    }
+    public String getMaxWaitDays()
+    {
+        return null;
+    }
+}

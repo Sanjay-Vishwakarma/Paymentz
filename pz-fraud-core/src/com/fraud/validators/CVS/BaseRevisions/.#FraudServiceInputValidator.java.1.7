@@ -1,0 +1,616 @@
+package com.fraud.validators;
+
+import com.directi.pg.Functions;
+import com.fraud.vo.PZFraudCustRegRequestVO;
+import com.fraud.vo.PZFraudDocVerifyRequestVO;
+import com.fraud.vo.PZFraudRequestVO;
+import org.owasp.esapi.ESAPI;
+
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: sandip
+ * Date: 11/1/14
+ * Time: 12:49 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class FraudServiceInputValidator
+{
+    Functions functions=new Functions();
+    public void performNewTransactionValidation(List errorList,PZFraudRequestVO requestVO)
+    {
+        if(!ESAPI.validator().isValidInput("memberid", requestVO.getMemberid(), "Numbers", 20, false))
+        {
+            errorList.add("Invalid MemberId");
+        }
+        if(!ESAPI.validator().isValidInput("description",requestVO.getDescription(), "Description", 35, false))
+        {
+            errorList.add("Invalid Description");
+        }
+        if(!ESAPI.validator().isValidInput("amount",requestVO.getAmount(), "Amount", 12, false))
+        {
+            errorList.add("Invalid Amount");
+        }
+        if(!ESAPI.validator().isValidInput("status",requestVO.getStatus(), "SafeString", 20, true))
+        {
+            errorList.add("Invalid Status");
+        }
+        if(!ESAPI.validator().isValidInput("currency",requestVO.getCurrency(), "SafeString", 3, false))
+        {
+            errorList.add("Invalid Currency");
+        }
+        /*if(!ESAPI.validator().isValidInput("time",requestVO.getTime(), "date",30, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,memberId,"Failed","InValid Time");
+            errorList.add("Invalid Transaction Time");
+        }*/
+        if(!ESAPI.validator().isValidInput("firstname",requestVO.getFirstname(), "SafeString",50, false))
+        {
+            errorList.add("Invalid FirstName");
+        }
+        if(!ESAPI.validator().isValidInput("lastname",requestVO.getLastname(), "SafeString",50, false))
+        {
+            errorList.add("Invalid LastName");
+        }
+        if(!ESAPI.validator().isValidInput("emailaddr",requestVO.getEmailaddr(), "Email",50, false))
+        {
+            errorList.add("Invalid Email Address");
+        }
+        if(!ESAPI.validator().isValidInput("city",requestVO.getCity(), "City",30, false))
+        {
+            errorList.add("Invalid City");
+        }
+        if(!ESAPI.validator().isValidInput("countrycode",requestVO.getCountrycode(), "CountryCode",3, false))
+        {
+            errorList.add("Invalid Country Code");
+        }
+        if(!ESAPI.validator().isValidInput("street",requestVO.getStreet(), "Address",255, false))
+        {
+            errorList.add("Invalid Street/Address");
+        }
+        if(!ESAPI.validator().isValidInput("zip",requestVO.getZip(), "Zip",10, false))
+        {
+            errorList.add("Invalid Zip");
+        }
+        if(!ESAPI.validator().isValidInput("ipaddrs",requestVO.getIpaddrs(), "IPAddress",50, false))
+        {
+            errorList.add("Invalid IpAddress");
+        }
+        if(!ESAPI.validator().isValidInput("dailycardlimit",requestVO.getDailycardlimit(), "Numbers",10, false))
+        {
+            errorList.add("Invalid Daily Card Limit");
+        }
+        if(!ESAPI.validator().isValidInput("weeklycardlimit",requestVO.getWeeklycardlimit(), "Numbers",10, false))
+        {
+            errorList.add("Invalid Weekly Card Limit");
+        }
+        if(!ESAPI.validator().isValidInput("monthlycardlimit",requestVO.getMonthlycardlimit(), "Numbers",10, false))
+        {
+            errorList.add("Invalid Monthly Card Limit");
+        }
+        if(!ESAPI.validator().isValidInput("paymenttype",requestVO.getPaymenttype(), "SafeString",2, false))
+        {
+            errorList.add("Invalid Payment Type");
+        }
+    }
+    public void performNewTransactionValidation(PZFraudRequestVO pzFraudRequestVO)
+    {
+        if(!ESAPI.validator().isValidInput("memberid", pzFraudRequestVO.getMemberid(), "Numbers", 20, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid MemberId","0");
+            pzFraudRequestVO.setErrorMsg("InValid MemberId");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("description", pzFraudRequestVO.getDescription(), "Description", 35, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid Description","0");
+            pzFraudRequestVO.setErrorMsg("InValid Description");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("amount", pzFraudRequestVO.getAmount(), "AmountStr", 12, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid Amount","0");
+            pzFraudRequestVO.setErrorMsg("InValid Amount");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("status", pzFraudRequestVO.getStatus(), "SafeString", 20, true))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid Status","0");
+            pzFraudRequestVO.setErrorMsg("InValid Status");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("currency", pzFraudRequestVO.getCurrency(), "SafeString", 3, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid Currency","0");
+            pzFraudRequestVO.setErrorMsg("InValid Currency");
+            return;
+        }
+        /*if(!ESAPI.validator().isValidInput("time",pzFraudRequestVO.getTime(), "fromDate",30, false))
+        {
+            pzFraudRequestVO.setErrorMsg("InValid Transaction Time");
+            return;
+        }*/
+        if(!ESAPI.validator().isValidInput("firstname", pzFraudRequestVO.getFirstname(), "SafeString", 50, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid FirstName","0");
+            pzFraudRequestVO.setErrorMsg("InValid FirstName");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("lastname", pzFraudRequestVO.getLastname(), "SafeString", 50, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid lastName","0");
+            pzFraudRequestVO.setErrorMsg("InValid LastName");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("emailaddr", pzFraudRequestVO.getEmailaddr(), "Email", 50, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid Email Address","0");
+            pzFraudRequestVO.setErrorMsg("InValid Email Address");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("city", pzFraudRequestVO.getCity(), "City", 30, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid City","0");
+            pzFraudRequestVO.setErrorMsg("InValid City");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("countrycode", pzFraudRequestVO.getCountrycode(), "CountryCode", 3, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid Country Code","0");
+            pzFraudRequestVO.setErrorMsg("InValid Country Code");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("street", pzFraudRequestVO.getStreet(), "Address", 255, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid Street/Address","0");
+            pzFraudRequestVO.setErrorMsg("InValid Street/Address");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("zip", pzFraudRequestVO.getZip(), "Zip", 10, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid Zip Code","0");
+            pzFraudRequestVO.setErrorMsg("InValid Zip Code");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("ipaddrs", pzFraudRequestVO.getIpaddrs(), "IPAddress", 50, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid Ip Address","0");
+            pzFraudRequestVO.setErrorMsg("InValid Ip Address");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("dailycardlimit", pzFraudRequestVO.getDailycardlimit(), "Numbers", 10, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid Daily Card Limit","0");
+            pzFraudRequestVO.setErrorMsg("InValid Daily Card Limit");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("weeklycardlimit", pzFraudRequestVO.getWeeklycardlimit(), "Numbers", 10, false))
+        {
+            ///fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid Weekly Card Limit","0");
+            pzFraudRequestVO.setErrorMsg("InValid Weekly Card Limit");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("monthlycardlimit", pzFraudRequestVO.getMonthlycardlimit(), "Numbers", 10, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid Monthly Card Limit","0");
+            pzFraudRequestVO.setErrorMsg("InValid Monthly Card Limit");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("paymenttype", pzFraudRequestVO.getPaymenttype(), "SafeString", 2, false))
+        {
+            //fraudUtils.writeResponseForNewTransaction(printWriter,"","Failed","InValid Payment Type","0");
+            pzFraudRequestVO.setErrorMsg("InValid Payment Type");
+            return;
+        }
+    }
+    public void performUpdateTransactionValidation(List errorList,PZFraudRequestVO requestVO)
+    {
+        if(!ESAPI.validator().isValidInput("memberid",requestVO.getMemberid(), "Numbers", 20, false))
+        {
+            errorList.add("InValid MemberId");
+        }
+        if(!ESAPI.validator().isValidInput("trackingid",requestVO.getPzfraudtransid(), "Numbers", 20, false))
+        {
+            errorList.add("InValid PZFraudId");
+        }
+        if(!ESAPI.validator().isValidInput("trackingid",requestVO.getFstransid(), "Numbers", 20,true))
+        {
+            errorList.add("InValid Fs Trans Id");
+        }
+        if(!ESAPI.validator().isValidInput("status",requestVO.getStatus(), "status", 20, false))
+        {
+            errorList.add("InValid Fs Trans Id");
+        }
+        if(!ESAPI.validator().isValidInput("reason",requestVO.getReason(), "SafeString", 20, false))
+        {
+            errorList.add("InValid Reason");
+        }
+    }
+    public void performUpdateTransactionValidation(PZFraudRequestVO pzFraudRequestVO)
+    {
+        if(!ESAPI.validator().isValidInput("memberid",pzFraudRequestVO.getMemberid(), "Numbers", 20, false))
+        {
+            pzFraudRequestVO.setErrorMsg("InValid MemberId");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("trackingid",pzFraudRequestVO.getPzfraudtransid(), "Numbers", 20, false))
+        {
+            pzFraudRequestVO.setErrorMsg("InValid PZFraudId");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("trackingid",pzFraudRequestVO.getFstransid(), "Numbers", 20,true))
+        {
+            pzFraudRequestVO.setErrorMsg("InValid Fs Trans Id");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("status",pzFraudRequestVO.getStatus(), "SafeString", 20, false))
+        {
+            pzFraudRequestVO.setErrorMsg("InValid Status");
+            return;
+        }
+        if(!ESAPI.validator().isValidInput("reason",pzFraudRequestVO.getReason(), "SafeString", 20, false))
+        {
+            pzFraudRequestVO.setErrorMsg("InValid Reason");
+            return;
+        }
+    }
+
+    public void performCustomerRegistrationValidation(List errorList,PZFraudCustRegRequestVO requestVO){
+        if(!ESAPI.validator().isValidInput("firstname",requestVO.getFirstName(), "SafeString",50, false)){
+            errorList.add("Invalid FirstName");
+        }
+        if(!ESAPI.validator().isValidInput("lastname",requestVO.getLastName(), "SafeString",50, false)){
+            errorList.add("Invalid LastName");
+        }
+        if(!ESAPI.validator().isValidInput("emailaddr",requestVO.getEmailId(), "Email",255, true)){
+            errorList.add("Invalid Email Address");
+        }
+        if(!ESAPI.validator().isValidInput("customerId",requestVO.getCust_request_id(), "Numbers",10, false)){
+            errorList.add("Invalid customer Id");
+        }
+        if(!ESAPI.validator().isValidInput("phone",requestVO.getPhone(), "Numbers",10, true)){
+            errorList.add("Invalid City");
+        }
+        if(!ESAPI.validator().isValidInput("country",requestVO.getCountryCode(), "StrictString2",2, true)){
+            errorList.add("Invalid Country");
+        }
+       /* if(!ESAPI.validator().isValidInput("ipaddrs",requestVO.getCustomerIpAddress(), "IPAddressNew",255, false)){
+            errorList.add("Invalid IpAddress");
+        }*/
+        if(!ESAPI.validator().isValidInput("regdate",requestVO.getCustomerRegDate(), "SafeString",50, false)){
+            errorList.add("Invalid Reg Date");
+        }
+        if(!ESAPI.validator().isValidInput("dob",requestVO.getBirthDate(), "SafeString",50, true)){
+            errorList.add("Invalid Birth Date");
+        }
+        if(!ESAPI.validator().isValidInput("zip",requestVO.getZip(), "Numbers",10, true)){
+            errorList.add("Invalid zip code");
+        }
+        if(!ESAPI.validator().isValidInput("idtype",requestVO.getId_type(), "Numbers",2, true)){
+            errorList.add("Invalid id_type");
+        }
+        if(!ESAPI.validator().isValidInput("idvalue",requestVO.getId_value(), "SafeString",255, true)){
+            errorList.add("Invalid id_value");
+        }
+        if(!ESAPI.validator().isValidInput("address1",requestVO.getAddress1(), "SafeString",255, true)){
+            errorList.add("Invalid address1");
+        }
+        if(!ESAPI.validator().isValidInput("address2",requestVO.getAddress2(), "SafeString",255, true)){
+            errorList.add("Invalid address2");
+        }
+        if(!ESAPI.validator().isValidInput("province",requestVO.getProvince(), "SafeString",255, true)){
+            errorList.add("Invalid province");
+        }
+        if(!ESAPI.validator().isValidInput("state",requestVO.getState(), "SafeString",255, true)){
+            errorList.add("Invalid state");
+        }
+        if(!ESAPI.validator().isValidInput("city",requestVO.getCity(), "SafeString",255, true)){
+            errorList.add("Invalid city");
+        }
+        if(functions.isValueNull(requestVO.getCustomerIpAddress())){
+            try {
+
+                String ipaddress=requestVO.getCustomerIpAddress();
+                InetAddress address = InetAddress.getByName(ipaddress);
+
+                if (address instanceof Inet4Address) {
+                    if(!ESAPI.validator().isValidInput("ipaddrs",requestVO.getCustomerIpAddress(), "IPAddress",255, false)){
+                        errorList.add("Invalid IpAddress");
+                    }
+                }
+                else if (address instanceof Inet6Address) {
+                    if(!ESAPI.validator().isValidInput("ipaddrs",requestVO.getCustomerIpAddress(), "IPAddressNew",255, false)){
+                        errorList.add("Invalid IpAddress");
+                    }
+                }
+
+            } catch(Exception e) {
+
+                errorList.add("your ip address was a machine name like a DNS name, and couldn't be found");
+
+            }
+        }
+
+    }
+    public void performDocVerifyParameterValidation(List errorList,PZFraudDocVerifyRequestVO requestVO)
+    {
+        if(!ESAPI.validator().isValidInput("customer_registration_id",requestVO.getCustomer_registration_id(), "Numbers",50, false))
+        {
+            errorList.add("Invalid Customer_registration_id");
+        }
+        if(!ESAPI.validator().isValidInput("method",requestVO.getMethod(), "Numbers",1, false))
+        {
+            errorList.add("Invalid method");
+        }
+
+    }
+
+    public void performRestCustRegValidation(List errorList,PZFraudCustRegRequestVO requestVO){
+        if(!ESAPI.validator().isValidInput("firstname",requestVO.getFirstName(), "SafeString",50, false)){
+            errorList.add("Invalid FirstName");
+        }
+        if(!ESAPI.validator().isValidInput("lastname",requestVO.getLastName(), "SafeString",50, false)){
+            errorList.add("Invalid LastName");
+        }
+        if(!ESAPI.validator().isValidInput("emailaddr",requestVO.getEmailId(), "Email",255, true)){
+            errorList.add("Invalid Email Address");
+        }
+        if(!ESAPI.validator().isValidInput("phone",requestVO.getPhone(), "Numbers",10, true)){
+            errorList.add("Invalid phone");
+        }
+        if(!ESAPI.validator().isValidInput("country",requestVO.getCountryCode(), "StrictString2",2, true)){
+            errorList.add("Invalid CountryCode");
+        }
+        /*if(!ESAPI.validator().isValidInput("ipaddrs",requestVO.getCustomerIpAddress(), "IPAddressNew",255, false)){
+            errorList.add("Invalid IpAddress");
+        }*/
+       /* if(!ESAPI.validator().isValidInput("regdate",requestVO.getCustomerRegDate(), "SafeString",10, false)){
+            errorList.add("Invalid Reg Date");
+        }*/
+        if(!ESAPI.validator().isValidInput("partnerId",requestVO.getPartnerId(), "Numbers",10, false)){
+            errorList.add("Invalid Partner Configuration");
+        }
+        if(!ESAPI.validator().isValidInput("customerId",requestVO.getCust_request_id(), "Numbers",10, false)){
+            errorList.add("Invalid customer Id");
+        }
+       /* if(!ESAPI.validator().isValidInput("dob",requestVO.getBirthDate(), "SafeString",10, true)){
+            errorList.add("Invalid Birth Date");
+        }*/
+        if(!ESAPI.validator().isValidInput("zip",requestVO.getZip(), "Numbers",10, true)){
+            errorList.add("Invalid zip code");
+        }
+        if(!ESAPI.validator().isValidInput("idtype",requestVO.getId_type(), "Numbers",2, true)){
+            errorList.add("Invalid id_type");
+        }
+        if(!ESAPI.validator().isValidInput("idvalue",requestVO.getId_value(), "SafeString",255, true)){
+            errorList.add("Invalid id_value");
+        }
+        if(!ESAPI.validator().isValidInput("address1",requestVO.getAddress1(), "SafeString",255, true)){
+            errorList.add("Invalid address1");
+        }
+        if(!ESAPI.validator().isValidInput("address2",requestVO.getAddress2(), "SafeString",255, true)){
+            errorList.add("Invalid address2");
+        }
+        if(!ESAPI.validator().isValidInput("province",requestVO.getProvince(), "SafeString",255, true)){
+            errorList.add("Invalid province");
+        }
+        if(!ESAPI.validator().isValidInput("state",requestVO.getState(), "SafeString",255, true)){
+            errorList.add("Invalid state");
+        }
+        if(!ESAPI.validator().isValidInput("city",requestVO.getCity(), "SafeString",255, true)){
+            errorList.add("Invalid city");
+        }
+        if(functions.isValueNull(requestVO.getCustomerIpAddress())){
+            try {
+
+                String ipaddress=requestVO.getCustomerIpAddress();
+                InetAddress address = InetAddress.getByName(ipaddress);
+
+                if (address instanceof Inet4Address) {
+                    if(!ESAPI.validator().isValidInput("ipaddrs",requestVO.getCustomerIpAddress(), "IPAddress",255, false)){
+                        errorList.add("Invalid IpAddress");
+                    }
+                }
+                else if (address instanceof Inet6Address) {
+                    if(!ESAPI.validator().isValidInput("ipaddrs",requestVO.getCustomerIpAddress(), "IPAddressNew",255, false)){
+                        errorList.add("Invalid IpAddress");
+                    }
+                }
+
+            } catch(Exception e) {
+
+                errorList.add("your ip address was a machine name like a DNS name, and couldn't be found");
+
+            }
+        }
+        if (functions.isValueNull(requestVO.getCustomerRegDate())){
+
+            DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+            String date=requestVO.getCustomerRegDate();
+            try
+            {
+                Date date1 = format.parse(date);
+                if (!date.equals(format.format(date1))) {
+
+                    errorList.add("CustomerRegDate is invalid . must be in 'yyyy-mm-dd' format");
+                }
+                else {
+                    Calendar calendar = Calendar.getInstance();
+                    Date currentDate = calendar.getTime();
+                    String toDate=format.format(currentDate);
+                    if(functions.isFutureDateComparisonWithFromAndToDate(date, toDate, "yyyy-MM-dd"))
+                    {
+                        errorList.add("Your customerRegDate is a future date");
+                    }
+                }
+            }
+            catch (ParseException e)
+            {
+                errorList.add("Invalid CustomerRegDate");
+            }
+        }
+        else {
+            errorList.add("Required CustomerRegDate");
+        }
+
+        if (functions.isValueNull(requestVO.getBirthDate())){
+            DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+            String date=requestVO.getBirthDate();
+            try
+            {
+                Date date1 = format.parse(date);
+                if (!date.equals(format.format(date1))) {
+
+                    errorList.add("dob is invalid . must be in 'yyyy-mm-dd' format");
+                }
+                else {
+                    Calendar calendar = Calendar.getInstance();
+                    Date currentDate = calendar.getTime();
+                    String toDate=format.format(currentDate);
+                    if(functions.isFutureDateComparisonWithFromAndToDate(date, toDate, "yyyy-MM-dd"))
+                    {
+                        errorList.add("Your dob is a future date");
+                    }
+                }
+            }
+            catch (ParseException e)
+            {
+                errorList.add("Invalid dob");
+            }
+        }
+
+    }
+
+    public void performRestDocVerifyValidation(List errorList,PZFraudDocVerifyRequestVO requestVO)
+    {
+        if(!ESAPI.validator().isValidInput("customer_registration_id",requestVO.getCustomer_registration_id(), "Numbers",50, false))
+        {
+            errorList.add("Invalid Customer_registration_id");
+        }
+        if(!ESAPI.validator().isValidInput("method",requestVO.getMethod(), "Numbers",1, false))
+        {
+            errorList.add("Invalid method");
+        }
+        if(!ESAPI.validator().isValidInput("filePath",requestVO.getFilePath(), "SafeString",255, true))
+        {
+            errorList.add("Invalid filePath");
+        }
+        if(!ESAPI.validator().isValidInput("fileName",requestVO.getFileName(), "SafeString",255, true))
+        {
+            errorList.add("Invalid fileName");
+        }
+    }
+
+    public void performNewTransacValidation(List errorList,PZFraudRequestVO requestVO)
+    {
+        if(!ESAPI.validator().isValidInput("memberid", requestVO.getMemberid(), "Numbers", 20, false))
+        {
+            errorList.add("Invalid MemberId");
+        }
+        if(!ESAPI.validator().isValidInput("description",requestVO.getDescription(), "Description", 35, false))
+        {
+            errorList.add("Invalid Description");
+        }
+        if(!ESAPI.validator().isValidInput("amount",requestVO.getAmount(), "Amount", 12, false))
+        {
+            errorList.add("Invalid Amount");
+        }
+        if(!ESAPI.validator().isValidInput("status",requestVO.getStatus(), "SafeString", 20, true))
+        {
+            errorList.add("Invalid Status");
+        }
+        if(!ESAPI.validator().isValidInput("currency",requestVO.getCurrency(), "SafeString", 3, false))
+        {
+            errorList.add("Invalid Currency");
+        }
+        if(!ESAPI.validator().isValidInput("firstname",requestVO.getFirstname(), "SafeString",50, false))
+        {
+            errorList.add("Invalid FirstName");
+        }
+        if(!ESAPI.validator().isValidInput("lastname",requestVO.getLastname(), "SafeString",50, false))
+        {
+            errorList.add("Invalid LastName");
+        }
+        if(!ESAPI.validator().isValidInput("emailaddr",requestVO.getEmailaddr(), "Email",50, false))
+        {
+            errorList.add("Invalid Email Address");
+        }
+        if(!ESAPI.validator().isValidInput("city",requestVO.getCity(), "City",30, false))
+        {
+            errorList.add("Invalid City");
+        }
+        if (!ESAPI.validator().isValidInput("state",requestVO.getState(),"State",20,false))
+        {
+            errorList.add("Invalid State");
+        }
+        if(!ESAPI.validator().isValidInput("countrycode",requestVO.getCountrycode(), "CountryCode",3, false))
+        {
+            errorList.add("Invalid Country Code");
+        }
+        if(!ESAPI.validator().isValidInput("street",requestVO.getStreet(), "Address",255, false))
+        {
+            errorList.add("Invalid Street/Address");
+        }
+        if(!ESAPI.validator().isValidInput("zip",requestVO.getZip(), "Zip",10, false))
+        {
+            errorList.add("Invalid Zip");
+        }
+        if(!ESAPI.validator().isValidInput("phone",requestVO.getPhone(),"Phone",20,false))
+        {
+            errorList.add("Invalid Phone");
+        }
+        if(!ESAPI.validator().isValidInput("ipaddrs",requestVO.getIpaddrs(), "IPAddress",50, false))
+        {
+            errorList.add("Invalid IpAddress");
+        }
+        if(!ESAPI.validator().isValidInput("dailycardlimit",requestVO.getDailycardlimit(), "Numbers",10, false))
+        {
+            errorList.add("Invalid Daily Card Limit");
+        }
+        if(!ESAPI.validator().isValidInput("weeklycardlimit",requestVO.getWeeklycardlimit(), "Numbers",10, false))
+        {
+            errorList.add("Invalid Weekly Card Limit");
+        }
+        if(!ESAPI.validator().isValidInput("monthlycardlimit",requestVO.getMonthlycardlimit(), "Numbers",10, false))
+        {
+            errorList.add("Invalid Monthly Card Limit");
+        }
+        if(!ESAPI.validator().isValidInput("paymenttype",requestVO.getPaymenttype(), "SafeString",2, false))
+        {
+            errorList.add("Invalid Payment Type");
+        }
+        if(!ESAPI.validator().isValidInput("dailycardminlimit",requestVO.getDailycardminlimit(), "Numbers",10, false))
+        {
+            errorList.add("Invalid Daily Card Minimum Limit");
+        }
+        if(!ESAPI.validator().isValidInput("website",requestVO.getWebsite(), "URL",100,false))
+        {
+            errorList.add("Invalid Website");
+        }
+        if(!ESAPI.validator().isValidInput("firstsix",requestVO.getFirstsix(),"FirstSixcc",6,false))
+        {
+            errorList.add("Invalid First Six Number");
+        }
+        if(!ESAPI.validator().isValidInput("lastfour",requestVO.getLastfour(),"LastFourcc",4,false))
+        {
+            errorList.add("Invalid Last Four Number");
+        }
+        if(!ESAPI.validator().isValidInput("username",requestVO.getUsername(),"Email",50,false))
+        {
+            errorList.add("Invalid User Name");
+        }
+        if ((!ESAPI.validator().isValidInput("usernumber",requestVO.getUsernumber(),"Email",50,false)))
+        {
+            errorList.add("Invalid User Number");
+        }
+    }
+}

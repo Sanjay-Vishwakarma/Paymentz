@@ -1,0 +1,379 @@
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.GatewayType;
+import com.directi.pg.core.GatewayTypeService;
+import com.directi.pg.core.paymentgateway.SBMPaymentGateway;
+import com.manager.dao.MerchantDAO;
+import com.manager.vo.MerchantDetailsVO;
+import com.payment.AbstractPaymentProcess;
+import com.payment.Mail.*;
+import com.payment.PaymentProcessFactory;
+import com.payment.request.PZCaptureRequest;
+import com.payment.response.PZCaptureResponse;
+import com.payment.response.PZResponseStatus;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.LinkedHashMap;
+
+//import com.directi.pg.core.paymentgateway.PayLineVoucherGateway;
+//import com.directi.pg.core.paymentgateway.QwipiPaymentGateway;
+public class PartialCapture extends HttpServlet
+{
+    private static Logger logger = new Logger(PartialCapture.class.getName());
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        HttpSession session = req.getSession();
+        User user = (User) session.getAttribute("ESAPIUserSessionKey");
+        Merchants merchants = new Merchants();
+        if (!merchants.isLoggedIn(session))
+        {
+            res.sendRedirect("/merchant/logout.jsp");
+            return;
+        }
+
+        String memberid = (String) session.getAttribute("merchantid");
+        String icicimerchantid;
+
+        Transaction transaction = new Transaction();
+        LinkedHashMap captureTrans=new LinkedHashMap();
+        MailService mailService=new MailService();
+        AsynchronousMailService asynchronousMailService=new AsynchronousMailService();
+
+        HashMap captureMailDetails=new HashMap();
+        HashMap transactionDetails = null;
+
+        String captureamount = null;
+        String pod = null;
+        String icicitransid = null;
+        String description = null;
+        String authid = null;
+        String authCode = null;
+        String authRRN = null;
+        String accountId = null;
+
+      //  Database db = null;
+        Connection conn = null;
+        String query = null;
+        String message ="";
+      //  boolean captured = false;
+        Hashtable podhash = null;
+        res.setContentType("text/html");
+        PrintWriter out = res.getWriter();
+
+        boolean exceptionocccured = false;
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+
+        podhash = new Hashtable();
+
+        String errormsg="";
+        String amount="";
+        String notificationUrl="";
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try
+        {
+            pod = req.getParameter("pod");
+            try
+            {
+                icicitransid = ESAPI.validator().getValidInput("icicitransid", req.getParameter("icicitransid"), "Numbers", 8, false);
+                pod = ESAPI.validator().getValidInput("pod", req.getParameter("pod"), "alphanum", 50, false);
+                captureamount = ESAPI.validator().getValidInput("captureamount", req.getParameter("captureamount"), "Numbers", 10, false);
+                accountId = ESAPI.validator().getValidInput("accountid", req.getParameter("accountid"), "Numbers", 8, false);
+            }
+            catch(ValidationException e)
+            {
+                logger.error("Invalid amount or POD",e);
+                errormsg= errormsg+"Capture amount and POD can not be empty.Insert valid data.";
+                req.setAttribute("error",errormsg);
+                RequestDispatcher rd = req.getRequestDispatcher("/pod.jsp?ctoken="+user.getCSRFToken());
+                rd.forward(req, res);
+                return;
+            }
+            if (!Functions.checkAccuracy(captureamount, 2))
+            {
+                out.println(Functions.NewShowConfirmation1("Error", "Amount should not be more than two decimal accurate"));
+                errormsg= errormsg+"Insert valid Amount OR Amount should not be more than two decimal accurate.";
+                req.setAttribute("error",errormsg);
+                RequestDispatcher rd = req.getRequestDispatcher("/pod.jsp?ctoken="+user.getCSRFToken());
+                rd.forward(req, res);
+                return;
+            }
+
+            String gatewayType =null;
+            String currency=null;
+            if(accountId!=null && !accountId.equals(""))
+            {
+                gatewayType = GatewayAccountService.getGatewayAccount(accountId).getGateway();
+                currency = GatewayAccountService.getGatewayAccount(accountId).getCurrency();
+            }
+
+            //SBM capture
+            if(accountId==null || accountId.equals("")||(gatewayType!=null && SBMPaymentGateway.GATEWAY_TYPE.equals(gatewayType)))
+            {
+                if (!pod.trim().equals("") && !pod.trim().equalsIgnoreCase("n/a") && !pod.trim().equalsIgnoreCase("na") && !captureamount.trim().equals(""))
+                {
+                    conn = Database.getConnection();
+                    query = "select amount,icicitransid,authid,toid,description,icicimerchantid,authcode,authreceiptno,accountid from transaction_icicicredit where toid= ? and status='authsuccessful' and icicitransid= ? " ;
+                    pstmt= conn.prepareStatement(query);
+                    pstmt.setString(1,memberid);
+                    pstmt.setString(2,icicitransid);
+                    rs = pstmt.executeQuery();
+                    if (rs.next())
+                    {
+                        try
+                        {
+                            if (Double.parseDouble(captureamount) > rs.getDouble("amount") || Functions.checkStringNull(captureamount) == null)
+                            {
+                                out.println(Functions.NewShowConfirmation1("Error", "Please put valid Capture amount."));
+                                return;
+                            }
+                        }
+                        catch (NumberFormatException e)
+                        {
+                            logger.error("Numberformet Exception", e);
+                            out.println(Functions.NewShowConfirmation1("Error", "Please put valid Capture amount."));
+                            return;
+                        }
+                        amount= rs.getString("amount");
+                        logger.debug("Update query execute");
+                        query = "update transaction_icicicredit set pod= ?,captureamount= ? where pod is null and toid= ? and status='authsuccessful' and icicitransid= ? " ;
+                        pstmt= conn.prepareStatement(query);
+                        pstmt.setString(1,pod);
+                        pstmt.setString(2,captureamount);
+                        pstmt.setString(3,memberid);
+                        pstmt.setString(4,icicitransid);
+                        pstmt.executeUpdate();
+
+                        icicitransid = rs.getString("icicitransid");
+                        icicimerchantid = rs.getString("icicimerchantid");
+                        description = rs.getString("description");
+                        authid = rs.getString("authid");
+                        authCode = rs.getString("authcode");
+                        authRRN = rs.getString("authreceiptno");
+                        accountId = rs.getString("accountid");
+
+                        message = transaction.processCaptureAndTransaction(conn, icicimerchantid, icicitransid, authid, authCode, authRRN, captureamount, memberid, description, accountId);
+                        podhash.put("1", icicitransid + "|" + message);
+                        if (message.equals("There was an error while executing the capture"))
+                        {
+                            exceptionocccured = true;
+                        }
+                    }
+                    Database.closeConnection(conn);
+                }//if ends
+            }
+            // Payline Voucher Capture
+           /* else if (gatewayType!=null && PayLineVoucherGateway.GATEWAY_TYPE.equals(gatewayType))
+            {
+
+            }*/
+            //Pay Dollar capture
+            /*else if (gatewayType!=null && PayDollarPaymentGateway.GATEWAY_TYPE.equals(gatewayType))
+            {
+
+            }*/
+            // QWIPI capture
+            /*else if (gatewayType!=null && QwipiPaymentGateway.GATEWAY_TYPE.equals(gatewayType))
+            {
+
+            }*/
+            else
+            {
+                //COMMON Capture
+                SendTransactionEventMailUtil sendTransactionEventMailUtil=new SendTransactionEventMailUtil();
+                transactionDetails  = sendTransactionEventMailUtil.searchTransDetails(icicitransid);
+                description         = (String)transactionDetails.get("description");
+                amount              = (String)transactionDetails.get("amount");
+                notificationUrl     = (String)transactionDetails.get("notificationUrl");
+                String ipaddress    = Functions.getIpAddress(req);
+
+                boolean isOverCaptureRequest    =isOverCaptureRequest(captureamount,amount);
+                logger.debug("over capture request?=" + isOverCaptureRequest);
+                boolean isValidCaptureAmount    = true;
+                boolean isOverCaptureAllowed    = false;
+                boolean isValidCaptureRequest   = true;
+
+                MerchantDAO merchantDAO                 = new MerchantDAO();
+                MerchantDetailsVO merchantDetailsVO     = merchantDAO.getMemberDetails(memberid);
+
+                if("Y".equals(merchantDetailsVO.getIsExcessCaptureAllowed()))
+                {
+                    isOverCaptureAllowed=true;
+                }
+                logger.debug("is over capture allowed to merchant?=" + isOverCaptureAllowed);
+                if(isOverCaptureRequest)
+                {
+                    if(isOverCaptureAllowed)
+                    {
+                        GatewayType gatewayType1= GatewayTypeService.getGatewayType(GatewayAccountService.getGatewayAccount(accountId).getPgTypeId());
+                        String overCapturePercentage=gatewayType1.getExcessCapturePercentage();
+                        double validOverCaptureAmount=(Double.valueOf(amount)*Double.valueOf(overCapturePercentage))/100;
+                        //System.out.println(" valid capture amount==="+validOverCaptureAmount);
+                        if(Double.valueOf(captureamount)>validOverCaptureAmount)
+                        {
+                            isValidCaptureAmount=false;
+                        }
+                    }
+                    else
+                    {
+                        isValidCaptureRequest=false;
+                    }
+                }
+                logger.debug("is valid capture amount?="+isValidCaptureAmount);
+                if(isValidCaptureRequest && isValidCaptureAmount)
+                {
+
+                    AbstractPaymentProcess paymentProcess = PaymentProcessFactory.getPaymentProcessInstance(Integer.parseInt(icicitransid), Integer.parseInt(accountId));
+
+                    PZCaptureRequest captureRequest = new PZCaptureRequest();
+                    captureRequest.setAccountId(Integer.valueOf(accountId));
+                    captureRequest.setMemberId(Integer.valueOf(memberid));
+                    captureRequest.setTrackingId(Integer.valueOf(icicitransid));
+                    captureRequest.setAmount(Double.valueOf(captureamount));
+                    captureRequest.setPod(pod);
+                    captureRequest.setIpAddress(ipaddress);
+                    captureRequest.setNotificationUrl(notificationUrl);
+                    //newly added
+
+                    AuditTrailVO auditTrailVO=new AuditTrailVO();
+                    auditTrailVO.setActionExecutorId(memberid);
+                    //auditTrailVO.setActionExecutorName("Merchant Capture");
+                    String role = "";
+                    for (String s:user.getRoles())
+                    {
+                        role=role.concat(s);
+                    }
+                    auditTrailVO.setActionExecutorName(role+"-"+session.getAttribute("username").toString());
+                    captureRequest.setAuditTrailVO(auditTrailVO);
+
+                    PZCaptureResponse captureResponse = paymentProcess.capture(captureRequest);
+                    PZResponseStatus responseStatus = captureResponse.getStatus();
+                    message = captureResponse.getResponseDesceiption();
+                    podhash.put("" + 1, icicitransid+ "|" + message);
+
+                    if (PZResponseStatus.SUCCESS.equals(responseStatus))
+                    {
+                        out.println(Functions.NewShowConfirmation1("Information", message));
+                    }
+                    else
+                    {
+                        out.println(Functions.NewShowConfirmation1("Error", message));
+                        exceptionocccured = true;
+                    }
+                }
+                else if(!isOverCaptureAllowed)
+                {
+                    message="Over capture not activated to your account.";
+                    podhash.put("" + 1, icicitransid+ "|" + message);
+                }
+                else
+                {
+                    message="Invalid over capture amount";
+                    podhash.put("" + 1, icicitransid+ "|" + message);
+
+                }
+            }
+            captureTrans.put("Memberid",memberid);
+            captureTrans.put("Tracking Id",icicitransid);
+            captureTrans.put("Order Id",description);
+            captureTrans.put("Amount",currency+" "+amount);
+            captureTrans.put("Capture Amount",currency+" "+captureamount);
+            captureTrans.put("Remark",message);
+            captureMailDetails.put(icicitransid,captureTrans);
+            captureMailDetails.put(MailPlaceHolder.MULTIPALTRANSACTION, mailService.getDetailTable(captureMailDetails).toString());
+            captureMailDetails.put(MailPlaceHolder.TOID,memberid);
+            asynchronousMailService.sendMerchantSignup(MailEventEnum.CAPTURE_TRANSACTION, captureMailDetails);
+
+            req.setAttribute("podconfirm", podhash);
+            RequestDispatcher rd = req.getRequestDispatcher("/podconfirm.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+        }
+        catch (SystemError se)
+        {
+            exceptionocccured = true;
+            logger.error("SystemError :::::::::::",se);
+
+            try
+            {
+                String error = se.toString();
+                int pos = error.indexOf("#1234#");
+
+                if (pos != -1 && error.length() > pos + 6 + 1)
+                {
+                    error = error.substring(pos + 6 + 1);
+                    //update data if exception in processCaptureAndTransaction
+                    query = "update transaction_icicicredit set captureresult= ? where icicitransid= ? ";
+
+                    conn = Database.getConnection();
+                    pstmt= conn.prepareStatement(query);
+                    pstmt.setString(1,error);
+                    pstmt.setString(2,icicitransid);
+                    pstmt.executeUpdate();
+                }
+            }
+            catch (Exception ise)
+            {
+                logger.error("Error while update :", ise);
+                Functions.NewShowConfirmation1("Error", "Internal System Error ");
+            }
+            finally
+            {
+                Database.closeConnection(conn);
+            }
+            logger.error("Error while capture :", se);
+            out.println(Functions.NewShowConfirmation1("ERROR","We have encountered an error while you tried to Capture this transaction. However, you need not worry, as we will Capture this transaction from our end."));
+            out.println("<form name=\"frm\" method=\"get\" action=\"Pod?ctoken=\""+req.getParameter("ctoken")+"\"> <input type=\"button\" value=\"BACK\" onClick=\"document.frm.submit()\"></form>");
+        }
+        catch (Exception e)
+        {
+            exceptionocccured = true;
+            logger.error("Error while capture :", e);
+            out.println(Functions.NewShowConfirmation1("ERROR","We have encountered an error while you tried to Capture this transaction. However, you need not worry, as we will Capture this transaction from our end."));
+            out.println("<form name=\"frm\" method=\"get\" action=\"Pod?ctoken=\""+req.getParameter("ctoken")+"\"> <input type=\"button\" value=\"BACK\" onClick=\"document.frm.submit()\"></form>");
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(pstmt);
+            Database.closeConnection(conn);
+            if (exceptionocccured)
+            {
+                SendTransactionEventMailUtil sendTransactionEventMailUtil=new SendTransactionEventMailUtil();
+                sendTransactionEventMailUtil.sendTransactionEventMail(MailEventEnum.ADMIN_FAILED_TRANSACTION_NOTIFICATION, icicitransid, message, "<br><br>Please capture exact amount i.e ( Rs. " + captureamount + " ) from MA manually.<br><br>" + sw.toString(),null);
+            }
+        }
+    }
+    //post ends
+    private boolean isOverCaptureRequest(String captureAmount,String authAmount)
+    {
+        boolean isOverCaptureRequest=false;
+        if (new BigDecimal(captureAmount).compareTo(new BigDecimal(authAmount)) > 0)
+        {
+            isOverCaptureRequest=true;
+        }
+        return isOverCaptureRequest;
+    }
+}

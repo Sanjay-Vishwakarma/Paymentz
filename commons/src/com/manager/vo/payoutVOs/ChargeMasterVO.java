@@ -1,0 +1,144 @@
+package com.manager.vo.payoutVOs;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: sandip1
+ * Date: 6/30/15
+ * Time: 7:38 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class ChargeMasterVO
+{
+    String chargeId;
+    String chargeName;
+    String inInputRequired;
+    String keyName;
+    String valueType;
+    String category;
+    String keyword;
+    String subKeyword;
+    String frequency;
+    String sequenceNumber;
+    String actionExecutorId;
+    String actionExecutorName;
+
+    public String getChargeId()
+    {
+        return chargeId;
+    }
+
+    public void setChargeId(String chargeId)
+    {
+        this.chargeId = chargeId;
+    }
+
+    public String getChargeName()
+    {
+        return chargeName;
+    }
+
+    public void setChargeName(String chargeName)
+    {
+        this.chargeName = chargeName;
+    }
+
+    public String getInInputRequired()
+    {
+        return inInputRequired;
+    }
+
+    public void setInInputRequired(String inInputRequired)
+    {
+        this.inInputRequired = inInputRequired;
+    }
+
+    public String getKeyName()
+    {
+        return keyName;
+    }
+
+    public void setKeyName(String keyName)
+    {
+        this.keyName = keyName;
+    }
+
+    public String getValueType()
+    {
+        return valueType;
+    }
+
+    public void setValueType(String valueType)
+    {
+        this.valueType = valueType;
+    }
+
+    public String getCategory()
+    {
+        return category;
+    }
+
+    public void setCategory(String category)
+    {
+        this.category = category;
+    }
+
+    public String getKeyword()
+    {
+        return keyword;
+    }
+
+    public void setKeyword(String keyword)
+    {
+        this.keyword = keyword;
+    }
+
+    public String getSubKeyword()
+    {
+        return subKeyword;
+    }
+
+    public void setSubKeyword(String subKeyword)
+    {
+        this.subKeyword = subKeyword;
+    }
+
+    public String getFrequency()
+    {
+        return frequency;
+    }
+
+    public void setFrequency(String frequency)
+    {
+        this.frequency = frequency;
+    }
+
+    public String getSequenceNumber()
+    {
+        return sequenceNumber;
+    }
+
+    public void setSequenceNumber(String sequenceNumber)
+    {
+        this.sequenceNumber = sequenceNumber;
+    }
+
+    public String getActionExecutorId()
+    {
+        return actionExecutorId;
+    }
+
+    public void setActionExecutorId(String actionExecutorId)
+    {
+        this.actionExecutorId = actionExecutorId;
+    }
+
+    public String getActionExecutorName()
+    {
+        return actionExecutorName;
+    }
+
+    public void setActionExecutorName(String actionExecutorName)
+    {
+        this.actionExecutorName = actionExecutorName;
+    }
+}

@@ -1,0 +1,562 @@
+import com.directi.pg.*;
+import com.payment.Mail.AsynchronousMailService;
+import com.payment.Mail.MailEventEnum;
+import com.payment.Mail.MailPlaceHolder;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.ValidationErrorList;
+import org.owasp.esapi.codecs.Codec;
+import org.owasp.esapi.codecs.MySQLCodec;
+import org.owasp.esapi.errors.AuthenticationAccountsException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.List;
+
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: saurabh
+ * Date: 01/26/13
+ * Time: 2:16 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class NewAgent extends HttpServlet
+{
+    private static Logger Log = new Logger(NewAgent.class.getName());
+    public void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        doPost(req, res);
+    }
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        HttpSession session = request.getSession();
+        Log.debug("Entering in New agent ");
+        if (!Admin.isLoggedIn(session))
+        {
+            response.sendRedirect("/icici/logout.jsp");
+            return;
+        }
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        String redirectpage = null;
+        String errormsg = "";
+        String msg = "F";
+        int idx1, idx2;
+        String EOL = "<BR>";
+        String passwd=null;
+        String conpasswd=null;
+
+        if (((String) request.getParameter("step")).equals("1"))
+        {
+            Hashtable detailhash = new Hashtable();
+            Log.debug("In NewAgent.java");
+            try
+            {
+                boolean flag = true;
+                detailhash.put("login", (String) request.getParameter("username"));
+                passwd = (String) request.getParameter("passwd");
+                conpasswd = (String) request.getParameter("conpasswd");
+
+                detailhash.put("passwd", passwd);
+                detailhash.put("company_name", (String) request.getParameter("company_name"));
+                detailhash.put("contact_persons", (String) request.getParameter("contact_persons"));
+                detailhash.put("contact_emails", (String) request.getParameter("contact_emails"));
+                detailhash.put("logoName", (String) request.getParameter("logoName"));
+                detailhash.put("country", (String) request.getParameter("country"));
+                detailhash.put("telno", (String) request.getParameter("telno"));
+                detailhash.put("sitename", (String) request.getParameter("sitename"));
+                detailhash.put("supporturl", (String) request.getParameter("supporturl"));
+                detailhash.put("notifyemail", (String) request.getParameter("notifyemail"));
+
+                detailhash.put("maincontact_ccmailid", (String) request.getParameter("maincontact_ccmailid"));
+                detailhash.put("maincontact_phone", (String) request.getParameter("maincontact_phone"));
+
+                detailhash.put("cbcontact_name", (String) request.getParameter("cbcontact_name"));
+                detailhash.put("cbcontact_mailid", (String) request.getParameter("cbcontact_mailid"));
+                detailhash.put("cbcontact_ccmailid", (String) request.getParameter("cbcontact_ccmailid"));
+                detailhash.put("cbcontact_phone", (String) request.getParameter("cbcontact_phone"));
+
+                detailhash.put("refundcontact_name", (String) request.getParameter("refundcontact_name"));
+                detailhash.put("refundcontact_mailid", (String) request.getParameter("refundcontact_mailid"));
+                detailhash.put("refundcontact_ccmailid", (String) request.getParameter("refundcontact_ccmailid"));
+                detailhash.put("refundcontact_phone", (String) request.getParameter("refundcontact_phone"));
+
+                detailhash.put("salescontact_name", (String) request.getParameter("salescontact_name"));
+                detailhash.put("salescontact_mailid", (String) request.getParameter("salescontact_mailid"));
+                detailhash.put("salescontact_ccmailid", (String) request.getParameter("salescontact_ccmailid"));
+                detailhash.put("salescontact_phone", (String) request.getParameter("salescontact_phone"));
+
+                detailhash.put("fraudcontact_name", (String) request.getParameter("fraudcontact_name"));
+                detailhash.put("fraudcontact_mailid", (String) request.getParameter("fraudcontact_mailid"));
+                detailhash.put("fraudcontact_ccmailid", (String) request.getParameter("fraudcontact_ccmailid"));
+                detailhash.put("fraudcontact_phone", (String) request.getParameter("fraudcontact_phone"));
+
+                detailhash.put("technicalcontact_name", (String) request.getParameter("technicalcontact_name"));
+                detailhash.put("technicalcontact_mailid", (String) request.getParameter("technicalcontact_mailid"));
+                detailhash.put("technicalcontact_ccmailid", (String) request.getParameter("technicalcontact_ccmailid"));
+                detailhash.put("technicalcontact_phone", (String) request.getParameter("technicalcontact_phone"));
+
+                detailhash.put("billingcontact_ccmailid", (String) request.getParameter("billingcontact_ccmailid"));
+                detailhash.put("billingcontact_phone", (String) request.getParameter("billingcontact_phone"));
+                detailhash.put("billingcontact_name", (String) request.getParameter("billingcontact_name"));
+                detailhash.put("billingcontact_mailid", (String) request.getParameter("billingcontact_mailid"));
+
+                detailhash.put("partnerId", (String) request.getParameter("partnerId"));
+                detailhash.put("isipwhitelisted", (String)request.getParameter("isipwhitelisted"));
+
+                if(passwd != null && !passwd.equals(""))
+                {
+                    if(!(passwd).equals(conpasswd))
+                    {
+                        flag = false;
+                        errormsg = errormsg + "Please enter valid Password/Confirm Password."+EOL;
+                    }
+                }
+                if(isAgentExist(request.getParameter("company_name")))
+                {
+                    flag = false;
+                    errormsg = errormsg + "Agent Organisation Name already Exists."+EOL;
+                }
+                errormsg = errormsg + validateMandatoryParameters(request);
+                if(!errormsg.equals(""))
+                {
+                    flag = false;
+                }
+                errormsg = errormsg + validateOptionalParameters(request);
+                if(!errormsg.equals(""))
+                {
+                    flag = false;
+                }
+                if (flag == true)
+                {
+                    Log.debug("Valid user data");
+                    if (isAgentLoginNameExist((String) detailhash.get("login")))
+                    {
+                        Log.debug("redirect to NEWLOGIN");
+                        redirectpage = "/newagentloginname.jsp?ctoken="+user.getCSRFToken();
+                        session.setAttribute("newmember", detailhash);
+                        request.setAttribute("username", (String) detailhash.get("login"));
+                    }
+                    else
+                    {
+                        request.setAttribute("role","agent");
+                        addAgent(detailhash);
+                        request.setAttribute("username", (String) detailhash.get("login"));
+                        redirectpage = "/successagent.jsp?ctoken="+user.getCSRFToken();
+                        Log.info("THANK YOU for signup  "+redirectpage);
+                    }
+                }
+                else
+                {
+                    Log.debug("ENTER VALID DATA");
+                    redirectpage = "/agentsignup.jsp?MES="+msg+"&ctoken="+user.getCSRFToken();
+                    request.setAttribute("details", detailhash);
+                    request.setAttribute("error",errormsg);
+                }
+            }
+            catch (Exception e)
+            {
+                if(e.getMessage().contains("Duplicate"))
+                {
+                    Log.debug("redirect to NEWLOGIN");
+                    redirectpage = "/newagentloginname.jsp?ctoken="+user.getCSRFToken();
+                    session.setAttribute("newmember", detailhash);
+                    request.setAttribute("username", (String) detailhash.get("login"));
+                }
+                else
+                {
+                    Log.error("Leaving Merchants (Step 1) throwing Exception : ", e);
+                    out.println(Functions.ShowMessage("Error", "Internal System Error while signing New Agent."));
+                }
+            }
+            Log.debug("redirectpage  " + redirectpage);
+        }
+        else if (((String) request.getParameter("step")).equals("3"))
+        {
+            Log.info("inside step 3");
+            Hashtable detailhash = (Hashtable) session.getAttribute("newmember");
+            try
+            {
+                if (isAgentLoginNameExist(request.getParameter("username")))
+                {
+                    request.setAttribute("username", (String) request.getParameter("username"));
+                    errormsg = errormsg + "Please Enter Valid Username.";
+                    request.setAttribute("error",errormsg);
+                    redirectpage = "/newagentloginname.jsp?ctoken="+user.getCSRFToken();
+                }
+                else
+                {
+                    Log.debug("Change username");
+                    Log.debug(request.getParameter("username"));
+                    detailhash.put("login", request.getParameter("username"));
+                    request.setAttribute("role","agent");
+                    addAgent(detailhash);
+                    Log.debug(request.getParameter("username"));
+                    request.setAttribute("username", (String) detailhash.get("login"));
+                    redirectpage = "/successagent.jsp?ctoken="+user.getCSRFToken();
+                }
+                Log.debug("redirectpage  " + redirectpage);
+            }
+            catch (SystemError se)
+            {
+                if(se.getMessage().contains("Duplicate"))
+                {
+                    Log.debug("redirect to NEWLOGIN");
+                    errormsg = errormsg + "Please Enter Valid Username.";
+                    request.setAttribute("error",errormsg);
+                    redirectpage = "/newagentloginname.jsp?ctoken="+user.getCSRFToken();
+                }
+                else
+                {
+                    Log.error("Leaving Merchants (Step 3) throwing System Error : ", se);
+                    out.println(Functions.ShowMessage("Error", "Username is not found"));
+                }
+            }
+            catch (Exception e)
+            {
+                Log.error("Leaving Merchants (Step 3) throwing Exception : ",e);
+                out.println(Functions.ShowMessage("Error", "Username is not found"));
+            }
+        }
+        RequestDispatcher rd = request.getRequestDispatcher(redirectpage);
+        rd.forward(request, response);
+    }
+
+    public void addAgent(Hashtable details) throws SystemError
+    {
+        Transaction transaction = new Transaction();
+        AgentAuthenticate mem;
+        HashMap mailvalue=new HashMap();
+        try
+        {
+            User user = ESAPI.authenticator().createUser((String) details.get("login"), (String) details.get("passwd"), "agent");
+            mem =addAgent_new(user.getAccountId(), details);
+        }
+        catch (Exception e)
+        {
+            Log.error("Add user throwing Authentication Exception ", e);
+
+            if(e instanceof AuthenticationAccountsException)
+            {
+                String message=((AuthenticationAccountsException)e).getLogMessage();
+                if(message.contains("Duplicate"))
+                {
+                    throw new SystemError("Error: " + message);
+                }
+            }
+
+            try{
+                Agent.DeleteBoth((String) details.get("login"));
+            }
+            catch(Exception e1)
+            {
+                Log.error("Exception while deletion of Details::",e1);
+            }
+            throw new SystemError("Error: " + e.getMessage());
+        }
+
+        mailvalue.put(MailPlaceHolder.NAME,details.get("contact_persons").toString());
+        mailvalue.put(MailPlaceHolder.USERNAME,details.get("login").toString());
+        mailvalue.put(MailPlaceHolder.TOID,String.valueOf(mem.agentid).toString());
+        mailvalue.put(MailPlaceHolder.CONTECTEMAIL,details.get("contact_emails").toString());
+
+        Log.debug("send mail to new method");
+        AsynchronousMailService asynchronousMailService=new AsynchronousMailService();
+        asynchronousMailService.sendMerchantSignup(MailEventEnum.AGENT_REGISTRATION,mailvalue);
+    }
+
+    public boolean isAgentLoginNameExist(String login) throws SystemError
+    {
+        Connection conn = null;
+        PreparedStatement pstmt=null;
+        ResultSet rs=null;
+        try
+        {
+            String ROLE="agent";
+            conn = Database.getConnection();
+            Log.debug("check isAgentLoginNameExist method");
+            String selquery = "select accountid from `user` where login = ?  and roles=?";
+            pstmt= conn.prepareStatement(selquery);
+            pstmt.setString(1,login);
+            pstmt.setString(2,ROLE);
+            rs = pstmt.executeQuery();
+            if (rs.next())
+            {
+                return true;
+            }
+        }
+        catch (SystemError se)
+        {
+            Log.error(" SystemError in isAgentLoginNameExist method: ",se);
+            throw new SystemError("Error: " + se.getMessage());
+        }
+        catch (Exception e)
+        {
+            Log.error("Exception in isAgentLoginNameExist method: ", e);
+            throw new SystemError("Error: " + e.getMessage());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(pstmt);
+            Database.closeConnection(conn);
+        }
+        return false;
+    }
+    public boolean isAgentExist(String agentName) throws SystemError
+    {
+        Connection conn = null;
+        PreparedStatement pstmt=null;
+        ResultSet rs=null;
+        try
+        {
+            conn = Database.getConnection();
+            String query = "SELECT agentid FROM agents where agentName=?";
+            pstmt = conn.prepareStatement(query);
+            pstmt.setString(1,agentName);
+            rs = pstmt.executeQuery();
+            if(rs.next())
+            {
+                return true;
+            }
+        }
+        catch (SystemError se)
+        {
+            Log.error(" SystemError in isAgentExist method: ",se);
+
+            throw new SystemError("Error: " + se.getMessage());
+        }
+        catch (SQLException e)
+        {
+            Log.error("Exception in isAgentExist method: ", e);
+            throw new SystemError("Error: " + e.getMessage());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(pstmt);
+            Database.closeConnection(conn);
+        }
+        return false;
+    }
+    public AgentAuthenticate addAgent_new(long accid,Hashtable details) throws SystemError
+    {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet result3 = null;
+        ResultSet rs = null;
+        String adminagentid=null;
+        try{
+            conn = Database.getConnection();
+            String query3 = "select agentId,agentName,logoName from agents where agentId='1' ";
+            result3 = Database.executeQuery(query3,conn);
+            while (result3.next())
+            {
+                adminagentid=result3.getString("agentId");
+            }
+        }
+        catch (SQLException e)
+        {
+            Log.error("error",e);
+        }
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+        StringBuffer sb = new StringBuffer("insert into agents " +
+                "(accid,login,clkey," +
+                "agentName,contact_emails,country," +
+                "telno,contact_persons,logoName,siteurl,supporturl,notifyemail,maincontact_ccmailid,maincontact_phone,cbcontact_name,cbcontact_mailid,cbcontact_ccmailid,cbcontact_phone,refundcontact_name,refundcontact_mailid,refundcontact_ccmailid,refundcontact_phone,salescontact_name,salesemail,salescontact_ccmailid,salescontact_phone,fraudcontact_name,fraudcontact_mailid,fraudcontact_ccmailid,fraudcontact_phone,technicalcontact_name,technicalcontact_mailid,technicalcontact_ccmailid,technicalcontact_phone,billingcontact_ccmailid,billingcontact_phone,billingcontact_name,billingemail,superadminid,isIpWhitelisted,dtstamp,partnerId) values (");
+
+        sb.append("" + ESAPI.encoder().encodeForSQL(me,String .valueOf(accid))+"");
+        sb.append(",'" + (String) details.get("login") + "'");
+        sb.append(",'" + Merchants.generateKey() + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me, (String) details.get("company_name")) + "'");
+        sb.append(",'" + (String) details.get("contact_emails")+ "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("country")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("telno")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("contact_persons")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("logoName")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("sitename")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("supporturl")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("notifyemail")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("maincontact_ccmailid")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("maincontact_phone")) + "'");
+
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("cbcontact_name")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("cbcontact_mailid")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("cbcontact_ccmailid")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("cbcontact_phone")) + "'");
+
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("refundcontact_name")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("refundcontact_mailid")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("refundcontact_ccmailid")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("refundcontact_phone")) + "'");
+
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("salescontact_name")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("salescontact_mailid")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("salescontact_ccmailid")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("salescontact_phone")) + "'");
+
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("fraudcontact_name")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("fraudcontact_mailid")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("fraudcontact_ccmailid")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("fraudcontact_phone")) + "'");
+
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("technicalcontact_name")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("technicalcontact_mailid")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("technicalcontact_ccmailid")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("technicalcontact_phone")) + "'");
+
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("billingcontact_ccmailid")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("billingcontact_phone")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("billingcontact_name")) + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("billingcontact_mailid")) + "'");
+
+        sb.append(",'" +adminagentid + "'");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("isipwhitelisted")) + "'");
+        sb.append(",unix_timestamp(now())");
+        sb.append(",'" + ESAPI.encoder().encodeForSQL(me,(String) details.get("partnerId")) + "')");
+
+        Log.debug("Add NEWAGENT");
+        Log.debug(sb.toString());
+        AgentAuthenticate mem = new AgentAuthenticate();
+
+        /*PreparedStatement pstmt = null;
+        ResultSet rs = null;*/
+        try
+        {
+            Database.executeUpdate(sb.toString(), conn);
+            String selquery = "select agentid from agents where login=?";
+            pstmt= conn.prepareStatement(selquery);
+            pstmt.setString(1, details.get("login").toString());
+            rs = pstmt.executeQuery();
+            if (rs.next())
+            {
+                mem.agentid = rs.getInt("agentid");
+                mem.telno = (String) details.get("telno");
+                mem.contactemails = (String) details.get("contact_emails");
+                mem.isAgentInterface = false;
+            }
+
+        }
+        catch (SystemError se)
+        {
+            Log.error("System error",se);
+            throw new SystemError(se.getMessage());
+        }
+        catch (Exception e)
+        {
+            Log.error("Error!", e);
+            throw new SystemError("Error: " + e.getMessage());
+        }
+        finally
+        {
+            Database.closePreparedStatement(pstmt);
+            Database.closeResultSet(rs);
+            Database.closeResultSet(result3);
+            Database.closeConnection(conn);
+        }
+        return mem;
+    }
+
+    private String validateMandatoryParameters(HttpServletRequest req)
+    {
+        InputValidator inputValidator = new InputValidator();
+        String error = "";
+        String EOL = "<BR>";
+        List<InputFields> inputFieldsListOptional = new ArrayList<InputFields>();
+        inputFieldsListOptional.add(InputFields.USERNAME);
+        inputFieldsListOptional.add(InputFields.PASSWORD);
+        inputFieldsListOptional.add(InputFields.COMPANY_NAME);
+        inputFieldsListOptional.add(InputFields.CONTACT_PERSON);
+        inputFieldsListOptional.add(InputFields.CONTACT_EMAIL);
+        inputFieldsListOptional.add(InputFields.COUNTRY);
+        inputFieldsListOptional.add(InputFields.TELNO);
+        inputFieldsListOptional.add(InputFields.SITENAME);
+        inputFieldsListOptional.add(InputFields.SUPPORT_URL);
+        inputFieldsListOptional.add(InputFields.PARTNER_ID);
+        inputFieldsListOptional.add(InputFields.LOGONAME);
+        inputFieldsListOptional.add(InputFields.NOTIFY_EMAIL);
+
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.InputValidations(req,inputFieldsListOptional,errorList,false);
+
+        if(!errorList.isEmpty())
+        {
+            for(InputFields inputFields :inputFieldsListOptional)
+            {
+                if(errorList.getError(inputFields.toString())!=null)
+                {
+                    Log.debug(errorList.getError(inputFields.toString()).getLogMessage());
+                    error = error+errorList.getError(inputFields.toString()).getMessage()+EOL;
+                }
+            }
+        }
+        return error;
+    }
+    private String validateOptionalParameters(HttpServletRequest req)
+    {
+        InputValidator inputValidator = new InputValidator();
+        String error = "";
+        String EOL = "<BR>";
+        List<InputFields> inputFieldsListOptional = new ArrayList<InputFields>();
+        inputFieldsListOptional.add(InputFields.MAINCONTACT_CC);
+        inputFieldsListOptional.add(InputFields.MAINCONTACT_PHONE);
+        inputFieldsListOptional.add(InputFields.CBCONTACT_NAME);
+        inputFieldsListOptional.add(InputFields.CBCONTACT_MAIL);
+        inputFieldsListOptional.add(InputFields.CBCONTACT_CC);
+        inputFieldsListOptional.add(InputFields.CBCONTACT_PHONE);
+        inputFieldsListOptional.add(InputFields.REFUNDCONTACT_NAME);
+        inputFieldsListOptional.add(InputFields.REFUNDCONTACT_MAIL);
+        inputFieldsListOptional.add(InputFields.REFUNDCONTACT_CC);
+        inputFieldsListOptional.add(InputFields.REFUNDCONTACT_PHONE);
+        inputFieldsListOptional.add(InputFields.SALESCONTACT_NAME);
+        inputFieldsListOptional.add(InputFields.SALESCONTACT_MAIL);
+        inputFieldsListOptional.add(InputFields.SALESCONTACT_CC);
+        inputFieldsListOptional.add(InputFields.SALESCONTACT_PHONE);
+        inputFieldsListOptional.add(InputFields.FRAUDCONTACT_NAME);
+        inputFieldsListOptional.add(InputFields.FRAUDCONTACT_MAIL);
+        inputFieldsListOptional.add(InputFields.FRAUDCONTACT_CC);
+        inputFieldsListOptional.add(InputFields.FRAUDCONTACT_PHONE);
+        inputFieldsListOptional.add(InputFields.BILLINGCONTACT_NAME);
+        inputFieldsListOptional.add(InputFields.BILLINGCONTACT_MAIL);
+        inputFieldsListOptional.add(InputFields.BILLINGCONTACT_CC);
+        inputFieldsListOptional.add(InputFields.BILLINGCONTACT_PHONE);
+        inputFieldsListOptional.add(InputFields.TECHCONTACT_NAME);
+        inputFieldsListOptional.add(InputFields.TECHCONTACT_MAIL);
+        inputFieldsListOptional.add(InputFields.TECHCONTACT_CC);
+        inputFieldsListOptional.add(InputFields.TECHCONTACT_PHONE);
+
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.InputValidations(req,inputFieldsListOptional,errorList,true);
+
+        if(!errorList.isEmpty())
+        {
+            for(InputFields inputFields :inputFieldsListOptional)
+            {
+                if(errorList.getError(inputFields.toString())!=null)
+                {
+                    Log.debug(errorList.getError(inputFields.toString()).getLogMessage());
+                    error = error+errorList.getError(inputFields.toString()).getMessage()+EOL;
+                }
+            }
+        }
+        return error;
+    }
+}

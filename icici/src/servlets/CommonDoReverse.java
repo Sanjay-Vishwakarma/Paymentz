@@ -1,0 +1,376 @@
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.manager.dao.MerchantDAO;
+import com.manager.vo.MerchantDetailsVO;
+import com.payment.AbstractPaymentProcess;
+import com.payment.Mail.AsynchronousMailService;
+import com.payment.Mail.MailEventEnum;
+import com.payment.PZTransactionStatus;
+import com.payment.PaymentProcessFactory;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.request.PZRefundRequest;
+import com.payment.response.PZRefundResponse;
+import com.payment.response.PZResponseStatus;
+import com.payment.sms.AsynchronousSmsService;
+import com.payment.statussync.StatusSyncDAO;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Hashtable;
+import java.util.List;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: admin
+ * Date: 4/5/13
+ * Time: 10:49 AM
+ * To change this template use File | Settings | File Templates.
+ */
+public class CommonDoReverse extends HttpServlet
+{
+    private static Logger logger = new Logger(CommonDoReverse.class.getName());
+    Connection conn=null;
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+
+        HttpSession session = req.getSession();
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+
+        if (!Admin.isLoggedIn(session))
+        {
+            logger.debug("invalid user");
+            res.sendRedirect("/icici/logout.jsp");
+            return;
+        }
+
+        StringBuilder sSuccessMessage = new StringBuilder();
+        StringBuilder sErrorMessage = new StringBuilder();
+
+        StatusSyncDAO statusSyncDAO=new StatusSyncDAO();
+        MerchantDAO merchantDAO = new MerchantDAO();
+        BigDecimal bdConst = new BigDecimal("0.01");
+        List<String> refundFailedTransaction = new ArrayList<String>();
+        List successlist = new ArrayList();
+        PZRefundRequest refundRequest = new PZRefundRequest();
+        PZRefundResponse response = new PZRefundResponse();
+        AuditTrailVO auditTrailVO = new AuditTrailVO();
+        Functions functions = new Functions();
+
+        String icicimerchantid = null;
+        String refundamount = null;
+        String authamount = null;
+        String captureamount = "";
+        String refundreason=null;
+        String currency=null;
+        String mailStatus="failed";
+        String toid = null;
+        String accountId = null;
+        String ipaddress=req.getRemoteAddr();
+        String[] icicitransidStr =null;
+        String transactionStatus = "";
+        String reversedAmount = "";
+
+        String transactionCurrency="";
+
+        icicitransidStr = req.getParameterValues("trackingid");
+        try
+        {
+            if (icicimerchantid == null && Functions.checkArrayNull(icicitransidStr) == null)
+            {
+                sErrorMessage.append("Invalid refund request,select at least one transaction.");
+                req.setAttribute("cbmessage", sErrorMessage.toString());
+                RequestDispatcher rd = req.getRequestDispatcher("/servlet/CommonRefundList?ctoken=" + user.getCSRFToken());
+                rd.forward(req, res);
+                return;
+            }
+
+            Hashtable refundDetails = null;
+            BigDecimal rfamt = null;
+
+            sErrorMessage.append("<center><table border=1>");
+            sErrorMessage.append("<tr>");
+            sErrorMessage.append("<td align=center>TrackingId</td>");
+            sErrorMessage.append("<td align=center>MemberId</td>");
+            sErrorMessage.append("<td align=center>Status</td>");
+            sErrorMessage.append("<td align=center>Remark</td>");
+            sErrorMessage.append("</tr>");
+
+            String fraud = "";
+
+            MerchantDetailsVO merchantDetailsVO = null;
+            for (String icicitransid : icicitransidStr)
+            {
+                boolean refunded = false;
+                StringBuffer mailbody = null;
+
+                if (req.getParameter("toid_" + icicitransid) != null && !req.getParameter("toid_" + icicitransid).equals(""))
+                {
+                    toid = req.getParameter("toid_" + icicitransid);
+                }
+                else
+                {
+                    refundFailedTransaction.add(icicitransid);
+                    sErrorMessage.append(getMessage(icicitransid, toid, "Failed", "ToId is missing"));
+                    continue;
+                }
+
+                try
+                {
+                    merchantDetailsVO = merchantDAO.getMemberDetails(toid);
+                }
+                catch (PZDBViolationException e)
+                {
+                    refundFailedTransaction.add(icicitransid);
+                    sErrorMessage.append(getMessage(icicitransid, toid, "Failed", "Error while fetching member details"));
+                    continue;
+                }
+
+                refundamount = req.getParameter("refundamount_" + icicitransid);
+                try
+                {
+                    ESAPI.validator().getValidInput("refundamount_" + icicitransid, req.getParameter("refundamount_" + icicitransid), "AmountStr", 20, false);
+                }
+                catch (ValidationException e)
+                {
+                    refundFailedTransaction.add(icicitransid);
+                    sErrorMessage.append(getMessage(icicitransid, toid, "Failed", "Refund amount should not be empty or invalid"));
+                    continue;
+                }
+
+                rfamt = new BigDecimal(req.getParameter("refundamount_" + icicitransid));
+
+                if (req.getParameter("accountid_" + icicitransid) != null && !req.getParameter("accountid_" + icicitransid).equals(""))
+                {
+                    accountId = req.getParameter("accountid_" + icicitransid);
+                }
+                else
+                {
+                    refundFailedTransaction.add(icicitransid);
+                    sErrorMessage.append(getMessage(icicitransid, toid, "Failed", "AccountId is missing"));
+                    continue;
+                }
+
+                if (merchantDetailsVO != null && functions.isValueNull(merchantDetailsVO.getMemberId()))
+                {
+                    logger.error("inside of exeed day check");
+                    Hashtable transDetails = TransactionEntry.getTransDetails(icicitransid);
+                    String transactionDate = (String) transDetails.get("transactiondate");
+                    reversedAmount = (String) transDetails.get("refundamount");
+                    transactionStatus = (String) transDetails.get("status");
+                    captureamount = (String) transDetails.get("captureamount");
+
+                    transactionCurrency = (String) transDetails.get("currency");
+
+
+                    SimpleDateFormat targetFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    logger.error("transactionDate " + transactionDate + "targetFormat " +targetFormat.format(new Date()));
+                    long d = Functions.DATEDIFF(transactionDate, targetFormat.format(new Date()));
+                    int refundAllowedDays = Integer.parseInt(merchantDetailsVO.getRefundAllowedDays());
+                    logger.error("d " + d + "refundAllowedDays " + refundAllowedDays);
+                    if (d > refundAllowedDays)
+                    {
+                        refundFailedTransaction.add(icicitransid);
+                        sErrorMessage.append(getMessage(icicitransid, "", "Failed", "Transaction has exceeds refund expiry"));
+                        continue;
+                    }else if(d == refundAllowedDays){
+                        long MILLISECS_PER_DAY = 24 * 60 * 60 * 1000;
+                        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); // "dd/MM/yyyy HH:mm:ss");
+                        Date dateIni = null;
+                        Date dateFin = null;
+                        dateIni = format.parse(transactionDate);
+                        dateFin = format.parse(targetFormat.format(new Date()));
+                        long days = (dateFin.getTime() - dateIni.getTime());
+                        if(days > MILLISECS_PER_DAY)
+                        {
+                            refundFailedTransaction.add(icicitransid);
+                            sErrorMessage.append(getMessage(icicitransid, "", "Failed", "Transaction has exceeds refund expiry"));
+                            continue;
+                        }
+                    }
+
+                }
+                else
+                {
+                    refundFailedTransaction.add(icicitransid);
+                    sErrorMessage.append(getMessage(icicitransid, toid, "Failed", "Toid not found."));
+                    continue;
+                }
+
+                if (!functions.isValueNull(req.getParameter("reason_" + icicitransid)))
+                {
+                    refundFailedTransaction.add(icicitransid);
+                    sErrorMessage.append(getMessage(icicitransid, toid, "Failed", "Refund reason should not be empty"));
+                    continue;
+                }
+                else
+                {
+                    refundreason = req.getParameter("reason_" + icicitransid);
+                }
+
+                if (!functions.isValueNull(req.getParameter("isFraud_" + icicitransid)))
+                {
+                    refundFailedTransaction.add(icicitransid);
+                    sErrorMessage.append(getMessage(icicitransid, toid, "Failed", "isFraud should not be empty for"));
+                    continue;
+                }
+                else
+                {
+                    fraud = req.getParameter("isFraud_" + icicitransid);
+                }
+
+                if (!Functions.checkAccuracy(refundamount, 2))
+                {
+                    refundFailedTransaction.add(icicitransid);
+                    sErrorMessage.append(getMessage(icicimerchantid, toid, "Failed", "Refund Amount should be 2 decimal places accurate."));
+                    continue;
+                }
+                else
+                {
+
+                    //Process refund
+                    GatewayAccount account = GatewayAccountService.getGatewayAccount(accountId);
+                    currency = account.getCurrency();
+                    AbstractPaymentProcess process = PaymentProcessFactory.getPaymentProcessInstance(Integer.parseInt(icicitransid), Integer.parseInt(accountId));
+                    refundRequest.setMemberId(Integer.valueOf(toid));
+                    refundRequest.setAccountId(Integer.parseInt(accountId));
+                    refundRequest.setTrackingId(Integer.parseInt(icicitransid));
+                    refundRequest.setRefundAmount(refundamount);
+                    refundRequest.setRefundReason(refundreason);
+                    refundRequest.setReversedAmount(reversedAmount);
+                    refundRequest.setTransactionStatus(transactionStatus);
+                    refundRequest.setCaptureAmount(captureamount);
+                    refundRequest.setAdmin(true);
+                    refundRequest.setIpAddress(ipaddress);
+                    refundRequest.setFraud("Y".equals(fraud));
+                    refundRequest.setCurrency(transactionCurrency);
+
+                   // logger.error("transactionCurrency===========>"+transactionCurrency);
+
+                    currency = account.getCurrency();
+                    //newly added
+                    auditTrailVO.setActionExecutorId(toid);
+                    auditTrailVO.setActionExecutorName("Admin Refund "+"-"+user.getAccountName());
+                    refundRequest.setAuditTrailVO(auditTrailVO);
+
+                    RefundChecker refundChecker=new RefundChecker();
+                    if(refundChecker.isRefundAllowed(toid))
+                    {
+                        if ("N".equalsIgnoreCase(merchantDetailsVO.getPartialRefund()) && Double.parseDouble(captureamount) != Double.parseDouble(refundamount))
+                        {
+                            sErrorMessage.append(getMessage(icicitransid, toid, "System Restrication", "Partial Refund is not allowed."));
+                        }
+                        else if ("N".equalsIgnoreCase(merchantDetailsVO.getMultipleRefund()) && transactionStatus.equalsIgnoreCase(PZTransactionStatus.REVERSED.toString()))
+                        {
+                            sErrorMessage.append(getMessage(icicitransid, toid, "System Restrication", "Multiple Refund is not allowed."));
+                        }
+                        else
+                        {
+                            response = process.refund(refundRequest);
+                            PZResponseStatus status = response.getStatus();
+
+                            if (response != null && PZResponseStatus.SUCCESS.equals(status))
+                            {
+                                successlist.add(icicitransid + "<BR>");
+                                refundDetails = new Hashtable();
+                                refundDetails.put("icicitransid", icicitransid);
+
+                                refundDetails.put("description", response.getResponseDesceiption());
+                                mailStatus = "successful";
+                                sErrorMessage.append(getMessage(icicitransid, toid, response.getStatus().toString(), response.getResponseDesceiption()));
+                                try
+                                {
+                                    conn = Database.getConnection();
+                                    if (fraud != null && fraud.equals("Y"))
+                                    {
+                                        statusSyncDAO.updateAllRefundTransactionFlowFlag(icicitransid, "fraud", conn);
+                                    }
+                                    if (fraud != null && fraud.equals("N"))
+                                    {
+                                        statusSyncDAO.updateAllRefundTransactionFlowFlag(icicitransid, "reversed", conn);
+                                    }
+                                }
+                                catch (SystemError se)
+                                {
+                                    logger.error("Error while reversal :", se);
+                                    sErrorMessage.append(getMessage(icicitransid, toid, "Failed", "Error while connecting to database."));
+                                    continue;
+                                }
+                                finally
+                                {
+                                    Database.closeConnection(conn);
+                                }
+                            }
+                            else if (response != null && PZResponseStatus.PENDING.equals(status))
+                            {
+                                mailStatus = response.getResponseDesceiption();
+                                sErrorMessage.append(getMessage(icicitransid, toid, response.getStatus().toString(), response.getResponseDesceiption()));
+                            }
+                            else
+                            {
+                                refundFailedTransaction.add(icicitransid);
+                                sErrorMessage.append(getMessage(icicitransid, toid, response.getStatus().toString(), response.getResponseDesceiption()));
+                                continue;
+                            }
+                        }
+                    }else
+                    {
+                        sErrorMessage.append(getMessage(icicitransid, toid, "System Restrication", "Refund is not allowed."));
+                    }
+
+                    /*if ("Y".equalsIgnoreCase(merchantDetailsVO.getIsRefundEmailSent()))
+                    {*/
+                        AsynchronousMailService asynchronousMailService = new AsynchronousMailService();
+                        asynchronousMailService.sendEmail(MailEventEnum.REFUND_TRANSACTION, icicitransid, mailStatus, refundreason, null);
+                    /*}*/
+                    AsynchronousSmsService smsService = new AsynchronousSmsService();
+                    smsService.sendSMS(MailEventEnum.REFUND_TRANSACTION, icicitransid, mailStatus, refundreason, null);
+                }
+            }
+
+            sErrorMessage.append("</table></center>");
+        }
+        catch (Exception e)
+        {
+            logger.error("Exception generate while refund--->",e);
+        }
+
+        StringBuilder chargeBackMessage = new StringBuilder();
+        chargeBackMessage.append(sSuccessMessage.toString());
+        chargeBackMessage.append("<BR/>");
+        chargeBackMessage.append(sErrorMessage.toString());
+        req.setAttribute("cbmessage", chargeBackMessage.toString());
+        RequestDispatcher rd = req.getRequestDispatcher("/commonrefundlist.jsp?ctoken="+user.getCSRFToken());
+        rd.forward(req, res);
+    }
+
+    public String getMessage(String trackingId, String ToId, String status, String statusMsg)
+    {
+        StringBuffer sb = new StringBuffer();
+        sb.append("<tr>");
+        sb.append("<td>" + trackingId + "</td>");
+        sb.append("<td>" + ToId + "</td>");
+        sb.append("<td>" + status + "</td>");
+        sb.append("<td>" + statusMsg + "</td>");
+        sb.append("</tr>");
+        return sb.toString();
+    }
+}

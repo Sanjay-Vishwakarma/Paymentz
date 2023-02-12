@@ -1,0 +1,143 @@
+package net.partner;
+
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.manager.BlacklistManager;
+import com.manager.TransactionManager;
+import com.manager.WhiteListManager;
+import com.manager.dao.TransactionDAO;
+import com.manager.vo.TransactionDetailsVO;
+import com.payment.exceptionHandler.PZDBViolationException;
+import org.owasp.esapi.User;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Created by Ajit on 27/11/2018.
+ */
+public class PartnerMarkFraudChargeback extends HttpServlet
+{
+    private static Logger logger = new Logger(PartnerMarkFraudChargeback.class.getName());
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        HttpSession session = req.getSession();
+        User user = (User) session.getAttribute("ESAPIUserSessionKey");
+        PartnerFunctions partnerFunctions = new PartnerFunctions();
+        if (!partnerFunctions.isLoggedInPartner(session))
+        {
+            res.sendRedirect("/partner/logout.jsp");
+            return;
+        }
+        String action = req.getParameter("submitbutton");
+        StringBuilder sErrorMessage = new StringBuilder();
+        Functions functions=new Functions();
+
+        sErrorMessage.append("<center><table border=2 style=\"width: 50%; margin: auto;\">");
+        sErrorMessage.append("<tr colspan=10 class=texthead style=\"background-color: #7eccad\">");
+        sErrorMessage.append("<td colspan=2 align=center> Sr. No.  </td>");
+        sErrorMessage.append("<td colspan=2 align=center> Tracking Id </td>");
+        sErrorMessage.append("<td colspan=2 align=center> Status </td>");
+        sErrorMessage.append("<td colspan=4 align=center> Description </td>");
+        sErrorMessage.append("</tr>");
+
+        String[] icicitransidStr = null;
+        String fraudReason=null;
+        String remark=null;
+
+        if (req.getParameterValues("trackingid") != null)
+        {
+            icicitransidStr = req.getParameterValues("trackingid");
+        }
+        else
+        {
+            sErrorMessage.append("Invalid TransactionID.");
+            req.setAttribute("error", sErrorMessage.toString());
+            RequestDispatcher rd = req.getRequestDispatcher("/partner/net/PartnerMarkFraudTransaction?ctoken=" + user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+        if (Functions.checkArrayNull(icicitransidStr) == null)
+        {
+            sErrorMessage.append("Select at least one transaction.");
+            req.setAttribute("error", sErrorMessage.toString());
+            RequestDispatcher rd = req.getRequestDispatcher("/partner/net/PartnerMarkFraudTransaction?ctoken=" + user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+        if ("Submit".equalsIgnoreCase(action))
+        {
+            TransactionDAO transactionDAO = new TransactionDAO();
+            BlacklistManager blacklistManager = new BlacklistManager();
+            WhiteListManager whiteListManager = new WhiteListManager();
+            TransactionManager transactionManager = new TransactionManager();
+            int count = 1;
+
+            for (String icicitransId : icicitransidStr)
+            {
+                if (req.getParameter("reason_" + icicitransId) != null && !req.getParameter("reason_" + icicitransId).equals(""))
+                {
+                    remark  = req.getParameter("reason_" + icicitransId);
+                }
+                if (req.getParameter("fraudreason" + icicitransId) != null && !req.getParameter("fraudreason" + icicitransId).equals(""))
+                {
+                    fraudReason = req.getParameter("fraudreason" + icicitransId);
+                }
+                //boolean status = transactionDAO.getUploadBulkFraudFile(icicitransId);
+                boolean status = transactionDAO.updateIsFraudRequest(icicitransId,remark, fraudReason);
+                TransactionDetailsVO transactionDetailsVO = transactionManager.getTransDetailFromCommon(icicitransId);
+                String reason = "Fraudulent Transaction Uploaded by Partner" + "(" + (icicitransId) + ")";
+                if (functions.isValueNull(transactionDetailsVO.getName()))
+                {
+                    try
+                    {
+                        blacklistManager.blacklistEntities(icicitransId, reason);
+                        whiteListManager.whiteListEntities(icicitransId);
+                        Set<String> cardNum = new HashSet<>();
+                        Set<String> emailAddr = new HashSet<>();
+                        transactionManager.addCustomerName(transactionDetailsVO.getName(), cardNum, emailAddr);
+                        blacklistManager.addCustomerCardBatch(cardNum, reason);
+                        blacklistManager.addCustomerEmailBatch(emailAddr, reason);
+                        whiteListManager.removeCardEmailEntry(emailAddr, cardNum);
+                    }
+                    catch (PZDBViolationException e)
+                    {
+                        logger.info("Duplicate Entry:::"+e);
+                    }
+                    sErrorMessage.append(getMessage(count, icicitransId, "Success", "Record Updated Successfully."));
+                    count++;
+                }
+            }
+        }
+        sErrorMessage.append("</table>");
+        StringBuilder chargeBackMessage = new StringBuilder();
+        chargeBackMessage.append("<BR/>");
+        chargeBackMessage.append(sErrorMessage.toString());
+        req.setAttribute("successmsg", chargeBackMessage.toString());
+        RequestDispatcher rd = req.getRequestDispatcher("/markFraudTransaction.jsp?ctoken="+user.getCSRFToken());
+        rd.forward(req, res);
+    }
+
+    public String getMessage(int count, String trackingId,String status,String description)
+    {
+        StringBuffer stringBuffer=new StringBuffer();
+        stringBuffer.append("<tr colspan=10>");
+        stringBuffer.append("<td colspan=2 align=center>"+count+"</td>");
+        stringBuffer.append("<td colspan=2 align=center>"+trackingId+"</td>");
+        stringBuffer.append("<td colspan=2 align=center>"+status+"</td>");
+        stringBuffer.append("<td colspan=4 align=center>"+description+"</td>");
+        stringBuffer.append("</tr>");
+        return stringBuffer.toString();
+    }
+}

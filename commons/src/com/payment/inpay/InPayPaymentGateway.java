@@ -1,0 +1,315 @@
+package com.payment.inpay;
+
+import com.directi.pg.LoadProperties;
+import com.directi.pg.Logger;
+import com.directi.pg.TransactionLogger;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.*;
+import com.payment.common.core.CommRequestVO;
+import com.payment.common.core.CommResponseVO;
+import com.payment.common.core.CommTransactionDetailsVO;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.PZGenericConstraintViolationException;
+import com.payment.exceptionHandler.PZTechnicalViolationException;
+import com.payment.exceptionHandler.constraint.PZGenericConstraint;
+import com.payment.exceptionHandler.constraintType.PZTechnicalExceptionEnum;
+import com.payment.exceptionHandler.errorcode.ErrorCodeUtils;
+import com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorName;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeListVO;
+import com.payment.payforasia.core.PayforasiaUtils;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Jinesh
+ * Date: 8/4/14
+ * Time: 9:29 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class InPayPaymentGateway extends AbstractPaymentGateway
+{
+    //private static Logger log = new Logger(InPayPaymentGateway.class.getName());
+    private static TransactionLogger transactionLogger = new TransactionLogger(InPayPaymentGateway.class.getName());
+    public static final String GATEWAY_TYPE = "inpay";
+    private final static String URL = "https://test-secure.inpay.com";
+    private final static String ORDERSTATUS = "https://test-secure.inpay.com/api/get_order_status";
+    private final static String REFUNDURL = "https://test-secure.inpay.com/api/refund_invoice";
+    private final static String CANCEL = "https://test-secure.inpay.com/api/cancel_invoice";
+
+    private final static ResourceBundle RB = LoadProperties.getProperty("com.directi.pg.InPayServlet");
+    final static String INPAYPOSTBACK =  RB.getString("POSTBACK");
+    public InPayPaymentGateway(String accountid)
+    {
+        this.accountId = accountid;
+    }
+    @Override
+    public String getMaxWaitDays()
+    {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    public final static String MERCHANTID = "merchant_id";
+    public final static String ORDERID = "order_id";
+    public final static String AMOUNT = "amount";
+    public final static String CURRENCY = "currency";
+    public final static String ORDERTEXT = "order_text";
+    public final static String FLOWLAYOUT = "flow_layout";
+    public final static String RETURNURL = "return_url";
+    public final static String EMAILID = "buyer_email";
+    public final static String CHECKSUM = "checksum";
+    public final static String COUNTRY = "country";
+    public final static String NAME = "buyer_name";
+    public final static String ADDRESS = "buyer_address";
+    public final static String PENDINGURL = "pending_url";
+    public final static String CANCELURL = "cancel_url";
+    public final static String NOTIFYURL = "notify_url";
+    public final static String INVOICEREF = "invoice_ref";
+    public final static String VALIDATION = "skip_validation";
+    public final static String TOCOUNTRY = "to_country";
+    public final static String TOBANK = "to_bank_name";
+
+    public final static String HEADER = "header";
+    public final static String SWIFT = "swift";
+    public final static String ACC_NO = "acc_number";
+    public final static String BANKADDRESS = "bank_address";
+    public final static String OWNERNAME = "owner_name";
+    public final static String OWNERADDR = "owner_address";
+
+    public GenericResponseVO processQuery(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+
+        CommRequestVO reqVO= (CommRequestVO) requestVO;
+        GenericAddressDetailsVO addressDetailsVO=reqVO.getAddressDetailsVO();
+        CommResponseVO commResponseVO = new CommResponseVO();
+            String accountid = GatewayAccountService.getGatewayAccount(accountId).toString();
+            InPayAccount inPayAccount = new InPayAccount();
+            Hashtable dataHash = new Hashtable();
+            dataHash = inPayAccount.getMidAndSecretKey(accountid);
+            String merchantid = (String) dataHash.get("mid");
+            String signKey = (String) dataHash.get("signkey");
+            String orderid = trackingID;
+            String emailAddress = addressDetailsVO.getEmail();
+
+            String cMerchantid = URLEncoder.encode(merchantid);
+            String cOrderid = URLEncoder.encode(orderid);
+            String cSecretKey = URLEncoder.encode(signKey);
+
+            //CheckSum String
+            String checksumString = "merchant_id="+cMerchantid+"&order_id="+cOrderid+"&secret_key="+cSecretKey;
+            String checksum = getMD5HashVal(checksumString);
+
+            Map orderStatusMap = new TreeMap();
+            orderStatusMap.put(MERCHANTID,merchantid);
+            orderStatusMap.put(ORDERID,orderid);
+            orderStatusMap.put(EMAILID,emailAddress);
+            orderStatusMap.put(CHECKSUM,checksum);
+
+            String strRequest = PayforasiaUtils.joinMapValue(orderStatusMap,'&');
+            transactionLogger.error("-----query request------"+trackingID + "--" + strRequest);
+
+            String response = InPayUtil.doPostHTTPSURLConnection(ORDERSTATUS, strRequest);
+            transactionLogger.error("------query response------"+trackingID + "--" + response);
+
+            Map<String,String> responseOrderStatus = InPayUtil.ReadOrderStatusResponse(response);
+            if(responseOrderStatus != null && !responseOrderStatus.equals(""))
+            {
+                commResponseVO.setStatus(responseOrderStatus.get("status"));
+                commResponseVO.setAmount(responseOrderStatus.get("received-sum"));
+                commResponseVO.setDescriptor((GatewayAccountService.getGatewayAccount(accountId).getDisplayName()));
+            }
+        return commResponseVO;
+
+    }
+
+    public GenericResponseVO processRefund(String trackingID,GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+        CommRequestVO reqVO= (CommRequestVO) requestVO;
+        GenericAddressDetailsVO addressDetailsVO=reqVO.getAddressDetailsVO();
+        CommResponseVO commResponseVO = new CommResponseVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = new CommTransactionDetailsVO();
+            String accountid = GatewayAccountService.getGatewayAccount(accountId).toString();
+            InPayAccount inPayAccount = new InPayAccount();
+            Hashtable dataHash = new Hashtable();
+            dataHash = inPayAccount.getMidAndSecretKey(accountid);
+            String merchantid = (String) dataHash.get("mid");
+            String signKey = (String) dataHash.get("signkey");
+            String invoiceReference = commTransactionDetailsVO.getPreviousTransactionId();
+            Map refundMap = new TreeMap();
+            String chkSum = getMD5HashVal("invoice_ref="+invoiceReference+"&merchant_id="+merchantid+"&processor_id=1&secret_key="+signKey);
+            transactionLogger.debug("chksum(refund)---"+chkSum);
+
+            refundMap.put(HEADER,"header[processor_id]=1&header[merchant_id]="+merchantid+"&header[checksum]="+chkSum);
+            refundMap.put(INVOICEREF,invoiceReference);
+            refundMap.put(TOBANK,"Deutsche Bank");
+            refundMap.put(SWIFT,"refundinvoice");
+            refundMap.put(ACC_NO,"415136100");
+            refundMap.put(BANKADDRESS,"Alter Wall 53");
+            refundMap.put(OWNERNAME,"John");
+            refundMap.put(OWNERADDR,"st.lusia");
+
+
+            String strRequest = PayforasiaUtils.joinMapValue(refundMap,'&');
+            transactionLogger.error("------refund request-----"+trackingID + "--" + strRequest);
+            String response = InPayUtil.doPostHTTPSURLConnection("https://test-admin.inpay.com/api/v1/refund_invoice", strRequest);
+            transactionLogger.error("------refund response-----"+trackingID + "--" + response);
+            //System.out.println("http-code"+response);
+            /*Map readDate = InPayUtil.ReadRefundResponse(response);
+            System.out.println("error"+readDate.get("error"));
+            System.out.println("message"+readDate.get("message"));
+            System.out.println("http-code"+readDate.get("http-code"));*/
+
+
+        return commResponseVO;
+    }
+
+    public GenericResponseVO processVoid(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+        CommRequestVO reqVO= (CommRequestVO) requestVO;
+        GenericAddressDetailsVO addressDetailsVO=reqVO.getAddressDetailsVO();
+        CommResponseVO commResponseVO = new CommResponseVO();
+            String accountid = GatewayAccountService.getGatewayAccount(accountId).toString();
+            InPayAccount inPayAccount = new InPayAccount();
+            Hashtable dataHash = new Hashtable();
+            dataHash = inPayAccount.getMidAndSecretKey(accountid);
+            String merchantid = (String) dataHash.get("mid");
+            String signKey = (String) dataHash.get("signkey");
+            String invoiceReference = "";//todo : to set
+
+            String cMerchantid = URLEncoder.encode(merchantid);
+            String cOrderRef = URLEncoder.encode(invoiceReference);
+            String cSecretKey = URLEncoder.encode(signKey);
+
+            String checksumString = "invoice_ref="+cOrderRef+"&merchant_id="+cMerchantid+"&secret_key="+cSecretKey;
+            String checksum = getMD5HashVal(checksumString);
+
+            Map cancelMap = new TreeMap();
+
+            cancelMap.put(INVOICEREF,"425XYGC");
+            cancelMap.put(MERCHANTID,"793");
+            cancelMap.put(CHECKSUM,"4ce9d4617280a4eebaab41d256d37b31");
+
+            String strRequest = PayforasiaUtils.joinMapValue(cancelMap,'&');
+            transactionLogger.error("------void request-----"+trackingID + "--" + strRequest);
+            String response = InPayUtil.doPostHTTPSURLConnection(CANCEL, strRequest);
+            transactionLogger.error("------void response-----"+trackingID + "--" + response);
+
+            String status = "fail";
+            if(response.trim().equalsIgnoreCase("ok"))
+            {
+                status = "success";
+            }
+            commResponseVO.setStatus(status);
+            commResponseVO.setTransactionType("inquiry");
+            DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+            Date date = new Date();
+            commResponseVO.setResponseTime(String.valueOf(dateFormat.format(date)));
+
+
+        return commResponseVO;
+    }
+
+
+    public GenericResponseVO processRebilling(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        errorCodeListVO.addListOfError(errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_RECURRINGALLOW));
+        PZGenericConstraint genConstraint = new PZGenericConstraint("InPayPaymentGateway","processRebilling",null,"common","This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",errorCodeListVO);
+        throw new PZGenericConstraintViolationException(genConstraint,"This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",null);
+    }
+
+    public static void main(String[] args) throws PZTechnicalViolationException
+    {
+        /*String qStr = getMD5HashVal("merchant_id=793&order_id=20302&amount=50.50&currency=USD&order_text=order1&flow_layout=multi_page&secret_key=V12d74P5");
+        System.out.println("--- "+qStr);*/
+        /*String cMerchantid = URLEncoder.encode("793");
+        String cOrderid = URLEncoder.encode("20308");
+        String cAmount = URLEncoder.encode("50.30");
+        String cCurrency = URLEncoder.encode("USD");
+        String cOrderText = URLEncoder.encode("order12");
+        String cFlowLayout = URLEncoder.encode("multi_page");
+        String cSecretKey = URLEncoder.encode("V12d74P5");
+
+        //CheckSum String
+        String checksumString = "merchant_id="+cMerchantid+"&order_id="+cOrderid+"&amount="+cAmount+"&currency="+cCurrency+"&order_text="+cOrderText+
+                "&flow_layout="+cFlowLayout+"&secret_key="+cSecretKey;
+
+        String chkSum = getMD5HashVal(checksumString);
+        System.out.println("chk sum str "+checksumString);
+        System.out.println("chk sum "+chkSum);*/
+
+        String cMerchantid = URLEncoder.encode("793");
+        String cOrderid = URLEncoder.encode("4H6G2TL");
+        String cSecretKey = URLEncoder.encode("V12d74P5");
+
+        //CheckSum String
+        //String checksumString = "merchant_id="+cMerchantid+"&order_id="+cOrderid+"&secret_key="+cSecretKey;
+        //System.out.println("substring----"+"2015".substring(2,4));
+        //System.out.println("substring----"+"2015".substring(2));
+
+        String checksumString = "invoice_ref="+cOrderid+"&merchant_id="+cMerchantid+"&secret_key="+cSecretKey;
+
+        String chkSum = getMD5HashVal("invoice_ref=4CPXWXN&merchant_id=793&processor_id=1&secret_key=V12d74P5");
+        //System.out.println("chk sum str "+checksumString);
+        //System.out.println("chk sum "+chkSum);
+
+        GenericRequestVO requestVO = new GenericRequestVO();
+        CommRequestVO c = new CommRequestVO();
+
+        GenericResponseVO responseVO = new GenericResponseVO();
+        InPayPaymentGateway ip = new InPayPaymentGateway("406");
+        CommTransactionDetailsVO transactionDetailsVO = new CommTransactionDetailsVO();
+
+        transactionDetailsVO.setDetailId("793");
+        transactionDetailsVO.setAmount("4H6G2TL");
+        transactionDetailsVO.setChecksum(chkSum);
+        transactionDetailsVO.setOrderDesc("1");
+        transactionDetailsVO.setRedirectUrl("IN");
+        transactionDetailsVO.setPreviousTransactionId("Deutsche Bank");
+        c.setTransDetailsVO(transactionDetailsVO);
+
+
+        try
+        {
+            responseVO = ip.processRefund("10590", c);
+        }
+        catch (PZTechnicalViolationException e)
+        {
+            transactionLogger.error("PZTechnicalViolationException :::::::::", e); //To change body of catch statement use File | Settings | File Templates.
+        }
+        //System.out.println("Response VO---"+responseVO);
+    }
+
+    public static String getMD5HashVal(String str) throws PZTechnicalViolationException
+    {
+        String encryptedString = null;
+        byte[] bytesToBeEncrypted;
+        try
+        {
+            // convert string to bytes using a encoding scheme
+            bytesToBeEncrypted = str.getBytes("UTF-8");
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] theDigest = md.digest(bytesToBeEncrypted);
+            // convert each byte to a hexadecimal digit
+            Formatter formatter = new Formatter();
+            for (byte b : theDigest) {
+                formatter.format("%02x", b);
+            }
+            encryptedString = formatter.toString().toLowerCase();
+
+        } catch (UnsupportedEncodingException e) {
+            PZExceptionHandler.raiseTechnicalViolationException(InPayPaymentGateway.class.getName(),"getMD5HashVal()",null,"common","UnSupportedEncoding Exception while conecting to InPay", PZTechnicalExceptionEnum.UNSUPPORTED_ENCOADING_EXCEPTION,null,e.getMessage(),e.getCause());
+        } catch (NoSuchAlgorithmException e) {
+            PZExceptionHandler.raiseTechnicalViolationException(InPayPaymentGateway.class.getName(), "getMD5HashVal()", null, "common", "NoSuchAlgorithm Exception while conecting to InPay", PZTechnicalExceptionEnum.NOSUCH_ALGO_EXCEPTION,null, e.getMessage(), e.getCause());
+        }
+        return encryptedString;
+    }
+
+}

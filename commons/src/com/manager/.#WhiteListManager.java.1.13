@@ -1,0 +1,120 @@
+package com.manager;
+
+import com.directi.pg.PaymentzEncryptor;
+import com.directi.pg.WhitelistingDetailsVO;
+import com.manager.dao.WhiteListDAO;
+import com.manager.vo.PaginationVO;
+import com.manager.vo.TransactionDetailsVO;
+import com.payment.exceptionHandler.PZDBViolationException;
+
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Set;
+
+/*Created with IntelliJ IDEA.
+ * User: Mahima
+ * Date: 25/03/18
+ * Time: 2:51 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class WhiteListManager
+{
+    WhiteListDAO whiteListDAO=new WhiteListDAO();
+    public Hashtable getWhiteListEmailDetails(String memberId,String accountId,String emailAddr,String firstSix,String lastFour,int  start,int end)throws PZDBViolationException
+    {
+        return whiteListDAO.getWhiteListEmailDetails(memberId,accountId,emailAddr,firstSix,lastFour,start,end);
+    }
+    public Hashtable getCommonWhiteList(String isTemp,String mappingId)throws PZDBViolationException
+    {
+        return whiteListDAO.getCommonWhiteList(isTemp,mappingId);
+    }
+    public Hashtable getWhiteListEmailDetailsForExport(String memberId,String accountId,String emailAddr,String firstSix,String lastFour)throws PZDBViolationException
+    {
+        return whiteListDAO.getWhiteListEmailDetailsForExport(memberId, accountId, emailAddr, firstSix, lastFour);
+    }
+    public boolean isRecordAvailableForMember(String memberId, String accountId, String firstSix, String lastFour, String emailAddress) throws PZDBViolationException
+    {
+        return whiteListDAO.isRecordAvailableForMember(memberId, accountId, firstSix, lastFour, emailAddress);
+    }
+    public boolean isRecordAvailableForMember(String memberId, String accountId, String firstSix, String lastFour) throws PZDBViolationException
+    {
+        return whiteListDAO.isRecordAvailableForMember(memberId, accountId, firstSix, lastFour);
+    }
+    public boolean isRecordAvailableInSystem(String firstSix, String lastFour, String emailAddress) throws PZDBViolationException
+    {
+        return whiteListDAO.isRecordAvailableInSystem(firstSix, lastFour, emailAddress);
+    }
+    public boolean addCard(String firstSix, String lastFour, String emailAddr, String accountId, String memberId) throws PZDBViolationException
+    {
+        return whiteListDAO.addCard(firstSix,lastFour,emailAddr,accountId,memberId);
+    }
+    public boolean removeCardEmailEntry(String mappingId)throws PZDBViolationException
+    {
+        return whiteListDAO.removeCardEmailEntry(mappingId);
+    }
+    public void whiteListEntities(String trackingId)throws PZDBViolationException
+    {
+        TransactionManager transactionManager=new TransactionManager();
+        TransactionDetailsVO transactionDetailsVO=transactionManager.getTransDetailFromCommon(trackingId);
+        String customerEmail=transactionDetailsVO.getEmailaddr();
+        String cardNumber= PaymentzEncryptor.decryptPAN(transactionDetailsVO.getCcnum());
+        boolean result=removeCardEmail(cardNumber,customerEmail);
+    }
+    public boolean removeCardEmail(String cardNumber,String eMail)throws PZDBViolationException
+    {
+        return whiteListDAO.removeCardEmail(cardNumber, eMail);
+    }
+    public void removeCardEmailEntry(Set<String> emailList,Set<String> cardList)throws PZDBViolationException
+    {
+        whiteListDAO.removeCardEmailEntry(emailList, cardList);
+    }
+    public int uploadCards(List<String> queryBatch)throws PZDBViolationException
+    {
+        return whiteListDAO.uploadCards(queryBatch);
+    }
+
+    public List<WhitelistingDetailsVO> getWhiteListBin(String startBin,String endBin,String accountId,String memberId) throws PZDBViolationException
+    {
+        return whiteListDAO.getWhiteListBin(startBin, endBin, accountId, memberId);
+    }
+    public List<WhitelistingDetailsVO> getWhiteListBinPage(String startBin,String endBin,String accountId,String memberId,PaginationVO paginationVo) throws PZDBViolationException
+    {
+        return whiteListDAO.getWhiteListBinPage(startBin, endBin, accountId, memberId, paginationVo);
+    }
+    public boolean removeWhitelistBinEntry(String Id)throws PZDBViolationException
+    {
+        return whiteListDAO.removeWhitelistBinEntry(Id);
+    }
+    public int addBin(String startBin,String endBin,String accountId,String memberId)throws PZDBViolationException
+    {
+        List<WhitelistingDetailsVO> listVO = new ArrayList();
+        listVO = whiteListDAO.getWhiteListBin(startBin, endBin, accountId, memberId);
+        int count = 0;
+        if(listVO.size()==1)
+        {
+            return count;
+        }
+        else
+        {
+            count = whiteListDAO.addBin(startBin,endBin,accountId,memberId);
+        }
+        return count;
+    }
+    public void unblockBin(String startBin,String endBin,String accountId,String memberId) throws PZDBViolationException
+    {
+        whiteListDAO.unblockBin(startBin,endBin,accountId,memberId);
+    }
+    public boolean isRecordAvailableOnOtherGroup(String firstSix, String lastFour, String gateway, String companyName) throws PZDBViolationException
+    {
+        return whiteListDAO.isRecordAvailableOnOtherGroup(firstSix, lastFour, gateway, companyName);
+    }
+    public boolean isRecordAvailableOnOtherGroup(String firstSix, String lastFour, String emailAddress, String gateway, String companyName) throws PZDBViolationException
+    {
+        return whiteListDAO.isRecordAvailableOnOtherGroup(firstSix, lastFour, emailAddress, gateway, companyName);
+    }
+    public int uploadBins(List<String> queryBatch)throws PZDBViolationException
+    {
+        return whiteListDAO.uploadBins(queryBatch);
+    }
+}

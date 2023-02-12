@@ -1,0 +1,159 @@
+package com.payment.jpbanktransfer;
+
+import com.directi.pg.Functions;
+import com.directi.pg.LoadProperties;
+import com.directi.pg.Logger;
+import com.directi.pg.TransactionLogger;
+import com.directi.pg.core.jpbanktransfer.JPBankTransferUtils;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.*;
+import com.payment.common.core.Comm3DResponseVO;
+import com.payment.common.core.CommMerchantVO;
+import com.payment.common.core.CommRequestVO;
+import com.payment.exceptionHandler.PZTechnicalViolationException;
+
+import java.util.ResourceBundle;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+/**
+ * Created by Sagar Sonar on 21-April-2020.
+ */
+public class JPBTPaymentGateway extends AbstractPaymentGateway
+{
+    public static final String GATEWAY_TYPE = "jpbt";
+    final static ResourceBundle RB = LoadProperties.getProperty("com.directi.pg.jpbt");
+    private static TransactionLogger transactionLogger = new TransactionLogger(JPBTPaymentGateway.class.getName());
+    private static Logger log = new Logger(JPBTPaymentGateway.class.getName());
+
+    public JPBTPaymentGateway(String accountId)
+    {
+        this.accountId = accountId;
+    }
+    public GenericResponseVO processSale(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+        transactionLogger.error("Inside processSale ---");
+
+        Functions functions = new Functions();
+        JPBankTransferUtils jpBankTransferUtils = new JPBankTransferUtils();
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        GenericTransDetailsVO transDetailsVO = commRequestVO.getTransDetailsVO();
+        GenericCardDetailsVO cardDetailsVO = commRequestVO.getCardDetailsVO();
+        GenericAddressDetailsVO addressDetailsVO = commRequestVO.getAddressDetailsVO();
+        CommMerchantVO commMerchantVO = commRequestVO.getCommMerchantVO();
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        JPBankTransferVO jpBankTransferVO = new JPBankTransferVO();
+        jpBankTransferUtils = new JPBankTransferUtils();
+
+        String url="";
+        String amount="";
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String userName = gatewayAccount.getFRAUD_FTP_USERNAME();
+        String password = gatewayAccount.getFRAUD_FTP_PASSWORD();
+        String member_id = gatewayAccount.getMerchantId();
+
+        boolean isTest = gatewayAccount.isTest();
+
+        if("JPY".equalsIgnoreCase(transDetailsVO.getCurrency()))
+            amount= JPBankTransferUtils.getJPYAmount(transDetailsVO.getAmount());
+        else if("KWD".equalsIgnoreCase(transDetailsVO.getCurrency()))
+            amount=JPBankTransferUtils.getKWDSupportedAmount(transDetailsVO.getAmount());
+        else if("KRW".equalsIgnoreCase(transDetailsVO.getCurrency()))
+            amount=JPBankTransferUtils.getKRWAmount(transDetailsVO.getAmount());
+        else
+            amount=JPBankTransferUtils.getCentAmount(transDetailsVO.getAmount());
+
+        try
+        {
+
+        if(isTest)
+        {
+
+           url= RB.getString("TEST_URL")+ "?sid="+member_id+"&uid="+trackingID+"&am="+amount+"&mode=json";
+        }
+        else
+        {
+           url= RB.getString("LIVE_URL")+ "?sid="+member_id+"&uid="+trackingID+"&am="+amount+"&mode=json";
+        }
+           transactionLogger.error("request-->"+url);
+            String response = jpBankTransferUtils.doHttpPostConnection(url);
+            transactionLogger.error("response-->"+response);
+            JSONObject responseObject=null;
+
+            if(response.startsWith("(") && response.endsWith(")"))
+            {
+
+                responseObject=new JSONObject(response.substring(1,response.length()-1));
+            }else
+            {
+                responseObject=new JSONObject(response);
+            }
+
+            if(responseObject!=null)
+            {
+                transactionLogger.error("responseObject-->"+responseObject);
+                jpBankTransferVO.setStatus("Pending");
+                jpBankTransferVO.setRemark("Bank Transfer Initiated");
+                jpBankTransferVO.setDescription("Bank Transfer Initiated");
+
+                if (responseObject.has("shitenNm"))
+                  jpBankTransferVO.setShitenNm(responseObject.getString("shitenNm"));
+
+                if (responseObject.has("bankName"))
+                    jpBankTransferVO.setBankName(responseObject.getString("bankName"));
+
+                if (responseObject.has("shitenName"))
+                    jpBankTransferVO.setShitenName(responseObject.getString("shitenName"));
+
+                if (responseObject.has("kouzaType"))
+                    jpBankTransferVO.setKouzaType(responseObject.getString("kouzaType"));
+
+                if (responseObject.has("kouzaNm"))
+                    jpBankTransferVO.setKouzaNm(responseObject.getString("kouzaNm"));
+
+                if (responseObject.has("kouzaMeigi"))
+                    jpBankTransferVO.setKouzaMeigi(responseObject.getString("kouzaMeigi"));
+
+                if (responseObject.has("bid"))
+                    jpBankTransferVO.setBid(responseObject.getString("bid"));
+
+                if (responseObject.has("tel"))
+                    jpBankTransferVO.setTel(responseObject.getString("tel"));
+
+                if (responseObject.has("email"))
+                    jpBankTransferVO.setEmail(responseObject.getString("email"));
+
+                if (responseObject.has("company"))
+                    jpBankTransferVO.setCompany(responseObject.getString("company"));
+
+                if (responseObject.has("nameId"))
+                    jpBankTransferVO.setNameId(responseObject.getString("nameId"));
+
+                if (responseObject.has("result"))
+                    jpBankTransferVO.setResult(responseObject.getString("result"));
+            }
+else
+            {
+                jpBankTransferVO.setStatus("fail");
+                jpBankTransferVO.setRemark("NO Response Found");
+                jpBankTransferVO.setDescription("Transaction failed");
+
+            }
+
+        }
+        catch (JSONException e)
+        {
+            transactionLogger.error("JSONException-->",e);
+        }
+
+
+        return jpBankTransferVO;
+    }
+    @Override
+    public String getMaxWaitDays()
+    {
+        return null;
+    }
+}

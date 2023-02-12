@@ -1,0 +1,145 @@
+
+h3 {
+  margin-top: 0;
+}
+h2{
+
+  color: #000;
+
+}
+.tabs-left {
+  margin-top: 3rem;
+}
+
+.nav-tabs {
+  float: left;
+  border-bottom: 0;
+  border-bottom: 1px solid #ddd!important;
+}
+
+.nav-tabs li {
+  float: none;
+  margin: 0;
+}
+/*.nav-tabs li a {
+  margin-right: 0;
+  border: 0;
+  background-color:  #7eccad!important;
+}*/
+
+/*.nav-tabs li a {
+  margin-right: 0!important;
+  border: 0;
+  background-color:  #f3f3f3!important;
+  color: #555;
+}*/
+
+.nav-tabs > li > a{
+  border-radius: 0!important;
+  border-bottom: 1px solid #ddd !important;
+}
+
+.nav-tabs li a:hover {
+  background-color: #d9d9d9!important;
+  color: #555;
+}
+.nav-tabs .glyphicon {
+  color: #fff;
+}
+
+/*.nav-tabs .active .glyphicon {
+  color: #333;
+}*/
+
+.nav-tabs .active .glyphicon{
+  color: #fff!important;
+}
+
+/*.nav-tabs > li.active > a, .nav-tabs > li.active > a:focus {*//*.nav-tabs > li.active > a:hover,*//*
+  border: 0;
+  background-color: #7eccad!important;
+  color: #ffffff;
+}*/
+
+.tab-content {
+  margin-left: 45px;
+}
+.tab-content .tab-pane {
+  display: none;
+  /*background-color: #fff;*/
+  padding: 1.6rem;
+
+}
+.tab-content .active {
+  display: block;
+}
+
+.full-content-center {
+  width: 100%;
+  padding: 5px 0px;
+  max-width: 500px;
+  margin: 6% auto;
+  text-align: center;
+}
+
+
+#BankLogo, #CreditCards, #VirtualAccount, #PrepaidVoucher, #ACH, #CHK, #SEPA{
+	overflow-y: auto;
+    height: 70vh;
+}
+
+.btn-default {
+  color: #FFF!important;
+  background-color: #7eccad!important;
+  border-color: transparent!important;
+}
+
+.btn-default:hover, .btn-default:focus, .btn-default:active, .btn-default.active, .open > .dropdown-toggle.btn-default {
+  color: #FFF!important;
+  background-color: #abb7b7!important;
+  border-color: transparent!important;
+}
+
+
+#tabid{
+  /*margin-left: 15px;
+  margin-top: -39px;*/
+  padding-left: 0;
+  padding-right: 0;
+}
+
+@media(max-width:992px){
+  #tabid{
+    /*margin-top: -25px;*/
+  }
+
+#footerid{
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+}
+
+@media(min-width: 893px){
+/*  .nav-tabs{
+    width: 20%;
+  }*/
+}
+
+@media(max-width: 892px){
+  .nav-tabs{
+    float: inherit!important;
+  }
+
+  .tab-content{
+    margin-left: inherit!important;
+  }
+}
+
+.bg-info {
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+
+}

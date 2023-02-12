@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module relativePaths="true" type="JAVA_MODULE" version="4">
+  <component name="FacetManager">
+    <facet type="web" name="commons">
+      <configuration>
+        <descriptors>
+          <deploymentDescriptor name="web.xml" url="file://$MODULE_DIR$/../../../commons/web.xml" />
+        </descriptors>
+        <webroots>
+          <root url="file://$MODULE_DIR$/../../Configuration/local/raj/properties" relative="/com/directi/pg" />
+          <root url="file://$MODULE_DIR$/../../Configuration/local/raj/conf" relative="" />
+        </webroots>
+      </configuration>
+    </facet>
+  </component>
+  <component name="NewModuleRootManager" inherit-compiler-output="false">
+    <output url="file://D:/tomcat8/lib" />
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../../Configuration/local/raj/conf" />
+    <content url="file://$MODULE_DIR$/../../Configuration/local/raj/properties" />
+    <content url="file://$MODULE_DIR$/../../../commons/src">
+      <sourceFolder url="file://$MODULE_DIR$/../../../commons/src" isTestSource="false" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" exported="" name="Transecute_lib" level="project" />
+    <orderEntry type="library" exported="" name="Http_functionalTest" level="project" />
+    <orderEntry type="module" module-name="pz-fraud-core" exported="" />
+    <orderEntry type="module" module-name="pz-transaction-core" exported="" />
+    <orderEntry type="module" module-name="transaction" />
+  </component>
+  <component name="sonarModuleSettings">
+    <option name="alternativeWorkingDirPath" value="" />
+    <option name="localAnalysisScripName" value="&lt;PROJECT&gt;" />
+    <option name="serverName" value="&lt;PROJECT&gt;" />
+    <option name="useAlternativeWorkingDir" value="false" />
+    <option name="workingDirSelection" value="&lt;MODULE&gt;" />
+  </component>
+</module>

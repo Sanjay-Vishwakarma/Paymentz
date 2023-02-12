@@ -1,0 +1,677 @@
+<%@ page import="com.directi.pg.Functions,com.directi.pg.TransactionEntry" %>
+<%@ page import="org.owasp.esapi.*" %>
+<%@ page import="com.manager.TerminalManager" %>
+<%@ page import="com.manager.vo.TerminalVO" %>
+<%@ page import="java.util.*" %>
+<%@ page import="org.owasp.esapi.errors.ValidationException" %>
+<%@ page import="org.apache.commons.lang.StringUtils" %>
+<%@ page import="com.directi.pg.LoadProperties" %>
+<%@ include file="Top.jsp" %>
+<%!
+
+%>
+<%String company = (String)session.getAttribute("company");
+    session.setAttribute("submit","Reversal");
+%>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <%--<link rel="stylesheet" href=" /merchant/transactionCSS/css/jquery.dataTables.min.css">
+    <script type="text/javascript" src="/merchant/transactionCSS/js/jquery.dataTables.min.js"></script>--%>
+    <%--  <link href="/merchant/NewCss/libs/jquery-datatables/css/dataTables.bootstrap.css" rel="stylesheet" type="text/css">
+      <link href="/merchant/NewCss/libs/jquery-datatables/extensions/TableTools/css/dataTables.tableTools.css" rel="stylesheet" type="text/css">
+      <script src="/merchant/NewCss/libs/jquery-datatables/extensions/TableTools/js/dataTables.tableTools.min.js"></script>
+      <script src="/merchant/NewCss/libs/jquery-datatables/js/dataTables.bootstrap.js"></script>--%>
+
+    <%--   <link href="/merchant/NewCss/libs/jquery-datatables/css/dataTables.bootstrap.css" rel="stylesheet" type="text/css">
+       <link href="/merchant/NewCss/libs/jquery-datatables/extensions/TableTools/css/dataTables.tableTools.css" rel="stylesheet" type="text/css">
+       <script src="/merchant/NewCss/libs/jquery-datatables/extensions/TableTools/js/dataTables.tableTools.min.js"></script>
+       <script src="/merchant/NewCss/libs/jquery-datatables/js/dataTables.bootstrap.js"></script>--%>
+    <%--<script src="/merchant/NewCss/libs/jquery-datatables/js/jquery.dataTables.min.js"></script>--%>
+    <%--<script src="/merchant/NewCss/js/datatables.js"></script>--%>
+
+    <script>
+
+        /*$(document).ready(function() {
+         $('#example').DataTable( {
+         "language": {
+         "lengthMenu": "Display _MENU_ records per page",
+         "zeroRecords": "Nothing found - sorry",
+         "info": "Showing page _PAGE_ of _PAGES_",
+         "infoEmpty": "No records available",
+         "infoFiltered": "(filtered from _MAX_ total records)"
+         }
+         } );
+         } );*/
+        /*$(document).ready(function()
+         {
+
+         $('#datatables').dataTable({
+
+         });
+         });*/
+    </script>
+    <%-- <script>
+         $(document).ready(function(){
+             $('#myTable').dataTable();
+         });
+     </script>--%>
+    <title><%=company%> Merchant Transaction Management > Reversal</title>
+    <script language="javascript">
+        function isint(form)
+        {
+            if (isNaN(form.numrows.value))
+                return false;
+            else
+                return true;
+        }
+
+        function DoReverse(accountid,id,ctoken,terminal,terminalBuffer,desc,auth,pageNo,records)
+        {
+            if (confirm("Do you really want to reverse this transaction."))
+            {
+                document.location.href = "GetReversalDetails?ctoken="+ctoken+"&icicitransid="+id+"&accountid="+accountid+"&terminalid="+terminal+"&terminalbuffer="+terminalBuffer+"&SDescription="+desc+"&paymentid="+auth+"&SPageno="+pageNo+"&SRecords="+records ;
+            }
+        }
+    </script>
+    <%--<style type="text/css">
+
+        #main{background-color: #ffffff}
+
+        :target:before {
+            content: "";
+            display: block;
+            height: 50px;
+            margin: -50px 0 0;
+        }
+
+        .table > thead > tr > th {font-weight: inherit;}
+
+        :target:before {
+            content: "";
+            display: block;
+            height: 90px;
+            margin: -50px 0 0;
+        }
+
+        footer{border-top:none;margin-top: 0;padding: 0;}
+
+        /********************Table Responsive Start**************************/
+
+        @media (max-width: 640px){
+
+            table {border: 0;}
+
+            /*table tr {
+                padding-top: 20px;
+                padding-bottom: 20px;
+                display: block;
+            }*/
+
+            table thead { display: none;}
+
+            tr:nth-child(odd), tr:nth-child(even) {background: #ffffff;}
+
+            table td {
+                display: block;
+                border-bottom: none;
+                padding-left: 0;
+                padding-right: 0;
+            }
+
+            table td:before {
+                content: attr(data-label);
+                float: left;
+                width: 100%;
+                font-weight: bold;
+            }
+
+        }
+
+        table {
+            width: 100%;
+            max-width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            display: table;
+            border-collapse: separate;
+            border-color: grey;
+        }
+
+        thead {
+            display: table-header-group;
+            vertical-align: middle;
+            border-color: inherit;
+
+        }
+
+        tr:nth-child(odd) {background: #F9F9F9;}
+
+        tr {
+            display: table-row;
+            vertical-align: inherit;
+            border-color: inherit;
+        }
+
+        th {padding-right: 1em;text-align: left;font-weight: bold;}
+
+        td, th {display: table-cell;vertical-align: inherit;}
+
+        tbody {
+            display: table-row-group;
+            vertical-align: middle;
+            border-color: inherit;
+        }
+
+        td {
+            padding-top: 6px;
+            padding-bottom: 6px;
+            padding-left: 10px;
+            padding-right: 10px;
+            vertical-align: top;
+            border-bottom: none;
+        }
+
+        .table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td{border-top: 1px solid #ddd;}
+
+        /********************Table Responsive Ends**************************/
+
+    </style>--%>
+</head>
+<%
+    String paymentlink = request.getAttribute("paymentURL") != null ? (String)request.getAttribute("paymentURL"): "" ;
+%>
+<script>
+    function newWindow(paymentlink)
+    {
+        if(paymentlink !== null && paymentlink !== 'null')
+        {
+            console.log("paymentlink" + paymentlink);
+            window.open(paymentlink, "_blank");
+        }
+    }
+
+
+</script>
+<%
+    if(paymentlink != null && !paymentlink.isEmpty())
+    {
+%>
+<body class="pace-done widescreen fixed-left-void" onload="newWindow('<%=paymentlink%>')">
+<%
+    } else {
+%>
+<body class="pace-done widescreen fixed-left-void">
+<% } %>
+<%
+    String uId = "";
+    if(session.getAttribute("role").equals("submerchant"))
+    {
+        uId = (String) session.getAttribute("userid");
+    }
+    else
+    {
+        uId = (String) session.getAttribute("merchantid");
+    }
+
+    TransactionEntry transactionentry = (TransactionEntry) session.getAttribute("transactionentry");
+    String bank = "";
+    String str="";
+    if(session.getAttribute("bank") != null)
+    {
+        bank = (String) session.getAttribute("bank");
+    }
+    Hashtable bankhash = transactionentry.getBankHash((String) session.getAttribute("merchantid"));
+    String terminalid = Functions.checkStringNull(request.getParameter("terminalid"))==null?"":request.getParameter("terminalid");
+    String pTerminalBuffer = request.getParameter("terminalbuffer");
+
+    String sTrackingid =Functions.checkStringNull(request.getParameter("STrakingid"))==null?"":request.getParameter("STrakingid");
+    String sAuthCode =Functions.checkStringNull(request.getParameter("paymentid"))==null?"":request.getParameter("paymentid");
+    String sDesc =Functions.checkStringNull(request.getParameter("SDescription"))==null?"":request.getParameter("SDescription");
+
+    if(request.getAttribute("terminalid")!=null)
+    {
+        terminalid = request.getAttribute("terminalid").toString();
+    }
+
+    int pageno =1;
+    int pagerecords=15;
+    try
+    {
+        pageno = Functions.convertStringtoInt(ESAPI.validator().getValidInput("Spageno",request.getParameter("SPageno"),"Numbers",3,true), 1);
+        pagerecords = Functions.convertStringtoInt(ESAPI.validator().getValidInput("Srecord",request.getParameter("SRecords"),"Numbers",3,true), Integer.parseInt((String) application.getAttribute("NOOFRECORDSPERPAGE")));
+    }
+    catch (ValidationException ex)
+    {
+        pageno = 1;
+        pagerecords = 15;
+    }
+    ResourceBundle rb1 = null;
+    String language_property1 = (String)session.getAttribute("language_property");
+    rb1 = LoadProperties.getProperty(language_property1);
+    String reverselist_transaction_reversal = StringUtils.isNotEmpty(rb1.getString("reverselist_transaction_reversal"))?rb1.getString("reverselist_transaction_reversal"): "Transaction Reversal";
+    String reverselist_transaction_id = StringUtils.isNotEmpty(rb1.getString("reverselist_transaction_id"))?rb1.getString("reverselist_transaction_id"): "Tracking ID";
+    String reverselist_terminalid1 = StringUtils.isNotEmpty(rb1.getString("reverselist_terminalid1"))?rb1.getString("reverselist_terminalid1"): "Terminal ID";
+    String reverselist_all = StringUtils.isNotEmpty(rb1.getString("reverselist_all"))?rb1.getString("reverselist_all"): "All";
+    String reverselist_no_terminal = StringUtils.isNotEmpty(rb1.getString("reverselist_no_terminal"))?rb1.getString("reverselist_no_terminal"): "No Terminal Allocated";
+    String reverselist_order_id = StringUtils.isNotEmpty(rb1.getString("reverselist_order_id"))?rb1.getString("reverselist_order_id"): "Order ID";
+    String reverselist_search = StringUtils.isNotEmpty(rb1.getString("reverselist_search"))?rb1.getString("reverselist_search"): "Search";
+    String reverselist_reverse_list = StringUtils.isNotEmpty(rb1.getString("reverselist_reverse_list"))?rb1.getString("reverselist_reverse_list"): "Reverse List";
+    String reverselist_transaction_date = StringUtils.isNotEmpty(rb1.getString("reverselist_transaction_date"))?rb1.getString("reverselist_transaction_date"): "Transaction Date";
+    String reverselist_tracking_id1 = StringUtils.isNotEmpty(rb1.getString("reverselist_tracking_id1"))?rb1.getString("reverselist_tracking_id1"): "Tracking ID";
+    String reverselist_transaction_id2 = StringUtils.isNotEmpty(rb1.getString("reverselist_transaction_id2"))?rb1.getString("reverselist_transaction_id2"): "Transaction ID";
+    String reverselist_order_id1 = StringUtils.isNotEmpty(rb1.getString("reverselist_order_id1"))?rb1.getString("reverselist_order_id1"): "Order ID";
+    String reverselist_captured_amount = StringUtils.isNotEmpty(rb1.getString("reverselist_captured_amount"))?rb1.getString("reverselist_captured_amount"): "Captured Amount";
+    String reverselist_refunded_amount = StringUtils.isNotEmpty(rb1.getString("reverselist_refunded_amount"))?rb1.getString("reverselist_refunded_amount"): "Refunded Amount";
+    String reverselist_currency = StringUtils.isNotEmpty(rb1.getString("reverselist_currency"))?rb1.getString("reverselist_currency"): "Currency";
+    String reverselist_terminal1 = StringUtils.isNotEmpty(rb1.getString("reverselist_terminal1"))?rb1.getString("reverselist_terminal1"): "Terminal";
+    String reverselist_status = StringUtils.isNotEmpty(rb1.getString("reverselist_status"))?rb1.getString("reverselist_status"): "Status";
+    String reverselist_sorry = StringUtils.isNotEmpty(rb1.getString("reverselist_sorry"))?rb1.getString("reverselist_sorry"): "Sorry";
+    String reverselist_records = StringUtils.isNotEmpty(rb1.getString("reverselist_records"))?rb1.getString("reverselist_records"): "No records found.";
+    String reverselist_filter = StringUtils.isNotEmpty(rb1.getString("reverselist_filter"))?rb1.getString("reverselist_filter"): "Filter";
+    String reverselist_trackingid = StringUtils.isNotEmpty(rb1.getString("reverselist_trackingid"))?rb1.getString("reverselist_trackingid"): "Please provide the trackingID or TerminalID for reverse List.";
+    String reverselist_reverse = StringUtils.isNotEmpty(rb1.getString("reverselist_reverse"))?rb1.getString("reverselist_reverse"): "Reverse";
+    String reverselist_ShowingPage = StringUtils.isNotEmpty(rb1.getString("reverselist_ShowingPage"))?rb1.getString("reverselist_ShowingPage"): "Showing Page";
+    String reverselist_of = StringUtils.isNotEmpty(rb1.getString("reverselist_of"))?rb1.getString("reverselist_of"): "of";
+    String reverselist_records1 = StringUtils.isNotEmpty(rb1.getString("reverselist_records1"))?rb1.getString("reverselist_records1"): "records";
+    String reverselist_page_no = StringUtils.isNotEmpty(rb1.getString("reverselist_page_no"))?rb1.getString("reverselist_page_no"): "Page number";
+    String reverselist_total_no_of_records = StringUtils.isNotEmpty(rb1.getString("reverselist_total_no_of_records"))?rb1.getString("reverselist_total_no_of_records"): "Total number of records";
+
+%>
+<div class="content-page">
+    <div class="content">
+        <!-- Page Heading Start -->
+        <div class="page-heading">
+            <form name="form" method="post" action="/merchant/servlet/ReverseList">
+                <div class="row">
+
+                    <div class="col-sm-12 portlets ui-sortable">
+
+                        <div class="widget">
+
+                            <div class="widget-header transparent">
+                                <h2><strong><i class="fa fa-th-large"></i>&nbsp;&nbsp;<%=reverselist_transaction_reversal%></strong></h2>
+                                <div class="additional-btn">
+                                    <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                                    <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                                    <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+                                </div>
+                            </div>
+
+
+
+                            <input type="hidden" value="<%=ctoken%>" name="ctoken">
+                            <%
+                                String terminalCurrency = "";
+                                StringBuffer terminalBuffer = new StringBuffer();
+                                String errorMsg=(String)request.getAttribute("error");
+
+                                if(errorMsg!=null)
+                                {
+                                    out.println("<h5 class=\"bg-infoorange\" style=\"text-align: center;\"><i class=\"fa fa-exclamation-triangle\"></i>&nbsp;&nbsp;" + errorMsg + "</h5>");
+                                }
+
+                                String res=(String)request.getAttribute("message");
+                                Functions functions = new Functions();
+                                if(res!=null)
+                                {
+                                    //out.println("<center><font face=\"arial\" color=\"#2C3E50\" size=\"2\"><b>"+res+"</b></font></center>");
+                                    out.println(Functions.NewShowConfirmation1("Filter ", res));
+                                }
+                            %>
+                            <input type="hidden" id="ctoken" value="<%=ctoken%>" name="ctoken">
+
+                            <div class="widget-content padding">
+                                <div id="horizontal-form">
+
+                                    <div class="form-group col-md-3 has-feedback">
+                                        <label><%=reverselist_transaction_id%></label>
+                                        <input type="text" name="STrakingid" class="form-control" placeholder="Tracking ID" value="<%=sTrackingid%>">
+                                    </div>
+
+                                    <div class="form-group col-md-3 has-feedback">
+                                        <label><%=reverselist_terminalid1%></label>
+                                        <select size="1" name="terminalid" class="form-control">
+                                            <%--<option value="">All</option>--%>
+                                            <%
+                                                terminalBuffer.append("(");
+                                                //terminalid="";
+                                                TerminalManager terminalManager=new TerminalManager();
+                                                List<TerminalVO> terminalVOList=terminalManager.getMemberandUserTerminalList(uId, String.valueOf(session.getAttribute("role")));
+
+                                                if(terminalVOList.size()>0)
+                                                {
+
+                                            %>
+                                            <option value="all"><%=reverselist_all%></option>
+                                            <%
+                                                for (TerminalVO terminalVO:terminalVOList)
+                                                {
+                                                    String str1 = "";
+                                                    String active = "";
+                                                    if (terminalVO.getIsActive().equalsIgnoreCase("Y"))
+                                                    {
+                                                        active = "Active";
+                                                    }
+                                                    else
+                                                    {
+                                                        active = "InActive";
+                                                    }
+                                                    if(terminalid.equals(terminalVO.getTerminalId()))
+                                                    {
+                                                        terminalCurrency = terminalVO.getCurrency();
+                                                        str1= "selected";
+                                                    }
+                                                    if(terminalBuffer.length()!=0 && terminalBuffer.length()!=1)
+                                                    {
+                                                        terminalBuffer.append(",");
+                                                    }
+                                                    terminalBuffer.append(terminalVO.getTerminalId());
+                                            %>
+                                            <option value="<%=ESAPI.encoder().encodeForHTMLAttribute(terminalVO.getTerminalId())%>" <%=str1%>> <%=ESAPI.encoder().encodeForHTML(terminalVO.getTerminalId()+"-"+terminalVO.getPaymentName()+"-"+terminalVO.getCardType()+"-"+terminalVO.getCurrency()+"-"+active)%> </option>
+                                            <%
+                                                }
+                                                terminalBuffer.append(")");
+                                            }
+                                            else
+                                            {
+                                            %>
+                                            <option value="NoTerminal"><%=reverselist_no_terminal%></option>
+                                            <%
+
+                                                }
+                                            %>
+                                        </select>
+                                    </div>
+
+                                   <%-- <div class="form-group col-md-3 has-feedback">
+                                        <label>Auth Code</label>
+                                        <input type="text" name="paymentid" value="<%=sAuthCode%>" class="form-control" placeholder="Auth code">
+                                    </div>--%>
+
+                                    <div class="form-group col-md-3 has-feedback">
+                                        <label><%=reverselist_order_id%></label>
+                                        <input type="text" name="SDescription" value="<%=sDesc%>" class="form-control" placeholder="Order ID">
+                                    </div>
+
+                                   <%-- <div class="form-group col-md-9 has-feedback">&nbsp;</div>--%>
+
+                                    <%--<div class="form-group col-md-3 has-feedback">
+                                        <label>jk</label>
+                                        <button type="submit" name="B1" class="form-control" class="btn btn-default">
+                                            <i class="fa fa-save"></i>
+                                           &lt;%&ndash; &nbsp;&nbsp;&ndash;%&gt;Search
+                                        </button>
+                                    </div>--%>
+
+                                    <div class="form-group col-md-3 has-feedback">
+                                        <%--<button type="submit" name="B1" class="btnblue" style="width:100px;margin-left: 20%; margin-top: 25px;background: rgb(126, 204, 173);">
+                                            <i class="fa fa-save"></i>
+                                            Search
+                                        </button>--%>
+                                        <label >&nbsp;</label>
+                                        <button type="submit" name="B1" class="btn btn-default" style="display: -webkit-box;"><i class="fa fa-save"></i>&nbsp;&nbsp;<%=reverselist_search%></button>
+                                    </div>
+
+                                    <input type="hidden" value="<%=terminalBuffer.toString()%>" name="terminalbuffer">
+                                    <input type="hidden" name="currency" value=<%=terminalCurrency%>>
+                                    <input type="hidden" name="terminalid" value=<%=terminalid%>>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="widget">
+                        <div class="widget-header">
+                            <h2><i class="fa fa-table"></i>&nbsp;&nbsp;<strong><%=reverselist_reverse_list%></strong></h2>
+                            <div class="additional-btn">
+                                <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                                <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                                <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+                            </div>
+                        </div>
+                        <div class="widget-content padding" style="overflow-y: auto;">
+                            <%
+                                String desc = Functions.checkStringNull(request.getParameter("SDescription"));
+                                //str="";
+                                Hashtable hash = (Hashtable) request.getAttribute("transdetails");
+                                Hashtable temphash = null;
+                                String currency = (String) session.getAttribute("currency");
+
+                                if(!"Reversal".equals(request.getParameter("submit")))
+                                {
+                                    if(hash!=null)
+                                    {
+                                        int records = 0;
+                                        int totalrecords = 0;
+
+                                        try
+                                        {
+                                            records = Integer.parseInt((String) hash.get("records"));
+                                            totalrecords = Integer.parseInt((String) hash.get("totalrecords"));
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                        }
+
+                                        str = "ctoken="+((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+                                        if(functions.isValueNull(terminalid)) str = str+"&terminalid="+terminalid;
+                                        if(pTerminalBuffer != null) str = str+"&terminalbuffer="+pTerminalBuffer;
+                                        if(terminalCurrency != null) str = str+"&currency="+terminalCurrency;
+                                        str = str + "&SRecords=" + pagerecords;
+                                        if (records > 0)
+                                        {
+                            %>
+                            <br>
+                            <table id="myTable" class="display table table-striped table-bordered" width="100%" style="font-family:Open Sans;font-size: 13px;font-weight: 600;width: 100%;">
+
+
+                                <thead>
+                                <tr style="color: white;">
+                                    <th style="text-align: center"><%=reverselist_transaction_date%></th>
+                                    <th style="text-align: center"><%=reverselist_tracking_id1%></th>
+                                   <%-- <th style="text-align: center" >Auth Code</th>--%>
+                                    <th style="text-align: center" ><%=reverselist_transaction_id2%></th>
+                                    <th style="text-align: center" ><%=reverselist_order_id1%></th>
+                                    <th style="text-align: center" ><%=reverselist_captured_amount%></th>
+                                    <th style="text-align: center" ><%=reverselist_refunded_amount%></th>
+                                    <th style="text-align: center" ><%=reverselist_currency%></th>
+                                    <th style="text-align: center" ><%=reverselist_terminal1%>l</th>
+                                    <th style="text-align: center" ><%=reverselist_status%></th>
+                                    <th >&nbsp;</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <%
+
+                                    String style = "class=td0";
+
+                          /*  StringBuffer reqparam= new StringBuffer();
+                            Enumeration<String> stringEnumeration= request.getParameterNames();
+                            while(stringEnumeration.hasMoreElements())
+                            {
+                                String name=stringEnumeration.nextElement();
+                                if ("SRecords".equals(name) || "SPageno".equals(name))
+                                {
+
+                                }
+                                else
+                                    reqparam.append("<input type='hidden' name='"+name+"' value='"+request.getParameter(name)+"'/>");
+                            }
+                            reqparam.append("<input type='hidden' name='SPageno' value='"+pageno+"'/>");
+                            reqparam.append("<input type='hidden' name='SRecords' value='"+pagerecords+"'/>");
+*/
+                                    for (int pos = 1; pos <= records; pos++)
+                                    {
+                                        String id = Integer.toString(pos);
+
+                                        int srno = Integer.parseInt(id) + ((pageno - 1) * pagerecords);
+                                        style = "class=\"tr" + (pos + 1) % 2 + "\"";
+
+
+                                        temphash = (Hashtable) hash.get(id);
+
+                                        String tempcurrentstatus = ESAPI.encoder().encodeForHTML((String) temphash.get("currentstatus"));
+                                        String tempprovstatus = ESAPI.encoder().encodeForHTML((String) temphash.get("provstatus"));
+                                        String productname = ESAPI.encoder().encodeForHTML((String) temphash.get("productkey"));
+                                        String path = productname + "/";
+                                        String icicitransid = ESAPI.encoder().encodeForHTML((String) temphash.get("trackingid"));
+                                        String paymentId = ESAPI.encoder().encodeForHTML((String) temphash.get("paymentid"));
+                                        String currency1 = (String) temphash.get("currency");
+                                        String captureamount = (String) temphash.get("captureamount");
+                                        String refundamount = (String) temphash.get("refundamount");
+                                        if ("JPY".equalsIgnoreCase(currency1))
+                                        {
+                                            captureamount = functions.printNumber(Locale.JAPAN, captureamount);
+                                            refundamount = functions.printNumber(Locale.JAPAN, refundamount);
+                                        }
+                                        else if ("EUR".equalsIgnoreCase(currency1))
+                                        {
+                                            captureamount = functions.printNumber(Locale.FRANCE, captureamount);
+                                            refundamount = functions.printNumber(Locale.FRANCE, refundamount);
+                                        }
+                                        else if ("GBP".equalsIgnoreCase(currency1))
+                                        {
+                                            captureamount = functions.printNumber(Locale.UK, captureamount);
+                                            refundamount = functions.printNumber(Locale.UK, refundamount);
+                                        }
+                                        else if ("USD".equalsIgnoreCase(currency1))
+                                        {
+                                            captureamount = functions.printNumber(Locale.US, captureamount);
+                                            refundamount = functions.printNumber(Locale.US, refundamount);
+                                        }
+
+                                        if (paymentId==null)
+                                        {
+                                            paymentId="-";
+                                        }
+
+                                        String accountid = ESAPI.encoder().encodeForHTML((String) temphash.get("accountid"));
+                                        ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+                                        out.println("<tr>");
+                                        //out.println("<input type=\" hidden \" value=\""+ctoken+"\" name=\"ctoken\" >");
+                                        out.println("<td data-label=\"Transaction Date\" align=\"center\">&nbsp;" + ESAPI.encoder().encodeForHTML((String) temphash.get("timestamp")) + "</td>");
+                                        out.println("<td data-label=\"Tracking ID\" align=\"center\">&nbsp;" + ESAPI.encoder().encodeForHTML(icicitransid) + "</a></td>");
+                                       /* out.println("<td data-label=\"Auth Code\" align=\"center\">&nbsp;" + ESAPI.encoder().encodeForHTML(paymentId) + "</a></td>");*/
+                                        out.println("<td data-label=\"Transaction ID\" align=\"center\">&nbsp;" + ESAPI.encoder().encodeForHTML((String) temphash.get("transid")) + "</td>");
+                                        out.println("<td data-label=\"Description\" align=\"center\">&n" +
+                                                "" +
+                                                "" +
+                                                "bsp;" + ESAPI.encoder().encodeForHTML((String) temphash.get("description")) + "</td>");
+                                        out.println("<td data-label=\"Captured Amount\" align=\"center\">&nbsp;" + ESAPI.encoder().encodeForHTML(captureamount) + "</td>");
+                                        out.println("<td data-label=\"Refunded Amount\" align=\"center\">&nbsp;" + ESAPI.encoder().encodeForHTML(refundamount) + "</td>");
+                                        out.println("<td data-label=\"Currency\" align=\"center\">&nbsp;" + ESAPI.encoder().encodeForHTML(currency1) + "</td>");
+                                        //out.println("<td " + style + " align=\"center\">&nbsp;" +ESAPI.encoder().encodeForHTML((String) temphash.get("currency"))+" "+ ESAPI.encoder().encodeForHTML((String) temphash.get("captureamount")) + "</td>");
+                                        out.println("<td data-label=\"Terminal\" align=\"center\">&nbsp;" + ESAPI.encoder().encodeForHTML((String) temphash.get("terminalid")) + "</td>");
+                                        out.println("<td data-label=\"Status\" align=\"center\">&nbsp;" + ESAPI.encoder().encodeForHTML((String) temphash.get("status")) + "</td>");
+                                        out.print("<td " + style + " align=\"center\">");
+                                %>
+                                <input type="hidden" value="<%=ctoken%>" name="ctoken">
+                                <%
+                                        //out.println("&nbsp;<a href=GetReversalDetails?icicitransid="+ temphash.get("icicitransid") +" onclick='return confirm(\"Do you really want to reverse this transaction.\")' >Reverse</a>");
+                                        String trackingid="";
+
+                                        //if (request.getAttribute("trackingid")!=null || !request.getAttribute("trackingid").equals("") || request.getAttribute("trackingid")!="")
+                                        if (functions.isValueNull((String)request.getAttribute("trackingid")))
+                                        {
+                                            trackingid=request.getAttribute("trackingid").toString();
+                                        }
+                                        else
+                                        {
+                                            trackingid=icicitransid;
+                                        }
+
+                                        out.print("<input class=\"btn btn-default\" type=\"button\" value="+reverselist_reverse+" onClick=\"return DoReverse("+accountid+"," + ESAPI.encoder().encodeForHTMLAttribute(trackingid) + ",'"+ctoken+"','"+request.getAttribute("terminal")+"','"+request.getAttribute("terminalbuffer")+"','"+request.getAttribute("desc")+"','"+request.getAttribute("paymentid")+"','"+request.getParameter("SPageno")+"','"+request.getParameter("SRecords")+"')\" >");
+                                        //out.print("<input type=\"button\" value=\"Reverse\">");
+                                        out.println("</td>");
+                                        out.println("</tr>");
+                                    }
+                                %>
+                                </tbody>
+                                <%--<thead>
+                                <tr style="color: white;">
+                                    <td  align="left" class="tablefooter">Total Records : <%=totalrecords%></td>
+                                    <td  align="right" class="tablefooter">&lt;%&ndash;Page No : <%=pageno%>&ndash;%&gt;</td>
+                                    <td class="tablefooter">&nbsp;</td>
+                                    <td class="tablefooter">&nbsp;</td>
+                                    <td class="tablefooter">&nbsp;</td>
+                                    <td class="tablefooter">&nbsp;</td>
+                                    <td class="tablefooter">&nbsp;</td>
+                                    <td class="tablefooter">&nbsp;</td>
+                                </tr>
+                                </thead>--%>
+                            </table>
+
+                            <%
+                                int currentblock = 1;
+                                try
+                                {
+                                    currentblock = Integer.parseInt(request.getParameter("currentblock"));
+                                }
+                                catch (Exception ex)
+                                {
+                                    currentblock = 1;
+                                }
+                            %>
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <%
+                int TotalPageNo;
+                if(totalrecords%pagerecords!=0)
+                {
+                    TotalPageNo =totalrecords/pagerecords+1;
+                }
+                else
+                {
+                    TotalPageNo=totalrecords/pagerecords;
+                }
+            %>
+
+
+
+            <div id="showingid"><strong><%=reverselist_page_no%> <%=pageno%> <%=reverselist_of%> <%=TotalPageNo%></strong></div> &nbsp;&nbsp;
+            <div id="showingid"><strong><%=reverselist_total_no_of_records%>   <%=totalrecords%> </strong></div>
+
+            <jsp:include page="page.jsp" flush="true">
+                <jsp:param name="numrecords" value="<%=totalrecords%>"/>
+                <jsp:param name="numrows" value="<%=pagerecords%>"/>
+                <jsp:param name="pageno" value="<%=pageno%>"/>
+                <jsp:param name="str" value="<%=str%>"/>
+                <jsp:param name="page" value="ReverseList"/>
+                <jsp:param name="currentblock" value="<%=currentblock%>"/>
+                <jsp:param name="orderby" value=""/>
+            </jsp:include>
+
+            <%
+                        }
+                        else
+                        {
+                            out.println(Functions.NewShowConfirmation1(reverselist_sorry, reverselist_records));
+                        }
+                    }
+                    else
+                        {
+                            out.println(Functions.NewShowConfirmation1(reverselist_sorry, reverselist_records));
+                        }
+                }
+                else   if("Reversal".equals(request.getParameter("submit")))
+                {
+                    out.println(Functions.NewShowConfirmation1(reverselist_filter, reverselist_trackingid));
+                }
+            %>
+
+
+        </div>
+    </div>
+</div>
+</body>
+</html>

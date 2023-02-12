@@ -1,0 +1,203 @@
+import com.directi.pg.Database;
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.Merchants;
+import com.directi.pg.core.GatewayAccountService;
+import com.invoice.dao.InvoiceEntry;
+import com.invoice.vo.DefaultProductList;
+import com.invoice.vo.InvoiceVO;
+import org.owasp.esapi.User;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Acer
+ * Date: Nov 27, 2012
+ * Time: 1:14:10 AM
+ * To change this template use File | Settings | File Templates.
+ */
+public class GenerateInvoice extends HttpServlet
+{
+    private static Logger log = new Logger(GenerateInvoice.class.getName());
+    Connection con = null;
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException,IOException
+    {
+        InvoiceEntry invoiceEntry = new InvoiceEntry();
+        InvoiceVO invoiceVO = new InvoiceVO();
+        Functions functions = new Functions();
+        String paymodeCardtype = "";
+        String initTerminalValue = "";
+
+        HttpSession session = req.getSession();
+        Merchants merchants = new Merchants();
+
+        if (!merchants.isLoggedIn(session))
+        {   log.debug("member is logout ");
+            res.sendRedirect("/merchant/Logout.jsp");
+            return;
+        }
+
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+
+        String toid = (String)session.getAttribute("merchantid");
+        Hashtable hiddenvariables = new Hashtable();
+        Hashtable paymodelist = new Hashtable();
+        TreeMap terminallist = new TreeMap();
+
+        PreparedStatement pstmt5 = null;
+        ResultSet rs5 = null;
+        try
+        {
+            invoiceVO = invoiceEntry.getInvoiceConfigurationDetails(toid);
+
+            String duedate="";
+            String invoiceduedate="";
+            String accountid = null;
+
+            if (functions.isValueNull(invoiceVO.getDuedate()))
+            {
+                duedate =invoiceVO.getDuedate();
+                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                Calendar c = Calendar.getInstance();
+                c.setTime(new Date()); // Now use today date.
+                c.add(Calendar.DATE, (Integer.parseInt(duedate))); // Adding 5 days
+                invoiceduedate = sdf.format(c.getTime());
+            }
+            invoiceVO.setInvoiceduedate(invoiceduedate);
+
+            if (functions.isValueNull(invoiceVO.getTerminalid()))
+            {
+                TreeMap<String, String> map = invoiceEntry.getPaymodeCardtype(invoiceVO.getTerminalid());
+                 paymodeCardtype = map.get(invoiceVO.getTerminalid());
+            }
+
+            if(invoiceVO.getCurrency()!=null)
+            {
+                hiddenvariables.put("currency",invoiceVO.getCurrency());
+               // System.out.println("currency,invoiceVO.getCurrency::::::::::"+invoiceVO.getCurrency());
+            }
+
+            if(invoiceVO.getDefaultLanguage()!=null)
+            {
+                hiddenvariables.put("defaultLanguage",invoiceVO.getDefaultLanguage());
+            }
+
+            if(accountid!=null)
+            {
+                hiddenvariables.put("currency", GatewayAccountService.getGatewayAccount(accountid).getCurrency());
+            }
+
+            if (functions.isValueNull(invoiceVO.getTerminalid()))
+            {
+                TreeMap<String,String> map = invoiceEntry.getPaymodeCardtype(invoiceVO.getTerminalid());
+                initTerminalValue = invoiceVO.getTerminalid() + "-" + map.get(invoiceVO.getTerminalid());
+            }
+
+            //con=Database.getConnection();
+            con=Database.getRDBConnection();
+            String query5= "SELECT DISTINCT mam.terminalid, mam.paymodeid, gt.currency, mam.cardtypeid FROM member_account_mapping AS mam, gateway_accounts AS ga, gateway_type AS gt WHERE mam.memberid=? AND gt.currency=? AND mam.accountid = ga.accountid AND ga.pgtypeid = gt.pgtypeid AND mam.isActive='Y' order by terminalid asc";
+            pstmt5= con.prepareStatement(query5);
+            pstmt5.setString(1,toid);
+            pstmt5.setString(2,invoiceVO.getCurrency());
+            rs5 = pstmt5.executeQuery();
+            log.debug("terminal query for invoice----"+pstmt5);
+            while (rs5.next())
+            {
+                String terminalid =  rs5.getString("terminalid");
+                String paymodeid = rs5.getString("paymodeid");
+                String cardtypeid = rs5.getString("cardtypeid");
+                String currency = rs5.getString("currency");
+                String terminalDetails = terminalid+"-"+currency+"-"+GatewayAccountService.getPaymentTypes(paymodeid)+"-"+ GatewayAccountService.getCardType(cardtypeid);
+                terminallist.put(terminalid,terminalDetails);
+
+            }
+            /*rs5.close();
+            pstmt5.close();*/
+        }
+        catch(Exception e)
+        {
+            log.error("Exception occur",e);
+        }
+        finally
+        {
+            Database.closeResultSet(rs5);
+            Database.closePreparedStatement(pstmt5);
+            Database.closeConnection(con);
+        }
+
+        String error=(String)req.getAttribute("error");
+        if(error!=null)
+        {
+            req.setAttribute("error",error);
+            req.setAttribute("custname",req.getParameter("custname"));
+            req.setAttribute("custemail",req.getParameter("custemail"));
+            req.setAttribute("amount",req.getParameter("amount"));
+            req.setAttribute("orderdesc",req.getParameter("orderdesc"));
+            req.setAttribute("address",req.getParameter("address"));
+            req.setAttribute("city",req.getParameter("city"));
+            req.setAttribute("zipcode",req.getParameter("zipcode"));
+            req.setAttribute("countrycode",req.getParameter("countrycode"));
+            req.setAttribute("state",req.getParameter("state"));
+            req.setAttribute("phonecc",req.getParameter("phonecc"));
+            req.setAttribute("phone",req.getParameter("phone"));
+            req.setAttribute("defaultLanguage",req.getParameter("defaultLanguage"));
+            req.setAttribute("initTerminalValue",initTerminalValue);
+            req.setAttribute("terminallist",terminallist);
+        }
+        String order = "";
+
+
+
+        String orderID = invoiceEntry.getOrderId(invoiceVO.getMemberid());
+
+        order = invoiceVO.getInitial() + "_" + invoiceVO.getMemberid() + orderID;
+
+        String terminalValue = "";
+        if (functions.isValueNull(invoiceVO.getTerminalid()))
+        {
+            terminalValue = invoiceVO.getTerminalid() + "-" + invoiceVO.getCurrency() + "-" + paymodeCardtype;
+        }
+
+        List<String> unitList = new ArrayList<>();
+        List<DefaultProductList> productList = new ArrayList<>();
+
+        //if (invoiceVO.getDefaultunitList() != null)
+            unitList = invoiceEntry.getUnitList(invoiceVO.getMemberid());
+        if(error!=null)
+        {
+            productList= (List)req.getAttribute("listOfProducts");
+        }
+        else if (invoiceVO.getDefaultProductList() != null)
+        {
+            productList = invoiceVO.getDefaultProductList();
+        }
+        req.setAttribute("productList",productList);
+        req.setAttribute("unitList",unitList);
+        req.setAttribute("terminalValue",terminalValue);
+        req.setAttribute("orderid",order);
+        req.setAttribute("invoicevo",invoiceVO);
+        req.setAttribute("hiddenvariables",hiddenvariables);
+        req.setAttribute("paymodelist",paymodelist);
+        req.setAttribute("terminallist",terminallist);
+        req.setAttribute("initTerminalValue",initTerminalValue);
+        RequestDispatcher rd = req.getRequestDispatcher("/generateInvoice.jsp?ctoken="+user.getCSRFToken());
+        rd.forward(req, res);
+    }
+}

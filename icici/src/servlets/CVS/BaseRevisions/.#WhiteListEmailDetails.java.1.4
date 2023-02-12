@@ -1,0 +1,154 @@
+import com.directi.pg.Admin;
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.manager.WhiteListManager;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.User;
+import org.owasp.esapi.ValidationErrorList;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Mahima
+ * Date: 25/03/18
+ * Time: 2:51 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class WhiteListEmailDetails extends HttpServlet
+{
+    private static Logger log = new Logger(WhiteListEmailDetails.class.getName());
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        HttpSession session = req.getSession();
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+        if (!Admin.isLoggedIn(session))
+        {   log.debug("Admin is logout ");
+            res.sendRedirect("/icici/logout.jsp");
+            return;
+        }
+
+        String memberId=null;
+        String accountId=null;
+        String emailAddress=null;
+        String firstSix=null;
+        String lastFour=null;
+        String isTemp=null;
+        String errorMsg= "";
+        String EOL = "<br>";
+
+        int records=50;
+        int pageno=1;
+
+        errorMsg=errorMsg+validateOptionalParameters(req);
+
+        Functions functions=new Functions();
+       /* if (!ESAPI.validator().isValidInput("memberid", req.getParameter("memberid"), "Number", 10, true))
+        {
+            errorMsg = errorMsg + "Invalid Member ID." + EOL;
+        }
+        if (!ESAPI.validator().isValidInput("emailAddr", req.getParameter("emailAddr"), "Email", 35, true))
+        {
+            errorMsg = errorMsg + "Invalid Email Address." + EOL;
+        }*/
+
+        if(functions.isValueNull(errorMsg)){
+            req.setAttribute("cbmessage",errorMsg);
+            RequestDispatcher rd = req.getRequestDispatcher("/uploadwhitelistemaildetails.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+        try
+        {
+            validateOptionalParameter(req);
+        }
+        catch(ValidationException e)
+        {
+            log.error("ValidationException:::::",e);
+            req.setAttribute("cbmessage",e.getMessage());
+            RequestDispatcher rd = req.getRequestDispatcher("/uploadwhitelistemaildetails.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+
+        memberId= req.getParameter("memberid");
+        accountId= req.getParameter("accountid");
+        emailAddress=req.getParameter("emailaddr");
+        firstSix=req.getParameter("firstsix");
+        lastFour=req.getParameter("lastfour");
+        isTemp=req.getParameter("isTemp");
+
+        pageno = Functions.convertStringtoInt(req.getParameter("SPageno"), 1);
+        records = Functions.convertStringtoInt(req.getParameter("SRecords"),50);
+
+        Hashtable hash = null;
+        int start = (pageno - 1) * records;
+        int end = records;
+
+        WhiteListManager whiteListManager=new WhiteListManager();
+        try
+        {
+            hash=whiteListManager.getWhiteListEmailDetails(memberId,accountId,emailAddress,firstSix,lastFour, start, end,isTemp);
+        }
+        catch (PZDBViolationException e)
+        {
+            e.printStackTrace();
+        }
+
+        req.setAttribute("transdetails", hash);
+        RequestDispatcher rd = req.getRequestDispatcher("/uploadwhitelistemaildetails.jsp?ctoken="+user.getCSRFToken());
+        rd.forward(req, res);
+    }
+    private String validateOptionalParameters(HttpServletRequest req)
+    {
+        InputValidator inputValidator = new InputValidator();
+        String error = "";
+        String EOL = "<BR>";
+        List<InputFields> inputFieldsListOptional = new ArrayList<InputFields>();
+        inputFieldsListOptional.add(InputFields.MEMBERID);
+        inputFieldsListOptional.add(InputFields.ACCOUNTID_SMALL);
+        inputFieldsListOptional.add(InputFields.EMAILADDR);
+        inputFieldsListOptional.add(InputFields.FIRST_SIX);
+        inputFieldsListOptional.add(InputFields.LAST_FOUR);
+
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.InputValidations(req,inputFieldsListOptional,errorList,true);
+
+        if(!errorList.isEmpty())
+        {
+            for(InputFields inputFields :inputFieldsListOptional)
+            {
+                if(errorList.getError(inputFields.toString())!=null)
+                {
+                    log.debug(errorList.getError(inputFields.toString()).getLogMessage());
+                    error = error+errorList.getError(inputFields.toString()).getMessage()+EOL;
+                }
+            }
+        }
+        return error;
+    }
+    private void validateOptionalParameter(HttpServletRequest req) throws ValidationException
+    {
+        InputValidator inputValidator = new InputValidator();
+        List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+        inputFieldsListMandatory.add(InputFields.PAGENO);
+        inputFieldsListMandatory.add(InputFields.RECORDS);
+        inputValidator.InputValidations(req,inputFieldsListMandatory,true);
+    }
+}

@@ -1,0 +1,360 @@
+package com.payment.nestpay;
+
+import com.directi.pg.*;
+import com.manager.TransactionManager;
+import com.manager.vo.AsyncParameterVO;
+import com.manager.vo.DirectKitResponseVO;
+import com.manager.vo.TransactionDetailsVO;
+import com.payment.common.core.*;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.constraintType.PZDBExceptionEnum;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+/**
+ * Created by Admin on 7/9/18.
+ */
+public class NestPaymentProcess extends CommonPaymentProcess
+{
+    private static TransactionLogger transactionLogger= new TransactionLogger(NestPaymentProcess.class.getName());
+    public void setNestPayRequestVO(CommRequestVO requestVO,String trackingId) throws PZDBViolationException
+    {
+        Functions functions = new Functions();
+        CommRequestVO commRequestVO=(CommRequestVO) requestVO;
+        CommAddressDetailsVO commAddressDetailsVO=new CommAddressDetailsVO();
+        CommTransactionDetailsVO commTransactionDetailsVO=new CommTransactionDetailsVO();
+        CommCardDetailsVO commCardDetailsVO=new CommCardDetailsVO();
+        CommMerchantVO commMerchantVO=new CommMerchantVO();
+        TransactionManager transactionManager= new TransactionManager();
+        TransactionDetailsVO transactionVO =transactionManager.getTransDetailFromCommon(trackingId);
+        String expdate = transactionVO.getExpdate();
+        if (expdate != null)
+        {
+            String eDate = PzEncryptor.decryptExpiryDate(expdate);
+            String expMonth = eDate.split("\\/")[0];
+            String expYear = eDate.split("\\/")[1];
+            commCardDetailsVO.setExpMonth(expMonth);
+            commCardDetailsVO.setExpYear(expYear);
+        }
+        commTransactionDetailsVO.setPrevTransactionStatus(transactionVO.getStatus());
+        commTransactionDetailsVO.setCurrency(transactionVO.getCurrency());
+        commTransactionDetailsVO.setAmount(transactionVO.getAmount());
+        commTransactionDetailsVO.setOrderId(transactionVO.getDescription());
+        commTransactionDetailsVO.setOrderDesc(transactionVO.getOrderDescription());
+        commTransactionDetailsVO.setCustomerId(transactionVO.getCustomerId());
+        commTransactionDetailsVO.setNotificationUrl(transactionVO.getNotificationUrl());
+        commTransactionDetailsVO.setVersion(transactionVO.getVersion());
+        commTransactionDetailsVO.setEmiCount(transactionVO.getEmiCount());
+
+        commTransactionDetailsVO.setToId(transactionVO.getToid());
+        commTransactionDetailsVO.setPaymentType(transactionVO.getPaymodeId());
+        commTransactionDetailsVO.setCardType(transactionVO.getCardTypeId());
+        commTransactionDetailsVO.setRedirectUrl(transactionVO.getRedirectURL());
+        commAddressDetailsVO.setCountry(transactionVO.getCountry());
+        commAddressDetailsVO.setFirstname(transactionVO.getFirstName());
+        commAddressDetailsVO.setLastname(transactionVO.getLastName());
+        commAddressDetailsVO.setStreet(transactionVO.getStreet());
+        commAddressDetailsVO.setCity(transactionVO.getCity());
+        commAddressDetailsVO.setCountry(transactionVO.getCountry());
+        commAddressDetailsVO.setIp(transactionVO.getIpAddress());
+        commAddressDetailsVO.setState(transactionVO.getState());
+        commAddressDetailsVO.setZipCode(transactionVO.getZip());
+        commAddressDetailsVO.setEmail(transactionVO.getEmailaddr());
+
+        commCardDetailsVO.setCardNum(PzEncryptor.decryptPAN(transactionVO.getCcnum()));
+        commAddressDetailsVO.setTmpl_amount(transactionVO.getTemplateamount());
+        commAddressDetailsVO.setTmpl_currency(transactionVO.getTemplatecurrency());
+
+        commMerchantVO.setAccountId(transactionVO.getAccountId());
+        requestVO.setAddressDetailsVO(commAddressDetailsVO);
+        requestVO.setCardDetailsVO(commCardDetailsVO);
+        requestVO.setTransDetailsVO(commTransactionDetailsVO);
+        requestVO.setCommMerchantVO(commMerchantVO);
+    }
+
+    @Override
+    public String get3DConfirmationFormVT(String trackingId, String ctoken, Comm3DResponseVO response3D)
+    {
+        transactionLogger.error("VT 3d page displayed....." + response3D.getUrlFor3DRedirect());
+
+        String target = "target=_blank";
+            Functions functions = new Functions();
+
+        StringBuilder html = new StringBuilder();
+        html.append("<script language=\"javascript\">window.onload=function(){document.pay_form.submit();}</script>");
+        html.append("<form id=\"pay_form\" name=\"pay_form\" action=\"").append(response3D.getUrlFor3DRedirect() + "\"" + target).append("\" method=\"post\">");
+        html.append("<input type=\"hidden\" name=\"clientid\" value=\"" + response3D.getRequestMap().get("clientid") + "\">");
+        html.append("<input type=\"hidden\" name=\"storetype\" value=\"3d\">");
+        html.append("<input type=\"hidden\" name=\"hash\" value=\"" +response3D.getRequestMap().get("hash")+ "\">");
+        html.append("<input type=\"hidden\" name=\"trantype\" value=\"" + response3D.getRequestMap().get("transtype") + "\">");
+        html.append("<input type=\"hidden\" name=\"amount\" value=\"" +response3D.getRequestMap().get("amount")+ "\">");
+        html.append("<input type=\"hidden\" name=\"currency\" value=\"" +response3D.getRequestMap().get("currency")+ "\">");
+        html.append("<input type=\"hidden\" name=\"oid\" value=\"" + trackingId + "\">");
+        html.append("<input type=\"hidden\" name=\"okUrl\" value=\"" +response3D.getRequestMap().get("okUrl")+ "\">");
+        html.append("<input type=\"hidden\" name=\"failUrl\" value=\"" +response3D.getRequestMap().get("failUrl")+ "\">");
+        html.append("<input type=\"hidden\" name=\"lang\" value=\""+response3D.getRequestMap().get("lang")+"\">");
+        html.append("<input type=\"hidden\" name=\"rnd\" value=\""+response3D.getRequestMap().get("rnd")+"\">");
+        html.append("<input type=\"hidden\" name=\"pan\" value=\"" +response3D.getRequestMap().get("pan")+ "\">");
+        html.append("<input type=\"hidden\" name=\"Ecom_Payment_Card_ExpDate_Year\" value=\"" +response3D.getRequestMap().get("year")+ "\">");
+        html.append("<input type=\"hidden\" name=\"Ecom_Payment_Card_ExpDate_Month\" value=\"" + response3D.getRequestMap().get("month") + "\">");
+        html.append("<input type=\"hidden\" name=\"cv2\" value=\"" +response3D.getRequestMap().get("cvv")+ "\">");
+        html.append("<input type=\"hidden\" name=\"encoding\" value=\"utf-8\">");
+        html.append("<input type=\"hidden\" name=\"num\" value=\""+ PzEncryptor.encryptCVV(response3D.getRequestMap().get("cvv"))+"\">");
+        html.append("</form>");
+        html.append("<script language=\"javascript\">document.pay_form.submit();</script>");
+
+        StringBuilder htmllog = new StringBuilder();
+        htmllog.append("<form id=\"pay_form\" name=\"pay_form\" action=\"").append(response3D.getUrlFor3DRedirect() + "\"" + target).append("\" method=\"post\">");
+        htmllog.append("<input type=\"hidden\" name=\"clientid\" value=\"" + response3D.getRequestMap().get("clientid") + "\">");
+        htmllog.append("<input type=\"hidden\" name=\"storetype\" value=\"3d\">");
+        htmllog.append("<input type=\"hidden\" name=\"hash\" value=\"" +response3D.getRequestMap().get("hash")+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"trantype\" value=\"" + response3D.getRequestMap().get("transtype") + "\">");
+        htmllog.append("<input type=\"hidden\" name=\"amount\" value=\"" +response3D.getRequestMap().get("amount")+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"currency\" value=\"" +response3D.getRequestMap().get("currency")+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"oid\" value=\"" + trackingId + "\">");
+        htmllog.append("<input type=\"hidden\" name=\"okUrl\" value=\"" +response3D.getRequestMap().get("okUrl")+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"failUrl\" value=\"" +response3D.getRequestMap().get("failUrl")+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"lang\" value=\""+response3D.getRequestMap().get("lang")+"\">");
+        htmllog.append("<input type=\"hidden\" name=\"rnd\" value=\""+response3D.getRequestMap().get("rnd")+"\">");
+        htmllog.append("<input type=\"hidden\" name=\"pan\" value=\"" +functions.maskingPan(response3D.getRequestMap().get("pan"))+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"Ecom_Payment_Card_ExpDate_Year\" value=\"" +functions.maskingNumber(response3D.getRequestMap().get("year"))+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"Ecom_Payment_Card_ExpDate_Month\" value=\"" + functions.maskingNumber(response3D.getRequestMap().get("month")) + "\">");
+        htmllog.append("<input type=\"hidden\" name=\"cv2\" value=\"" +functions.maskingNumber(response3D.getRequestMap().get("cvv"))+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"encoding\" value=\"utf-8\">");
+        htmllog.append("<input type=\"hidden\" name=\"num\" value=\""+ functions.maskingNumber(PzEncryptor.encryptCVV(response3D.getRequestMap().get("cvv")))+"\">");
+        htmllog.append("</form>");
+        htmllog.append("<script language=\"javascript\">document.pay_form.submit();</script>");
+
+        transactionLogger.debug("form----" + htmllog.toString());
+        return html.toString();
+    }
+
+    @Override
+    public String get3DConfirmationForm(String trackingId, String ctoken, Comm3DResponseVO response3D)
+    {
+        transactionLogger.error("3d page displayed....." + response3D.getUrlFor3DRedirect());
+        Functions functions = new Functions();
+        StringBuilder html = new StringBuilder();
+        html.append("<form id=\"pay_form\" name=\"pay_form\" action=\"").append(response3D.getUrlFor3DRedirect()).append("\" method=\"post\">");
+        html.append("<input type=\"hidden\" name=\"clientid\" value=\"" + response3D.getRequestMap().get("clientid") + "\">");
+        html.append("<input type=\"hidden\" name=\"storetype\" value=\"3d\">");
+        html.append("<input type=\"hidden\" name=\"hash\" value=\"" +response3D.getRequestMap().get("hash")+ "\">");
+        html.append("<input type=\"hidden\" name=\"trantype\" value=\"" + response3D.getRequestMap().get("transtype") + "\">");
+        html.append("<input type=\"hidden\" name=\"amount\" value=\"" +response3D.getRequestMap().get("amount")+ "\">");
+        html.append("<input type=\"hidden\" name=\"currency\" value=\"" +response3D.getRequestMap().get("currency")+ "\">");
+        html.append("<input type=\"hidden\" name=\"oid\" value=\"" + trackingId + "\">");
+        html.append("<input type=\"hidden\" name=\"okUrl\" value=\"" +response3D.getRequestMap().get("okUrl")+ "\">");
+        html.append("<input type=\"hidden\" name=\"failUrl\" value=\"" +response3D.getRequestMap().get("failUrl")+ "\">");
+        html.append("<input type=\"hidden\" name=\"lang\" value=\""+response3D.getRequestMap().get("lang")+"\">");
+        html.append("<input type=\"hidden\" name=\"rnd\" value=\""+response3D.getRequestMap().get("rnd")+"\">");
+        html.append("<input type=\"hidden\" name=\"pan\" value=\"" +response3D.getRequestMap().get("pan")+ "\">");
+        html.append("<input type=\"hidden\" name=\"Ecom_Payment_Card_ExpDate_Year\" value=\"" +response3D.getRequestMap().get("year")+ "\">");
+        html.append("<input type=\"hidden\" name=\"Ecom_Payment_Card_ExpDate_Month\" value=\"" + response3D.getRequestMap().get("month") + "\">");
+        html.append("<input type=\"hidden\" name=\"cv2\" value=\"" +response3D.getRequestMap().get("cvv")+ "\">");
+        html.append("<input type=\"hidden\" name=\"encoding\" value=\"utf-8\">");
+        html.append("<input type=\"hidden\" name=\"num\" value=\""+ PzEncryptor.encryptCVV(response3D.getRequestMap().get("cvv"))+"\">");
+        html.append("</form>");
+        html.append("<script language=\"javascript\">document.pay_form.submit();</script>");
+
+        StringBuilder htmllog = new StringBuilder();
+        htmllog.append("<form id=\"pay_form\" name=\"pay_form\" action=\"").append(response3D.getUrlFor3DRedirect()).append("\" method=\"post\">");
+        htmllog.append("<input type=\"hidden\" name=\"clientid\" value=\"" + response3D.getRequestMap().get("clientid") + "\">");
+        htmllog.append("<input type=\"hidden\" name=\"storetype\" value=\"3d\">");
+        htmllog.append("<input type=\"hidden\" name=\"hash\" value=\"" +response3D.getRequestMap().get("hash")+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"trantype\" value=\"" + response3D.getRequestMap().get("transtype") + "\">");
+        htmllog.append("<input type=\"hidden\" name=\"amount\" value=\"" +response3D.getRequestMap().get("amount")+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"currency\" value=\"" +response3D.getRequestMap().get("currency")+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"oid\" value=\"" + trackingId + "\">");
+        htmllog.append("<input type=\"hidden\" name=\"okUrl\" value=\"" +response3D.getRequestMap().get("okUrl")+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"failUrl\" value=\"" +response3D.getRequestMap().get("failUrl")+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"lang\" value=\""+response3D.getRequestMap().get("lang")+"\">");
+        htmllog.append("<input type=\"hidden\" name=\"rnd\" value=\""+response3D.getRequestMap().get("rnd")+"\">");
+        htmllog.append("<input type=\"hidden\" name=\"pan\" value=\"" +functions.maskingPan(response3D.getRequestMap().get("pan"))+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"Ecom_Payment_Card_ExpDate_Year\" value=\"" +functions.maskingNumber(response3D.getRequestMap().get("year"))+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"Ecom_Payment_Card_ExpDate_Month\" value=\"" + functions.maskingNumber(response3D.getRequestMap().get("month")) + "\">");
+        htmllog.append("<input type=\"hidden\" name=\"cv2\" value=\"" +functions.maskingNumber(response3D.getRequestMap().get("cvv"))+ "\">");
+        htmllog.append("<input type=\"hidden\" name=\"encoding\" value=\"utf-8\">");
+        htmllog.append("<input type=\"hidden\" name=\"num\" value=\""+ functions.maskingNumber(PzEncryptor.encryptCVV(response3D.getRequestMap().get("cvv")))+"\">");
+        htmllog.append("</form>");
+        htmllog.append("<script language=\"javascript\">document.pay_form.submit();</script>");
+
+        transactionLogger.debug("form----" + htmllog.toString());
+        return html.toString();
+    }
+
+    public void set3DResponseVO(DirectKitResponseVO directKitResponseVO, Comm3DResponseVO response3D)
+    {
+        AsyncParameterVO asyncParameterVO = null;
+        transactionLogger.debug("inside nest payment process---"+response3D.getUrlFor3DRedirect());
+        directKitResponseVO.setBankRedirectionUrl(response3D.getUrlFor3DRedirect());
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("launch3D");
+        asyncParameterVO.setValue(response3D.getUrlFor3DRedirect());
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("clientid");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("clientid"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("storetype");
+        asyncParameterVO.setValue("3d");
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("hash");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("hash"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("trantype");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("transtype"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("amount");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("amount"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("currency");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("currency"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("oid");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("oid"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("okUrl");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("okUrl"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("failUrl");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("failUrl"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("lang");
+        asyncParameterVO.setValue("en");
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("rnd");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("rnd"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("pan");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("pan"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("Ecom_Payment_Card_ExpDate_Year");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("year"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("Ecom_Payment_Card_ExpDate_Month");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("month"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("cv2");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("cvv"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("encoding");
+        asyncParameterVO.setValue("utf-8");
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("num");
+        asyncParameterVO.setValue(PzEncryptor.encryptCVV(response3D.getRequestMap().get("cvv")));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+    }
+
+    public int actionEntryExtension(int newDetailId, String trackingId, String amount, String action, String status, CommResponseVO responseVO, CommRequestVO requestVO) throws PZDBViolationException
+    {
+        transactionLogger.debug("Entering ActionEntry for NestPaymentProcess");
+
+        NestPayResponseVO nestPayResponseVO = null;
+        int results=0;
+        Connection cn = null;
+        PreparedStatement pstmt=null;
+        try
+        {
+            if(responseVO != null  && !responseVO.equals(""))
+            {
+                nestPayResponseVO = (NestPayResponseVO) responseVO;
+
+                cn = Database.getConnection();
+                String sql = "insert into transaction_nestpay_details(DetailId,TrackingId,Response,AuthCode,HostRefNum,ProcReturnCode,TransId,SETTLEID,TRXDATE,ERRORCODE,NUMBEROFINSTALLMENTS1,CARDISSUER,ADVICEDINSTALLMENTTYPE,DIGERTAKSITTUTARI1,INTERESTRATE2,DIGERTAKSITTUTARI2,TOTALAMOUNTDUE1,INTERESTRATE1,TOTALAMOUNTDUE2,NUMBEROFINSTALLMENTS2,ANNUALPERCENTAGE1,ANNUALPERCENTAGE2,INSTALLMENTTYPE,INSTALLMENTOPTION,CARDBRAND,NUMBEROFINSTALLMENTOPTIONS,ADVICEINSTALLMENTEXIST,INSTALLMENTFEE2,INSTALLMENTFEE1,NUMCODE,ILKTAKSITTUTARI2,ILKTAKSITTUTARI1,ErrMsg) values (null,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+                pstmt = cn.prepareStatement(sql);
+                pstmt.setString(1, nestPayResponseVO.getOrderId());
+                pstmt.setString(2, nestPayResponseVO.getResponse());
+                pstmt.setString(3, nestPayResponseVO.getAuthCode());
+                pstmt.setString(4, nestPayResponseVO.getHostRefNum());
+                pstmt.setString(5, nestPayResponseVO.getProcReturnCode());
+                pstmt.setString(6, nestPayResponseVO.getTransId());
+                pstmt.setString(7, nestPayResponseVO.getSETTLEID());
+                pstmt.setString(8, nestPayResponseVO.getTRXDATE());
+                pstmt.setString(9, nestPayResponseVO.getERRORCODE());
+                pstmt.setString(10, nestPayResponseVO.getNUMBEROFINSTALLMENTS1());
+                pstmt.setString(11, nestPayResponseVO.getCARDISSUER());
+                pstmt.setString(12, nestPayResponseVO.getADVICEDINSTALLMENTTYPE());
+                pstmt.setString(13, nestPayResponseVO.getDIGERTAKSITTUTARI1());
+                pstmt.setString(14, nestPayResponseVO.getINTERESTRATE2());
+                pstmt.setString(15, nestPayResponseVO.getDIGERTAKSITTUTARI2());
+                pstmt.setString(16, nestPayResponseVO.getTOTALAMOUNTDUE1());
+                pstmt.setString(17, nestPayResponseVO.getINTERESTRATE1());
+                pstmt.setString(18, nestPayResponseVO.getTOTALAMOUNTDUE2());
+                pstmt.setString(19, nestPayResponseVO.getNUMBEROFINSTALLMENTS2());
+                pstmt.setString(20, nestPayResponseVO.getANNUALPERCENTAGE1());
+                pstmt.setString(21, nestPayResponseVO.getANNUALPERCENTAGE2());
+                pstmt.setString(22, nestPayResponseVO.getINSTALLMENTTYPE());
+                pstmt.setString(23, nestPayResponseVO.getINSTALLMENTOPTION());
+                pstmt.setString(24, nestPayResponseVO.getCARDBRAND());
+                pstmt.setString(25, nestPayResponseVO.getNUMBEROFINSTALLMENTOPTIONS());
+                pstmt.setString(26, nestPayResponseVO.getADVICEINSTALLMENTEXIST());
+                pstmt.setString(27, nestPayResponseVO.getINSTALLMENTFEE2());
+                pstmt.setString(28, nestPayResponseVO.getINSTALLMENTFEE1());
+                pstmt.setString(29, nestPayResponseVO.getNUMCODE());
+                pstmt.setString(30, nestPayResponseVO.getILKTAKSITTUTARI2());
+                pstmt.setString(31, nestPayResponseVO.getILKTAKSITTUTARI1());
+                pstmt.setString(32, nestPayResponseVO.getErrMsg());
+
+                results = pstmt.executeUpdate();
+
+                transactionLogger.error("SqlQuery nestpay-----" + pstmt);
+            }
+
+        }
+        catch (SQLException se)
+        {
+            PZExceptionHandler.raiseDBViolationException(NestPaymentProcess.class.getName(), "actionEntryExtension()", null, "common", "Technical exception", PZDBExceptionEnum.SQL_EXCEPTION, null, se.getMessage(), se.getCause());
+        }
+        catch (SystemError systemError)
+        {
+            PZExceptionHandler.raiseDBViolationException(NestPaymentProcess.class.getName(), "actionEntryExtension()", null, "common", "Technical exception", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closeConnection(cn);
+            Database.closePreparedStatement(pstmt);
+        }
+        return results;
+    }
+
+}

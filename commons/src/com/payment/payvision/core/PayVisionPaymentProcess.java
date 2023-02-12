@@ -1,0 +1,359 @@
+package com.payment.payvision.core;
+
+import com.directi.pg.*;
+import com.manager.TransactionManager;
+import com.manager.vo.AsyncParameterVO;
+import com.manager.vo.DirectKitResponseVO;
+import com.manager.vo.TransactionDetailsVO;
+import com.payment.common.core.*;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.constraintType.PZDBExceptionEnum;
+import com.payment.request.*;
+import com.payment.validators.vo.CommonValidatorVO;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Map;
+
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Jignesh
+ * Date: 5/17/13
+ * Time: 10:49 AM
+ * To change this template use File | Settings | File Templates.
+ */
+public class PayVisionPaymentProcess extends CommonPaymentProcess
+{
+
+    private static Logger log = new Logger(PayVisionPaymentProcess.class.getName());
+    private static TransactionLogger transactionLogger = new TransactionLogger(PayVisionPaymentProcess.class.getName());
+
+    @Override
+    public void setTransactionVOParamsExtension(CommRequestVO requestVO, Map transactionRequestPArams)
+    {
+        PayVisionRequestVO payVisionRequestVO = (PayVisionRequestVO) requestVO;
+        String trackingMemberCode = "Auth-" + payVisionRequestVO.getTransDetailsVO().getOrderId();
+        payVisionRequestVO.setTrackingMemberCode(trackingMemberCode);
+    }
+
+    public void setTransactionVOParamsExtension(CommRequestVO requestVO, CommonValidatorVO commonValidatorVO)
+    {
+        PayVisionRequestVO payVisionRequestVO = (PayVisionRequestVO) requestVO;
+        String trackingMemberCode = "Auth-" + payVisionRequestVO.getTransDetailsVO().getOrderId();
+        payVisionRequestVO.setTrackingMemberCode(trackingMemberCode);
+    }
+
+    @Override
+    public void setTransactionVOExtension(CommRequestVO commRequestVO,CommonValidatorVO commonValidatorVO)
+    {
+        PayVisionRequestVO payVisionRequestVO = (PayVisionRequestVO) commRequestVO;
+        String trackingMemberCode = "Transaction-" + payVisionRequestVO.getTransDetailsVO().getOrderId();
+        payVisionRequestVO.setTrackingMemberCode(trackingMemberCode);
+    }
+
+    @Override
+    public void setCaptureVOParamsExtension(CommRequestVO requestVO, PZCaptureRequest captureRequest) throws PZDBViolationException
+    {
+        PayVisionRequestVO payVisionRequestVO = (PayVisionRequestVO) requestVO;
+        String trackingId = payVisionRequestVO.getTransDetailsVO().getOrderId();
+        String detailId = payVisionRequestVO.getTransDetailsVO().getDetailId();
+        String trackingMemberCode = "Capture-" + trackingId;
+        payVisionRequestVO.setTrackingMemberCode(trackingMemberCode);
+        String transactionGuid = getTransactionGuid(trackingId, detailId, "authsuccessful");
+        transactionLogger.error("transactionGuid----"+transactionGuid);
+        payVisionRequestVO.setTransactionGuid(transactionGuid);
+    }
+
+    private String getTransactionGuid(String trackingId, String detailId, String status) throws PZDBViolationException
+    {
+        transactionLogger.error("-----inside getTransactionGuid-----");
+        String transactionGuid = "";
+        Connection conn = null;
+        try
+        {
+
+            conn = Database.getConnection();
+            String transaction_details = "select * from transaction_payvision_details where trackingid=? and status=? ORDER BY detailId DESC LIMIT 1";
+            PreparedStatement transDetailsprepstmnt = conn.prepareStatement(transaction_details);
+            transDetailsprepstmnt.setInt(1, Integer.parseInt(trackingId));
+            transDetailsprepstmnt.setString(2, status);
+            ResultSet rsTransDetails = transDetailsprepstmnt.executeQuery();
+            if (rsTransDetails.next())
+            {
+                transactionGuid = rsTransDetails.getString("transactionguid");
+            }
+            transactionLogger.error("SqlQuery----"+transDetailsprepstmnt);
+        }
+
+
+
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException(PayVisionPaymentProcess.class.getName(),"getTransactionGuid()",null,"common","DB Exception",PZDBExceptionEnum.SQL_EXCEPTION,null,e.getMessage(),e.getCause());
+        }
+        catch (SystemError systemError)
+        {
+            PZExceptionHandler.raiseDBViolationException(PayVisionPaymentProcess.class.getName(), "getTransactionGuid()", null, "common", "DB Exception", PZDBExceptionEnum.SQL_EXCEPTION, null, systemError.getMessage(), systemError.getCause());
+        }
+        catch(Exception e){
+            transactionLogger.error("Exception--->",e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return transactionGuid;
+    }
+
+    @Override
+    public void setRefundVOParamsextension(CommRequestVO requestVO, PZRefundRequest refundRequest) throws PZDBViolationException
+    {
+        PayVisionRequestVO payVisionRequestVO = (PayVisionRequestVO) requestVO;
+        String trackingId = payVisionRequestVO.getTransDetailsVO().getOrderId();
+        String detailId = payVisionRequestVO.getTransDetailsVO().getDetailId();
+        String trackingMemberCode = "Refund-" + trackingId;
+        payVisionRequestVO.setTrackingMemberCode(trackingMemberCode);
+        String transactionGuid = getTransactionGuid(trackingId, detailId, "capturesuccess");
+        //int count=getRefundCount(trackingId);
+        payVisionRequestVO.setTransactionGuid(transactionGuid);
+        //payVisionRequestVO.setCount(count);
+
+    }
+
+    public void setPayoutVOParamsextension(CommRequestVO requestVO, PZPayoutRequest payoutRequest) throws PZDBViolationException
+    {
+        PayVisionRequestVO payVisionRequestVO = (PayVisionRequestVO) requestVO;
+        String trackingMemberCode = "CFT-" + payVisionRequestVO.getTransDetailsVO().getOrderId();
+        payVisionRequestVO.setTrackingMemberCode(trackingMemberCode);
+    }
+
+    @Override
+    public void setInquiryVOParamsExtension(CommRequestVO requestVO, PZInquiryRequest pzInquiryRequest)
+    {
+
+
+    }
+
+    @Override
+    public void setCancelVOParamsExtension(CommRequestVO requestVO, PZCancelRequest cancelRequest) throws PZDBViolationException
+    {
+        PayVisionRequestVO payVisionRequestVO = (PayVisionRequestVO) requestVO;
+        String trackingId = payVisionRequestVO.getTransDetailsVO().getOrderId();
+        String detailId = payVisionRequestVO.getTransDetailsVO().getDetailId();
+        String trackingMemberCode = "Cancel-" + trackingId;
+        payVisionRequestVO.setTrackingMemberCode(trackingMemberCode);
+        String transactionGuid = getTransactionGuid(trackingId, detailId, "authsuccessful");
+        payVisionRequestVO.setTransactionGuid(transactionGuid);
+    }
+
+    @Override
+    public int actionEntryExtension(int newDetailId, String trackingId, String amount, String action, String status, CommResponseVO responseVO, CommRequestVO requestVO) throws PZDBViolationException
+    {
+        log.debug("Entering ActionEntry for Payvision Details");
+        transactionLogger.debug("Entering ActionEntry for Payvision Details");
+
+        String trackingMemberCode = "";
+        String transactionGuid = "";
+        int enrollmentid=0;
+        int results=0;
+        if (requestVO != null)
+        {
+            transactionLogger.error("----inside P1----");
+            PayVisionRequestVO payVisionRequestVO = null;
+            payVisionRequestVO = new PayVisionRequestVO();
+            trackingMemberCode = payVisionRequestVO.getTrackingMemberCode();
+            transactionGuid = payVisionRequestVO.getTransactionGuid();
+            enrollmentid=payVisionRequestVO.getEnrollmentId();
+            transactionLogger.error("trackingMemberCode----"+trackingMemberCode);
+            transactionLogger.error("transactionGuid-----"+transactionGuid);
+            transactionLogger.error("enrollmentid-----"+enrollmentid);
+        }
+
+        if (responseVO != null)
+        {
+            transactionLogger.error("----inside P2-----");
+            PayVisionResponseVO payVisionResponseVO = null;
+            payVisionResponseVO = (PayVisionResponseVO) responseVO;
+            trackingMemberCode = payVisionResponseVO.getTrackingMemberCode();
+            transactionGuid = payVisionResponseVO.getTransactionGuid();
+            enrollmentid=payVisionResponseVO.getEnrollmentId();
+            transactionLogger.error("trackingMemberCode----"+trackingMemberCode);
+            transactionLogger.error("transactionGuid-----"+transactionGuid);
+            transactionLogger.error("enrollmentid-----"+enrollmentid);
+        }
+        Connection cn = null;
+        try
+        {
+            cn = Database.getConnection();
+            String sql = "insert into transaction_payvision_details(detailid,trackingid,amount,status,trackingmembercode,transactionguid,enrollmentid) values (?,?,?,?,?,?,?)";
+
+            PreparedStatement pstmt = cn.prepareStatement(sql);
+            pstmt.setInt(1, newDetailId);
+            pstmt.setString(2, trackingId);
+            pstmt.setString(3, amount);
+            pstmt.setString(4, status);
+            pstmt.setString(5, trackingMemberCode);
+            pstmt.setString(6, transactionGuid);
+            pstmt.setInt(7, enrollmentid);
+            results = pstmt.executeUpdate();
+
+            transactionLogger.error("SqlQuery-----"+pstmt);
+
+        }
+        catch (SQLException se)
+        {
+            PZExceptionHandler.raiseDBViolationException(PayVisionPaymentProcess.class.getName(), "actionEntryExtension()", null, "common", "Technical exception", PZDBExceptionEnum.SQL_EXCEPTION, null, se.getMessage(), se.getCause());
+        }
+        catch (SystemError systemError)
+        {
+            PZExceptionHandler.raiseDBViolationException(PayVisionPaymentProcess.class.getName(), "actionEntryExtension()", null, "common", "Technical exception", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closeConnection(cn);
+        }
+        return results;
+    }
+
+    @Override
+    public String get3DConfirmationFormVT(String trackingId, String ctoken, Comm3DResponseVO response3D)
+    {
+        transactionLogger.error("3d page displayed....." + response3D.getUrlFor3DRedirect());
+
+        String target = "target=_blank";
+        String form="<form name=\"launch3D\" method=\"POST\" action=\""+response3D.getUrlFor3DRedirect()+"\""+target+">"+
+                "<input type=\"hidden\" name=\"PaReq\" value=\""+response3D.getPaReq()+"\">"+
+                "<input type=\"hidden\" name=\"TermUrl\" value=\""+response3D.getTerURL()+"\">"+
+                "<input type=\"hidden\" name=\"MD\" value=\""+response3D.getMd()+"\">"+
+                "</form>"+
+                "<script language=\"javascript\"> document.launch3D.submit(); </script>";
+        return form;
+    }
+
+    @Override
+    public String get3DConfirmationForm(String trackingId, String ctoken, Comm3DResponseVO response3D)
+    {
+        transactionLogger.error("3d page displayed....." + response3D.getUrlFor3DRedirect());
+
+        String form="<form name=\"launch3D\" method=\"POST\" action=\""+response3D.getUrlFor3DRedirect()+"\">"+
+                "<input type=\"hidden\" name=\"PaReq\" value=\""+response3D.getPaReq()+"\">"+
+                "<input type=\"hidden\" name=\"TermUrl\" value=\""+response3D.getTerURL()+"\">"+
+                "<input type=\"hidden\" name=\"MD\" value=\""+response3D.getMd()+"\">"+
+                "</form>"+
+                "<script language=\"javascript\"> document.launch3D.submit(); </script>";
+        return form;
+    }
+
+    public void setPayVisionRequestVO(CommRequestVO requestVO,String trackingId,String PARes,String cvv) throws PZDBViolationException{
+        Functions functions                         = new Functions();
+        PayVisionRequestVO payVisionRequestVO       = (PayVisionRequestVO) requestVO;
+        CommAddressDetailsVO commAddressDetailsVO   = new CommAddressDetailsVO();
+        CommTransactionDetailsVO commTransactionDetailsVO   = new CommTransactionDetailsVO();
+        CommCardDetailsVO commCardDetailsVO                 = new CommCardDetailsVO();
+        CommMerchantVO commMerchantVO           = new CommMerchantVO();
+        TransactionManager transactionManager   = new TransactionManager();
+        TransactionDetailsVO transactionVO      = transactionManager.getTransDetailFromCommon(trackingId);
+        commTransactionDetailsVO.setPrevTransactionStatus(transactionVO.getStatus());
+
+        transactionLogger.debug("dbStatus----"+commTransactionDetailsVO.getPrevTransactionStatus());
+
+        commTransactionDetailsVO.setCurrency(transactionVO.getCurrency());
+        commTransactionDetailsVO.setAmount(transactionVO.getAmount());
+        commTransactionDetailsVO.setOrderId(transactionVO.getDescription());
+        commTransactionDetailsVO.setOrderDesc(transactionVO.getOrderDescription());
+        commTransactionDetailsVO.setCustomerId(transactionVO.getCustomerId());
+        commTransactionDetailsVO.setEci(transactionVO.getEci());
+        commTransactionDetailsVO.setNotificationUrl(transactionVO.getNotificationUrl());
+        commTransactionDetailsVO.setVersion(transactionVO.getVersion());
+        commTransactionDetailsVO.setTerminalId(transactionVO.getTerminalId());
+        commTransactionDetailsVO.setToId(transactionVO.getToid());
+        commTransactionDetailsVO.setPaymentType(transactionVO.getPaymodeId());
+        commTransactionDetailsVO.setCardType(transactionVO.getCardTypeId());
+        commTransactionDetailsVO.setRedirectUrl(transactionVO.getRedirectURL());
+        commTransactionDetailsVO.setRedirectMethod(transactionVO.getRedirectMethod());
+
+        commAddressDetailsVO.setCountry(transactionVO.getCountry());
+        commAddressDetailsVO.setFirstname(transactionVO.getFirstName());
+        commAddressDetailsVO.setLastname(transactionVO.getLastName());
+        commAddressDetailsVO.setEmail(transactionVO.getEmailaddr());
+        commAddressDetailsVO.setZipCode(transactionVO.getZip());
+        commAddressDetailsVO.setStreet(transactionVO.getStreet());
+        commAddressDetailsVO.setState(transactionVO.getState());
+        commAddressDetailsVO.setCity(transactionVO.getCity());
+        commAddressDetailsVO.setCountry(transactionVO.getCountry());
+        commAddressDetailsVO.setTelnocc(transactionVO.getTelcc());
+        commAddressDetailsVO.setPhone(transactionVO.getTelno());
+        commCardDetailsVO.setCardNum(PzEncryptor.decryptPAN(transactionVO.getCcnum()));
+        String expDate  = PzEncryptor.decryptExpiryDate(transactionVO.getExpdate());
+        String expMonth = "";
+        String expYear  = "";
+        if(expDate.contains("/"))
+        {
+            String temp[] = expDate.split("/");
+
+            if (functions.isValueNull(temp[0]))
+            {
+                expMonth = temp[0];
+            }
+            if (functions.isValueNull(temp[1]))
+            {
+                expYear = temp[1];
+            }
+        }
+        commCardDetailsVO.setExpMonth(expMonth);
+        commCardDetailsVO.setExpYear(expYear);
+        commAddressDetailsVO.setTmpl_amount(transactionVO.getTemplateamount());
+        commAddressDetailsVO.setTmpl_currency(transactionVO.getTemplatecurrency());
+
+        commMerchantVO.setAccountId(transactionVO.getAccountId());
+        payVisionRequestVO.setPaRes(PARes);
+        commCardDetailsVO.setcVV(cvv);
+        requestVO.setAddressDetailsVO(commAddressDetailsVO);
+        requestVO.setCardDetailsVO(commCardDetailsVO);
+        requestVO.setTransDetailsVO(commTransactionDetailsVO);
+        requestVO.setCommMerchantVO(commMerchantVO);
+
+    }
+
+    public void set3DResponseVO(DirectKitResponseVO directKitResponseVO, Comm3DResponseVO response3D)
+    {
+        AsyncParameterVO asyncParameterVO = null;
+        Functions functions = new Functions();
+        transactionLogger.debug("inside Payvision payment process---"+response3D.getUrlFor3DRedirect());
+        directKitResponseVO.setBankRedirectionUrl(response3D.getUrlFor3DRedirect());
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("launch3D");
+        asyncParameterVO.setValue(response3D.getUrlFor3DRedirect());
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        if (functions.isValueNull(response3D.getPaReq()))
+        {
+            asyncParameterVO = new AsyncParameterVO();
+            asyncParameterVO.setName("PaReq");
+            asyncParameterVO.setValue(response3D.getPaReq());
+            directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+        }
+
+        if (functions.isValueNull(response3D.getTerURL()))
+        {
+            asyncParameterVO = new AsyncParameterVO();
+            asyncParameterVO.setName("TermUrl");
+            asyncParameterVO.setValue(response3D.getTerURL());
+            directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+        }
+
+        if (functions.isValueNull(response3D.getMd()))
+        {
+            asyncParameterVO = new AsyncParameterVO();
+            asyncParameterVO.setName("MD");
+            asyncParameterVO.setValue(response3D.getMd());
+            directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+        }
+    }
+
+}

@@ -1,0 +1,669 @@
+package com.directi.pg.fileupload;
+
+import com.directi.pg.Functions;
+import com.directi.pg.Mail;
+import com.directi.pg.SystemError;
+import com.logicboxes.util.ApplicationProperties;
+import com.manager.vo.FileDetailsVO;
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileItemFactory;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.owasp.esapi.User;
+
+import javax.mail.MessagingException;
+import javax.mail.Part;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletInputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.logging.Logger;
+
+public class FileUploadBean
+{
+    private static com.directi.pg.Logger logger=new com.directi.pg.Logger(FileUploadBean.class.getName());
+
+    public FileUploadBean()
+    {
+        started = true;
+    }
+
+    public String getFilename()
+    {
+        return filename;
+    }
+
+    public String getFilepath()
+    {
+        return retpath;
+    }
+
+    public void setSavePath(String savePath)
+    {
+        path = savePath;
+    }
+
+    public String getSavePath()
+    {
+        return path;
+    }
+
+
+    public String getLogpath()
+    {
+        return logpath;
+    }
+
+    public void setLogpath(String logpath)
+    {
+        this.logpath = logpath;
+    }
+
+
+    public String getContentType()
+    {
+        return contenttype;
+    }
+
+    public String getFieldValue(String fieldName)
+    {
+        if (dict == null || fieldName == null)
+            return null;
+        else
+            return (String) dict.get(fieldName);
+    }
+
+    private void setFilename(String s) throws SystemError
+    {
+
+        if (s == null)
+            return;
+        int pos = s.indexOf("filename=\"");
+        if (pos != -1)
+        {
+            retpath = s.substring(pos + 10, s.length() - 1);
+            pos = retpath.lastIndexOf("\\");
+            if (pos != -1)
+                filename = retpath.substring(pos + 1);
+            else
+                filename = retpath;
+        }
+
+        if (!validateExtension(filename))
+        {
+            filename = null;
+            dontwrite = true;
+        }
+
+    }
+
+    private void setFilenameForSettlement(String s) throws SystemError
+    {
+
+        if (s == null)
+            return;
+        int pos = s.indexOf("filename=\"");
+        if (pos != -1)
+        {
+            retpath = s.substring(pos + 10, s.length() - 1);
+            pos = retpath.lastIndexOf("\\");
+            if (pos != -1)
+                filename = retpath.substring(pos + 1);
+            else
+                filename = retpath;
+        }
+
+        /*if (!validateExtension(filename))
+        {
+            filename = null;
+            dontwrite = true;
+        }*/
+
+    }
+    public void Upload(String path,Part filePart,String fileName) throws SystemError, IOException
+    {
+        OutputStream out = null;
+        InputStream filecontent = null;
+
+
+        try {
+            out = new FileOutputStream(new File(path + File.separator + fileName));
+            try
+            {
+
+                filecontent = filePart.getInputStream();
+            }
+            catch (MessagingException e)
+            {
+                logger.error("MessagingException---->",e);  //To change body of catch statement use File | Settings | File Templates.
+            }
+
+            int read = 0;
+            final byte[] bytes = new byte[1024];
+
+            while ((read = filecontent.read(bytes)) != -1) {
+                out.write(bytes, 0, read);
+            }
+
+        } catch (FileNotFoundException fne) {
+
+        } finally {
+            if (out != null) {
+                out.close();
+            }
+            if (filecontent != null) {
+                filecontent.close();
+            }
+
+        }
+    }
+    private boolean validateExtension(String filename)
+    {
+        if (Functions.parseData(filename) == null)
+        {
+            return false;
+        }
+
+        boolean validated = false;
+        String[] extensions = Functions.convertCommaseperatedStringtoStringarr(".xls,.xlsx,.pdf,.docs,.doc,.docx");
+        for (int i = 0; i < extensions.length; i++)
+        {
+            if (filename.endsWith(extensions[i].toLowerCase()))
+            {
+                validated = true;
+                break;
+            }
+        }
+        return validated;
+    }
+
+    private String getFileExtension(String filename)
+    {
+        String extension=null;
+        if(filename!=null)
+        {
+            int ext=filename.trim().indexOf(".");
+            extension=filename.substring(ext+1);
+        }
+        return extension;
+    }
+
+    private void setContenttype(String s)
+    {
+        if (s == null)
+            return;
+        int pos = s.indexOf(": ");
+        if (pos != -1)
+            contenttype = s.substring(pos + 2, s.length());
+    }
+
+    public void doUpload(HttpServletRequest request, String username)
+            throws IOException, SystemError
+    {
+        ServletInputStream in = request.getInputStream();
+        byte line[] = new byte[128];
+        int i = in.readLine(line, 0, 128);
+        if (i < 3)
+            return;
+        int boundaryLength = i - 2;
+        String boundary = new String(line, 0, boundaryLength);
+        dict = new Hashtable();
+        for (; i != -1; i = in.readLine(line, 0, 128))
+        {
+            String newLine = new String(line, 0, i);
+            if (!newLine.startsWith("Content-Disposition: form-data; name=\""))
+                continue;
+            if (newLine.indexOf("filename=\"") != -1)
+            {
+
+                setFilename(new String(line, 0, i - 2));
+
+                if (filename == null|| filename.equals("") )
+                {
+                    throw new SystemError("Please provide valid file");
+                }else if (filename.matches(".*\\s.*"))
+                    throw new SystemError("Please provide valid file or file name should not contains space");
+
+
+                File file=new File(path+filename);
+
+                if(file.exists())
+                {
+
+                    throw new SystemError("Your file already exists in the System. Please Upload new File.");
+                }
+
+                i = in.readLine(line, 0, 128);
+                setContenttype(new String(line, 0, i - 2));
+                i = in.readLine(line, 0, 128);
+                i = in.readLine(line, 0, 128);
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                for (newLine = new String(line, 0, i); i != -1 && !newLine.startsWith(boundary); newLine = new String(line, 0, i))
+                {
+                    buffer.write(line, 0, i);
+                    i = in.readLine(line, 0, 128);
+                }
+
+                try
+                {
+                    if (username != null)
+                    {
+                        //System.out.println("username not null");
+                        int pos = filename.lastIndexOf(".");
+                        if (pos != -1)
+                        {
+                            String ext = filename.substring(pos);
+                            filename = username + ext;
+                        }
+                        else
+                        {
+                            dontwrite = true;
+                        }
+                    }
+
+                    if (!dontwrite)
+                    {
+                        //	System.out.println("writing file");
+                        RandomAccessFile f = new
+                                RandomAccessFile(String.valueOf(path != null ? ((Object) (path)) : "") +
+                                String.valueOf(filename), "rw");
+                        byte bytes[] = buffer.toByteArray();
+
+
+                        f.write(bytes, 0, bytes.length - 2);
+
+                        f.close();
+                        logUploadedFile(request);
+                    }
+
+                }
+                catch (Exception exception)
+                {
+                    //System.out.println(exception.toString());
+                }
+                continue;
+            }
+            int pos = newLine.indexOf("name=\"");
+            String fieldName = newLine.substring(pos + 6, newLine.length() -
+                    3);
+            i = in.readLine(line, 0, 128);
+            i = in.readLine(line, 0, 128);
+            newLine = new String(line, 0, i);
+            StringBuffer fieldValue = new StringBuffer(128);
+            for (; i != -1 && !newLine.startsWith(boundary); newLine = new
+                    String(line, 0, i))
+            {
+                i = in.readLine(line, 0, 128);
+                if ((i == boundaryLength + 2 || i == boundaryLength + 4) &&
+                        (new String(line, 0, i)).startsWith(boundary))
+                    fieldValue.append(newLine.substring(0, newLine.length() -
+                            2));
+                else
+                    fieldValue.append(newLine);
+            }
+
+            dict.put(fieldName, fieldValue.toString());
+        }
+
+        if (started)
+        {
+//File f = new File(String.valueOf(path != null ? ((Object)(path)) : "") + String.valueOf(filename));
+//if(f.length() > (long)4095)
+//f.delete();
+//f = null;
+        }
+    }
+
+    public void doUpload1(HttpServletRequest request, String username)
+            throws IOException, SystemError
+    {
+
+        ServletInputStream in = request.getInputStream();
+        byte line[] = new byte[256];
+        int i = in.readLine(line, 0, 255);
+        if (i < 3)
+            return;
+        int boundaryLength = i - 2;
+        String boundary = new String(line, 0, boundaryLength);
+        dict = new Hashtable();
+        for (; i != -1; i = in.readLine(line, 0, 255))
+        {
+            String newLine = new String(line, 0, i);
+            if (!newLine.startsWith("Content-Disposition: form-data; name=\""))
+                continue;
+            if (newLine.indexOf("filename=\"") != -1)
+            {
+
+                setFilename(new String(line, 0, i - 2));
+                File file=new File(path+filename);
+
+
+                /*if(filename.contains(".pdf")){
+                    path=ApplicationProperties.getProperty("PAYOUT_REPORT_FILE_PATH");
+                }
+                else if(filename.contains(".docs")){
+                    path=ApplicationProperties.getProperty("PAYOUT_REPORT_FILE_PATH");
+                }
+
+                if (filename == null)
+                {
+                    throw new SystemError("Please provide valid file");
+                }*/
+
+                if(file.exists())
+                {
+                   throw new SystemError("Your file already exists in the System. Please Upload new File.");
+                }
+
+                i = in.readLine(line, 0, 255);
+                setContenttype(new String(line, 0, i - 2));
+                i = in.readLine(line, 0, 255);
+                i = in.readLine(line, 0, 255);
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                for (newLine = new String(line, 0, i); i != -1 && !newLine.startsWith(boundary); newLine = new String(line, 0, i))
+                {
+                    buffer.write(line, 0, i);
+                    i = in.readLine(line, 0, 255);
+                }
+
+                try
+                {
+                    if (username != null)
+                    {
+                        //System.out.println("username not null");
+                        int pos = filename.lastIndexOf(".");
+                        if (pos != -1)
+                        {
+                            String ext = filename.substring(pos);
+                            filename = username + ext;
+                        }
+                        else
+                        {
+                            dontwrite = true;
+                        }
+                    }
+
+                    if (!dontwrite)
+                    {
+                        //	System.out.println("writing file");
+                        RandomAccessFile f = new
+                                RandomAccessFile(String.valueOf(path != null ? ((Object) (path)) : "") +
+                                String.valueOf(filename), "rw");
+                        byte bytes[] = buffer.toByteArray();
+
+
+                        f.write(bytes, 0, bytes.length - 2);
+
+                        f.close();
+                        logUploadedFile(request);
+                    }
+
+                }
+                catch (Exception exception)
+                {
+                    //System.out.println(exception.toString());
+                }
+                continue;
+            }
+            int pos = newLine.indexOf("name=\"");
+            String fieldName = newLine.substring(pos + 6, newLine.length() - 3);
+            i = in.readLine(line, 0, 255);
+            i = in.readLine(line, 0, 255);
+            newLine = new String(line, 0, i);
+            StringBuffer fieldValue = new StringBuffer(255);
+            for (; i != -1 && !newLine.startsWith(boundary); newLine = new
+                    String(line, 0, i))
+            {
+                i = in.readLine(line, 0, 255);
+                if ((i == boundaryLength + 2 || i == boundaryLength + 4) &&
+                        (new String(line, 0, i)).startsWith(boundary))
+                    fieldValue.append(newLine.substring(0, newLine.length() - 2));
+                else
+                    fieldValue.append(newLine);
+            }
+
+            //System.out.println("FIELD NAME::  "+ fieldName + "  FIELD VALUE:::: "+ fieldValue);
+            dict.put(fieldName, fieldValue.toString());
+        }
+
+        if (started)
+        {
+
+        }
+    }
+
+    public void doUploadForMerchantSettled(HttpServletRequest request, String username) throws IOException, SystemError
+    {
+        ServletInputStream in = request.getInputStream();
+        byte line[] = new byte[128];
+        int i = in.readLine(line, 0, 128);
+        if (i < 3)
+            return;
+        int boundaryLength = i - 2;
+        String boundary = new String(line, 0, boundaryLength);
+        dict = new Hashtable();
+        for (; i != -1; i = in.readLine(line, 0, 128))
+        {
+            String newLine = new String(line, 0, i);
+            if (!newLine.startsWith("Content-Disposition: form-data; name=\""))
+                continue;
+            if (newLine.indexOf("filename=\"") != -1)
+            {
+
+                setFilenameForSettlement(new String(line, 0, i - 2));
+                if (filename == null)
+                {
+                    throw new SystemError("Please provide valid file");
+                }
+                if(filename.contains(".xls")){
+                    path=ApplicationProperties.getProperty("SETTLEMENT_FILE_PATH");
+                }
+                else if(filename.contains(".pdf")){
+                    path=ApplicationProperties.getProperty("PAYOUT_REPORT_FILE_PATH");
+                }
+
+                File file=new File(path+filename);
+
+                if(file.exists())
+                {
+
+                    throw new SystemError("Your file already exists in the System. Please Upload new File.");
+                }
+
+                i = in.readLine(line, 0, 128);
+                setContenttype(new String(line, 0, i - 2));
+                i = in.readLine(line, 0, 128);
+                i = in.readLine(line, 0, 128);
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                for (newLine = new String(line, 0, i); i != -1 && !newLine.startsWith(boundary); newLine = new String(line, 0, i))
+                {
+                    buffer.write(line, 0, i);
+                    i = in.readLine(line, 0, 128);
+                }
+
+                try
+                {
+                    if (username != null)
+                    {
+                        //System.out.println("username not null");
+                        int pos = filename.lastIndexOf(".");
+                        if (pos != -1)
+                        {
+                            String ext = filename.substring(pos);
+                            filename = username + ext;
+                        }
+                        else
+                        {
+                            dontwrite = true;
+                        }
+                    }
+
+                    if (!dontwrite)
+                    {
+                        //	System.out.println("writing file");
+                        RandomAccessFile f = new
+                                RandomAccessFile(String.valueOf(path != null ? ((Object) (path)) : "") +
+                                String.valueOf(filename), "rw");
+                        byte bytes[] = buffer.toByteArray();
+
+
+                        f.write(bytes, 0, bytes.length - 2);
+
+                        f.close();
+                        logUploadedFile(request);
+                    }
+
+                }
+                catch (Exception exception)
+                {
+                    //System.out.println(exception.toString());
+                }
+                continue;
+            }
+            int pos = newLine.indexOf("name=\"");
+            String fieldName = newLine.substring(pos + 6, newLine.length() -
+                    3);
+            i = in.readLine(line, 0, 128);
+            i = in.readLine(line, 0, 128);
+            newLine = new String(line, 0, i);
+            StringBuffer fieldValue = new StringBuffer(128);
+            for (; i != -1 && !newLine.startsWith(boundary); newLine = new
+                    String(line, 0, i))
+            {
+                i = in.readLine(line, 0, 128);
+                if ((i == boundaryLength + 2 || i == boundaryLength + 4) &&
+                        (new String(line, 0, i)).startsWith(boundary))
+                    fieldValue.append(newLine.substring(0, newLine.length() -
+                            2));
+                else
+                    fieldValue.append(newLine);
+            }
+
+            dict.put(fieldName, fieldValue.toString());
+        }
+
+        if (started)
+        {
+
+        }
+    }
+
+    public List<FileDetailsVO> doMultipleFileUpload(HttpServletRequest request, String DataFilePath,String memberid)
+            throws IOException, SystemError
+    {
+        SimpleDateFormat timestamp=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        FileItemFactory factory = new DiskFileItemFactory();
+        ServletFileUpload upload = new ServletFileUpload(factory);
+        List<FileDetailsVO> listOfFiles=new ArrayList<FileDetailsVO>();
+        List items = null;
+        try
+        {
+            items = upload.parseRequest(request);
+        }
+        catch (FileUploadException e)
+        {
+            logger.error("FileUploadException---->", e);
+        }
+        Iterator itr = items.iterator();
+        while (itr.hasNext())
+        {
+            FileItem item = (FileItem) itr.next();
+            FileDetailsVO fileDetailsVO=new FileDetailsVO();
+            try
+            {
+                String itemName = item.getName();
+
+                boolean success = false;
+                String temp=DataFilePath+memberid+"/";
+                File directory = new File(temp);
+                File savedFile=null;
+                if (directory.exists())
+                {
+                    savedFile = new File(temp+itemName);
+                }
+                else
+                {
+                    success = directory.mkdir();
+                    savedFile = new File(temp+itemName);
+                }
+                if (savedFile.exists())
+                {
+                    throw new SystemError("Your file already exists in the System. Please Upload new File.");
+                }
+                item.write(savedFile);
+                fileDetailsVO.setFilename(itemName);
+                fileDetailsVO.setFileType(getFileExtension(itemName));
+                fileDetailsVO.setFilePath(DataFilePath + memberid + "/" + itemName);
+                Calendar currentDate= Calendar.getInstance();
+                fileDetailsVO.setDtstamp(Functions.converttomillisec(String.valueOf(currentDate.get(Calendar.MONTH)), String.valueOf(currentDate.get(Calendar.DATE)), String.valueOf(currentDate.get(Calendar.YEAR)), String.valueOf(currentDate.get(Calendar.HOUR)), String.valueOf(currentDate.get(Calendar.MINUTE)), String.valueOf(currentDate.get(Calendar.SECOND))));
+                fileDetailsVO.setTimestamp(timestamp.format(currentDate.getTime()));
+                listOfFiles.add(fileDetailsVO);
+            }
+            catch (Exception e)
+            {
+                logger.error("Exception---->",e);
+            }
+        }
+        return listOfFiles;
+    }
+
+    private boolean started;
+    private String path;
+    private String retpath;
+    private String filename;
+    private String contenttype;
+    private Dictionary dict;
+    private boolean dontwrite = false;
+
+    private String logpath;
+
+    private void logUploadedFile(HttpServletRequest request)
+    {
+        boolean logfileUpload = true;
+        if (logfileUpload)
+        {
+            try
+            {
+                String fileUploadLogPath = logpath;
+                RandomAccessFile raf = new RandomAccessFile(fileUploadLogPath + System.getProperty("file.separator") + "fileUploadHistory.log","rw");
+                raf.seek(raf.length());  //set pointer to end of file
+
+                //Prepare query for all parameters
+                Calendar cal = Calendar.getInstance();
+
+                raf.writeBytes(cal.getTime() + " -> ");
+                String ipAddr = request.getRemoteAddr();
+                raf.writeBytes(":" + ipAddr + ":");
+                raf.writeBytes(":" + request.getRequestURL() + ":");
+                String filePath = String.valueOf(path != null ? ((Object) (path)) : "") + System.getProperty(
+                        "file.separator") + String.valueOf(filename);
+                raf.writeBytes(filePath);
+
+                raf.writeBytes("\n");
+                raf.close();
+            }
+            catch (Exception e)
+            {
+                Hashtable errorHash = new Hashtable();
+                errorHash.put("error", Functions.getStackTrace(e));
+                try
+                {
+                    Mail.sendAdminMail("Error in logging uploaded file", "Error in logging uploaded file");
+                }
+                catch (Exception e1)
+                {
+
+                }
+
+            }
+        }
+
+    }
+
+
+}

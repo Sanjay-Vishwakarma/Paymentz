@@ -1,0 +1,315 @@
+package com.directi.pg.core.valueObjects;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Acer
+ * Date: Sep 4, 2012
+ * Time: 9:13:11 AM
+ * To change this template use File | Settings | File Templates.
+ */
+public class GenericCardDetailsVO  extends GenericVO
+{
+
+    private String cardHolderName;
+    private String cardNum;
+    private String expMonth;
+    private String expYear;
+    private String cVV;
+    private String cardType;
+    private String IBAN;
+    private String BIC;
+    private String mandateId;
+    private String bankName;
+    private String accountType;
+    private String accountNumber;
+    private String routingNumber;
+    private String bin_brand;
+    private String bin_sub_brand;
+    private String bin_card_type;
+    private String bin_card_category;
+    private String bin_usage_type;
+    private String country_code_A3;
+    private String country_code_A2;
+    private String trans_type;
+    private String voucherNumber;
+    private String security_Code;
+    private String isMandate;
+    private String countryName;
+    private String issuingBank;
+
+    public GenericCardDetailsVO()
+    {
+    }
+
+    public GenericCardDetailsVO(String cardHolderName, String cardNum, String expMonth, String expYear, String cVV, String cardType)
+    {
+        this.cardHolderName = cardHolderName;
+        this.cardNum = cardNum;
+        this.expMonth = expMonth;
+        this.expYear = expYear;
+        this.cVV = cVV;
+        this.cardType = cardType;
+    }
+
+    public String getAccountType()
+    {
+        return accountType;
+    }
+
+    public void setAccountType(String accountType)
+    {
+        this.accountType = accountType;
+    }
+
+    public String getAccountNumber()
+    {
+        return accountNumber;
+    }
+
+    public void setAccountNumber(String accountNumber)
+    {
+        this.accountNumber = accountNumber;
+    }
+
+    public String getRoutingNumber()
+    {
+        return routingNumber;
+    }
+
+    public void setRoutingNumber(String routingNumber)
+    {
+        this.routingNumber = routingNumber;
+    }
+
+    public String getBin_brand()
+    {
+        return bin_brand;
+    }
+
+    public void setBin_brand(String bin_brand)
+    {
+        this.bin_brand = bin_brand;
+    }
+
+    public String getBin_sub_brand()
+    {
+        return bin_sub_brand;
+    }
+
+    public void setBin_sub_brand(String bin_sub_brand)
+    {
+        this.bin_sub_brand = bin_sub_brand;
+    }
+
+    public String getBin_card_type()
+    {
+        return bin_card_type;
+    }
+
+    public void setBin_card_type(String bin_card_type)
+    {
+        this.bin_card_type = bin_card_type;
+    }
+
+    public String getBin_card_category()
+    {
+        return bin_card_category;
+    }
+
+    public void setBin_card_category(String bin_card_category)
+    {
+        this.bin_card_category = bin_card_category;
+    }
+
+    public String getBin_usage_type()
+    {
+        return bin_usage_type;
+    }
+
+    public void setBin_usage_type(String bin_usage_type)
+    {
+        this.bin_usage_type = bin_usage_type;
+    }
+
+     public String getExpYear()
+    {
+        return expYear;
+    }
+
+    public void setExpYear(String expYear)
+    {
+        this.expYear = expYear;
+    }
+
+
+    public String getCardHolderName()
+    {
+        return cardHolderName;
+    }
+
+    public void setCardHolderName(String cardHolderName)
+    {
+        this.cardHolderName = cardHolderName;
+    }
+
+    public String getCardNum()
+    {
+        return cardNum;
+    }
+
+    public void setCardNum(String cardNum)
+    {
+        this.cardNum = cardNum;
+    }
+
+    public String getExpMonth()
+    {
+        return expMonth;
+    }
+
+    public void setExpMonth(String expMonth)
+    {
+        this.expMonth = expMonth;
+    }
+
+    public String getcVV()
+    {
+        return cVV;
+    }
+
+    public void setcVV(String cVV)
+    {
+        this.cVV = cVV;
+    }
+
+    public String getCardType()
+    {
+        return cardType;
+    }
+
+    public void setCardType(String cardType)
+    {
+        this.cardType = cardType;
+    }
+
+    public String getIBAN()
+    {
+        return IBAN;
+    }
+
+    public void setIBAN(String IBAN)
+    {
+        this.IBAN = IBAN;
+    }
+
+    public String getBIC()
+    {
+        return BIC;
+    }
+
+    public void setBIC(String BIC)
+    {
+        this.BIC = BIC;
+    }
+
+    public String getMandateId()
+    {
+        return mandateId;
+    }
+
+    public void setMandateId(String mandateId)
+    {
+        this.mandateId = mandateId;
+    }
+
+
+    public String getBankName()
+    {
+        return bankName;
+    }
+
+    public void setBankName(String bankName)
+    {
+        this.bankName = bankName;
+    }
+
+    public String getCountry_code_A3()
+    {
+        return country_code_A3;
+    }
+
+    public void setCountry_code_A3(String country_code_A3)
+    {
+        this.country_code_A3 = country_code_A3;
+    }
+
+    public String getCountry_code_A2()
+    {
+        return country_code_A2;
+    }
+
+    public void setCountry_code_A2(String country_code_A2)
+    {
+        this.country_code_A2 = country_code_A2;
+    }
+
+    public String getTrans_type()
+    {
+        return trans_type;
+    }
+
+    public void setTrans_type(String trans_type)
+    {
+        this.trans_type = trans_type;
+    }
+
+    public String getVoucherNumber()
+    {
+        return voucherNumber;
+    }
+
+    public void setVoucherNumber(String voucherNumber)
+    {
+        this.voucherNumber = voucherNumber;
+    }
+
+    public String getSecurity_Code()
+    {
+        return security_Code;
+    }
+
+    public void setSecurity_Code(String security_Code)
+    {
+        this.security_Code = security_Code;
+    }
+
+    public String getIsMandate()
+    {
+        return isMandate;
+    }
+
+    public void setIsMandate(String isMandate)
+    {
+        this.isMandate = isMandate;
+    }
+
+    public String getCountryName()
+    {
+        return countryName;
+    }
+
+    public void setCountryName(String countryName)
+    {
+        this.countryName = countryName;
+    }
+
+    public String getIssuingBank()
+    {
+        return issuingBank;
+    }
+
+    public void setIssuingBank(String issuingBank)
+    {
+        this.issuingBank = issuingBank;
+    }
+}

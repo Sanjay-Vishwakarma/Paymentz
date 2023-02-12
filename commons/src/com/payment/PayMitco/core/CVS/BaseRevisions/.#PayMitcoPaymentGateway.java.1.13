@@ -1,0 +1,252 @@
+package com.payment.PayMitco.core;
+
+import com.directi.pg.Logger;
+import com.directi.pg.TransactionLogger;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.GenericAddressDetailsVO;
+import com.directi.pg.core.valueObjects.GenericRequestVO;
+import com.directi.pg.core.valueObjects.GenericResponseVO;
+import com.directi.pg.core.valueObjects.GenericTransDetailsVO;
+import com.manager.vo.ReserveField2VO;
+import com.payment.Enum.PaymentModeEnum;
+import com.payment.common.core.CommRequestVO;
+import com.payment.common.core.CommResponseVO;
+import com.payment.common.core.CommTransactionDetailsVO;
+import com.payment.exceptionHandler.PZGenericConstraintViolationException;
+import com.payment.exceptionHandler.PZTechnicalViolationException;
+import com.payment.exceptionHandler.constraint.PZGenericConstraint;
+import com.payment.exceptionHandler.errorcode.ErrorCodeUtils;
+import com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorName;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeListVO;
+import org.apache.commons.lang.StringUtils;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Created by Nikita on 12/16/2015.
+ */
+public class PayMitcoPaymentGateway extends AbstractPaymentGateway
+{
+    private static Logger log = new Logger(PayMitcoPaymentGateway.class.getName());
+    private static TransactionLogger transactionLogger = new TransactionLogger(PayMitcoPaymentGateway.class.getName());
+
+    public static final String GATEWAY_TYPE = "paymitco";
+
+    private final static String TESTURL = "https://www.paymitco.net/system/Capture/TransactionBatch.aspx";
+
+    public static String id()
+    {
+        UUID uuid = UUID.randomUUID();
+        return uuid.toString().substring(0,8);
+    }
+
+    public String getMaxWaitDays()
+    {
+        return null;
+    }
+
+    public  PayMitcoPaymentGateway(String accountId)
+    {
+        this.accountId = accountId;
+    }
+
+    public GenericResponseVO processAuthentication(String trackingID, GenericRequestVO requestVO)throws PZGenericConstraintViolationException
+    {
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        errorCodeListVO.addListOfError(errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_FUNCTIONALITY_NOT_ALLOWED));
+        PZGenericConstraint genConstraint = new PZGenericConstraint("PayMitcoPaymentGateway","processAuthentication",null,"common","This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",errorCodeListVO);
+        throw new PZGenericConstraintViolationException(genConstraint,"This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",null);
+    }
+
+    public GenericResponseVO processSale(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+        transactionLogger.debug("Entering processSale of PayMitcoPaymentGateway");
+
+        CommRequestVO commRequestVO = (CommRequestVO)requestVO;
+        CommResponseVO commResponseVO = new CommResponseVO();
+        PayMitcoResponseVO payMitcoResponseVO = new PayMitcoResponseVO();
+
+        GenericTransDetailsVO transDetailsVO = commRequestVO.getTransDetailsVO();
+        GenericAddressDetailsVO addressDetailsVO = commRequestVO.getAddressDetailsVO();
+        ReserveField2VO reserveField2VO = commRequestVO.getReserveField2VO();
+
+        String merchantId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId();
+        String password = GatewayAccountService.getGatewayAccount(accountId).getPassword();
+        //String paymentType = GatewayAccountService.getGatewayAccount(accountId).getFRAUD_FTP_PATH();
+
+        String paymentType = "ACH";
+        String Type = "D";
+        if(PaymentModeEnum.CHK.equals(transDetailsVO.getPaymentType()))
+        {
+            paymentType = "CHK";
+            Type = "D";
+        }
+
+        Calendar cal = Calendar.getInstance();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+        String strDate = sdf.format(cal.getTime());
+
+        String postData =
+                "<?xml version='1.0' encoding='UTF-8'?>\n" +
+                        "<TransactionBatch MerchantID='"+merchantId+"' AuthKey='"+password+"'  >\n" +
+                        "<Transaction  SequenceID='1'>\n" +
+                        "<ACHTransaction>\n" +
+                        "<TransactionID />\n" +
+                        "<Type>D</Type>\n" +
+                        "<Currency>"+transDetailsVO.getCurrency()+"</Currency>\n" +
+                        "<Reference>"+trackingID+"</Reference>\n" +
+                        "<TransactionTime>"+strDate+"</TransactionTime>\n" +
+                        "<Notes></Notes>\n" +
+                        "<Customer>\n" +
+                        "<CustomerID />\n" +
+                        "<FirstName>"+addressDetailsVO.getFirstname()+"</FirstName>\n" +
+                        "<Initial></Initial>\n" +
+                        "<LastName>"+addressDetailsVO.getLastname()+"</LastName>\n" +
+                        "<StreetAddress>"+addressDetailsVO.getStreet()+"</StreetAddress>\n" +
+                        "<City>"+addressDetailsVO.getCity()+"</City>\n" +
+                        "<State>"+addressDetailsVO.getState()+"</State>\n" +
+                        "<ZipCode>"+addressDetailsVO.getZipCode()+"</ZipCode>\n" +
+                        "<Phone>"+addressDetailsVO.getPhone()+"</Phone>\n" +
+                        "<Country>"+addressDetailsVO.getCountry()+"</Country>\n" +
+                        "<Email>"+addressDetailsVO.getEmail()+"</Email>\n" +
+                        "</Customer>\n" +
+                        "<IPAddress>"+addressDetailsVO.getCardHolderIpAddress()+"</IPAddress>\n" +
+                        "<RoutingNumber>"+reserveField2VO.getRoutingNumber()+"</RoutingNumber>\n"  +
+                        "<AccountNumber>"+reserveField2VO.getAccountNumber()+"</AccountNumber>\n" +
+                        "<AccountType>"+reserveField2VO.getAccountType()+"</AccountType>\n" +
+                        "<PaymentType>"+paymentType+"</PaymentType>\n" +
+                        "<Amount>"+transDetailsVO.getAmount()+"</Amount>\n" +
+                        "<Product />\n" +
+                        "<Descriptor />\n" +
+                        "<Status />\n" +
+                        "</ACHTransaction>\n" +
+                        "</Transaction>\n" +
+                        "</TransactionBatch>";
+
+
+        transactionLogger.error("-------sale request--------" +postData);
+        log.error("-------sale request--------" +postData);
+        String responseData = PayMitcoUtills.PostWebRequest(postData, TESTURL);
+        transactionLogger.error("-------sale response-------"+responseData);
+
+        Map readResponse = PayMitcoUtills.ReadSalesResponse(StringUtils.trim(responseData));
+        String status = "fail";
+
+        if(readResponse!=null)
+        {
+            if(readResponse.get("Status").toString().equalsIgnoreCase("ACCEPTED"))
+            {
+                status = "success";
+                payMitcoResponseVO.setMerchantOrderId((String) readResponse.get("Reference"));
+                payMitcoResponseVO.setDescriptor(GatewayAccountService.getGatewayAccount(accountId).getDisplayName());
+                payMitcoResponseVO.setDescription("Transaction Approved");
+                payMitcoResponseVO.setTransactionId((String) readResponse.get("TransactionID"));
+                payMitcoResponseVO.setRemark("Transaction Successful");
+            }
+            else
+            {
+                Map errorMap = PayMitcoUtills.ReadErrorResponse(StringUtils.trim(responseData));
+                payMitcoResponseVO.setStatus("fail");
+                payMitcoResponseVO.setErrorCode((String) errorMap.get("Code"));
+                payMitcoResponseVO.setRemark((String) errorMap.get("Description"));
+                payMitcoResponseVO.setDescription("Failed "+(String) errorMap.get("Description"));
+            }
+
+            payMitcoResponseVO.setStatus(status);
+            payMitcoResponseVO.setTransactionType("sale");
+            DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+            Date date = new Date();
+            payMitcoResponseVO.setResponseTime(String.valueOf(dateFormat.format(date)));
+            payMitcoResponseVO.setAmount(transDetailsVO.getAmount());
+            payMitcoResponseVO.setPaymentType((String) readResponse.get("PaymentType"));
+            payMitcoResponseVO.setPaymitcoTransactionType((String) readResponse.get("Type"));
+            payMitcoResponseVO.setRoutingNumber((String) readResponse.get("RoutingNumber"));
+            payMitcoResponseVO.setAccountNumber((String) readResponse.get("AccountNumber"));
+            payMitcoResponseVO.setAccountType((String) readResponse.get("AccountType"));
+            payMitcoResponseVO.setCustomerId((String) readResponse.get("CustomerID"));
+            payMitcoResponseVO.setChecknumber((String) readResponse.get("CheckNumber"));
+            //payMitcoResponseVO.setTransactionID((String) readResponse.get("TransactionID"));
+        }
+
+        return payMitcoResponseVO;
+    }
+
+    public GenericResponseVO processRefund(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+        transactionLogger.debug("Entering processRefund of PayMitcoPaymentGateway");
+
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        PayMitcoResponseVO payMitcoResponseVO = new PayMitcoResponseVO();
+
+        CommTransactionDetailsVO transactionDetailsVO = commRequestVO.getTransDetailsVO();
+        GenericTransDetailsVO transDetailsVO = commRequestVO.getTransDetailsVO();
+
+        String merchantId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId();
+        String password = GatewayAccountService.getGatewayAccount(accountId).getPassword();
+
+        String refundData = "<?xml version='1.0' encoding='UTF-8'?>\n" +
+                "<TransactionBatch MerchantID='"+merchantId+"' AuthKey='"+password+"' >\n" +
+                "<Transaction SequenceID='1'>\n" +
+                "<Refund>\n" +
+                "<TransactionID>"+transactionDetailsVO.getPreviousTransactionId()+"</TransactionID>\n" +
+                "<Amount>"+transactionDetailsVO.getAmount()+"</Amount>\n" +
+                "<Status />\n" +
+                "</Refund>\n" +
+                "</Transaction>\n" +
+                "</TransactionBatch>\n";
+
+        transactionLogger.error("------refund request-----"+refundData);
+        String refundResponse = PayMitcoUtills.PostWebRequest(refundData,TESTURL);
+        transactionLogger.error("------refund response----" + refundResponse);
+
+        Map readResponse = PayMitcoUtills.ReadRefundResponse(StringUtils.trim(refundResponse));
+        String status = "fail";
+
+        if(!readResponse.equals("") && readResponse!=null)
+        {
+            if (readResponse.get("Status").toString().equals("ACCEPTED"))
+            {
+                status = "success";
+                payMitcoResponseVO.setDescriptor(GatewayAccountService.getGatewayAccount(accountId).getDisplayName());
+                payMitcoResponseVO.setDescription("Transaction Approved");
+                payMitcoResponseVO.setTransactionId((String) readResponse.get("TransactionID"));
+                payMitcoResponseVO.setRemark("Transaction Successful");
+            }
+            else
+            {
+                Map errorMap = PayMitcoUtills.ReadErrorResponse(StringUtils.trim(refundResponse));
+                status = "fail";
+                payMitcoResponseVO.setErrorCode((String) errorMap.get("Code"));
+                payMitcoResponseVO.setRemark((String) errorMap.get("Description"));
+                payMitcoResponseVO.setDescription("DECLINED" + (String) errorMap.get("Description"));
+            }
+            payMitcoResponseVO.setStatus(status);
+            payMitcoResponseVO.setTransactionType("refund");
+            DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+            Date date = new Date();
+            payMitcoResponseVO.setResponseTime(String.valueOf(dateFormat.format(date)));
+            payMitcoResponseVO.setTransactionID((String) readResponse.get("TransactionID"));
+
+        }
+
+        return payMitcoResponseVO;
+    }
+
+    public GenericResponseVO processRebilling(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        errorCodeListVO.addListOfError(errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_RECURRINGALLOW));
+        PZGenericConstraint genConstraint = new PZGenericConstraint("PayMitcoPaymentGateway","processRebilling",null,"common","This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",errorCodeListVO);
+        throw new PZGenericConstraintViolationException(genConstraint,"This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",null);
+    }
+}
+
+

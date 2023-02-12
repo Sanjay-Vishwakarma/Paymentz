@@ -1,0 +1,262 @@
+import com.directi.pg.Admin;
+import com.directi.pg.Logger;
+import com.manager.dao.PayoutDAO;
+import com.manager.utils.CommonFunctionUtil;
+import javax.servlet.RequestDispatcher;
+
+import com.manager.vo.TerminalVO;
+import com.manager.vo.payoutVOs.WireVO;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+
+/**
+ * Created by Admin on 4/14/2017.
+ */
+public class AddMerchantWire extends HttpServlet
+{
+    private static Logger logger = new Logger(AddMerchantWire.class.getName());
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        logger.debug("Entering in AddWireList");
+        HttpSession session = request.getSession();
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+
+        if (!Admin.isLoggedIn(session))
+        {   logger.debug("Admin is logout ");
+            response.sendRedirect("/icici/logout.jsp");
+            return;
+        }
+
+        String EOL = "<BR>";
+        StringBuilder sberror=new StringBuilder();
+        String status1 = null;
+        WireVO wireVO = new WireVO();
+        TerminalVO terminalVO = new TerminalVO();
+        PayoutDAO payoutDAO = new PayoutDAO();
+        CommonFunctionUtil commonFunctionUtil = new CommonFunctionUtil();
+
+        RequestDispatcher rd = request.getRequestDispatcher("/addwire.jsp?ctoken="+user.getCSRFToken());
+
+        String isSubmitted = request.getParameter("isSubmitted");
+        if ("true".equals(isSubmitted))
+        {
+            //System.out.println("toid-----"+request.getParameter("toid")+"---accountid----"+request.getParameter("accountid"));
+            if (!ESAPI.validator().isValidInput("toid", request.getParameter("toid"),"Numbers",10,false) || request.getParameter("toid").equalsIgnoreCase("0"))
+            {
+                sberror.append("Invalid MemberId ,");
+            }
+            if (!ESAPI.validator().isValidInput("accountid", request.getParameter("accountid"),"Numbers",10,false) || request.getParameter("accountid").equalsIgnoreCase("0"))
+            {
+                sberror.append("Invalid AccountId ,");
+            }
+            if (!ESAPI.validator().isValidInput("terminalid", request.getParameter("terminalid"),"Numbers",10,false))
+            {
+                sberror.append("Invalid TerminalId ,");
+            }
+            if (!ESAPI.validator().isValidInput("paymode", request.getParameter("paymode"),"Numbers",10,false))
+            {
+                sberror.append("Invalid Paymode ,");
+            }
+            if (!ESAPI.validator().isValidInput("cardtype", request.getParameter("cardtype"),"Numbers",10,false))
+            {
+                sberror.append("Invalid Card Type,");
+            }
+            if (!ESAPI.validator().isValidInput("amount", request.getParameter("amount"),"AmountStr",20,false))
+            {
+                sberror.append("Invalid Amount ,");
+            }
+            if (!ESAPI.validator().isValidInput("balanceamount", request.getParameter("balanceamount"),"AmountStr",20,false))
+            {
+                sberror.append("Invalid Balance Amount ,");
+            }
+            if (!ESAPI.validator().isValidInput("unpaidamount", request.getParameter("unpaidamount"),"AmountStr",20,false))
+            {
+                sberror.append("Invalid Unpaid Amount ,");
+            }
+            if (!ESAPI.validator().isValidInput("famount", request.getParameter("famount"),"AmountStr",20,false))
+            {
+                sberror.append("Invalid Net Final Amount ,");
+            }
+            if (!ESAPI.validator().isValidInput("currency", request.getParameter("currency"),"StrictString",3,false))
+            {
+                sberror.append("Invalid Wire Currency ,");
+            }
+            if (!ESAPI.validator().isValidInput("status", request.getParameter("status"),"SafeString",100,false))
+            {
+                sberror.append("Invalid Wire Status ,");
+            }
+            if (!ESAPI.validator().isValidInput("rrwire", request.getParameter("rrwire"),"SafeString",100,false))
+            {
+                sberror.append("Invalid IsRolling Reserve ,");
+            }
+            if (!ESAPI.validator().isValidInput("firstdate", request.getParameter("firstdate"),"fromDate",16,false))
+            {
+                sberror.append("Invalid Settelment Start Date ,");
+            }
+            if (!ESAPI.validator().isValidInput("settledstarttime", request.getParameter("settledstarttime"),"time",255,false))
+            {
+                sberror.append("Invalid Settlement Start Time ,");
+            }
+            if (!ESAPI.validator().isValidInput("lastdate", request.getParameter("lastdate"),"fromDate",16,false))
+            {
+                sberror.append("Invalid Settelment End Date ,");
+            }
+            if (!ESAPI.validator().isValidInput("settledendtime", request.getParameter("settledendtime"),"time",255,false))
+            {
+                sberror.append("Invalid Settlement End Time ,");
+            }
+            if (!ESAPI.validator().isValidInput("declinedcoverdateupto", request.getParameter("declinedcoverdateupto"),"fromDate",16,false))
+            {
+                sberror.append("Invalid Declined Cover Date ,");
+            }
+            if (!ESAPI.validator().isValidInput("declinedcovertimeupto", request.getParameter("declinedcovertimeupto"),"time",255,false))
+            {
+                sberror.append("Invalid Declined Covered Time ,");
+            }
+            if (!ESAPI.validator().isValidInput("reversedcoverdateupto", request.getParameter("reversedcoverdateupto"),"fromDate",16,false))
+            {
+                sberror.append("Invalid Reversed Cover Date ,");
+            }
+            if (!ESAPI.validator().isValidInput("reversedcovertimeupto", request.getParameter("reversedcovertimeupto"),"time",255,false))
+            {
+                sberror.append("Invalid Reversed Covered Time ,");
+            }
+            if (!ESAPI.validator().isValidInput("chargebackcoverdateupto", request.getParameter("chargebackcoverdateupto"),"fromDate",16,false))
+            {
+                sberror.append("Inavlid Chargeback Cover Date ,");
+            }
+            if (!ESAPI.validator().isValidInput("chargebackcovertimeupto", request.getParameter("chargebackcovertimeupto"),"time",255,false))
+            {
+                sberror.append("Invalid Chargeback Covered Time ,");
+            }
+            if (!ESAPI.validator().isValidInput("rrdate", request.getParameter("rrdate"),"fromDate",16,false))
+            {
+                sberror.append("Invalid Reserve Release Date ,");
+            }
+            if (!ESAPI.validator().isValidInput("rrtime", request.getParameter("rrtime"),"time",255,false))
+            {
+                sberror.append("Invalid Reserve Release Time ,");
+            }
+            if (!ESAPI.validator().isValidInput("cycleno",request.getParameter("cycleno"),"Numbers",25,false))
+            {
+                sberror.append("Invalid Settlement Cycle No ,");
+            }
+            if (!ESAPI.validator().isValidInput("settlementreportfilepath",request.getParameter("settlementreportfilepath"),"reportFile",120,false))
+            {
+                sberror.append("Invalid Settlement Report File Name ,");
+            }
+            if (!ESAPI.validator().isValidInput("settledtransactionfilepath",request.getParameter("settledtransactionfilepath"),"transactionFile",120,false))
+            {
+                sberror.append("Invalid Settlement File Name");
+            }
+            if (sberror.length() > 0)
+            {
+                request.setAttribute("statusmsg", sberror.toString());
+                rd.forward(request, response);
+                return;
+            }
+            /*else
+            {
+                if(!("pdf".equals(request.getParameter("reportpath").split("\\.")[1])))
+                {
+                    sberror.append("Invalid Settlement Report File Name ,");
+                }
+                if(!("xls".equals(request.getParameter("settletranspath").split("\\.")[1])))
+                {
+                    sberror.append("Invalid Settlement File Name");
+                }
+                if (sberror.length() > 0)
+                {
+                    request.setAttribute("statusmsg", sberror.toString());
+                    rd.forward(request, response);
+                    return;
+                }
+            }*/
+
+        }
+
+        String firstDateTimestamp= commonFunctionUtil.convertDatepickerToTimestamp(request.getParameter("firstdate"),request.getParameter("settledstarttime"));
+        String lastDateTimestamp=commonFunctionUtil.convertDatepickerToTimestamp(request.getParameter("lastdate"),request.getParameter("settledendtime"));
+        String declinedcoverdateuptoTimestamp=commonFunctionUtil.convertDatepickerToTimestamp(request.getParameter("declinedcoverdateupto"),request.getParameter("declinedcovertimeupto"));
+        String reversedcoverdateuptoTimestamp = commonFunctionUtil.convertDatepickerToTimestamp(request.getParameter("reversedcoverdateupto"),request.getParameter("reversedcovertimeupto"));
+        String chargebackcoverdateuptoTimestamp = commonFunctionUtil.convertDatepickerToTimestamp(request.getParameter("chargebackcoverdateupto"),request.getParameter("chargebackcovertimeupto"));
+        String rrDateTimestamp = commonFunctionUtil.convertDatepickerToTimestamp(request.getParameter("rrdate"),request.getParameter("rrtime"));
+
+        String amount =  request.getParameter("amount");
+        String balanceamount = request.getParameter("balanceamount");
+        String unpaidamount = request.getParameter("unpaidamount");
+        String famount = request.getParameter("famount");
+        String currency = request.getParameter("currency");
+        String status = request.getParameter("status");
+        String reportpath = request.getParameter("settlementreportfilepath");
+        String settletranspath = request.getParameter("settledtransactionfilepath");
+        String memberid = request.getParameter("toid");
+        String terminalid = request.getParameter("terminalid");
+        String accountid = request.getParameter("accountid");
+        String paymode = request.getParameter("paymode");
+        String cardtype = request.getParameter("cardtype");
+        String rrwire = request.getParameter("rrwire");
+        String rrdate = request.getParameter("rrdate");
+        String cycleno = request.getParameter("cycleno");
+        logger.debug("memberid-----"+memberid);
+        logger.debug("firstdate-----"+firstDateTimestamp);
+        logger.debug("lastdate-----"+lastDateTimestamp);
+        logger.debug("declinedcoverdateuptoTimestamp-----"+declinedcoverdateuptoTimestamp);
+        logger.debug("reversedcoverdateuptoTimestamp-----"+reversedcoverdateuptoTimestamp);
+        logger.debug("chargebackcoverdateuptoTimestamp-----"+chargebackcoverdateuptoTimestamp);
+        logger.debug("rrdate-----"+rrdate);
+        logger.debug("reportpath-----"+reportpath);
+        logger.debug("settletranspath-----"+settletranspath);
+        logger.debug("rrDateTimestamp-----"+rrDateTimestamp);
+
+        wireVO.setMemberId(memberid);
+        wireVO.setMarkForDeletion("N");
+        wireVO.setWireAmount(Double.parseDouble(amount));
+        wireVO.setWireBalanceAmount(Double.parseDouble(balanceamount));
+        wireVO.setUnpaidAmount(0.00);
+        wireVO.setNetFinalAmount(Double.parseDouble(famount));
+        wireVO.setCurrency(currency);
+        wireVO.setStatus("unpaid");
+        wireVO.setRollingReserveIncluded("Y");
+        wireVO.setFirstDate(firstDateTimestamp);
+        wireVO.setLastDate(lastDateTimestamp);
+        wireVO.setDeclinedcoverdateupto(declinedcoverdateuptoTimestamp);
+        wireVO.setReversedcoverdateupto(reversedcoverdateuptoTimestamp);
+        wireVO.setChargebackcoverdateupto(chargebackcoverdateuptoTimestamp);
+        wireVO.setReserveReleasedUptoDate(rrDateTimestamp);
+        wireVO.setSettlementCycleNo(cycleno);
+        wireVO.setSettlementReportFilePath(reportpath);
+        wireVO.setTerminalId(terminalid);
+        wireVO.setSettledTransactionFilePath(settletranspath);
+        terminalVO.setAccountId(accountid);
+        terminalVO.setPaymodeId(paymode);
+        terminalVO.setCardTypeId(cardtype);
+        wireVO.setTerminalVO(terminalVO);
+
+        status1 = payoutDAO.generateSettlementCycleWireNew(wireVO);
+        if("success".equals(status1))
+        {
+            request.setAttribute("status1",status1);
+            rd.forward(request, response);
+            return;
+        }
+        else
+        {
+            request.setAttribute("status1",status1);
+            rd.forward(request, response);
+            return;
+        }
+    }
+}

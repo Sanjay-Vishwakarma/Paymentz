@@ -1,0 +1,436 @@
+package com.payment.EPaySolution;
+
+import com.directi.pg.Functions;
+import com.directi.pg.LoadProperties;
+import com.directi.pg.TransactionLogger;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.*;
+import com.payment.Enum.PZProcessType;
+import com.payment.common.core.*;
+import com.payment.exceptionHandler.*;
+import com.payment.exceptionHandler.constraint.PZGenericConstraint;
+import com.payment.exceptionHandler.constraintType.PZTechnicalExceptionEnum;
+import com.payment.exceptionHandler.errorcode.ErrorCodeUtils;
+import com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorName;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeListVO;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONObject;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.ResourceBundle;
+/*
+ * Created by Jitendra on 01-Sep-18.
+*/
+
+public class EPaySolutionGateway extends AbstractPaymentGateway
+{
+    public static final String GATEWAY_TYPE = "epaysoln";
+    final static ResourceBundle RB = LoadProperties.getProperty("com.directi.pg.epaysolution");
+    private static TransactionLogger transactionLogger = new TransactionLogger(EPaySolutionGateway.class.getName());
+
+    public EPaySolutionGateway(String accountId)
+    {
+        this.accountId = accountId;
+    }
+
+    public GenericResponseVO processSale(String trackingId, GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+        Functions functions = new Functions();
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        CommResponseVO commResponseVO = new Comm3DResponseVO();
+        EPaySolutionUtils ePaySolutionUtils = new EPaySolutionUtils();
+        CommTransactionDetailsVO transDetailsVO = commRequestVO.getTransDetailsVO();
+        CommCardDetailsVO cardDetailsVO = commRequestVO.getCardDetailsVO();
+        CommAddressDetailsVO addressDetailsVO = commRequestVO.getAddressDetailsVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest = gatewayAccount.isTest();
+        String merchantAccountNo = gatewayAccount.getMerchantId();
+        String gatewayNo = gatewayAccount.getFRAUD_FTP_PATH();
+        String signKey = gatewayAccount.getFRAUD_FTP_USERNAME();
+        String returnUrl ="https://ife.pz.com/TestApp/redirecturl.jsp";
+        //String returnUrl =RB.getString("RETURN_URL");
+        String orderId = trackingId;
+        String amount = transDetailsVO.getAmount();
+        String currency = transDetailsVO.getCurrency();
+        String email = addressDetailsVO.getEmail();
+        String cardNumber = cardDetailsVO.getCardNum();
+        String expMonth = cardDetailsVO.getExpMonth();
+        String expYear = cardDetailsVO.getExpYear();
+        String cvv = cardDetailsVO.getcVV();
+        String firstName = addressDetailsVO.getFirstname();
+        String lastName = addressDetailsVO.getLastname();
+        String ip = addressDetailsVO.getCardHolderIpAddress();
+        String phone = addressDetailsVO.getPhone();
+        String billCountry = addressDetailsVO.getCountry();
+        String billCity = addressDetailsVO.getCity();
+        String billAddress = addressDetailsVO.getStreet();
+        String billZip = addressDetailsVO.getZipCode();
+        String sFirstName = addressDetailsVO.getFirstname();
+        String sLastName = addressDetailsVO.getLastname();
+        String shipAddress = addressDetailsVO.getStreet();
+        String shipCity = addressDetailsVO.getCity();
+        String shipCountry = addressDetailsVO.getCountry();
+        String shipZip = addressDetailsVO.getZipCode();
+        String signData = EPaySolutionUtils.SHA256forSales(merchantAccountNo, orderId, amount, email, returnUrl, currency, signKey);
+        String response = "";
+        String tradeData = "";
+        String requestWithTrade = "";
+
+        try
+        {
+            String reqestForAuth = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+                    "<merNo>" + merchantAccountNo + "</merNo>\n" +
+                    "<gatewayNo>" + gatewayNo + "</gatewayNo>\n" +
+                    "<orderNo>" + orderId + "</orderNo>\n" +
+                    "<orderCurrency>" + currency + "</orderCurrency>\n" +
+                    "<orderAmount>" + amount + "</orderAmount>\n" +
+                    "<cardNo>" + cardNumber + "</cardNo>\n" +
+                    "<cardExpireMonth>" + expMonth + "</cardExpireMonth>\n" +
+                    "<cardExpireYear>" + expYear + "</cardExpireYear>\n" +
+                    "<cCode>" + cvv + "</cCode>\n" +
+                    "<issuingBank>" + "IssuingBank" + "</issuingBank>\n" +
+                    "<firstName>" + firstName + "</firstName>\n" +
+                    "<lastName>" + lastName + "</lastName>\n" +
+                    "<email>" + email + "</email>\n" +
+                    "<ip>" + ip + "</ip>\n" +
+                    "<phone>" + phone + "</phone>\n" +
+                    "<billCountry>" + billCountry + "</billCountry>\n" +
+                    "<billCity>" + billCity + "</billCity>\n" +
+                    "<billAddress>" + billAddress + "</billAddress>\n" +
+                    "<billZip>" + billZip + "</billZip>\n" +
+                    "<signData>" + signData + "</signData>\n" +
+                    "<sFirstName>" + sFirstName + "</sFirstName>\n" +
+                    "<sLastName>" + sLastName + "</sLastName>\n" +
+                    "<shipAddress>" + shipAddress + "</shipAddress>\n" +
+                    "<shipCity>" + shipCity + "</shipCity>\n" +
+                    "<shipCountry>" + shipCountry + "</shipCountry>\n" +
+                    "<shipZip>" + shipZip + "</shipZip>\n" +
+                    "<returnURL>" + returnUrl + "</returnURL>";
+
+            transactionLogger.error("sale request-----" + reqestForAuth);
+            tradeData = ePaySolutionUtils.aesEncrypt(reqestForAuth, signKey);
+            tradeData = URLEncoder.encode(tradeData, "UTF-8");
+            requestWithTrade = "merNo=" + merchantAccountNo + "&gatewayNo=" + gatewayNo + "&tradeData=" + tradeData + "";
+            transactionLogger.error("sale response with tradedata-----" + requestWithTrade);
+            transactionLogger.error("sale response Accuntid-----" + accountId+"---"+isTest);
+            if (isTest)
+            {
+                transactionLogger.error("inside isTest-----"+RB.getString("TEST_SALE_URL"));
+                response = ePaySolutionUtils.doPostHTTPSURLConnection(RB.getString("TEST_SALE_URL"), requestWithTrade);
+            }
+            else
+            {
+                transactionLogger.error("inside isLive-----"+RB.getString("LIVE_SALE_URL"));
+                response = ePaySolutionUtils.doPostHTTPSURLConnection(RB.getString("LIVE_SALE_URL"), requestWithTrade);
+            }
+            transactionLogger.error("sale response-----" + response);
+            if (functions.isValueNull(response))
+            {
+                commResponseVO = EPaySolutionUtils.readXmlResponse(response);
+                if (!functions.isValueNull(commResponseVO.getDescriptor()) && commResponseVO.getStatus().equalsIgnoreCase("success"))
+                {
+                    commResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                }
+            }
+        }
+
+        catch (IOException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(EPaySolutionGateway.class.getName(), "processSale()", null, "common", "Technical Exception while placing transaction", PZTechnicalExceptionEnum.IOEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        catch (ParseException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(EPaySolutionGateway.class.getName(), "processSale()", null, "common", "Technical Exception while placing transaction", PZTechnicalExceptionEnum.IOEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        catch (Exception e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(EPaySolutionGateway.class.getName(), "processSale()", null, "common", "Technical Exception while placing the transaction", PZTechnicalExceptionEnum.IOEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        return commResponseVO;
+    }
+
+    public GenericResponseVO processAuthentication(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        errorCodeListVO.addListOfError(errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_FUNCTIONALITY_NOT_ALLOWED));
+        PZGenericConstraint genConstraint = new PZGenericConstraint("EPaySolutionGateway","processAuthentication",null,"common","This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",errorCodeListVO);
+        throw new PZGenericConstraintViolationException(genConstraint,"This Functionality is not supported by EpaySolution gateway. Please contact your Tech. support Team:::",null);
+    }
+
+    public GenericResponseVO processRefund(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException, PZConstraintViolationException, PZDBViolationException
+    {
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        CommResponseVO commResponseVO = new Comm3DResponseVO();
+        Functions functions = new Functions();
+        EPaySolutionUtils ePaySolutionUtils = new EPaySolutionUtils();
+        CommTransactionDetailsVO transDetailsVO = commRequestVO.getTransDetailsVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        Long merchantAccountNo = Long.parseLong(gatewayAccount.getMerchantId());
+        String gatewayNo = gatewayAccount.getFRAUD_FTP_PATH();
+        String signKey = gatewayAccount.getFRAUD_FTP_USERNAME();
+        String amount = transDetailsVO.getPreviousTransactionAmount();
+        String refundAmount = transDetailsVO.getAmount();
+        String currency = transDetailsVO.getCurrency();
+        String tradeNo = transDetailsVO.getPreviousTransactionId();
+        String refundRequest = "";
+        String refundResponse = "";
+        String signInfo = EPaySolutionUtils.SHA256forRefund(merchantAccountNo, gatewayNo, tradeNo, signKey);
+        try
+        {
+            refundRequest = "{  \n" +
+                    "\"merNo\":" + merchantAccountNo + ",\n" +
+                    "\"gatewayNo\":" + gatewayNo + ",\n" +
+                    "\"signInfo\":\"" + signInfo + "\",\n" +
+                    "\"refundOrders\": [{\n" +
+                    "\"tradeNo\": \"" + tradeNo + "\",\n" +
+                    "\"currency\": \"" + currency + "\",\n" +
+                    "\"tradeAmount\": \"" + amount + "\",\n" +
+                    "\"refundAmount\": \"" + refundAmount + "\",\n" +
+                    "\"refundReason\": " + "4" + ",\n" +
+                    "\"refundRemark\": \"" + ""+ "\"\n" +
+                    "}]}";
+            transactionLogger.error("refund request-----" + refundRequest);
+            refundResponse = ePaySolutionUtils.doPostHTTPSURLConnectionJSON(RB.getString("LIVE_REFUND_URL"), refundRequest);
+            transactionLogger.error("refund response-----" + refundResponse);
+            if (functions.isValueNull(refundResponse) && refundResponse.contains("{"))
+            {
+                String message = "";
+                String status = "fail";
+                String responseCode = "";
+                String responseMsg="";
+                String respAmount="";
+                JSONObject jsonObject = new JSONObject(refundResponse);
+
+                if(jsonObject.has("refundOrders"))
+                {
+                    JSONArray jsonArray = jsonObject.getJSONArray("refundOrders");
+                    for (int i = 0; i < jsonArray.length(); i++)
+                    {
+                        JSONObject jsonObject1 = jsonArray.getJSONObject(i);
+                        if(jsonObject1.has("refundAmount")){
+                            respAmount = jsonObject1.getString("refundAmount");
+                        }
+                    }
+                }
+                if (jsonObject.has("errorInfo"))
+                {
+                    message = jsonObject.getString("errorInfo");
+                }
+                if (jsonObject.has("errorStatus"))
+                {
+                    responseCode = jsonObject.getString("errorStatus");
+                }
+                if ("1".equalsIgnoreCase(responseCode))
+                {
+                    status = "success";
+                    responseMsg="Successful";
+                }
+                else
+                {
+                    responseMsg="Failed";
+                }
+
+                commResponseVO.setStatus(status);
+                if (!functions.isValueNull(message))
+                {
+                    commResponseVO.setRemark(responseMsg);
+                    commResponseVO.setDescription(responseMsg);
+                }
+                else
+                {
+                    commResponseVO.setRemark(message);
+                    commResponseVO.setDescription(message);
+                }
+                commResponseVO.setAmount(respAmount);
+            }
+        }
+
+        catch (Exception e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(EPaySolutionGateway.class.getName(), "processRefund()", null, "common", "Technical Exception while placing the transaction", PZTechnicalExceptionEnum.IOEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        return commResponseVO;
+    }
+
+    public GenericResponseVO processInquiry(GenericRequestVO requestVO) throws PZTechnicalViolationException, PZDBViolationException, PZConstraintViolationException
+    {
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        CommResponseVO commResponseVO = new CommResponseVO();
+        Functions functions= new Functions();
+        EPaySolutionUtils ePaySolutionUtils = new EPaySolutionUtils();
+        CommTransactionDetailsVO transDetailsVO = commRequestVO.getTransDetailsVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String merchantAccountNo = gatewayAccount.getMerchantId();
+        String gatewayNo = gatewayAccount.getFRAUD_FTP_PATH();
+        String signKey = gatewayAccount.getFRAUD_FTP_USERNAME();
+        String inquiryOrderId = transDetailsVO.getOrderId();
+        String inquiryRequest = "";
+        String inquiryResponse = "";
+        String signInfo = EPaySolutionUtils.SHA256forInquire(merchantAccountNo, gatewayNo, inquiryOrderId, signKey);
+        try
+        {
+            signInfo = URLEncoder.encode(signInfo, "UTF-8");
+            inquiryOrderId = URLEncoder.encode(inquiryOrderId, "UTF-8");
+            gatewayNo = URLEncoder.encode(gatewayNo, "UTF-8");
+            merchantAccountNo = URLEncoder.encode(merchantAccountNo, "UTF-8");
+
+            inquiryRequest = "merNo="+merchantAccountNo+"&gatewayNo="+gatewayNo+"&orderNo="+inquiryOrderId+"&signInfo="+signInfo + "";
+            transactionLogger.error("inquiry request-----" + inquiryRequest);
+
+            inquiryResponse = ePaySolutionUtils.doPostHTTPSURLConnection(RB.getString("LIVE_INQUIRY_URL"), inquiryRequest);
+
+            transactionLogger.error("inquiry response-----" + inquiryResponse);
+            if(functions.isValueNull(inquiryResponse) && inquiryResponse.contains("{"))
+            {
+                String merchantNo="";
+                String returnsStatus="";
+                String tradeDate="";
+                String tradeAmount="";
+                String queryResult="";
+                String tradeCurrency="";
+                String status="";
+                String remark="";
+
+                JSONObject jsonObject= new JSONObject(inquiryResponse);
+                if(jsonObject.has("merNo"))
+                {
+                    merchantNo = jsonObject.getString("merNo");
+                }
+                if(jsonObject.has("returnStatus"))
+                {
+                    returnsStatus=jsonObject.getString("returnStatus");
+
+                    if("1".equalsIgnoreCase(returnsStatus))
+                    {
+                        Object object=jsonObject.get("tradeList");
+
+                        if(object instanceof JSONArray)
+                        {
+                            JSONArray jsonArray=jsonObject.getJSONArray("tradeList");
+                            jsonArray.length();
+
+                            for (int i=0; i<jsonArray.length();i++)
+                            {
+                                JSONObject jsonObject1= (JSONObject)jsonArray.get(i);
+                                tradeDate=jsonObject1.getString("tradeDate");
+                                tradeAmount=jsonObject1.getString("tradeAmount");
+                                queryResult= jsonObject1.getString("queryResult");
+                                tradeCurrency=jsonObject1.getString("tradeCurrency");
+                                if("1".equalsIgnoreCase(queryResult)){
+                                        status="success";
+                                        remark="Transaction Successful";
+                                }else if("2".equalsIgnoreCase(queryResult)){
+                                    status="Order Not Found";
+                                    remark="orders does not exist";
+                                }else if("-1".equalsIgnoreCase(queryResult)){
+                                    status="processing";
+                                    remark="To be processing ";
+                                }else if("-2".equalsIgnoreCase(queryResult)){
+                                    status="Confirmed pending ";
+                                    remark="To be confirmed ";
+                                }else{
+                                    status = "fail";
+                                }  remark="Transaction Failed";
+                            }
+                        }
+                    }else {
+                        status="error";
+                        remark="error";
+                    }
+                }
+                commResponseVO.setStatus(status);
+                commResponseVO.setTransactionStatus(status);
+                commResponseVO.setRemark(remark);
+                commResponseVO.setDescription(remark);
+                if (functions.isValueNull(tradeDate))
+                    commResponseVO.setBankTransactionDate(tradeDate);
+                else
+                    commResponseVO.setBankTransactionDate("-");
+                if (functions.isValueNull(tradeAmount))
+                    commResponseVO.setAmount(tradeAmount);
+                else
+                    commResponseVO.setAmount(transDetailsVO.getAmount());
+                if (functions.isValueNull(tradeCurrency))
+                    commResponseVO.setCurrency(tradeCurrency);
+                else
+                    commResponseVO.setCurrency(transDetailsVO.getCurrency());
+
+                commResponseVO.setErrorCode(returnsStatus);
+                commResponseVO.setMerchantId(merchantNo);
+                commResponseVO.setAuthCode("-");
+                commResponseVO.setTransactionId(inquiryOrderId);
+                commResponseVO.setTransactionType(PZProcessType.INQUIRY.toString());
+            }
+        }
+
+        catch (IOException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(EPaySolutionGateway.class.getName(), "processInquiry()", null, "common", "Technical Exception while placing transaction", PZTechnicalExceptionEnum.IOEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        catch (Exception e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(EPaySolutionGateway.class.getName(), "processInquiry()", null, "common", "Technical Exception while placing the transaction", PZTechnicalExceptionEnum.IOEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        return commResponseVO;
+    }
+
+   /* public static void main(String[] args)
+    {
+        try
+        {
+            String response ="{\n" +
+                    "\t\"errorInfo\": \"\",\n" +
+                    "\t\"errorStatus\": 1,\n" +
+                    "\t\"gatewayNo\": \"8002\",\n" +
+                    "\t\"merNo\": \"795191 \",\n" +
+                    "\t\"refundOrders\": [{\n" +
+                    "\t\t\"currency\": \"JPY \",\n" +
+                    "\t\t\"refundAmount\": 15000.0,\n" +
+                    "\t\t\"refundInfo\": \"Refund application submitted successful \",\n" +
+                    "\t\t\"refundReason\": 4,\n" +
+                    "\t\t\"refundRemark\": \"\",\n" +
+                    "\t\t\"refundStatus\": 1,\n" +
+                    "\t\t\"tradeAmount\": 15000.0,\n" +
+                    "\t\t\"tradeNo\": \"NO1810292308198615 \"\n" +
+                    "\t}],\n" +
+                    "\t\"signInfo\": \"93e8ca8fb981f6b387f2154431f562b562c69a379010d7d72db38109eb088ff1 \"\n" +
+                    "}";
+            System.out.println("respone-----" + response);
+
+            String respAmount="";
+            JSONObject jsonObject = new JSONObject(response);
+
+            if(jsonObject.has("refundOrders"))
+                {
+                    JSONArray jsonArray = jsonObject.getJSONArray("refundOrders");
+                    for (int i = 0; i < jsonArray.length(); i++)
+                    {
+                        JSONObject jsonObject1 = jsonArray.getJSONObject(i);
+                        if(jsonObject1.has("refundAmount")){
+                            respAmount = jsonObject1.getString("refundAmount");
+                        }
+                    }
+                }
+            System.out.println("respAmount-----"+respAmount);
+
+
+        }catch (Exception e){
+            System.out.println("Exception------"+e);
+        }
+
+    }*/
+
+    @Override
+    public String getMaxWaitDays()
+    {
+        return null;
+    }
+}
+
+
+

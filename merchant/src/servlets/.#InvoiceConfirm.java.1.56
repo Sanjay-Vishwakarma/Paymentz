@@ -1,0 +1,490 @@
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.Merchants;
+import com.invoice.dao.InvoiceEntry;
+import com.invoice.vo.DefaultProductList;
+import com.invoice.vo.ProductList;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Acer
+ * Date: Nov 27, 2012
+ * Time: 10:16:43 AM
+ * To change this template use File | Settings | File Templates.
+ */
+public class InvoiceConfirm extends HttpServlet
+{
+    private static Logger log = new Logger(InvoiceConfirm.class.getName());
+    Connection con = null;
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        log.debug("Enter in InvoiceConfirm");
+        HttpSession session = req.getSession();
+        Merchants merchants = new Merchants();
+        InvoiceEntry invoiceEntry = new InvoiceEntry();
+
+
+        if (!merchants.isLoggedIn(session))
+        {
+            log.debug("member is logout ");
+            res.sendRedirect("/merchant/Logout.jsp");
+            return;
+        }
+
+        User user = (User) session.getAttribute("ESAPIUserSessionKey");
+
+        //variabe list
+        String error = "";
+        String EOL = "<BR>";
+        boolean flag = true;
+        Hashtable hiddenvariables = new Hashtable();
+        String memberid = null;
+        String orderid = null;
+        String orderdesc = null;
+        String amount = null;  //Amount
+        String custname = null;
+        String address = null;
+        String city = null;
+        String zipcode = null;
+        String state = null;
+        String countrycode = null;
+        String phonecc = null;
+        String phone = null;
+        String custemail = null;
+        String currency = req.getParameter("curr");
+        String expTime = "";
+        int time = 0;
+        String productCounter = "";
+        String totype = (String) session.getAttribute("company");
+        String redirecturl = "";
+        Functions functions = new Functions();
+        String taxAmount = req.getParameter("taxamount");
+
+        String gstcb = req.getParameter("gstcb");
+        String grandTotal = req.getParameter("grandtotal");
+
+        List<ProductList> listOfProducts = new ArrayList<ProductList>();
+        List<DefaultProductList> defaultProductLists=new ArrayList<DefaultProductList>();
+        if (functions.isValueNull(req.getParameter("productCounter")) && req.getParameter("productCounter").length() > 0)
+        {
+            productCounter = req.getParameter("productCounter");
+            for (int i = 1; i <= Integer.parseInt(productCounter); i++)
+            {
+                ProductList productList = new ProductList();
+                DefaultProductList defaultProductList=new DefaultProductList();
+                if (req.getParameter("product" + i) == null && req.getParameter("price" + i) == null)
+                {
+                    continue;
+                }
+                //Product Description
+                if (!ESAPI.validator().isValidInput("product", req.getParameter("product" + i), "Description", 30, false))
+                {
+                    log.debug("Invalid Product Description for " + i);
+                    error = error + "Invalid Product Description for row " + i + EOL;
+                    flag = false;
+                }
+                else
+                {
+                    productList.setProductDescription(req.getParameter("product" + i));
+                    defaultProductList.setProductDescription(req.getParameter("product" + i));
+                }
+                //Product Price
+                if (!ESAPI.validator().isValidInput("price", req.getParameter("price" + i), "Amount", 30, false))
+                {
+                    log.debug("Invalid Product Amount for row " + i);
+                    error = error + "Invalid Product Amount for row " + i + EOL;
+                    flag = false;
+                }
+                else
+                {
+                    productList.setProductAmount(req.getParameter("price" + i));
+                    defaultProductList.setProductAmount(req.getParameter("price" + i));
+                }
+                //Product Quantity
+                if (!ESAPI.validator().isValidInput("qty", req.getParameter("qty" + i), "Numbers", 3, false))
+                {
+                    log.debug("Invalid Quantity for row " + i + EOL);
+                    error = error + "Invalid Quantity for row " + i + EOL;
+                    flag = false;
+                }
+                else
+                {
+                    productList.setQuantity(req.getParameter("qty" + i));
+                    defaultProductList.setQuantity(req.getParameter("qty" + i));
+                }
+                //Tax
+                if (!ESAPI.validator().isValidInput("tax", req.getParameter("tax" + i), "Amount", 10, true))
+                {
+                    log.debug("Invalid Tax percentage for row " + i + EOL);
+                    error = error + "Invalid Tax percentage for row " + i + EOL;
+                    flag = false;
+                }
+                else
+                {
+                    productList.setTax(req.getParameter("tax" + i));
+                    defaultProductList.setTax(req.getParameter("tax" + i));
+                }
+                //Line Total
+                productList.setProductTotal(req.getParameter("linetotal" + i));
+                defaultProductList.setProductTotal(req.getParameter("linetotal" + i));
+
+                //unit
+                productList.setProductUnit(req.getParameter("productunit" + i));
+                defaultProductList.setUnit(req.getParameter("productunit" + i));
+
+                defaultProductLists.add(defaultProductList);
+                listOfProducts.add(productList);
+            }
+        }
+        if (!ESAPI.validator().isValidInput("url", (String) req.getParameter("redirecturl"), "URL", 100, false))
+        {
+            log.debug("PLS enter Valid Redirect URL");
+            error = error + "Please enter Valid Redirect URL." + EOL;
+            flag = false;
+        }
+        else
+        {
+            redirecturl = (String) req.getParameter("redirecturl");
+        }
+
+        if (!ESAPI.validator().isValidInput("expire", req.getParameter("expire"), "Numbers", 3, false))
+        {
+            log.debug("Invalid Expiry Time");
+            error = error + "Invalid Expiry Time" + EOL;
+            flag = false;
+        }
+        else
+        {
+            expTime = req.getParameter("expire");
+            if (req.getParameter("frequency") != null && "Days".equalsIgnoreCase(req.getParameter("frequency")))
+            {
+                time = Integer.parseInt(req.getParameter("expire")) * 24;
+            }
+            else
+            {
+                time = Integer.parseInt(req.getParameter("expire"));
+            }
+        }
+
+        //validate all requested variables
+        if (!ESAPI.validator().isValidInput("memberid", req.getParameter("memberid"), "Numbers", 30, false))
+        {
+            log.debug("Invalid memberid");
+            error = error + "Invalid Merchant Id" + EOL;
+            flag = false;
+        }
+        else
+        {
+            memberid = req.getParameter("memberid");
+        }
+        if (!ESAPI.validator().isValidInput("orderid", req.getParameter("orderid"), "Description", 30, false))
+        {
+            log.debug("Invalid orderid");
+            error = error + "Invalid Order Id " + EOL;
+            flag = false;
+        }
+        else
+        {
+            orderid = req.getParameter("orderid");
+        }
+        boolean uniqueOrder = invoiceEntry.isOrderUnique(req.getParameter("orderid"));
+        if (!uniqueOrder)
+        {
+            log.debug("Invalid orderid");
+            error = error + "Duplicate order ID " + EOL;
+            flag = false;
+        }
+        else
+        {
+            orderid = req.getParameter("orderid");
+        }
+
+        if (!ESAPI.validator().isValidInput("orderdesc", req.getParameter("orderdesc"), "Description", 30, true))
+        {
+            log.debug("Invalid order description");
+            error = error + "Invalid Order Description" + EOL;
+            flag = false;
+        }
+        else
+        {
+            orderdesc = req.getParameter("orderdesc");
+        }
+        log.debug("Checkpoint 1");
+        if (!ESAPI.validator().isValidInput("amount", req.getParameter("amount"), "Amount", 30, false))
+        {
+            log.debug("Invalid amount");
+            error = error + "Invalid Amount" + EOL;
+            flag = false;
+        }
+        else
+        {
+            amount = req.getParameter("amount");
+        }
+        if (req.getParameter("curr").equalsIgnoreCase("JPY") && !req.getParameter("amount").contains("."))
+        {
+            log.debug("Invalid amount for JPY currency");
+            error = error + "JPY currency does not have cent value after decimal. Please give .00 as decimal value" + EOL;
+            flag = false;
+        }
+        else
+        {
+            amount = req.getParameter("amount");
+        }
+
+        if (!ESAPI.validator().isValidInput("custname", req.getParameter("custname"), "Name", 30, false))
+        {
+            log.debug("Invalid Customer name");
+            error = error + "Invalid Customer Name" + EOL;
+            flag = false;
+        }
+        else
+        {
+            custname = req.getParameter("custname");
+        }
+      /*  if (error.length() > 0)
+        {
+            req.setAttribute("error", error);
+            log.debug("forwarding request to invoice generate");
+            RequestDispatcher rd = req.getRequestDispatcher("/servlet/GenerateInvoice?ctoken=" + user.getCSRFToken());
+            rd.forward(req, res);
+        }*/
+
+        if (!ESAPI.validator().isValidInput("address", req.getParameter("address"), "Address", 100, true))
+        {
+            log.debug("Invalid address");
+            error = error + "Invalid Address" + EOL;
+            flag = false;
+        }
+        else
+        {
+            address = req.getParameter("address");
+        }
+
+        if (!ESAPI.validator().isValidInput("city", req.getParameter("city"), "City", 30, true))
+        {
+            log.debug("Invalid city");
+            error = error + "Invalid City" + EOL;
+            flag = false;
+        }
+        else
+        {
+            city = req.getParameter("city");
+        }
+
+        if (!ESAPI.validator().isValidInput("zipcode", req.getParameter("zipcode"), "Zip", 9, true))
+        {
+            log.debug("Invalid Zip");
+            error = error + "Invalid Zip Code" + EOL;
+            flag = false;
+
+        }
+        else
+        {
+            zipcode = req.getParameter("zipcode");
+        }
+        if (!ESAPI.validator().isValidInput("state", req.getParameter("state"), "Address", 30, true))
+        {
+            log.debug("Invalid state");
+            error = error + "Invalid State" + EOL;
+            flag = false;
+        }
+        else
+        {
+            state = req.getParameter("state");
+        }
+        if (!req.getParameter("countrycode").equalsIgnoreCase("--"))
+        {
+            if (!ESAPI.validator().isValidInput("countrycode", req.getParameter("countrycode"), "CountryCode", 30, true))
+            {
+                log.debug("Invalid countrycode");
+                error = error + "Invalid Country Code" + EOL;
+                flag = false;
+            }
+            else
+            {
+                countrycode = req.getParameter("countrycode");
+            }
+        }
+        else
+        {
+            countrycode = "";
+        }
+        log.debug("Checkpoint 2");
+        if (!req.getParameter("phonecc").equalsIgnoreCase("--"))
+        {
+            if (!ESAPI.validator().isValidInput("phonecc", req.getParameter("phonecc"), "Phone", 30, true))
+            {
+                log.debug("Invalid phone");
+                error = error + "Invalid Country number" + EOL;
+                flag = false;
+            }
+            else
+            {
+                phonecc = req.getParameter("phonecc");
+            }
+        }
+        else
+        {
+            phonecc = "";
+        }
+
+        if (!ESAPI.validator().isValidInput("phone", req.getParameter("phone"), "Phone", 15, true))
+        {
+            log.debug("Invalid phone");
+            error = error + "Invalid Phone Number" + EOL;
+            flag = false;
+        }
+        else
+        {
+            phone = req.getParameter("phone");
+        }
+        if ((!ESAPI.validator().isValidInput("custemail", req.getParameter("custemail"), "Email", 30, true)) || ((String) req.getParameter("custemail")).equals(""))
+        {
+            log.debug("Invalid Customer email");
+            error = error + "Invalid Customer Email" + EOL;
+            flag = false;
+        }
+        else
+        {
+            custemail = req.getParameter("custemail");
+        }
+        String autoSelectTerminal = req.getParameter("autoselectterminal");
+
+        if (req.getParameter("curr").equals("all") || !ESAPI.validator().isValidInput("currency", req.getParameter("curr"), "StrictString", 3, false))
+        {
+            log.debug("Invalid currency");
+            error = error + "Invalid currency" + EOL;
+            flag = false;
+        }
+        else
+        {
+            phone = req.getParameter("phone");
+        }
+        //calcute checksum
+        log.debug("Checkpoint 3");
+        //set hidden veriables
+        if (flag)
+        {
+            hiddenvariables.put("memberid", memberid);
+            log.debug("entering memberid");
+            hiddenvariables.put("orderid", orderid);
+            log.debug("entering orderid");
+            hiddenvariables.put("orderdesc", orderdesc);
+            log.debug("entering orderdesc");
+            hiddenvariables.put("amount", amount);
+            log.debug("entering amount");
+            hiddenvariables.put("custname", custname);
+            log.debug("entering name");
+            hiddenvariables.put("address", address);
+            log.debug("entering addr");
+            hiddenvariables.put("city", city);
+            hiddenvariables.put("zipcode", zipcode);
+            log.debug("entering zip");
+            hiddenvariables.put("state", state);
+
+            hiddenvariables.put("country", countrycode);
+            log.debug("entering country");
+            hiddenvariables.put("phonecc", phonecc);
+            hiddenvariables.put("phone", phone);
+            log.debug("entering phone");
+            hiddenvariables.put("custemail", custemail);
+            hiddenvariables.put("listofproducts", listOfProducts);
+            if (null != taxAmount)
+            {
+                hiddenvariables.put("taxamount", taxAmount);
+            }
+            else
+            {
+                hiddenvariables.put("taxamount", "");
+            }
+            if (null != gstcb)
+            {
+                hiddenvariables.put("gstcb", gstcb);
+            }
+            else
+            {
+                hiddenvariables.put("gstcb", "");
+            }
+            if (null != taxAmount)
+            {
+                hiddenvariables.put("grandtotal", grandTotal);
+            }
+            else
+            {
+                hiddenvariables.put("grandtotal", "");
+            }
+            log.debug("entering email and custemail");
+            log.debug("entering paymodeid ");
+
+            if (functions.isValueNull(req.getParameter("terminal")) && !(req.getParameter("terminal").equals("0")))
+            {
+                String terminalValue[] = req.getParameter("terminal").split("-");
+                String terminalid = terminalValue[0];
+                // String curr = terminalValue[1];
+                String paymode = terminalValue[2];
+                String cardtypeid = terminalValue[3];
+
+                hiddenvariables.put("paymodeid", paymode);
+                hiddenvariables.put("cardname", cardtypeid);
+                hiddenvariables.put("terminalid", terminalid);
+            }
+
+
+            hiddenvariables.put("currency", currency);
+
+            log.debug("entering totype");
+            hiddenvariables.put("totype", totype);
+            hiddenvariables.put("redirecturl", redirecturl);
+            hiddenvariables.put("autoselectterminal", autoSelectTerminal);
+            hiddenvariables.put("expPeriod", time);
+            hiddenvariables.put("expTime", expTime);
+            hiddenvariables.put("frequency", req.getParameter("frequency"));
+            req.setAttribute("hiddenvariables", hiddenvariables);
+
+            RequestDispatcher rd = req.getRequestDispatcher("/invoiceConfirm.jsp?ctoken=" + user.getCSRFToken());
+            log.debug("forwarding request to invoice confirm");
+            rd.forward(req, res);
+        }
+        else
+        {
+            req.setAttribute("error", error);
+            req.setAttribute("amount", req.getParameter("amount"));
+            req.setAttribute("custemail", req.getParameter("custemail"));
+            req.setAttribute("custname", req.getParameter("custname"));
+            req.setAttribute("orderdesc", req.getParameter("orderdesc"));
+            req.setAttribute("address", req.getParameter("address"));
+            req.setAttribute("city", req.getParameter("city"));
+            req.setAttribute("zipcode", req.getParameter("zipcode"));
+            req.setAttribute("countrycode", req.getParameter("countrycode"));
+            req.setAttribute("state", req.getParameter("state"));
+            req.setAttribute("phonecc", req.getParameter("phonecc"));
+            req.setAttribute("phone", req.getParameter("phone"));
+            req.setAttribute("taxamount",req.getParameter("taxamount"));
+            req.setAttribute("grandtotal",req.getParameter("grandtotal"));
+            req.setAttribute("listOfProducts",defaultProductLists);
+            log.debug("forwarding request to invoice generate");
+            RequestDispatcher rd = req.getRequestDispatcher("/servlet/GenerateInvoice?ctoken=" + user.getCSRFToken());
+            rd.forward(req, res);
+        }
+    }
+}

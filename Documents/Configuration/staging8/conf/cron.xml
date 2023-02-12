@@ -1,0 +1,917 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="cron.xsl"?>
+
+<!DOCTYPE crons [
+        <!ELEMENT crons (cron)*>
+        <!ATTLIST cron name CDATA #IMPLIED isidempotent CDATA #IMPLIED>
+        <!ELEMENT cron (classname,methodname,param*,time,description)+>
+        <!ELEMENT classname (#PCDATA)>
+        <!ELEMENT methodname (#PCDATA)>
+        <!ELEMENT param (entry+, args*)>
+        <!ATTLIST entry
+                key CDATA #REQUIRED
+                value CDATA #REQUIRED>
+        <!ELEMENT entry (#PCDATA)>
+        <!ATTLIST args
+                type CDATA #REQUIRED
+                name CDATA #REQUIRED
+                value CDATA #REQUIRED>
+        <!ELEMENT args (#PCDATA)>
+        <!ATTLIST time isrepetitive CDATA #IMPLIED>
+        <!ELEMENT time ((interval)?|(minute,hour,dayofmonth,month,dayofweek,year)?)>
+        <!ELEMENT interval (#PCDATA)>
+        <!ELEMENT minute (#PCDATA)>
+        <!ELEMENT hour (#PCDATA)>
+        <!ELEMENT dayofmonth (#PCDATA)>
+        <!ELEMENT month (#PCDATA)>
+        <!ELEMENT dayofweek (#PCDATA)>
+        <!ELEMENT year (#PCDATA)>
+        <!ELEMENT description (#PCDATA)>
+        ]>
+
+<crons>
+    <cron name="sendMail">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>sendMail</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="sendMail"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>5</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Send Mail</description>
+    </cron>
+    <cron name="sendNegativeBalance">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>sendNegativeBalance</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="sendNegativeBalance"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>30</minute>
+            <hour>5</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Send Balance</description>
+    </cron>
+    <cron name="DailyTransactionSendMail">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>DailyTransactionSendMail</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="DailyTransactionSendMail"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+    <cron name="capture">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>capture</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="capture"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>30</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Capture</description>
+    </cron>
+    <cron name="reverse">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>reverse</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="reverse"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>7</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Reverse</description>
+    </cron>
+    <cron name="checkAndUpdateMembers">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>checkAndUpdateMembers</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="checkAndUpdateMembers"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>30</minute>
+            <hour>7</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Check And Update Members</description>
+    </cron>
+
+    <cron name="CSVCreator">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>CSVCreator</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="CSVCreator"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>25</minute>
+            <hour>15</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>CSVCreator</description>
+    </cron>
+
+    <cron name="setStatus">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>setStatus</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="setStatus"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>55</minute>
+            <hour>15</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>setStatus</description>
+    </cron>
+
+    <cron name="PODReminderCron">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>PODReminderCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="PODReminderCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>25</minute>
+            <hour>16</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>PODReminderCron</description>
+    </cron>
+
+    <cron name="SettlementReminder">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>SettlementReminder</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="SettlementReminder"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>55</minute>
+            <hour>16</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>SettlementReminder</description>
+    </cron>
+
+    <cron name="ProofReminderCron">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>ProofReminderCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="ProofReminderCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>25</minute>
+            <hour>17</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>ProofReminderCron</description>
+    </cron>
+
+    <cron name="ChangeStatus">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>ChangeStatus</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="ChangeStatus"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>55</minute>
+            <hour>17</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>ChangeStatus</description>
+    </cron>
+
+    <cron name="captureReminderToMerchant">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>CaptureReminderToMerchant</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="CaptureReminderToMerchant"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>15</minute>
+            <hour>18</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>CaptureReminderToMerchant</description>
+    </cron>
+
+    <cron name="CaptureReminder">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>CaptureReminder</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="CaptureReminder"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>25</minute>
+            <hour>18</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>CaptureReminder</description>
+    </cron>
+
+    <cron name="TransactionReminderToCustomer">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>TransactionReminderToCustomer</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="TransactionReminderToCustomer"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>55</minute>
+            <hour>18</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>TransactionReminderToCustomer</description>
+    </cron>
+
+    <cron name="MonthlyReportCron">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>MonthlyReportCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="MonthlyReportCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>33</minute>
+            <hour>17</hour>
+            <dayofmonth>1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>MonthlyReportCron</description>
+    </cron>
+    <cron name="sendBalance">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>sendBalance</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="sendBalance"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>3</minute>
+            <hour>18</hour>
+            <dayofmonth>1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>sendBalance</description>
+    </cron>
+
+    <cron name="loadIpToCountryList">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>loadIpToCountryFile</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="loadIpToCountryFile"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>00</minute>
+            <hour>00</hour>
+            <dayofmonth>1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>loadIpToCountryList</description>
+    </cron>
+
+    <cron name="settleSBMTransactionsAndSendReconFile">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>settleSBMTransactions</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="settleSBMTransactions"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>00</minute>
+            <hour>00</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>loadIpToCountryList</description>
+    </cron>
+     <cron name="processFraudReports">
+        <classname>com.directi.pg.FraudReportProcessor</classname>
+        <methodname>processFraudReports</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.FraudReportProcessor"/>
+            <entry key="methodname" value="processFraudReports"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+    <cron name="qwipiReconciliationCron">
+        <classname>com.directi.pg.QWIPIReconciliationCron</classname>
+        <methodname>qwipiReconciliationCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.QWIPIReconciliationCron"/>
+            <entry key="methodname" value="qwipiReconciliationCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+	<cron name="AlertService">
+        <classname>com.payment.alert.AlertService</classname>
+        <methodname>sendAlertMail</methodname>
+        <param>
+            <entry key="classname" value="com.payment.alert.AlertService"/>
+            <entry key="methodname" value="sendAlertMail"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Report Send Mail</description>
+    </cron>
+	<cron name="AlertService">
+        <classname>com.payment.alert.AlertService</classname>
+        <methodname>sendChargebackAlertMail</methodname>
+        <param>
+            <entry key="classname" value="com.payment.alert.AlertService"/>
+            <entry key="methodname" value="sendChargebackAlertMail"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>23</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>weekly Chargeback Report Send Mail</description>
+    </cron>
+    <cron name="SendFraudTransactionAlertMail">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>sendFraudTransactionAlert</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="sendFraudTransactionAlert"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Send Fraud Transaction Alert Mail</description>
+    </cron>
+
+	<cron name="BankConnectionCron">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>bankConnection</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="bankConnection"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Bank Connection Cron</description>
+    </cron>
+    <cron name="PaymentzOfflineFraudChecker">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>paymentzOfflineFraudChecker</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="paymentzOfflineFraudChecker"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>New Transaction To Offline PZ FraudChecker</description>
+    </cron>
+    <cron name="UpdateTransactionToPZFraudChecker">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>updateTransToOfflinePZFraudChecker</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="updateTransToOfflinePZFraudChecker"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Update Transaction To Offline PZFraudChecker</description>
+    </cron>
+	<cron name="ReitumuAuthStartedCron">
+        <classname>com.directi.pg.ReitumuAuthStartedCron</classname>
+        <methodname>reitumuAuthStartedCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.ReitumuAuthStartedCron"/>
+            <entry key="methodname" value="reitumuAuthStartedCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Reitumu Reconcile</description>
+    </cron>
+	<cron name="SendStuckTransactionMailToAdmin">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>sendStuckTransactionMailToAdmin</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="sendStuckTransactionMailToAdmin"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Send Stuck Transaction Mail To Admin</description>
+    </cron>
+    <cron name="dailyMerchantMonitoringRiskAlerts">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>dailyMerchantMonitoringRiskAlerts</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="dailyMerchantMonitoringRiskAlerts"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Merchant Monitoring Risk Alerts</description>
+    </cron>
+
+    <cron name="weeklyMerchantMonitoringRiskAlerts">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>weeklyMerchantMonitoringRiskAlerts</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="weeklyMerchantMonitoringRiskAlerts"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Weekly Merchant Monitoring Risk Alerts</description>
+    </cron>
+
+    <cron name="monthlyMerchantMonitoringRiskAlerts">
+        <classname>com.directi.pg.Cron</classname>
+        <methodname>monthlyMerchantMonitoringRiskAlerts</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.Cron"/>
+            <entry key="methodname" value="monthlyMerchantMonitoringRiskAlerts"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Monthly Merchant Monitoring Risk Alerts</description>
+    </cron>
+	
+	<cron name="PayforasiaAuthStartedCron">
+        <classname>com.directi.pg.PayforasiaAuthStartedCron</classname>
+        <methodname>payforasiaAuthStartedCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.PayforasiaAuthStartedCron"/>
+            <entry key="methodname" value="payforasiaAuthStartedCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>10</dayofmonth>
+            <month>5</month>
+            <dayofweek>2</dayofweek>
+            <year>2099</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+
+<cron name="PayforasiaMarkedforreversalCron">
+        <classname>com.directi.pg.PayForAsiaMarkforReversalCron</classname>
+        <methodname>PayForAsiaMarkforReversalCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.PayForAsiaMarkforReversalCron"/>
+            <entry key="methodname" value="PayForAsiaMarkforReversalCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+	
+	 <cron name="BorgunAuthStartedCron">
+        <classname>com.directi.pg.BorgunAuthStartedCron</classname>
+        <methodname>borgunAuthStartedCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.BorgunAuthStartedCron"/>
+            <entry key="methodname" value="borgunAuthStartedCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>10</dayofmonth>
+            <month>5</month>
+            <dayofweek>2</dayofweek>
+            <year>2099</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+
+    <cron name="BorgunMarkforReversalCron">
+        <classname>com.directi.pg.BorgunMarkforReversalCron</classname>
+        <methodname>borgunMarkforReversalCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.BorgunMarkforReversalCron"/>
+            <entry key="methodname" value="borgunMarkforReversalCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+
+    <cron name="ReitumuMarkedForReversalCron">
+        <classname>com.directi.pg.ReitumuMarkedForReversalCron</classname>
+        <methodname>reitumuMarkedForReversalCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.ReitumuMarkedForReversalCron"/>
+            <entry key="methodname" value="reitumuMarkedForReversalCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+	
+	<cron name="qwipiMarkedforReversalCron">
+        <classname>com.directi.pg.QwipiMarkedforReversalCron</classname>
+        <methodname>qwipiMarkedforReversalCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.QwipiMarkedforReversalCron"/>
+            <entry key="methodname" value="qwipiMarkedforReversalCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+
+	<cron name="VMAuthStartedCron">
+        <classname>com.directi.pg.VMAuthStartedCron</classname>
+        <methodname>vmAuthStartedCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.VMAuthStartedCron"/>
+            <entry key="methodname" value="vmAuthStartedCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+
+	<cron name="SafeChargeAuthStartedCron">
+        <classname>com.directi.pg.SafeChargeAuthStartedCron</classname>
+        <methodname>safeChargeAuthStartedCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.SafeChargeAuthStartedCron"/>
+            <entry key="methodname" value="safeChargeAuthStartedCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+
+	<cron name="PayVisionAuthStartedCron">
+        <classname>com.directi.pg.PayVisionAuthStartedCron</classname>
+        <methodname>payVisionAuthStartedCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.PayVisionAuthStartedCron"/>
+            <entry key="methodname" value="payVisionAuthStartedCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+
+    <cron name="PayVisionMarkedForReversalCron">
+        <classname>com.directi.pg.PayVisionMarkedForReversalCron</classname>
+        <methodname>payVisionMarkedForReversalCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.PayVisionMarkedForReversalCron"/>
+            <entry key="methodname" value="payVisionMarkedForReversalCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+
+	<cron name="EmexpayAuthStartedCron">
+        <classname>com.directi.pg.EmexpayAuthStartedCron</classname>
+        <methodname>emexpayAuthStartedCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.EmexpayAuthStartedCron"/>
+            <entry key="methodname" value="emexpayAuthStartedCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+
+    <cron name="WirecardNAuthStartedCron">
+        <classname>com.directi.pg.WirecardNAuthStartedCron</classname>
+        <methodname>wirecardNAuthStartedCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.WirecardNAuthStartedCron"/>
+            <entry key="methodname" value="wirecardNAuthStartedCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+
+	<cron name="EMSAuthStartedCron">
+        <classname>com.directi.pg.EMSAuthStartedCron</classname>
+        <methodname>emsAuthStartedCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.EMSAuthStartedCron"/>
+            <entry key="methodname" value="emsAuthStartedCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+
+	<cron name="SkrillAuthStartedCron">
+        <classname>com.directi.pg.SkrillAuthStartedCron</classname>
+        <methodname>skrillAuthStartedCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.SkrillAuthStartedCron"/>
+            <entry key="methodname" value="skrillAuthStartedCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+    <cron name="NetellerAuthStartedCron">
+        <classname>com.directi.pg.NetellerAuthStartedCron</classname>
+        <methodname>netellerAuthStartedCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.NetellerAuthStartedCron"/>
+            <entry key="methodname" value="netellerAuthStartedCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+
+	<cron name="JetonWalletAuthStartedCron">
+        <classname>com.directi.pg.JetonWalletAuthStartedCron</classname>
+        <methodname>jetonWalletAuthStartedCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.JetonWalletAuthStartedCron"/>
+            <entry key="methodname" value="jetonWalletAuthStartedCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+
+    <cron name="PaySafeCardAuthStartedCron">
+        <classname>com.directi.pg.PaySafeCardAuthStartedCron</classname>
+        <methodname>paysafecardAuthStartedCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.PaySafeCardAuthStartedCron"/>
+            <entry key="methodname" value="paysafecardAuthStartedCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+
+	<cron name="CardinityAuthStartedCron">
+        <classname>com.directi.pg.CardinityAuthStartedCron</classname>
+        <methodname>cardinityAuthStartedCron</methodname>
+        <param>
+            <entry key="classname" value="com.directi.pg.CardinityAuthStartedCron"/>
+            <entry key="methodname" value="cardinityAuthStartedCron"/>
+        </param>
+        <time isrepetitive="false">
+            <minute>0</minute>
+            <hour>6</hour>
+            <dayofmonth>-1</dayofmonth>
+            <month>-1</month>
+            <dayofweek>-1</dayofweek>
+            <year>-1</year>
+        </time>
+        <description>Daily Transaction Send Mail</description>
+    </cron>
+	
+
+</crons>

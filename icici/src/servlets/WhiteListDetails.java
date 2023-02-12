@@ -1,0 +1,297 @@
+import com.directi.pg.*;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.ValidationErrorList;
+import org.owasp.esapi.codecs.Codec;
+import org.owasp.esapi.codecs.MySQLCodec;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: admin
+ * Date: 9/4/13
+ * Time: 12:15 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class WhiteListDetails extends HttpServlet
+{
+    private static Logger log = new Logger(WhiteListDetails.class.getName());
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        HttpSession session = req.getSession();
+        Functions functions=new Functions();
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+        if (!Admin.isLoggedIn(session))
+        {   log.debug("Admin is logout ");
+            res.sendRedirect("/icici/logout.jsp");
+            return;
+        }
+        Connection conn = null;
+        String memberId=null;
+        String firstSix=null;
+        String lastFour=null;
+        String accountId=null;
+        String emailAddr=null;
+        String name=null;
+        String ipAddress=null;
+        String expiryDate=null;
+        String isTemp=null;
+        String enExpiryDateStr=null;
+        String error= "";
+        int records=15;
+        int pageno=1;
+        String role="Admin";
+        String username=(String)session.getAttribute("username");
+        String actionExecutorId=(String)session.getAttribute("merchantid");
+        String actionExecutorName=role+"-"+username;
+
+        error = error + validateOptionalParameters(req);
+
+        memberId= req.getParameter("toid");
+        req.setAttribute("toid",memberId);
+
+        firstSix= req.getParameter("firstsix");
+        req.setAttribute("firstsix",firstSix);
+
+        lastFour= req.getParameter("lastfour");
+        req.setAttribute("lastfour",lastFour);
+
+        accountId= req.getParameter("accountid");
+        req.setAttribute("accountid",accountId);
+
+        emailAddr= req.getParameter("emailaddr");
+        req.setAttribute("emailaddr",emailAddr);
+
+        name= req.getParameter("name");
+        req.setAttribute("name",name);
+
+        ipAddress= req.getParameter("ipAddress");
+        req.setAttribute("ipAddress",ipAddress);
+
+        isTemp=req.getParameter("isTemp");
+        req.setAttribute("isTemp",isTemp);
+
+
+
+       /* expiryDate= req.getParameter("expiryDate");
+        req.setAttribute("expiryDate",expiryDate);*/
+
+        try
+        {
+            validateOptionalParameter(req);
+        }
+        catch(ValidationException e)
+        {
+            log.error("Invalid page no or records",e);
+            pageno = 1;
+            records = 15;
+        }
+        pageno = Functions.convertStringtoInt(req.getParameter("SPageno"), 1);
+        records = Functions.convertStringtoInt(req.getParameter("SRecords"), 15);
+
+        Hashtable hash = null;
+        int start = (pageno - 1) * records;
+        int end = records;
+
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+        ResultSet rs=null;
+        try
+        {
+            if(functions.isValueNull(name))
+            {
+                if (!ESAPI.validator().isValidInput("name", name, "SafeString", 50, false))
+                {
+                    log.debug("Invalid Card Holder Name.");
+                    error=error+"Invalid Card Holder Name";
+                }
+            }
+            if(functions.isValueNull(ipAddress))
+            {
+                if (!ESAPI.validator().isValidInput("ipAddress", ipAddress, "IPAddress", 50, false))
+                {
+                    log.debug("Invalid IP Address.");
+                    error=error+"Invalid IP Address.";
+                }
+            }
+            if(functions.isValueNull(expiryDate))
+            {
+                String input = expiryDate;
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/yy");
+                simpleDateFormat.setLenient(false);
+                Date expiry = simpleDateFormat.parse(input);
+                boolean expired = expiry.before(new Date());
+                if (expired == true)
+                {
+                    error=error+"Invalid Expiry Date.";
+                }
+            }
+            if(error.length()>0)
+            {
+                req.setAttribute("error",error);
+                RequestDispatcher rd = req.getRequestDispatcher("/whitelistdetails.jsp?ctoken="+user.getCSRFToken());
+                rd.forward(req, res);
+                return;
+            }
+            conn = Database.getRDBConnection();
+            StringBuffer stringBuffer= new StringBuffer("SELECT id,memberid,accountid,firstsix,lastfour,emailAddr,name,ipAddress, expiryDate,isTemp,actionExecutorId,actionExecutorName,registration_date FROM whitelist_details WHERE id>0 ");
+            StringBuffer count=new StringBuffer("SELECT COUNT(*) FROM whitelist_details WHERE id>0 ");
+            if (isTemp != null && !isTemp.equals(""))
+            {
+                stringBuffer.append(" and isTemp='" + ESAPI.encoder().encodeForSQL(me,isTemp)+"'");
+                count.append(" and isTemp='" + ESAPI.encoder().encodeForSQL(me,isTemp)+"'");
+            }
+            if (memberId != null && !memberId.equals(""))
+            {
+                stringBuffer.append(" and memberid=" + ESAPI.encoder().encodeForSQL(me,memberId));
+                count.append(" and memberid=" + ESAPI.encoder().encodeForSQL(me,memberId));
+            }
+            if (firstSix != null && !firstSix.equals(""))
+            {
+                stringBuffer.append(" and firstsix=" + ESAPI.encoder().encodeForSQL(me,firstSix));
+                count.append(" and firstsix=" + ESAPI.encoder().encodeForSQL(me,firstSix));
+            }
+            if (lastFour != null && !lastFour.equals(""))
+            {
+                stringBuffer.append(" and lastfour=" + ESAPI.encoder().encodeForSQL(me,lastFour));
+                count.append(" and lastfour=" + ESAPI.encoder().encodeForSQL(me,lastFour));
+            }
+            if (accountId != null && !accountId.equals(""))
+            {
+                stringBuffer.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me,accountId));
+                count.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me,accountId));
+            }
+            if (emailAddr != null && !emailAddr.equals(""))
+            {
+                stringBuffer.append(" and emailAddr='" + emailAddr + "'");
+                count.append(" and emailAddr='"+emailAddr+"'");
+            }
+            if (name != null && !name.equals(""))
+            {
+                stringBuffer.append(" and name='" + name + "'");
+                count.append(" and name='"+name+"'");
+            }
+            if (ipAddress != null && !ipAddress.equals(""))
+            {
+                stringBuffer.append(" and ipAddress='" + ipAddress + "'");
+                count.append(" and ipAddress='"+ipAddress+"'");
+            }
+     /*       if(!functions.isValueNull(actionExecutorId))
+            {
+                stringBuffer.append(" AND actionExecutorId='"+actionExecutorId+"'");
+            }
+            if(!functions.isValueNull(actionExecutorName))
+            {
+                stringBuffer.append(" AND actionExecutorName='"+actionExecutorName+"'");
+            }*/
+            /*if (expiryDate != null && !expiryDate.equals(""))
+            {
+                stringBuffer.append(" and expiryDate='" + enExpiryDateStr + "'");
+                count.append(" and expiryDate='"+enExpiryDateStr+"'");
+            }*/
+            stringBuffer.append(" order by id desc LIMIT " + start + "," + end);
+            System.out.println("stringBuffer------->"+stringBuffer.toString());
+            hash = Database.getHashFromResultSet(Database.executeQuery(stringBuffer.toString(), conn));
+            rs = Database.executeQuery(count.toString(), conn);
+            rs.next();
+            int totalrecords = rs.getInt(1);
+
+            hash.put("totalrecords", "" + totalrecords);
+            hash.put("records", "0");
+
+            if (totalrecords > 0)
+                hash.put("records", "" + (hash.size() - 2));
+            req.setAttribute("transdetails", hash);
+        }
+        catch (ParseException parse)
+        {
+            error=("Internal error while processing your request.");
+            log.error("ParseException:::::",parse);
+            req.setAttribute("error",error);
+            RequestDispatcher rd = req.getRequestDispatcher("/whitelistdetails.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return ;
+        }
+        catch (SQLException e)
+        {
+            error=("Internal error while processing your request.");
+            log.error("SQLException:::::",e);
+            req.setAttribute("error",error);
+            RequestDispatcher rd = req.getRequestDispatcher("/whitelistdetails.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return ;
+        }
+        catch (SystemError systemError)
+        {
+            error=("Internal error while processing your request.");
+            log.error("Internal error while processing your request",systemError);
+            req.setAttribute("error",error);
+            RequestDispatcher rd = req.getRequestDispatcher("/whitelistdetails.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closeConnection(conn);
+        }
+        req.setAttribute("error",error);
+        RequestDispatcher rd = req.getRequestDispatcher("/whitelistdetails.jsp?ctoken="+user.getCSRFToken());
+        rd.forward(req, res);
+    }
+    private String validateOptionalParameters(HttpServletRequest req)
+    {
+        InputValidator inputValidator = new InputValidator();
+        String error = "";
+        String EOL = "<BR>";
+        List<InputFields> inputFieldsListOptional = new ArrayList<InputFields>();
+        inputFieldsListOptional.add(InputFields.TOID);
+        inputFieldsListOptional.add(InputFields.ACCOUNTID_SMALL);
+        inputFieldsListOptional.add(InputFields.FIRST_SIX);
+        inputFieldsListOptional.add(InputFields.LAST_FOUR);
+        inputFieldsListOptional.add(InputFields.EMAILADDR);
+
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.InputValidations(req,inputFieldsListOptional,errorList,true);
+
+        if(!errorList.isEmpty())
+        {
+            for(InputFields inputFields :inputFieldsListOptional)
+            {
+                if(errorList.getError(inputFields.toString())!=null)
+                {
+                    log.debug(errorList.getError(inputFields.toString()).getLogMessage());
+                    error = error+errorList.getError(inputFields.toString()).getMessage()+EOL;
+                }
+            }
+        }
+        return error;
+    }
+    private void validateOptionalParameter(HttpServletRequest req) throws ValidationException
+    {
+        InputValidator inputValidator = new InputValidator();
+        List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+        inputFieldsListMandatory.add(InputFields.PAGENO);
+        inputFieldsListMandatory.add(InputFields.RECORDS);
+        inputValidator.InputValidations(req,inputFieldsListMandatory,true);
+    }
+}

@@ -1,0 +1,753 @@
+<%@ page import="com.directi.pg.Functions" %>
+<%@ page import="com.directi.pg.LoadProperties" %>
+<%@ page import="com.directi.pg.Logger" %>
+<%@ page import="com.directi.pg.core.valueObjects.GenericAddressDetailsVO" %>
+<%@ page import="com.directi.pg.core.valueObjects.GenericTransDetailsVO" %>
+<%@ page import="com.manager.vo.MerchantDetailsVO" %>
+<%@ page import="com.manager.vo.RecurringBillingVO" %>
+<%@ page import="com.payment.validators.vo.CommonValidatorVO" %>
+<%@ page import="java.util.*" %>
+
+<%--
+  Created by IntelliJ IDEA.
+  User: Rihen
+  Date: 5/24/2018
+  Time: 1:54 PM
+  To change this template use File | Settings | File Templates.
+--%>
+
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%
+  Functions functions=new Functions();
+  CommonValidatorVO standardKitValidatorVO = (CommonValidatorVO) request.getAttribute("transDetails");
+
+  GenericTransDetailsVO genericTransDetailsVO = standardKitValidatorVO.getTransDetailsVO();
+  MerchantDetailsVO merchantDetailsVO= standardKitValidatorVO.getMerchantDetailsVO();
+  Logger log = new Logger("checkoutPayment.jsp");
+  HashMap paymentMap = standardKitValidatorVO.getMapOfPaymentCardType();
+  String ctoken = "";
+  ctoken = (String) session.getAttribute("ctoken");
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/merchant/transactionCSS/css/raleway-font.css" type="text/css">
+  <link rel="stylesheet" href="/merchant/transactionCSS/css/orbitron-font.css" type="text/css">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
+  <link rel="stylesheet" href="/merchant/transactionCSS/css/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/merchant/transactionCSS/css/bootstrap-float-label.min.css"/>
+  <link rel="stylesheet" href="/merchant/transactionCSS/css/styles.css"/>
+  <link rel="stylesheet" href="/merchant/transactionCSS/css/step-form.css"/>
+  <link rel="stylesheet" href="/merchant/transactionCSS/css/success.css"/>
+  <link rel="stylesheet" href="/merchant/transactionCSS/css/autocomplete.css"/>
+
+  <style>
+
+    @media only screen
+    and (min-device-width : 768px)
+    and (max-device-width : 1024px){
+      .mainDiv{
+        width:100%;
+      }
+      .modal-dialog {
+        /*max-width: 100%;*/
+        margin: 1.75rem auto;
+      }
+    }
+
+    @media (min-width: 1200px) {
+      .mainDiv{
+        width: 345px;
+      }
+      .modal-dialog {
+        max-width: auto;
+      }
+    }
+
+    @media (max-width:576px) {
+      .mainDiv{
+        width: 100%;
+      }
+      .modal-dialog {
+        max-width: 100%;
+        margin: 0px;
+      }
+    }
+
+    @media (min-width: 576px) {
+      .modal-sm {
+        max-width: 346px;
+      }
+    }
+
+    .background {
+    <%=session.getAttribute("bodybgcolor")!=null?"background:"+session.getAttribute("bodybgcolor").toString():""%>;
+    }
+
+    /* header */
+    .header{
+    <%=session.getAttribute("panelheading_color")!=null?"background-color:"+session.getAttribute("panelheading_color").toString()+"!important":""%>;
+    <%=session.getAttribute("bodypanelfont_color")!=null?"color:"+session.getAttribute("bodypanelfont_color").toString()+"!important":""%>;
+    }
+
+    .close {
+    <%=session.getAttribute("bodypanelfont_color")!=null?"color:"+session.getAttribute("bodypanelfont_color").toString()+"!important":""%>;
+    }
+
+    .logo{                /* background color of logo  */
+      background:transparent !important;
+      box-shadow: none !important;
+    }
+    /* end of header */
+
+    /* body */
+    .top-bar{               /* navigation bar background and font color */
+    <%=session.getAttribute("panelbody_color")!=null?"background-color:"+session.getAttribute("panelbody_color").toString()+"!important":""%>;
+    <%=session.getAttribute("navigation_font_color")!=null?"color:"+session.getAttribute("navigation_font_color").toString()+"!important":""%>;
+    }
+
+    .prev-btn{                /* form previous button on navigation bar */
+    <%=session.getAttribute("navigation_font_color")!=null?"color:"+session.getAttribute("navigation_font_color").toString()+"!important":""%>;
+    }
+
+    .footer-tab{             /* home page background color */
+    <%=session.getAttribute("mainbackgroundcolor")!=null?"background-color:"+session.getAttribute("mainbackgroundcolor").toString()+"!important":""%>;
+    }
+
+    .options{               /* body background color */
+    <%=session.getAttribute("mainbackgroundcolor")!=null?"background-color:"+session.getAttribute("mainbackgroundcolor").toString()+"!important":""%>;
+    }
+
+    .tab-icon{               /* home page icon color */
+    <%=session.getAttribute("icon_color")!=null?"color:"+session.getAttribute("icon_color").toString()+"!important":""%>;
+    }
+
+    .label-style , .bank-label {            /* payment type label font color*/
+    <%=session.getAttribute("bodyfgcolor")!=null?"color:"+session.getAttribute("bodyfgcolor").toString()+"!important":""%>;
+    }
+
+    .tabs-li-wallet{       /* payment type options border color */
+    <%=session.getAttribute("panelheading_color")!=null?"border-right: 1px solid "+session.getAttribute("panelbody_color").toString()+"!important":""%>;
+    <%=session.getAttribute("panelheading_color")!=null?"border-bottom: 1px solid "+session.getAttribute("panelbody_color").toString()+"!important":""%>;
+    }
+
+    .form-header{          /* form header label color(Personal,Address,Card)  */
+    <%=session.getAttribute("bodyfgcolor")!=null?"color:"+session.getAttribute("bodyfgcolor").toString()+"!important":""%>;
+    }
+
+    .form-control , .form-control:focus /*, .form-control:disabled, .form-control[readonly]*/ {        /* input control focus disabled background and font color */
+    <%=session.getAttribute("mainbackgroundcolor")!=null?"background-color:"+session.getAttribute("mainbackgroundcolor").toString()+"!important":""%>;
+    <%=session.getAttribute("bodyfgcolor")!=null?"color:"+session.getAttribute("bodyfgcolor").toString()+"!important":""%>;
+    }
+
+    .has-float-label label, .has-float-label>span{            /* input control label font color */
+    <%=session.getAttribute("bodyfgcolor")!=null?"color:"+session.getAttribute("bodyfgcolor").toString()+"!important":""%>;
+    }
+
+    .form-label , .terms-checkbox{            /* for labels as well as terms & condition*/
+    <%=session.getAttribute("bodyfgcolor")!=null?"color:"+session.getAttribute("bodyfgcolor").toString()+"!important":""%>;
+    }
+
+    .selectedBank{ /*  selected bank option background and font color */
+    <%=session.getAttribute("panelbody_color")!=null?"background-color:"+session.getAttribute("panelbody_color").toString()+"!important":""%>;
+    <%--<%=session.getAttribute("navigation_font_color")!=null?"color:"+session.getAttribute("navigation_font_color").toString()+"!important":""%>;--%>
+    }
+
+    .selectedBank .bank-label{
+    <%=session.getAttribute("navigation_font_color")!=null?"color:"+session.getAttribute("navigation_font_color").toString()+"!important":""%>;
+    }
+
+    .wallet-title{
+    <%=session.getAttribute("bodyfgcolor")!=null?"color:"+session.getAttribute("bodyfgcolor").toString():""%>;
+    }
+
+    .list :checked+label { /* wallet selected option background color */
+    <%=session.getAttribute("textbox_color")!=null?"background-color:"+session.getAttribute("textbox_color").toString()+"!important":""%>;
+    <%=session.getAttribute("headpanelfont_color")!=null?"color:"+session.getAttribute("headpanelfont_color").toString()+"!important":""%>;
+    }
+
+    .list :checked+label .wallet-title{
+    <%=session.getAttribute("headpanelfont_color")!=null?"color:"+session.getAttribute("headpanelfont_color").toString()+"!important":""%>;
+    }
+
+    .pay-button{             /* pay button background and font color */
+    <%=session.getAttribute("textbox_color")!=null?"background-color:"+session.getAttribute("textbox_color").toString()+"!important":""%>;
+    <%=session.getAttribute("headpanelfont_color")!=null?"color:"+session.getAttribute("headpanelfont_color").toString()+"!important":""%>;
+    }
+
+    .merchant-details{
+    <%=session.getAttribute("textbox_color")!=null?"background-color:"+session.getAttribute("textbox_color").toString()+"!important":""%>;
+    <%=session.getAttribute("headpanelfont_color")!=null?"color:"+session.getAttribute("headpanelfont_color").toString()+"!important":""%>;
+      border: none !important;
+      margin: 0px;
+      padding: 4px;
+    }
+
+    .emi{
+    <%=session.getAttribute("bodyfgcolor")!=null?"color:"+session.getAttribute("bodyfgcolor").toString()+"!important":""%>;
+    }
+
+    /* loader */
+    .loader , .loader-edge{                    /* loader color*/
+    <%=session.getAttribute("textbox_color")!=null?" color:"+session.getAttribute("textbox_color").toString()+"!important":""%>;
+      opacity: .8;
+    }
+
+    .check_mark , .sa-icon.sa-success::before, .sa-icon.sa-success::after , .sa-fix{       /* success ( animation background color ) */
+    <%=session.getAttribute("mainbackgroundcolor")!=null?"background-color:"+session.getAttribute("mainbackgroundcolor").toString()+"!important":""%>;
+    }
+    /* end of loader */
+
+    .error_body{
+    <%=session.getAttribute("mainbackgroundcolor")!=null?"background-color:"+session.getAttribute("mainbackgroundcolor").toString()+"!important":""%>;
+    <%=session.getAttribute("bodyfgcolor")!=null?"color:"+session.getAttribute("bodyfgcolor").toString()+"!important":""%>;
+    }
+    /* end of body */
+
+    /* footer */
+    .modal-footer {
+    <%=session.getAttribute("mainbackgroundcolor")!=null?"background-color:"+session.getAttribute("mainbackgroundcolor").toString()+"!important":""%>;
+    }
+    /* end of footer */
+  </style>
+
+</head>
+
+<%
+  ResourceBundle rb = null;
+  rb = LoadProperties.getProperty("com.directi.pg.CurrencySymbol");
+
+  ResourceBundle rb1 = null;
+  String lang = "";
+  ResourceBundle rbError = null;
+  String multiLanguage = "";
+
+  if(functions.isValueNull(standardKitValidatorVO.getAddressDetailsVO().getLanguage()))
+  {
+    lang = standardKitValidatorVO.getAddressDetailsVO().getLanguage().toLowerCase();
+    if ("ja".equalsIgnoreCase(lang))
+    {
+      rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_ja");
+      rbError = LoadProperties.getProperty("com.directi.pg.CheckoutError_ja");
+    }
+    else if ("bg".equalsIgnoreCase(lang))
+    {
+      rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_bg");
+      rbError = LoadProperties.getProperty("com.directi.pg.CheckoutError_en-us");
+    }
+    else
+    {
+      rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_en-us");
+      rbError = LoadProperties.getProperty("com.directi.pg.CheckoutError_en-us");
+    }
+  }
+  else if(functions.isValueNull(request.getHeader("Accept-Language")))
+  {
+    multiLanguage = request.getHeader("Accept-Language");
+    String sLanguage[] = multiLanguage.split(",");
+    if(functions.isValueNull(sLanguage[0]))
+    {
+      if ("ja".equalsIgnoreCase(sLanguage[0]))
+      {
+        rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_ja");
+        rbError = LoadProperties.getProperty("com.directi.pg.CheckoutError_ja");
+      }
+      else if ("bg".equalsIgnoreCase(sLanguage[0]))
+      {
+        rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_bg");
+        rbError = LoadProperties.getProperty("com.directi.pg.CheckoutError_en-us");
+      }
+      else
+      {
+        rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_en-us");
+        rbError = LoadProperties.getProperty("com.directi.pg.CheckoutError_en-us");
+      }
+    }
+    else
+    {
+      rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_en-us");
+      rbError = LoadProperties.getProperty("com.directi.pg.CheckoutError_en-us");
+    }
+  }
+  else
+  {
+    rb1 = LoadProperties.getProperty("com.directi.pg.CheckoutLanguage_en-us");
+    rbError = LoadProperties.getProperty("com.directi.pg.CheckoutError_en-us");
+  }
+
+  String varSelectPaymentMethod = rb1.getString("VAR_PAYMENTMETHOD");
+  String varPAY=rb1.getString("VAR_PAY");
+  String varNext=rb1.getString("VAR_NEXT");
+  String varERROR=rb1.getString("VAR_ERROR");
+  String varTIMEOUT=rb1.getString("VAR_TIMEOUT");
+
+  String varPersonalinfo=rb1.getString("VAR_PERSONALINFO");
+  String varEmailid=rb1.getString("VAR_EMAILID");
+  String varCountry=rb1.getString("VAR_COUNTRY");
+  String varPhonecc=rb1.getString("VAR_PHONECC");
+  String varPhoneno=rb1.getString("VAR_PHONENO");
+  String varAddressinfo=rb1.getString("VAR_ADDRESSINFO");
+  String varAddress=rb1.getString("VAR_ADDRESS");
+  String varCity=rb1.getString("VAR_CITY");
+  String varZip=rb1.getString("VAR_ZIP");
+  String varState=rb1.getString("VAR_STATE");
+  String varCardinfo=rb1.getString("VAR_CARDINFO");
+  String varCardnumber=rb1.getString("VAR_CARDNUMBER");
+  String varExpiry=rb1.getString("VAR_EXPIRY");
+  String varCvv=rb1.getString("VAR_CVV");
+  String varCardHolderName=rb1.getString("VAR_CARDHOLDERNAME");
+
+  String payType = "";
+  String error="";
+  String supportName = "";
+  if(functions.isValueNull((String)request.getAttribute("error")))
+  {
+    error = (String) request.getAttribute("error");
+  }
+%>
+
+<body style="font-family: Raleway;" class="background">
+<script type = "text/javascript" src="/merchant/transactionCSS/js/anime.min.js"></script> <!-- loader animation-->
+<script type = "text/javascript" src="/merchant/transactionCSS/js/jquery-3.3.1.min.js"></script>
+<script type = "text/javascript" src="/merchant/transactionCSS/js/bootstrap/js/bootstrap.min.js" ></script> <%--bootstrap 4.1.1 --%>
+<script type = "text/javascript" src="/merchant/transactionCSS/js/jquery.cardcheck.js"></script>
+<script type = "text/javascript" src="/merchant/transactionCSS/js/jquery.cardcheck.min.js"></script>
+<script type = "text/javascript" src="/merchant/transactionCSS/js/autocomplete.js "></script>
+<script type = "text/javascript" src="/merchant/transactionCSS/js/countrylist.js"></script>
+<script type = "text/javascript" src="/merchant/transactionCSS/js/cardRegistration.js"></script>
+
+<%
+  String email ="";
+  String phonecc = "";
+  String phoneno = "";
+  String street = "";
+  String city = "";
+  String state = "";
+  String zip = "";
+
+  if(functions.isValueNull(standardKitValidatorVO.getAddressDetailsVO().getEmail())){
+    email =  standardKitValidatorVO.getAddressDetailsVO().getEmail();
+  }
+  if(functions.isValueNull(standardKitValidatorVO.getAddressDetailsVO().getTelnocc())){
+    phonecc =  standardKitValidatorVO.getAddressDetailsVO().getTelnocc();
+  }
+  if(functions.isValueNull(standardKitValidatorVO.getAddressDetailsVO().getPhone())){
+    phoneno =  standardKitValidatorVO.getAddressDetailsVO().getPhone();
+  }
+  if(functions.isValueNull(standardKitValidatorVO.getAddressDetailsVO().getStreet())){
+    street =  standardKitValidatorVO.getAddressDetailsVO().getStreet();
+  }
+  if(functions.isValueNull(standardKitValidatorVO.getAddressDetailsVO().getCity())){
+    city =  standardKitValidatorVO.getAddressDetailsVO().getCity();
+  }
+  if(functions.isValueNull(standardKitValidatorVO.getAddressDetailsVO().getState())){
+    state =  standardKitValidatorVO.getAddressDetailsVO().getState();
+  }
+  if(functions.isValueNull(standardKitValidatorVO.getAddressDetailsVO().getZipCode())){
+    zip =  standardKitValidatorVO.getAddressDetailsVO().getZipCode();
+  }
+
+  String merchantLogoFlag = getValue(standardKitValidatorVO.getMerchantDetailsVO().getMerchantLogo());
+  String consentFlag = getValue(standardKitValidatorVO.getMerchantDetailsVO().getConsentFlag());
+  session.setAttribute("paymentMap",paymentMap);
+  Calendar cal=Calendar.getInstance();
+  cal.setTimeInMillis(session.getLastAccessedTime());
+%>
+
+<script>
+  landingTab ="<%=varSelectPaymentMethod%>";
+  SelectPayMethodText="<%=varSelectPaymentMethod%>";
+  ErrorText="<%=varERROR%>";
+  NextText = "<%=varNext%>";
+  InvalidYear="<%=rb1.getString("VAR_INVALID_YEAR")%>";
+  InvalidMonth="<%=rb1.getString("VAR_INVALID_MONTH")%>";
+  InvalidDay ="<%=rb1.getString("VAR_INVALID_DAY")%>";
+  InvalidDate="<%=rb1.getString("VAR_INVALID_DATE")%>";
+  CannotBeCurrentMonth="<%=rb1.getString("VAR_CANNOT_BE_CURRENT_MONTH")%>";
+  YearCannotBeBefore="<%=rb1.getString("VAR_YEAR_CANNOT_BE_BEFORE")%>";
+  InvalidExpiry="<%=rb1.getString("VAR_INVALID_EXPIRY")%>";
+  EmptyEmail="<%=rb1.getString("VAR_EMPTY_EMAIL")%>";
+  InvalidEmail="<%=rb1.getString("VAR_INVALID_EMAIL")%>";
+  EmptyAddress="<%=rb1.getString("VAR_EMPTY_ADDRESS")%>";
+  EmptyCity="<%=rb1.getString("VAR_EMPTY_CITY")%>";
+  EmptyCountry="<%=rb1.getString("VAR_EMPTY_COUNTRY")%>";
+  EmptyState="<%=rb1.getString("VAR_EMPTY_STATE")%>";
+  EmptyZip="<%=rb1.getString("VAR_EMPTY_ZIP")%>";
+  EmptyBirhtdate="<%=rb1.getString("VAR_EMPTY_BIRTHDATE")%>";
+  InvalidVisa="<%=rb1.getString("VAR_INVALID_VISA")%>";
+  VisaNotPermitted="<%=rb1.getString("VAR_VISA_NOT_PERMITTED")%>";
+  InvalidMaster="<%=rb1.getString("VAR_INVALID_MASTER")%>";
+  MasterNotPermitted="<%=rb1.getString("VAR_MASTER_NOT_PERMITTED")%>";
+  InvalidDiner="<%=rb1.getString("VAR_INVALID_DINER")%>";
+  DinerNotPermitted="<%=rb1.getString("VAR_DINER_NOT_PERMITTED")%>";
+  InvalidAMEX="<%=rb1.getString("VAR_INVALID_AMEX")%>";
+  AmexNotPermitted="<%=rb1.getString("VAR_AMEX_NOT_PERMITTED")%>";
+  InvalidDISC="<%=rb1.getString("VAR_INVALID_DISC")%>";
+  DiscNotPermitted="<%=rb1.getString("VAR_DIC_NOT_PERMITTED")%>";
+  InvalidJCB="<%=rb1.getString("VAR_INVALID_JCB")%>";
+  JcbNotPermitted="<%=rb1.getString("VAR_JCB_NOT_PERMITTED")%>";
+  InvalidMAESTRO="<%=rb1.getString("VAR_INVALID_MAESTRO")%>";
+  MaestroNotPermitted="<%=rb1.getString("VAR_MAESTRO_NOT_PERMITTED")%>";
+  InvalidINSTAPAYMENT="<%=rb1.getString("VAR_INVALID_INSTAPAYMENT")%>";
+  InstapaymentNotPermitted="<%=rb1.getString("VAR_INSTAPAYMENT_NOT_PERMITTED")%>";
+  InvalidCard="<%=rb1.getString("VAR_INVALID_CARD")%>";
+  InvalidCVV="<%=rb1.getString("VAR_INVALID_CVV")%>";
+  InvalidEMI="<%=rb1.getString("VAR_INVLAID_EMI")%>";
+  //Months="<%//=rb1.getString("VAR_MONTHS")%>";
+  //SelectMonths="<%//=rb1.getString("VAR_SELECT_MONTHS")%>";
+
+</script>
+<div class="modal show" style="display: inline-block">
+  <div class="modal-dialog modal-sm modal-dialog-centered" >
+    <div class="modal-content">
+      <div class="tooltiptextOrderId" id="tooltiptextOrderId"> <%=standardKitValidatorVO.getTransDetailsVO().getOrderId()%> </div>
+      <div id="target" class="mainDiv" >
+        <div class="header">
+          <div class="logo"> <%--  images/paymentzLogo.png height: 80px; --%>
+            <%
+              if(!merchantLogoFlag.equals(null) && merchantLogoFlag.equalsIgnoreCase("Y"))
+              {
+                supportName = standardKitValidatorVO.getMerchantDetailsVO().getCompany_name();
+            %>
+            <img class="images-style1" style="width: 100%;" src="/images/merchant/<%=session.getAttribute("merchantLogoName")%>">
+            <%
+            }
+            %>
+            <img class="images-style1" style="width: 100%;" src="/images/merchant/<%=standardKitValidatorVO.getMerchantDetailsVO().getLogoName()%>">
+            <img class="images-style1" style="width: 100%;" src="/images/merchant/<%=standardKitValidatorVO.getMerchantDetailsVO().getLogoName()%>">
+          </div>
+          <button type="button" id="closebtn" class="close hide"  data-dismiss="modal" aria-label="Close" onclick="closefunc()">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <div class="timeout"><%=varTIMEOUT%> = <span id="timer"></span></div>
+
+        </div>
+
+        <div class="modal-body">
+          <div class="top-bar">
+            <div class="top-left" id="topLeft" >
+              <span class="" id="backArrow" style="float: left;width: 20px;cursor: pointer" onclick="back()" ><i class="fas fa-angle-left"></i></span>
+              <span class="hide" id="cancelbackArrow" style="float: left;width: 20px;cursor: pointer" onclick="cancel()" >
+                <i class="fas fa-angle-left"></i>
+              </span>
+              <div id="payMethodDisplay" class="truncate" style="text-align: center">Card Registration</div>
+              <div id="payMethod" class="truncate" style="display: none">Card Registration</div>
+            </div>
+          </div>
+
+          <%
+            if(functions.isValueNull(error))
+            {
+              log.debug("inside error---"+error);
+          %>
+
+          <div class="check_mark">
+            <div id="load" class="loader hide">
+            </div>
+
+
+            <div id="error">
+              <%-- start of error --%>
+
+              <div id="" style="text-align: left;padding: 10px 12px 10px 0px;height: 305px;overflow: auto;" class="error_body">
+                <ul>
+                  <%
+                    if(error.contains("<BR>"))
+                    {
+                      String errorMsg[] = error.split("<BR>");
+                      for(String singleError : errorMsg)
+                      {
+                  %>
+                  <li>
+                    <%=rbError.containsKey(singleError)?rbError.getString(singleError).replaceAll("\\*",supportName):singleError%>
+                  </li>
+                  <%
+                    }
+                  }
+                  else
+                  {
+                  %>
+                  <li>
+                    <%=rbError.containsKey(error)?rbError.getString(error).replaceAll("\\*",supportName):error%>
+                  </li>
+                  <%
+                    }
+                  %>
+                </ul>
+              </div>
+
+              <%-- end of error --%>
+            </div>
+          </div>
+          <%
+          }
+          else
+          {
+          %>
+
+          <div class="check_mark hide">
+            <div id="load" class="loader hide">
+            </div>
+          </div>
+          <%
+            }
+          %>
+
+          <div id="options" <%--style="max-height: 305px;overflow-y:auto;"--%>>
+            <div class="footer-tab" style="height:335px">
+              <div>
+                <form id="cardForm" class="form-style" action="/transaction/SingleCallCardRegistration" method="post">
+                  <div class="tab" id="cardinfo" style="height: 305px;">
+                    <p class="form-header"><%=varCardinfo%></p>
+                    <div class="form-group has-float-label control-group-seventy card" id="CardNumber">
+                      <input class="form-control input-control1" id="cardNo" placeholder=" " type="text" onkeyup="onPasteNumCheck(event)"
+                             onfocusout = "isValidCardCheck('cardNo', 'CardNumber','onfocusout')"  autocomplete="off"
+                             maxlength="23" oninput="this.className = 'form-control input-control1';cardSpace(event)"  name="cardnumber" />
+                      <label for="cardNo" class="form-label"><%=varCardnumber%></label>
+                      <span class="card_icon"></span>
+                    </div>
+                    <div class="form-group has-float-label control-group-twenty-five" id="CardExpiry"  >
+                      <input type="text" class="form-control input-control1" id="Expiry" placeholder="MM/YY" onkeypress="return isNumberKey(event)" onblur="expiryCheck('Expiry','CardExpiry')"  autocomplete="off"
+                             onkeyup="addSlash(event,'Expiry')" oninput="this.className = 'form-control input-control1'" name="expiry" />
+                      <label for="Expiry" class="form-label"><%=varExpiry%></label>
+                    </div>
+                    <div class="form-group has-float-label control-group-seventy">
+                      <input type="text" class="form-control input-control1" id="firstname" placeholder=" "
+                             oninput="this.className = 'form-control input-control1'"  name="firstname" />
+                      <label for="firstname" class="form-label"><%=varCardHolderName%></label>
+                    </div>
+                    <div class="form-group has-float-label control-group-twenty-five" id="CardCVV">
+                      <input type="password" class="form-control input-control1" id="CVV" placeholder=" " onkeypress="return isNumberKey(event)"
+                             onkeyup="onPasteNumCheck(event)" maxlength="4"  autocomplete="off" onblur="validateCVV('CVV','CardCVV')"
+                             oninput="this.className = 'form-control input-control1'" name="cvv"  />
+                      <label for="CVV" class="form-label"><%=varCvv%></label>
+                    </div>
+
+                  </div>
+
+                  <div class="tab" style="height: 305px;">
+                    <%--<p class="form-header" style="margin: 0px 0px 5px 0px;"> <%=varAddressinfo%> </p>--%>
+
+                    <div class="form-group has-float-label control-group-full" id="CardAddress">
+                      <input type="text" class="form-control input-control1" id="address" placeholder=" " onfocusout="validateAddress(event.target.value ,'CardAddress')"
+                             oninput="this.className = 'form-control input-control1'" name="street" value="<%=street%>"/>
+                      <label for="address" class="form-label"><%=varAddress%></label>
+                    </div>
+                    <div class="form-group has-float-label control-group-half" id="CardCity" >
+                      <input type="text" class="form-control input-control1" id="city" placeholder=" " onfocusout="validateCity(event.target.value ,'CardCity')"
+                             oninput="this.className = 'form-control input-control1'" name="city" value="<%=city%>"/>
+                      <label for="city" class="form-label"><%=varCity%></label>
+                    </div>
+                    <div class="form-group has-float-label control-group-half" id="CardZip" >
+                      <input type="text" class="form-control input-control1" id="zip" placeholder=" " onfocusout="validateZip(event.target.value ,'CardZip')"
+                             oninput="this.className = 'form-control input-control1'" name="zip" value="<%=zip%>"/>
+                      <label for="zip" class="form-label"><%=varZip%></label>
+                    </div>
+                    <div class="form-group has-float-label control-group-half" id="CardCountry">
+                      <div class="dropdown">
+                        <input id="country_input" class="form-control input-control1"  placeholder=" " onfocusout="validateCountry(event.target.value ,'CardCountry')"
+                               onblur="pincodecc('country_input','country','phonecc-id','phonecc','country_input','country','statelabel');"
+                               onkeypress="return isLetterKey(event)" oninput="this.className = 'form-control input-control1'" >
+                        <label for="country_input" class="form-label"><%=varCountry%></label>
+                        <input type="hidden" id="country"  name="country_input" value="<%=standardKitValidatorVO.getAddressDetailsVO().getCountry()%>">
+                      </div>
+                      <script>
+                        setCountry('<%=standardKitValidatorVO.getAddressDetailsVO().getCountry()%>','country_input');
+                      </script>
+                    </div>
+                    <div class="form-group has-float-label control-group-half" id="CardState" >
+                      <div class="dropdown">
+                        <input type="text" class="form-control input-control1" id="state" oninput="this.className = 'form-control input-control1';stateinp();" placeholder=" "
+                               onblur="validateState(event.target.value ,'CardState')" name="state" value="<%=state%>"/>
+                        <label for="state" id="statelabel" class="form-label"><%=varState%></label>
+                      </div>0
+                    </div>
+                    <div class="form-group has-float-label control-group-half">
+                      <input type="text" class="form-control input-control1" name="phone-CC" id="phonecc-id" placeholder=" " onkeypress="return isNumberKey(event)"
+                             onkeyup="onPasteNumCheck(event)"  maxlength="3" onblur ="setPhoneCC('phonecc-id','phonecc')" value="<%=phonecc%>"
+                             oninput="this.className = 'form-control input-control1'" />
+                      <label for="phonecc-id" class="form-label"><%=varPhonecc%></label>
+                      <input type="hidden" id="phonecc"  name="phone-CC" value="<%=phonecc%>" />
+                    </div>
+                    <div class="form-group has-float-label control-group-half">
+                      <span class="input-icon-half"><i class="fas fa-phone"></i> </span>
+                      <input type="text" class="form-control input-control1" id="phonenophonecc" placeholder=" " onkeypress="return isNumberKey(event)" onkeyup="onPasteNumCheck(event)"
+                             oninput="this.className = 'form-control input-control1'" name="telno" value="<%=phoneno%>" />
+                      <label for="phonenophonecc" class="form-label"><%=varPhoneno%></label>
+                    </div>
+                    <div class="form-group has-float-label control-group-full" id="CardEmail">
+                      <span class="input-icon"><i class="far fa-envelope"></i></span>
+                      <input type="email" class="form-control input-control1" id="email" placeholder=" " onfocusout="validateEmail(event.target.value ,'CardEmail')"
+                             oninput="this.className = 'form-control input-control1'"  name="email" value="<%=email%>" autofocus />
+                      <label for="email" class="form-label"><%=varEmailid%></label>
+                    </div>
+
+                    <script>
+                      pincodecc('country_input','country','phonecc-id','phonecc','country_input','country','statelabel');
+                      setCountry('<%=standardKitValidatorVO.getAddressDetailsVO().getCountry()%>','country_input');
+                      validateCountry(document.getElementById('country_input').value ,'CardCountry');
+                      StateLabel('country_input','country','statelabel');
+                    </script>
+
+                  </div>
+
+                  <div style="overflow:hidden" >
+                    <div style="float:right;"> <!-- Previous button-->
+                      <div class="form-btn prev-btn" id="prevBtn"  onclick="nextPrev(-1 )">
+                        <i class="fas fa-angle-left"></i>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="pay-btn">
+                    <button type="button" class="form-btn pay-button" id="nextBtn"  onclick="nextPrev(1)"  tabindex="0">
+                      <%=varNext%>
+                    </button>
+                  </div>
+
+                  <input type="hidden" name="toid" value="<%=merchantDetailsVO.getMemberId()%>" />
+                  <input type="hidden" name="checksum" value="<%=genericTransDetailsVO.getChecksum()%>" />
+                  <input type="hidden" id="clkey" name="mkey" value="<%=merchantDetailsVO.getKey()%>">
+                  <input type="hidden" id="totype" name="totype" value="<%=genericTransDetailsVO.getTotype()%>">
+                  <input type="hidden" id="ip" name="ip" value="<%=standardKitValidatorVO.getAddressDetailsVO().getIp()%>">
+                  <input type="hidden" id="customerIp" name="customerIp" value="<%=standardKitValidatorVO.getAddressDetailsVO().getCardHolderIpAddress()%>">
+                  <input type="hidden" id="customerId" name="customerId" value="<%=standardKitValidatorVO.getCustomerId()%>">
+                  <input type="hidden" id="paymentBrand" name="paymentBrand" value="">
+                  <input type="hidden" id="merchantRedirectUrl" name="merchantRedirectUrl" value="<%=genericTransDetailsVO.getRedirectUrl()%>">
+                </form>
+              </div>
+
+              <%
+                String disabledButton = "";
+                if(consentFlag.equalsIgnoreCase("Y"))
+                  disabledButton = "disabledbutton";
+              %>
+            </div>
+          </div>
+          <%--Cancel button popup--%>
+          <div class="modal fade" id="CancelModal">
+            <div class="modal-dialog-cancel modal-sm-cancel modal-dialog-centered">
+              <div class="modal-content-cancel">
+                <div class="modal-header-cancel">
+                  <div class="modal-title-cancel"><%=rb1.getString("VAR_CANCEL_TITLE")%> </div>
+                  <%--<button type="button" class="close" data-dismiss="modal">&times;</button>--%>
+                </div>
+                <div class="modal-body-cancel">
+                  <%=rb1.getString("VAR_CANCEL_TEXT_1")%> <br>
+                  <%=rb1.getString("VAR_CANCEL_TEXT_2")%>
+                </div>
+                <div class="modal-footer-cancel">
+                  <div>
+                    <button type="button" class="btn cancel-modal-button" onclick="closeCancel()"> <%=rb1.getString("VAR_CANCEL_CLOSE")%></button>
+                  </div>
+                  <div>
+                    <button type="button" class="btn cancel-modal-button" onclick="cancelTransaction()"><%=rb1.getString("VAR_CANCEL_DEPOSIT")%></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- end of merchant details -->
+        <%
+          String powerBy = getValue(standardKitValidatorVO.getMerchantDetailsVO().getPoweredBy());
+          String sisaLogoFlag = getValue(standardKitValidatorVO.getMerchantDetailsVO().getSisaLogoFlag());
+          String securityLogoFlag = getValue(standardKitValidatorVO.getMerchantDetailsVO().getSecurityLogo());
+          String logoName = getValue(standardKitValidatorVO.getMerchantDetailsVO().getLogoName());
+          String align = "";
+        %>
+        <div class="modal-footer" style="padding: 7px;">
+          <%
+            align="text-align: left";
+            if(functions.isValueNull(sisaLogoFlag) && sisaLogoFlag.equalsIgnoreCase("Y"))
+            {
+          %>
+          <div class="footer-logo" style="<%=align%>">
+            <img  class="logo-style" src="/images/merchant/PCI.png">
+          </div>
+          <%
+            }
+            if(functions.isValueNull(powerBy) && powerBy.equalsIgnoreCase("Y"))
+            {
+          %>
+          <div class="footer-logo" style="text-align: right;"> <%--<%=standardKitValidatorVO.getMerchantDetailsVO().getLogoName()%>--%>
+            <img  class="logo-style"  src="/images/merchant/poweredBy_logo.png">
+          </div>
+          <%
+          }
+          else if(functions.isValueNull(powerBy) && securityLogoFlag.equalsIgnoreCase("Y"))
+          {
+
+          %>
+          <div class="footer-logo" style="text-align: right;">
+            <img  class="logo-style" src="/images/merchant/security.png" style="width: auto;margin: 0px 15px;">
+          </div>
+          <%
+            }
+          %>
+        </div>
+        <!-- footer  -->
+      </div>
+    </div>
+  </div>
+</div>
+<!-- modal ends -->
+
+
+
+<form action="/transaction/sessionout.jsp" method="post" name="timeoutform" id="sessionout">
+  <input type="hidden" name="ctoken" value="<%=ctoken%>">
+  <input type="hidden" name="redirectUrl" value="<%=genericTransDetailsVO.getRedirectUrl()%>">
+  <input type="hidden" name="notificationUrl" value="<%=genericTransDetailsVO.getNotificationUrl()%>">
+  <input type="hidden" name="trackingid" value="<%=standardKitValidatorVO.getTrackingid()%>" />
+  <input type="hidden" name="desc" value="<%=standardKitValidatorVO.getTransDetailsVO().getOrderId()%>" />
+  <input type="hidden" name="amount" value="<%=standardKitValidatorVO.getTransDetailsVO().getAmount()%>" />
+  <input type="hidden" name="status" value="N" />
+  <input type="hidden" name="clkey" value="<%=merchantDetailsVO.getKey()%>">
+  <input type="hidden" name="language" value="<%=standardKitValidatorVO.getAddressDetailsVO().getLanguage()%>">
+  <input type="hidden" name="currency" value="<%=standardKitValidatorVO.getTransDetailsVO().getCurrency()%>">
+</form>
+
+<form action="/transaction/SingleCallCardRegistration" method="post" id="cancelForm">
+  <input type="hidden" name="ctoken" value="<%=ctoken%>" />
+  <input type="hidden" name="action" value="cancel" />
+  <input type="hidden" name="toid" value="<%=merchantDetailsVO.getMemberId()%>" />
+  <input type="hidden" name="trackingid" value="<%=standardKitValidatorVO.getTrackingid()%>" />
+  <input type="hidden" id="clkey" name="clkey" value="<%=merchantDetailsVO.getKey()%>">
+  <input type="hidden" id="paymentMode" name="paymentMode" value="<%=request.getParameter("paymentMode")%>">
+  <input type="hidden" id="partnerId" name="partnerId" value="<%=merchantDetailsVO.getPartnerId()%>">
+</form>
+
+
+<%
+  if(genericTransDetailsVO!=null && functions.isValueNull(genericTransDetailsVO.getTotype()) && genericTransDetailsVO.getTotype().equalsIgnoreCase("paynetics"))
+  {
+%>
+<jsp:include page="payneticstlsc.jsp"></jsp:include>
+<%
+  }
+%>
+
+</body>
+</html>
+
+<%!
+  private String getValue(String data)
+  {
+    String tempVal="";
+    if(data==null)
+    {
+      tempVal="";
+    }
+    else
+    {
+      tempVal= data;
+    }
+    return tempVal;
+  }
+%>

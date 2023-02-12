@@ -1,0 +1,396 @@
+package net.partner;
+
+import com.directi.pg.Database;
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.manager.vo.PaginationVO;
+import com.payment.IPEntry;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.ValidationErrorList;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+
+/**
+ * Created by Kanchan on 18-03-2021.
+ */
+public class AgentIpWhitelistConfig extends HttpServlet
+{
+    static Logger logger= new Logger(AgentIpWhitelistConfig.class.getName());
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)throws ServletException,IOException
+    {
+        doPost(request,response);
+    }
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)throws ServletException,IOException
+    {
+        HttpSession session= request.getSession();
+        User user= (User)session.getAttribute("ESAPIUserSessionKey");
+        RequestDispatcher rd= request.getRequestDispatcher("/agentIpWhitelist.jsp?ctoken="+user.getCSRFToken());
+        PartnerFunctions partnerFunctions= new PartnerFunctions();
+        PaginationVO paginationVo= new PaginationVO();
+        Functions functions= new Functions();
+        IPEntry ipEntry= new IPEntry();
+        if (!partnerFunctions.isLoggedInPartner(session))
+        {
+            response.sendRedirect("/partner/logout.jsp");
+            return;
+        }
+        AgentIpWhitelistConfig agconfig= new AgentIpWhitelistConfig();
+        logger.debug("inside agentIpWhitelistConfig.....");
+        String message="";
+        String action= request.getParameter("action");
+        String username= (String)session.getAttribute("username");
+        String actionExecutorId= session.getAttribute("merchantid")+"";
+        String role= String.valueOf(user.getRoles());
+        String actionExecutorName= role+"-"+username;
+        logger.error("Username: "+username);
+        logger.error("ROLE:: "+role);
+        String partnerid= (String) session.getAttribute("merchantid");
+
+        String pageNo=request.getParameter("SPageno")!=null?request.getParameter("SPageno"):"";
+        String record=request.getParameter("SRecords")!=null?request.getParameter("SRecords"):"";
+
+        Hashtable recordHash=null;
+        Hashtable temphash=null;
+
+        String error1="";
+        error1= error1+validateOptionalParameter(request);
+        if (error1.length()>0)
+        {
+            request.setAttribute("error",error1);
+            rd.forward(request,response);
+            return;
+        }
+
+        String pid= request.getParameter("pid");
+        String agentId= request.getParameter("agentid");
+        if (!functions.isValueNull(agentId))
+        {
+            request.setAttribute("error","Agent Id blank. Please provide it.");
+            rd=request.getRequestDispatcher("/agentIpWhitelist.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(request,response);
+            return;
+        }
+
+        if(functions.isValueNull(agentId) && (!agconfig.isAgentIdPresent(agentId)))
+        {
+            request.setAttribute("error","Invalid Agent Id.");
+            rd = request.getRequestDispatcher("/agentIpWhitelist.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(request, response);
+            return;
+        }
+
+        if(functions.isValueNull(pid) && (!agconfig.isPartnerIdPresent(pid)))
+        {
+            request.setAttribute("error","Invalid Partner Id.");
+            rd = request.getRequestDispatcher("/agentIpWhitelist.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(request, response);
+            return;
+        }
+        try
+        {
+            if (functions.isValueNull(request.getParameter("pid")) && !partnerFunctions.isPartnerSuperpartnerMapped(request.getParameter("pid"), partnerid))
+            {
+                request.setAttribute("error","Invalid Partner Mapping.");
+                rd = request.getRequestDispatcher("/agentIpWhitelist.jsp?ctoken="+user.getCSRFToken());
+                rd.forward(request, response);
+                return;
+            }
+        }
+        catch (Exception e)
+        {
+            logger.error("Exception while mapping partner id: "+e.getMessage());
+            logger.error("Exception---" + e);
+        }
+
+        try{
+            if(functions.isValueNull(request.getParameter("pid")) && partnerFunctions.isPartnerAgentMapped(agentId,request.getParameter("pid")))
+            {
+                partnerid= request.getParameter("pid");
+            }
+            else if (!functions.isValueNull(request.getParameter("pid")) && partnerFunctions.isPartnerSuperpartnerAgentsMapped(agentId, partnerid))
+            {
+                partnerid = partnerid;
+            }
+            else
+            {
+                request.setAttribute("error","Invalid Agent mapping.");
+                rd = request.getRequestDispatcher("/agentIpWhitelist.jsp?ctoken="+user.getCSRFToken());
+                rd.forward(request, response);
+                return;
+            }
+        }
+       catch (Exception e)
+       {
+           logger.error("Exception---"+e);
+       }
+
+        int pageno= functions.convertStringtoInt(pageNo,1);
+        int records= functions.convertStringtoInt(record,15);
+        paginationVo.setPageNo(pageno);
+        paginationVo.setRecordsPerPage(records);
+
+        if ((functions.isValueNull(action)) && (functions.isValueNull(agentId)))
+        {
+            if (action.equalsIgnoreCase("delete"))
+            {
+                ipEntry.deleteIPForAgent(agentId,request.getParameter("ipAddress"));
+                message="Record deletion successful for Agent" +"<BR>";
+                request.setAttribute("success",message);
+            }
+
+            if (action.equalsIgnoreCase("add"))
+            {
+                message=validateMandatoryParameters(request);
+                logger.error("AgentId: "+agentId);
+                String type= request.getParameter("type");
+                boolean isIPv4= isIPv4(request.getParameter("ipAddress"));
+                boolean isIPv6= isIPv6(request.getParameter("ipAddress"));
+                String startIp="";
+                boolean isDuplicateIpFound=false;
+                recordHash= ipEntry.retrievIPForAgent(agentId,paginationVo,false);
+                for (int pos=1; pos<=recordHash.size()-2; pos++)
+                {
+                    String id= Integer.toString(pos);
+                    temphash=(Hashtable)recordHash.get(id);
+                    startIp=(String)temphash.get("ipAddress");
+                    if (startIp.equals(request.getParameter("ipAddress")))
+                    {
+                        isDuplicateIpFound= true;
+                        break;
+                    }
+                }
+                if (isIPv4==true && isIPv6==false && type.equals("IPv4"))
+                {
+                    type= request.getParameter("type");
+                }
+                else if (isIPv6==true && isIPv4==false && type.equals("IPv6"))
+                {
+                    type=request.getParameter("type");
+                }
+                else
+                {
+                    message = "Please enter valid " + type + " type of IP Address for selected Agent"+"<BR>";
+                    request.setAttribute("message", message);
+                }
+                if (request.getParameter("ipAddress").equals(""))
+                {
+                    message="Please enter valid IP Address for selected Agent" +"<BR>";
+                    request.setAttribute("message",message);
+                }
+                if (!message.equals(""))
+                {
+                    request.setAttribute("message", message);
+                }
+                else if (isDuplicateIpFound)
+                {
+                    message = "IP Address already added for selected Agent"+"<BR>";
+                    request.setAttribute("message", message);
+                }
+                else
+                {
+                    ipEntry.insertIPForAgent(agentId,request.getParameter("ipAddress"),actionExecutorId,actionExecutorName,type);
+                    message="Record insertion successful for Agent"+"<BR>";
+                    request.setAttribute("success",message);
+                }
+            }
+        }
+        recordHash=ipEntry.retrievIPForAgent(agentId,paginationVo,true);
+        logger.error("hash::: "+recordHash);
+        paginationVo.setInputs("agentid"+agentId);
+        request.setAttribute("recordHash",recordHash);
+        request.setAttribute("agentid",agentId);
+
+        logger.error("Ending AgentIpWhiteListing.....");
+        request.getRequestDispatcher("/agentIpWhitelist.jsp?ctoken="+user.getCSRFToken());
+        rd.forward(request,response);
+
+        return;
+    }
+    private String validateMandatoryParameters(HttpServletRequest req)
+    {
+        InputValidator inputValidator = new InputValidator();
+        String error = "";
+        String EOL = "<BR>";
+        List<InputFields>  inputFieldsListMandatory = new ArrayList<InputFields>();
+
+        inputFieldsListMandatory.add(InputFields.IPADDRESS);
+
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.InputValidations(req,inputFieldsListMandatory,errorList,false);
+
+        if(!errorList.isEmpty())
+        {
+            for(InputFields inputFields :inputFieldsListMandatory)
+            {
+                if(errorList.getError(inputFields.toString())!=null)
+                {
+                    logger.debug(errorList.getError(inputFields.toString()).getLogMessage());
+                    error = error+errorList.getError(inputFields.toString()).getMessage()+EOL;
+                }
+            }
+        }
+        return error;
+    }
+    private String validateOptionalParameter(HttpServletRequest request)
+    {
+        InputValidator inputValidator= new InputValidator();
+        String error="";
+        String EOL="<BR>";
+        List<InputFields> inputFieldsList= new ArrayList<InputFields>();
+
+        inputFieldsList.add(InputFields.PID);
+        inputFieldsList.add(InputFields.AGENT_ID);
+        inputFieldsList.add(InputFields.PAGENO);
+        inputFieldsList.add(InputFields.RECORDS);
+
+        ValidationErrorList errorList= new ValidationErrorList();
+        inputValidator.InputValidations(request,inputFieldsList,errorList,true);
+        if (!errorList.isEmpty())
+        {
+            for (InputFields inputFields:inputFieldsList)
+            {
+                if(errorList.getError(inputFields.toString())!=null)
+                {
+                    logger.debug(errorList.getError(inputFields.toString()).getLogMessage());
+                    error = error+errorList.getError(inputFields.toString()).getMessage()+EOL;
+                }
+            }
+        }
+        return  error;
+    }
+
+    private boolean isIPv4(String ipAddress)
+    {
+        boolean status=false;
+        char c;
+        int count=1;
+
+        for (int i=1; i<ipAddress.length(); i++)
+        {
+           c= ipAddress.charAt(i);
+           if (c=='.')
+           {
+               count++;
+           }
+        }
+        if (count==4)
+        {
+            status=true;
+        }
+        return status;
+    }
+
+    private boolean isIPv6(String ipAddress)
+    {
+        boolean status=false;
+        char c;
+        int count=1;
+
+        for (int i=1; i<ipAddress.length(); i++)
+        {
+            c= ipAddress.charAt(i);
+            if (c==':')
+            {
+                count++;
+            }
+        }
+        if (count==8)
+        {
+            status=true;
+        }
+        return status;
+    }
+
+    public boolean isAgentIdPresent(String agentId)
+    {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String status = null;
+
+        try
+        {
+            String query;
+            con = Database.getRDBConnection();
+            query = "SELECT 'X' FROM agents WHERE agentId=?";
+            pstmt = con.prepareStatement(query);
+            pstmt.setString(1, agentId);
+            rs = pstmt.executeQuery();
+            if (rs.next())
+            {
+                status = rs.getString(1);
+                if (status.equals("X"))
+                {
+                    return true;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            logger.error("Exception in isAgentUser method: ", e);
+            logger.error("Exception---" + e);
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(pstmt);
+            Database.closeConnection(con);
+        }
+        return false;
+    }
+
+    public boolean isPartnerIdPresent(String pid)
+    {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String status = null;
+
+        try
+        {
+            String query;
+            con = Database.getRDBConnection();
+            query = "SELECT 'X' FROM partners WHERE partnerId=?";
+            pstmt = con.prepareStatement(query);
+            pstmt.setString(1, pid);
+            rs = pstmt.executeQuery();
+            if (rs.next())
+            {
+                status = rs.getString(1);
+                if (status.equals("X"))
+                {
+                    return true;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            logger.error("Exception in isPartnerrUser method: ", e);
+            logger.error("Exception---"+e);
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(pstmt);
+            Database.closeConnection(con);
+        }
+        return false;
+    }
+}

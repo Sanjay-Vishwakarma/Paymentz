@@ -1,0 +1,159 @@
+package transaction;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+/**
+ * Created by Sneha on 5/14/2016.
+ */
+public interface DirectPaymentDocService
+{
+    @Path("/tokenRequest")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String tokenRequest();
+
+    @Path("/recurringWithToken")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String recurringWithToken();
+
+    @Path("/recurringTrans")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String recurringTrans();
+
+    @Path("/sampleRequest")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String sampleRequest();
+
+    @Path("/sampleRequestAGP")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String sampleRequestAGP();
+
+    // india request
+    @Path("/sampleRequestIN")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String sampleRequestIN();
+
+    @Path("/sampleRequestWL/{hostName}")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String sampleRequestWL(@PathParam("hostName") String hostname);
+
+    @Path("/checksumRequest")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String checksum();
+
+    @Path("/cardAndBrands")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String cardAndBrands();
+
+    // card and brands for india
+    @Path("/cardAndBrandsIN")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String cardAndBrandsIN();
+
+    // bank account brands for india
+    @Path("/bankAccountBrandsIN")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String bankAccountBrandsIN();
+
+    @Path("/bankAndBrands")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String bankAndBrands();
+
+    @Path("/bankAccountBrands")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String asyncBankAccountBrands();
+
+    @Path("/3dflow")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String threeDAccountBrands();
+
+    @Path("/restApiResponseCodes")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String restApiResponseCodes();
+
+    @Path("/stdCheckoutResponseCodes")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String stdCheckoutResponseCodes();
+
+    @Path("/mafApiResponseCodes")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String mafApiResponseCodes();
+
+    @Path("/paymentModeTW")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String paymentModeTW();
+
+    @Path("/paymentModePz")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String paymentModePz();
+
+    // payment mode India
+    @Path("/paymentModeIN")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String paymentModeIN();
+
+
+    @Path("/sampleResponse")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String sampleResponse();
+
+    @Path("/sampleResponseAGP")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String sampleResponseAGP();
+
+    @Path("/MAFPzSampleRequest")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String MAFPzSampleRequest();
+
+    @Path("/MAFSampleRequest")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String MAFSampleRequest();
+
+    @Path("/bankSpecificParams")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String bankSpecificParams();
+
+    @Path("/getProperty/{hostName}")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getProperty(@PathParam("hostName") String hostname);
+
+    // payreto
+    @Path("/getPropertyPrt/{hostName}")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getPropertyPrt(@PathParam("hostName") String hostname);
+
+    /*@Path("/KycUpload")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String KycUpload();*/
+}

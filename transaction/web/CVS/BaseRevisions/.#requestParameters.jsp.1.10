@@ -1,0 +1,93 @@
+<%@ page import="com.payment.validators.vo.CommonValidatorVO" %>
+<%@ page import="com.manager.vo.MerchantDetailsVO" %>
+<%@ page import="com.manager.vo.TerminalVO" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.ResourceBundle" %>
+<%@ page import="com.directi.pg.LoadProperties" %>
+<%@ page import="com.manager.vo.MarketPlaceVO" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: Admin
+  Date: 6/22/2018
+  Time: 6:40 PM
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+
+<%
+  CommonValidatorVO commonValidatorVO = (CommonValidatorVO) request.getAttribute("transDetails");
+  MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+  //System.out.println("req pm---"+request.getParameter("paymode"));
+  //System.out.println("req pb---"+request.getParameter("paymentBrand"));
+  /*String PM_PB = request.getParameter("paymode")+"-"+request.getParameter("paymentBrand");
+  String currency = commonValidatorVO.getTransDetailsVO().getCurrency();
+  System.out.println("PM_PB---"+PM_PB+"-"+currency);*/
+
+  //HashMap terminalMap = commonValidatorVO.getTerminalMap();
+  //System.out.println("terminal map---"+terminalMap);
+  //TerminalVO terminalVO = (TerminalVO)terminalMap.get(PM_PB+"-"+currency);
+  //System.out.println("terminal accid---"+terminalVO.getAccountId());
+
+  String ctoken = (String) session.getAttribute("ctoken");
+
+%>
+<input type="hidden" name="trackingid" value="<%=commonValidatorVO.getTrackingid()%>" />
+<%--<input type="hidden" name="paymenttype" value="<%=commonValidatorVO.getPaymentMode()%>" />
+<input type="hidden" name="cardtype" value="<%=commonValidatorVO.getCardType()%>" />
+<input type="hidden" name="paymentBrand" value="<%=commonValidatorVO.getPaymentMode()%>" />
+<input type="hidden" name="paymentMode" value="<%=commonValidatorVO.getPaymentBrand()%>" />--%>
+
+<%--<input type="hidden" id="paymentBrand" name="paymentBrand" value="SKRILL">--%>
+<input type="hidden" id="paymentMode" name="paymentMode" value="<%=request.getParameter("paymentMode")%>">
+<input type="hidden" name="ctoken" value="<%=ctoken%>">
+<%--<input type="hidden" id="consentStmnt" name="consentStmnt" value="<%=consent1+consent2+consent3%>">--%>
+<!--Merchant VO-->
+<input type="hidden" name="toid" value="<%=merchantDetailsVO.getMemberId()%>" />
+<input type="hidden" id="clkey" name="clkey" value="<%=merchantDetailsVO.getKey()%>">
+<input type="hidden" id="partnerId" name="partnerId" value="<%=merchantDetailsVO.getPartnerId()%>">
+<input type="hidden" id="isPoweredBy" name="isPoweredBy" value="<%=merchantDetailsVO.getPoweredBy()%>">
+<input type="hidden" id="onlineFraudCheck" name="onlineFraudCheck" value="<%=merchantDetailsVO.getOnlineFraudCheck()%>">
+<input type="hidden" id="multiCurrencySupport" name="multiCurrencySupport" value="<%=merchantDetailsVO.getMultiCurrencySupport()%>">
+<input type="hidden" id="binRouting" name="binRouting" value="<%=merchantDetailsVO.getBinRouting()%>">
+<input type="hidden" id="merchantlogoname" name="merchantlogoname" value="<%=session.getAttribute("merchantLogoName")%>">
+<input type="hidden" id="partnerlogoname" name="partnerlogoname" value="<%=merchantDetailsVO.getLogoName()%>">
+<input type="hidden" id="partnerlogoflag" name="partnerlogoflag" value="<%=merchantDetailsVO.getPartnerLogoFlag()%>">
+<input type="hidden" id="merchantlogoflag" name="merchantlogoflag" value="<%=merchantDetailsVO.getMerchantLogo()%>">
+<input type="hidden" id="supportSection" name="supportSection" value="<%=merchantDetailsVO.getSupportSection()%>">
+<input type="hidden" id="address" name="address" value="<%=merchantDetailsVO.getAddress()%>">
+<input type="hidden" id="city" name="city" value="<%=merchantDetailsVO.getCity()%>">
+<input type="hidden" id="state" name="state" value="<%=merchantDetailsVO.getState()%>">
+<input type="hidden" id="zip" name="zip" value="<%=merchantDetailsVO.getZip()%>">
+<input type="hidden" id="country" name="country" value="<%=merchantDetailsVO.getCountry()%>">
+<input type="hidden" id="telno" name="telno" value="<%=merchantDetailsVO.getTelNo()%>">
+<input type="hidden" id="company_name" name="company_name" value="<%=merchantDetailsVO.getCompany_name()%>">
+<input type="hidden" id="ip" name="ip" value="<%=commonValidatorVO.getAddressDetailsVO().getIp()%>">
+<input type="hidden" id="ip" name="customerIp" value="<%=commonValidatorVO.getAddressDetailsVO().getCardHolderIpAddress()%>">
+<input type="hidden" id="invoicenumber" name="invoicenumber" value="<%=commonValidatorVO.getInvoiceId()%>">
+<input type="hidden" id="language" name="language" value="<%=commonValidatorVO.getAddressDetailsVO().getLanguage()%>">
+<input type="hidden" id="device" name="device" value="<%=commonValidatorVO.getDevice()%>">
+<input type="hidden" id="customerid" name="customerid" value="<%=commonValidatorVO.getCustomerId()%>">
+<input type="hidden" id="marketPlace" name="marketPlace" value="<%=merchantDetailsVO.getMarketPlace()%>">
+
+<%
+  if(!"N".equalsIgnoreCase(merchantDetailsVO.getMarketPlace()) && commonValidatorVO.getMarketPlaceVOList()!=null)
+  {
+    MarketPlaceVO marketPlaceVO=new MarketPlaceVO();
+    for(int i=0;i<commonValidatorVO.getMarketPlaceVOList().size();i++)
+    {
+      marketPlaceVO=commonValidatorVO.getMarketPlaceVOList().get(i);
+     %>
+<input type="hidden" id="marketPlaceTrackingid[]" name="marketPlaceTrackingid[]" value="<%=marketPlaceVO.getTrackingid()%>">
+<%
+    }
+  }
+%>
+
+
+</body>
+</html>

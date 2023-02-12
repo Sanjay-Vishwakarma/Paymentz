@@ -1,0 +1,1414 @@
+package com.manager.dao;
+
+import com.directi.pg.*;
+import com.manager.vo.PaginationVO;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.constraintType.PZDBExceptionEnum;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.codecs.Codec;
+import org.owasp.esapi.codecs.MySQLCodec;
+
+import javax.servlet.http.HttpServletRequest;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Set;
+
+/*Created with IntelliJ IDEA.
+ * User: Mahima
+ * Date: 25/03/18
+ * Time: 2:51 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class WhiteListDAO
+{
+    private static Logger logger = new Logger(WhiteListDAO.class.getName());
+    public Hashtable getWhiteListEmailDetails(String memberId, String accountId, String emailAddr, String firstSix, String lastFour, int start, int end) throws PZDBViolationException
+    {
+        Hashtable hash = null;
+        Connection conn = null;
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+        Functions functions = new Functions();
+        ResultSet rs=null;
+        try
+        {
+            conn = Database.getRDBConnection();
+            StringBuffer stringBuffer = new StringBuffer("SELECT id,firstsix,lastfour,memberid,accountid,emailAddr,isTemp,isApproved FROM whitelist_details WHERE isApproved='Y' AND isTemp='Y' ");
+            StringBuffer count = new StringBuffer("SELECT COUNT(*) FROM whitelist_details WHERE isApproved='Y' AND isTemp='Y' ");
+            if (functions.isValueNull(memberId))
+            {
+                stringBuffer.append(" and memberid=" + ESAPI.encoder().encodeForSQL(me, memberId));
+                count.append(" and memberid=" + ESAPI.encoder().encodeForSQL(me, memberId));
+            }
+            if (functions.isValueNull(accountId))
+            {
+                stringBuffer.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me, accountId));
+                count.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me, accountId));
+            }
+            if (functions.isValueNull(emailAddr))
+            {
+                stringBuffer.append(" and emailAddr='" + emailAddr + "'");
+            }
+            if (functions.isValueNull(firstSix))
+            {
+                stringBuffer.append(" and firstsix=" + ESAPI.encoder().encodeForSQL(me, firstSix));
+                count.append(" and firstsix=" + ESAPI.encoder().encodeForSQL(me, firstSix));
+            }
+            if (functions.isValueNull(lastFour))
+            {
+                stringBuffer.append(" and lastfour=" + ESAPI.encoder().encodeForSQL(me, lastFour));
+                count.append(" and lastfour=" + ESAPI.encoder().encodeForSQL(me, lastFour));
+            }
+            stringBuffer.append(" order by id asc LIMIT " + start + "," + end);
+            logger.debug(stringBuffer.toString());
+            hash = Database.getHashFromResultSet(Database.executeQuery(stringBuffer.toString(), conn));
+            rs = Database.executeQuery(count.toString(), conn);
+            rs.next();
+            int totalrecords = rs.getInt(1);
+
+            hash.put("totalrecords", "" + totalrecords);
+            hash.put("records", "0");
+
+            if (totalrecords > 0)
+                hash.put("records", "" + (hash.size() - 2));
+        }
+        catch (SQLException e){
+            logger.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "getWhiteListEmailDetails()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError){
+            logger.error("SystemError:::::",systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "getWhiteListEmailDetails()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closeConnection(conn);
+        }
+        return hash;
+    }
+
+    public Hashtable getWhiteListEmailDetailsForExport(String memberId, String accountId, String emailAddr, String firstSix, String lastFour)throws PZDBViolationException
+    {
+        Hashtable hash = null;
+        Connection conn = null;
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+        Functions functions = new Functions();
+        ResultSet rs=null;
+        try
+        {
+            conn = Database.getRDBConnection();
+            StringBuffer stringBuffer = new StringBuffer("SELECT id,firstsix,lastfour,memberid,accountid,emailAddr,isTemp,isApproved FROM whitelist_details WHERE isApproved='Y' AND isTemp='Y' ");
+            StringBuffer count = new StringBuffer("SELECT COUNT(*) FROM whitelist_details WHERE isApproved='Y' AND isTemp='Y' ");
+            if (functions.isValueNull(memberId))
+            {
+                stringBuffer.append(" and memberid=" + ESAPI.encoder().encodeForSQL(me, memberId));
+                count.append(" and memberid=" + ESAPI.encoder().encodeForSQL(me, memberId));
+            }
+            if (functions.isValueNull(accountId))
+            {
+                stringBuffer.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me, accountId));
+                count.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me, accountId));
+            }
+            if (functions.isValueNull(emailAddr))
+            {
+                stringBuffer.append(" and emailAddr='" + emailAddr + "'");
+            }
+            if (functions.isValueNull(firstSix))
+            {
+                stringBuffer.append(" and firstsix=" + ESAPI.encoder().encodeForSQL(me, firstSix));
+                count.append(" and firstsix=" + ESAPI.encoder().encodeForSQL(me, firstSix));
+            }
+            if (functions.isValueNull(lastFour))
+            {
+                stringBuffer.append(" and lastfour=" + ESAPI.encoder().encodeForSQL(me, lastFour));
+                count.append(" and lastfour=" + ESAPI.encoder().encodeForSQL(me, lastFour));
+            }
+            stringBuffer.append(" order by id asc ");
+            logger.debug(stringBuffer.toString());
+            hash = Database.getHashFromResultSet(Database.executeQuery(stringBuffer.toString(), conn));
+            rs = Database.executeQuery(count.toString(), conn);
+            rs.next();
+            int totalrecords = rs.getInt(1);
+
+            hash.put("totalrecords", "" + totalrecords);
+            hash.put("records", "0");
+
+            if (totalrecords > 0)
+                hash.put("records", "" + (hash.size() - 2));
+        }
+        catch (SQLException e){
+            logger.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "getWhiteListEmailDetailsForExport()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError){
+            logger.error("SystemError:::::",systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "getWhiteListEmailDetailsForExport()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closeConnection(conn);
+        }
+        return hash;
+    }
+    public Hashtable getCommonWhiteList(String isTemp, String mappingId)throws PZDBViolationException
+    {
+        Hashtable hash = null;
+        Connection conn = null;
+        String query = null;
+        int updRecs = 0;
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+        Functions functions = new Functions();
+        PreparedStatement pstmt=null;
+        try
+        {
+            conn = Database.getConnection();
+            query = "Update whitelist_details set isTemp=? where id=?";
+            pstmt = conn.prepareStatement(query);
+            pstmt.setString(1, isTemp);
+            pstmt.setString(2, mappingId);
+
+            logger.debug("result " + query);
+            int result = pstmt.executeUpdate();
+            logger.debug("result " + query);
+            if (result > 0)
+            {
+                updRecs++;
+            }
+        }
+        catch (SQLException e){
+            logger.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "getCommonWhiteList()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError){
+            logger.error("SystemError:::::",systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "getCommonWhiteList()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(pstmt);
+            Database.closeConnection(conn);
+        }
+        return hash;
+    }
+
+
+    public boolean isRecordAvailableForMember(String memberId, String accountId, String firstSix, String lastFour, String emailAddress) throws PZDBViolationException
+    {
+        boolean isRecordAvailable = false;
+        Connection conn = null;
+        PreparedStatement preparedStatement=null;
+        ResultSet result=null;
+        try
+        {
+            conn=Database.getRDBConnection();
+            StringBuffer query = new StringBuffer("SELECT id FROM whitelist_details WHERE memberid=? and accountid=? and firstsix=? and lastfour=? and emailAddr=? or emailAddr!=null order by id limit 1");
+            preparedStatement = conn.prepareStatement(query.toString());
+            preparedStatement.setString(1,memberId);
+            preparedStatement.setString(2,accountId);
+            preparedStatement.setString(3,firstSix);
+            preparedStatement.setString(4,lastFour);
+            preparedStatement.setString(5,emailAddress);
+            result = preparedStatement.executeQuery();
+            if(result.next()){
+                isRecordAvailable = true;
+            }
+        }
+        catch (SQLException e){
+            logger.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "isRecordAvailableForMember()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError){
+            logger.error("SystemError:::::",systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "isRecordAvailableForMember()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(result);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(conn);
+        }
+        return isRecordAvailable;
+    }
+
+    public boolean isRecordAvailableForMember(String memberId, String accountId, String firstSix, String lastFour) throws PZDBViolationException
+    {
+        boolean isRecordAvailable = false;
+        Connection conn = null;
+        PreparedStatement preparedStatement=null;
+        ResultSet result=null;
+        try
+        {
+            conn = Database.getRDBConnection();
+            StringBuffer query = new StringBuffer("SELECT id FROM whitelist_details WHERE memberid=? and accountid=? and firstsix=? and lastfour=? order by id  limit 1");
+            preparedStatement = conn.prepareStatement(query.toString());
+            preparedStatement.setString(1,memberId);
+            preparedStatement.setString(2,accountId);
+            preparedStatement.setString(3,firstSix);
+            preparedStatement.setString(4,lastFour);
+            result = preparedStatement.executeQuery();
+            if (result.next())
+            {
+                isRecordAvailable = true;
+            }
+        }
+        catch (SQLException e)
+        {
+            e.printStackTrace();
+            logger.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "isRecordAvailableForMember()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError)
+        {
+            systemError.printStackTrace();
+            logger.error("SystemError:::::", systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "isRecordAvailableForMember()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(result);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(conn);
+        }
+        return isRecordAvailable;
+    }
+    public boolean isRecordAvailableForMembers(String memberId, String accountId, String firstSix, String lastFour) throws PZDBViolationException
+    {
+        boolean isRecordAvailable = false;
+        Connection conn = null;
+        PreparedStatement preparedStatement=null;
+        ResultSet result=null;
+        try
+        {
+            conn = Database.getRDBConnection();
+            StringBuffer query = new StringBuffer("SELECT firstsix,lastfour FROM whitelist_details WHERE memberid=? and accountid=? order by firstsix");
+            preparedStatement = conn.prepareStatement(query.toString());
+            preparedStatement.setString(1,memberId);
+            preparedStatement.setString(2,accountId);
+            result = preparedStatement.executeQuery();
+            while (result.next())
+            {
+                if (result.getString("firstsix").equals(firstSix) && result.getString("lastfour").equals(lastFour))
+                {
+                    isRecordAvailable = true;
+                }
+            }
+        }
+        catch (SQLException e)
+        {
+            e.printStackTrace();
+            logger.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "isRecordAvailableForMember()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError)
+        {
+            systemError.printStackTrace();
+            logger.error("SystemError:::::", systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "isRecordAvailableForMember()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(result);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(conn);
+        }
+        return isRecordAvailable;
+    }
+
+
+
+    public List<WhitelistingDetailsVO> getWhiteListCardForPartner(String firstSix,String lastFour,String emailAddr,String name,String ipAddress,String expiryDate,String accountId,String memberId,int records, int pageno, HttpServletRequest req) throws PZDBViolationException
+    {
+        int start = 0;
+        int end = 0;
+        Connection conn = null;
+        ResultSet rs = null;
+        ResultSet rs1 = null;
+        PreparedStatement ps=null;
+        PreparedStatement pstmt=null;
+        WhitelistingDetailsVO whitelistingDetailsVO = null;
+        List<WhitelistingDetailsVO> list= new ArrayList();
+        StringBuffer stringBuffer = new StringBuffer();
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+
+        start = (pageno - 1) * records;
+        end = records;
+        try
+        {
+            conn = Database.getConnection();
+            stringBuffer.append("SELECT * FROM whitelist_details WHERE id>0 AND memberid=? AND firstsix IS NOT NULL AND firstsix!=\"\" AND lastfour IS NOT NULL AND lastfour!=\"\" ");
+            //StringBuffer countQuery =new StringBuffer("SELECT COUNT(*) FROM whitelist_details WHERE id>0");
+            StringBuffer countQuery =new StringBuffer("SELECT COUNT(*) FROM whitelist_details WHERE id>0 AND firstsix IS NOT NULL AND firstsix!=\"\" AND lastfour IS NOT NULL AND lastfour!=\"\" ");
+
+
+
+            if (firstSix != null && !firstSix.equals(""))
+            {
+                stringBuffer.append(" and firstsix=" + ESAPI.encoder().encodeForSQL(me,firstSix));
+                countQuery.append(" and firstsix=" + ESAPI.encoder().encodeForSQL(me,firstSix));
+            }
+            if (lastFour != null && !lastFour.equals(""))
+            {
+                stringBuffer.append(" and lastfour=" + ESAPI.encoder().encodeForSQL(me,lastFour));
+                countQuery.append(" and lastfour=" + ESAPI.encoder().encodeForSQL(me,lastFour));
+            }
+            if (emailAddr != null && !emailAddr.equals(""))
+            {
+                stringBuffer.append(" and emailAddr='" + emailAddr + "'");
+                countQuery.append(" and emailAddr='" + emailAddr + "'");
+            }
+            if (name != null && !name.equals(""))
+            {
+                stringBuffer.append(" and name='" + name + "'");
+                countQuery.append(" and name='" + name + "'");
+            }
+            if (ipAddress != null && !ipAddress.equals(""))
+            {
+                stringBuffer.append(" and ipAddress='" + ipAddress + "'");
+                countQuery.append(" and ipAddress='" + ipAddress + "'");
+            }
+            if (expiryDate != null && !expiryDate.equals(""))
+            {
+                stringBuffer.append(" and expiryDate='" + expiryDate + "'");
+                countQuery.append(" and expiryDate='" + expiryDate + "'");
+            }
+            if (accountId != null && !accountId.equals(""))
+            {
+                stringBuffer.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me,accountId));
+                countQuery.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me,accountId));
+            }
+            if (memberId != null && !memberId.equals(""))
+            {
+                stringBuffer.append(" and memberid=" + ESAPI.encoder().encodeForSQL(me,memberId));
+                countQuery.append(" and memberid=" + ESAPI.encoder().encodeForSQL(me,memberId));
+            }
+            stringBuffer.append(" ORDER BY id DESC ");
+            stringBuffer.append(" limit  " + start + "," + end);
+
+            ps = conn.prepareStatement(stringBuffer.toString());
+            ps.setString(1,memberId);
+            logger.debug("inside white query:::::"+stringBuffer);
+            logger.debug("Count query::::::::::::::"+countQuery);
+            //logger.debug("Count query::::::::::::::"+countQuery);
+
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                whitelistingDetailsVO = new WhitelistingDetailsVO();
+                whitelistingDetailsVO.setFirstsix(rs.getString("firstsix"));
+                whitelistingDetailsVO.setLastfour(rs.getString("lastfour"));
+                whitelistingDetailsVO.setEmail(rs.getString("emailAddr"));
+                whitelistingDetailsVO.setAccountid(Integer.parseInt(rs.getString("accountid")));
+                whitelistingDetailsVO.setMemberid(rs.getString("memberid"));
+                whitelistingDetailsVO.setName(rs.getString("name"));
+                whitelistingDetailsVO.setIpAddress(rs.getString("ipAddress"));
+                whitelistingDetailsVO.setExpiryDate(rs.getString("expiryDate"));
+
+
+                list.add(whitelistingDetailsVO);
+            }
+
+            pstmt = conn.prepareStatement(countQuery.toString());
+            rs1 = pstmt.executeQuery();
+
+            int totalrecords = 0;
+            if (rs1.next())
+                totalrecords = rs1.getInt(1);
+
+            req.setAttribute("totalrecords", totalrecords);
+            req.setAttribute("records", "0");
+            if (totalrecords > 0)
+            {
+                req.setAttribute("records", list.size());
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getWhiteListBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE,null,se.getMessage(),se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getWhiteListBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY,null,e.getMessage(),e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+
+    public boolean isRecordAvailableOnOtherGroup(String firstSix, String lastFour, String gateway, String companyName) throws PZDBViolationException
+    {
+        boolean isRecordAvailable = false;
+        Connection conn = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet result = null;
+        try
+        {
+            conn = Database.getRDBConnection();
+            StringBuffer query = new StringBuffer("SELECT wd.id FROM whitelist_details AS wd JOIN `members` AS m ON wd.memberid=m.memberid JOIN `gateway_accounts` AS ga ON wd.accountid=ga.accountid JOIN `gateway_type` AS gt ON ga.pgtypeid=gt.pgtypeid WHERE wd.firstsix=? AND wd.lastfour=? AND gt.gateway=? AND m.company_name !=?");
+            preparedStatement = conn.prepareStatement(query.toString());
+            preparedStatement.setString(1, firstSix);
+            preparedStatement.setString(2, lastFour);
+            preparedStatement.setString(3, gateway);
+            preparedStatement.setString(4, companyName);
+            result = preparedStatement.executeQuery();
+            if (result.next())
+            {
+                isRecordAvailable = true;
+            }
+        }
+        catch (SQLException e)
+        {
+            logger.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "isRecordAvailableOnOtherGroup()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError)
+        {
+            logger.error("SystemError:::::", systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "isRecordAvailableOnOtherGroup()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(result);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(conn);
+        }
+        return isRecordAvailable;
+    }
+
+    public boolean isRecordAvailableOnOtherGroup(String firstSix, String lastFour, String emailAddress, String gateway, String companyName) throws PZDBViolationException
+    {
+        boolean isRecordAvailable = false;
+        Connection conn = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet result = null;
+        try
+        {
+            conn = Database.getRDBConnection();
+            StringBuffer query = new StringBuffer("SELECT wd.id FROM whitelist_details AS wd JOIN `members` AS m ON wd.memberid=m.memberid JOIN `gateway_accounts` AS ga ON wd.accountid=ga.accountid JOIN `gateway_type` AS gt ON ga.pgtypeid=gt.pgtypeid WHERE wd.firstsix=? AND wd.lastfour=? AND wd.emailAddr=? AND gt.gateway=? AND m.company_name !=?");
+            preparedStatement = conn.prepareStatement(query.toString());
+            preparedStatement.setString(1, firstSix);
+            preparedStatement.setString(2, lastFour);
+            preparedStatement.setString(3, emailAddress);
+            preparedStatement.setString(4, gateway);
+            preparedStatement.setString(5, companyName);
+            result = preparedStatement.executeQuery();
+            if (result.next())
+            {
+                isRecordAvailable = true;
+            }
+        }
+        catch (SQLException e)
+        {
+            logger.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "isRecordAvailableOnOtherGroup()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError)
+        {
+            logger.error("SystemError:::::", systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "isRecordAvailableOnOtherGroup()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(result);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(conn);
+        }
+        return isRecordAvailable;
+    }
+    public boolean isRecordAvailableInSystem(String firstSix, String lastFour, String emailAddress)throws PZDBViolationException
+    {
+        Connection conn = null;
+        boolean isRecordAuthentic=false;
+        PreparedStatement preparedStatement=null;
+        ResultSet result=null;
+        try
+        {
+            conn = Database.getRDBConnection();
+            StringBuffer query =new StringBuffer("SELECT id FROM whitelist_details WHERE firstsix=? AND lastfour=? AND emailAddr=? order by id limit 1");
+            preparedStatement=conn.prepareStatement(query.toString());
+            preparedStatement.setString(1,firstSix);
+            preparedStatement.setString(2,lastFour);
+            preparedStatement.setString(3,emailAddress);
+            result = preparedStatement.executeQuery();
+            if(result.next()){
+                isRecordAuthentic =true;
+            }
+        }
+        catch (SQLException e){
+            logger.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "isRecordAvailableInSystem()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError){
+            logger.error("SystemError:::::",systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "isRecordAvailableInSystem()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(result);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(conn);
+        }
+        return isRecordAuthentic;
+    }
+    public boolean addCard(String firstSix,String  lastFour,String emailAddress,String accountId,String memberId,String cardHolderName,String ipAddress,String expiryDate)throws PZDBViolationException
+    {
+        Connection connection=null;
+        PreparedStatement preparedStatement=null;
+        boolean result=false;
+        try
+        {
+            connection=Database.getConnection();
+            StringBuffer query=new StringBuffer("INSERT INTO whitelist_details (firstsix,lastfour,emailAddr,accountid,memberid,isApproved,name,ipAddress,expiryDate) VALUES (?,?,?,?,?,?,?,?,?)");
+            preparedStatement=connection.prepareStatement(query.toString());
+            preparedStatement.setString(1,firstSix);
+            preparedStatement.setString(2,lastFour);
+            preparedStatement.setString(3,emailAddress);
+            preparedStatement.setString(4,accountId);
+            preparedStatement.setString(5,memberId);
+            preparedStatement.setString(6,"Y");
+            preparedStatement.setString(7,cardHolderName);
+            preparedStatement.setString(8,ipAddress);
+            preparedStatement.setString(9,expiryDate);
+            int k=preparedStatement.executeUpdate();
+
+            if(k>0){
+                result=true;
+            }
+        }
+        catch (SQLException e){
+            logger.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "addCard()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError){
+            logger.error("SystemError:::::",systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "addCard()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return result;
+    }
+    public boolean removeCardEmailEntry(String mappingId)throws PZDBViolationException
+    {
+        Connection connection=null;
+        PreparedStatement preparedStatement=null;
+        boolean result=false;
+        try
+        {
+            connection=Database.getConnection();
+            StringBuffer query=new StringBuffer("delete from whitelist_details WHERE id=?");
+            preparedStatement=connection.prepareStatement(query.toString());
+            preparedStatement.setString(1,mappingId);
+            int k=preparedStatement.executeUpdate();
+            if(k>0){
+                result=true;
+            }
+        }
+        catch (SQLException e){
+            logger.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "removeCardEmailEntry()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError){
+            logger.error("SystemError:::::",systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "removeCardEmailEntry()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return result;
+    }
+    public boolean removeCardEmail(String cardNumber,String eMail)throws PZDBViolationException
+    {
+        Connection connection=null;
+        PreparedStatement preparedStatement=null;
+        boolean result=false;
+        try
+        {
+            connection=Database.getConnection();
+            String firstSix=Functions.getFirstSix(cardNumber);
+            String lastFour=Functions.getLastFour(cardNumber);
+
+            StringBuffer query=new StringBuffer("delete from whitelist_details WHERE (firstsix=? AND lastfour=?) or emailAddr=?");
+            preparedStatement=connection.prepareStatement(query.toString());
+            preparedStatement.setString(1,firstSix);
+            preparedStatement.setString(2,lastFour);
+            preparedStatement.setString(3,eMail);
+            int k=preparedStatement.executeUpdate();
+            if(k>0){
+                result=true;
+            }
+        }
+        catch (SQLException e){
+            logger.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "removeCardEmail()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError){
+            logger.error("SystemError:::::",systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "removeCardEmail()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return result;
+    }
+    public void removeCardEmailEntry(Set<String> emailList,Set<String> cardList)throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        try
+        {
+            connection = Database.getConnection();
+            StringBuffer query = new StringBuffer("delete from whitelist_details WHERE (firstsix=? AND lastfour=?) or emailAddr=?");
+            preparedStatement = connection.prepareStatement(query.toString());
+            for (String cardNumber : cardList)
+            {
+                String firstSix = Functions.getFirstSix(cardNumber);
+                String lastFour = Functions.getLastFour(cardNumber);
+                preparedStatement.setString(1, firstSix);
+                preparedStatement.setString(2, lastFour);
+                for(String emailAddr:emailList)
+                {
+                    preparedStatement.setString(3,emailAddr);
+                    preparedStatement.addBatch();
+                }
+            }
+            int k[] = preparedStatement.executeBatch();
+        }
+        catch (SQLException e)
+        {
+            logger.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "removeCardEmail()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError)
+        {
+            logger.error("SystemError:::::", systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "removeCardEmail()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+    }
+
+    public int uploadCards(List<String> queryBatch) throws PZDBViolationException
+    {
+        Connection connection=null;
+        PreparedStatement preparedStatement=null;
+        int count = 0;
+        try
+        {
+            connection=Database.getConnection();
+            for(String batch:queryBatch){
+                if (batch != null && batch.length() > 0 && batch.charAt(batch.length() - 1) == ','){
+                    batch = batch.substring(0, batch.length() - 1);
+                }
+                preparedStatement =connection.prepareStatement(batch.toString());
+                count=count+preparedStatement.executeUpdate();
+            }
+        }
+        catch (SystemError systemError){
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java", "uploadCards()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, systemError.getMessage(), systemError.getCause());
+        }
+        catch (SQLException sql){
+            PZExceptionHandler.raiseDBViolationException("WhiteListDao.java", "uploadCards()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, sql.getMessage(), sql.getCause());
+        }
+        finally{
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return count;
+    }
+
+    public List<WhitelistingDetailsVO> getWhiteListBin(String startBin,String endBin,String accountId,String memberId) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps=null;
+        WhitelistingDetailsVO whitelistingDetailsVO = null;
+        List<WhitelistingDetailsVO> list= new ArrayList();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("select startBin,endBin,accountId,memberId from whitelist_bins where id>0 ");
+            StringBuffer countQuery =new StringBuffer("select count(*) whitelist_bins");
+
+            if(function.isValueNull(startBin)&&function.isValueNull(endBin))
+            {
+                sb.append("And startBin <='"+startBin+"'"+"AND endBin >='"+endBin+"'");
+                countQuery.append("And startBin <='"+startBin+"'"+"AND endBin >='"+endBin+"'");
+            }
+
+            if(function.isValueNull(accountId))
+            {
+                sb.append(" and accountId='"+accountId+"'");
+                countQuery.append(" where accountId='"+accountId+"'");
+            }
+            if(function.isValueNull(memberId))
+            {
+                sb.append(" and memberId='"+memberId+"'");
+                countQuery.append(" where memberId='"+memberId+"'");
+            }
+            ps = conn.prepareStatement(sb.toString());
+
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                whitelistingDetailsVO = new WhitelistingDetailsVO();
+                whitelistingDetailsVO.setAccountid(Integer.parseInt(rs.getString("accountId")));
+                whitelistingDetailsVO.setMemberid(rs.getString("memberId"));
+                whitelistingDetailsVO.setStartBin(rs.getString("startBin"));
+                whitelistingDetailsVO.setEndBin(rs.getString("endBin"));
+                list.add(whitelistingDetailsVO);
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getWhiteListBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE,null,se.getMessage(),se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getWhiteListBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY,null,e.getMessage(),e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+    public List<WhitelistingDetailsVO> getWhiteListBinForPartner(String startBin,String endBin,String accountId,String memberId, int records, int pageno, HttpServletRequest req) throws PZDBViolationException
+    {
+        int start = 0;
+        int end = 0;
+        Connection conn = null;
+        ResultSet rs = null;
+        ResultSet rs1 = null;
+        PreparedStatement ps=null;
+        PreparedStatement pstmt=null;
+        WhitelistingDetailsVO whitelistingDetailsVO = null;
+        List<WhitelistingDetailsVO> list= new ArrayList();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+
+        start = (pageno - 1) * records;
+        end = records;
+
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("select startBin,endBin,accountId,memberId from whitelist_bins where id>0 ");
+            StringBuffer countQuery =new StringBuffer("select count(*) from whitelist_bins");
+
+            if(function.isValueNull(memberId))
+            {
+                sb.append(" and memberId='"+memberId+"'");
+                countQuery.append(" where memberId='"+memberId+"'");
+            }
+
+            if(function.isValueNull(startBin)&&function.isValueNull(endBin))
+            {
+                sb.append("And startBin >='"+startBin+"'"+"AND endBin <='"+endBin+"'");
+                countQuery.append("And startBin >='"+startBin+"'"+"AND endBin <='"+endBin+"'");
+            }
+
+            if(function.isValueNull(accountId))
+            {
+                sb.append(" and accountId='"+accountId+"'");
+                countQuery.append(" and accountId='"+accountId+"'");
+            }
+            sb.append(" ORDER BY id DESC ");
+            sb.append(" limit "+start+","+end);
+
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                whitelistingDetailsVO = new WhitelistingDetailsVO();
+                whitelistingDetailsVO.setAccountid(Integer.parseInt(rs.getString("accountId")));
+                whitelistingDetailsVO.setMemberid(rs.getString("memberId"));
+                whitelistingDetailsVO.setStartBin(rs.getString("startBin"));
+                whitelistingDetailsVO.setEndBin(rs.getString("endBin"));
+                list.add(whitelistingDetailsVO);
+            }
+            pstmt = conn.prepareStatement(countQuery.toString());
+            rs1 = pstmt.executeQuery();
+
+            int totalrecords = 0;
+            if (rs1.next())
+                totalrecords = rs1.getInt(1);
+
+            req.setAttribute("totalrecords", totalrecords);
+            req.setAttribute("records", "0");
+            if (totalrecords > 0)
+            {
+                req.setAttribute("records", list.size());
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getWhiteListBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE,null,se.getMessage(),se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getWhiteListBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY,null,e.getMessage(),e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+    public List<WhitelistingDetailsVO> getWhiteListBinPage (String startBin, String endBin, String accountId, String memberId, PaginationVO paginationVO)throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps = null;
+        WhitelistingDetailsVO whitelistingDetailsVO = null;
+        List<WhitelistingDetailsVO> list = new ArrayList();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        int totalreords = 0;
+
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("select * from whitelist_bins where id>0 ");
+            StringBuffer countQuery = new StringBuffer("select count(*) from whitelist_bins where id>0 ");
+
+            if (function.isValueNull(startBin) && function.isValueNull(endBin))
+            {
+                sb.append("And startBin <='" + startBin + "'" + "AND endBin >='" + endBin + "'");
+                countQuery.append("And startBin <='" + startBin + "'" + "AND endBin >='" + endBin + "'");
+            }
+
+            if (function.isValueNull(accountId))
+            {
+                sb.append(" and accountId='" + accountId + "'");
+                countQuery.append("And accountId='" + accountId + "'");
+            }
+            if (function.isValueNull(memberId))
+            {
+                sb.append(" and memberId='" + memberId + "'");
+                countQuery.append(" And memberId='" + memberId + "'");
+            }
+            if (!function.isValueNull(startBin) && !function.isValueNull(endBin))
+            {
+                sb.append(" order by id desc LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            }
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+
+            while (rs.next())
+            {
+                whitelistingDetailsVO = new WhitelistingDetailsVO();
+                whitelistingDetailsVO.setId(rs.getString("id"));
+                whitelistingDetailsVO.setAccountid(Integer.parseInt(rs.getString("accountId")));
+                whitelistingDetailsVO.setMemberid(rs.getString("memberId"));
+                whitelistingDetailsVO.setStartBin(rs.getString("startBin"));
+                whitelistingDetailsVO.setEndBin(rs.getString("endBin"));
+                list.add(whitelistingDetailsVO);
+            }
+            ps = conn.prepareStatement(countQuery.toString());
+
+            rs = ps.executeQuery();
+            if(rs.next())
+            {
+                totalreords=rs.getInt(1);
+            }
+            if(totalreords!=0)
+            {
+                paginationVO.setTotalRecords(totalreords);
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java", "getWhiteListBin()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java", "getWhiteListBin()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+    public int addBin(String  startBin,String endBin,String accountId,String memberId)throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement=null;
+        int count=0;
+        try
+        {
+            String query = "insert into whitelist_bins (startBin,endBin,accountId,memberId) values (?,?,?,?)";
+            connection = Database.getConnection();
+            preparedStatement=connection.prepareStatement(query);
+            preparedStatement.setString(1,startBin);
+            preparedStatement.setString(2,endBin);
+            preparedStatement.setString(3,accountId);
+            preparedStatement.setString(4,memberId);
+            count=preparedStatement.executeUpdate();
+            System.out.println("query:::"+preparedStatement);
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","addBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE,null,se.getMessage(),se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","addBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY,null,e.getMessage(),e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return count;
+    }
+    public void unblockBin(String startBin,String endBin,String accountId,String memberId) throws PZDBViolationException
+    {
+        Connection conn = null;
+        PreparedStatement ps=null;
+        try
+        {
+            conn = Database.getConnection();
+            String dQuery = "delete from whitelist_bins where startBin=? AND endBin=? AND accountId=? AND memberId=?";
+            ps = conn.prepareStatement(dQuery);
+            ps.setString(1,startBin);
+            ps.setString(2,endBin);
+            ps.setString(3,accountId);
+            ps.setString(4, memberId);
+            ps.executeUpdate();
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","unblockBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE,null,se.getMessage(),se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","unblockBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY,null,e.getMessage(),e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+    }
+    public List<WhitelistingDetailsVO> getWhiteListCardForMerchant(String firstSix,String lastFour,String emailAddr,String name,String ipAddress,String accountId,String memberId,PaginationVO paginationVO) throws PZDBViolationException
+    {
+        int totalrecords=0;
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps=null;
+        WhitelistingDetailsVO whitelistingDetailsVO = null;
+        List<WhitelistingDetailsVO> list= new ArrayList();
+        StringBuffer stringBuffer = new StringBuffer();
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+        try
+        {
+            conn = Database.getConnection();
+            stringBuffer.append("SELECT id,firstsix,lastfour,emailAddr,accountid,name,ipAddress FROM whitelist_details WHERE memberid=? AND firstsix IS NOT NULL AND firstsix!=\"\" AND lastfour IS NOT NULL AND lastfour!=\"\" ");
+            StringBuffer countQuery =new StringBuffer("SELECT COUNT(*) FROM whitelist_details WHERE id>0  AND memberid=? AND firstsix IS NOT NULL AND firstsix!=\"\" AND lastfour IS NOT NULL AND lastfour!=\"\" ");
+
+            if (firstSix != null && !firstSix.equals(""))
+            {
+                stringBuffer.append(" and firstsix=" + ESAPI.encoder().encodeForSQL(me,firstSix));
+                countQuery.append(" and firstsix=" + ESAPI.encoder().encodeForSQL(me,firstSix));
+            }
+            if (lastFour != null && !lastFour.equals(""))
+            {
+                stringBuffer.append(" and lastfour=" + ESAPI.encoder().encodeForSQL(me,lastFour));
+                countQuery.append(" and lastfour=" + ESAPI.encoder().encodeForSQL(me,lastFour));
+            }
+            if (emailAddr != null && !emailAddr.equals(""))
+            {
+                stringBuffer.append(" and emailAddr='" + emailAddr + "'");
+                countQuery.append(" and emailAddr='" + emailAddr + "'");
+            }
+            if (accountId != null && !accountId.equals(""))
+            {
+                stringBuffer.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me,accountId));
+                countQuery.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me,accountId));
+            }
+            if (name != null && !name.equals(""))
+            {
+                stringBuffer.append(" and name=" + ESAPI.encoder().encodeForSQL(me,name));
+                countQuery.append(" and name=" + ESAPI.encoder().encodeForSQL(me,name));
+            }
+            if (ipAddress != null && !ipAddress.equals(""))
+            {
+                stringBuffer.append(" and ipAddress=" + ESAPI.encoder().encodeForSQL(me,ipAddress));
+                countQuery.append(" and ipAddress=" + ESAPI.encoder().encodeForSQL(me,ipAddress));
+            }
+                stringBuffer.append(" order by id desc limit "+paginationVO.getStart()+","+paginationVO.getEnd());
+
+            ps = conn.prepareStatement(stringBuffer.toString());
+            ps.setString(1, memberId);
+
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                whitelistingDetailsVO = new WhitelistingDetailsVO();
+                whitelistingDetailsVO.setId(rs.getString("id"));
+                whitelistingDetailsVO.setFirstsix(rs.getString("firstsix"));
+                whitelistingDetailsVO.setLastfour(rs.getString("lastfour"));
+                whitelistingDetailsVO.setEmail(rs.getString("emailAddr"));
+                whitelistingDetailsVO.setAccountid(Integer.parseInt(rs.getString("accountid")));
+                whitelistingDetailsVO.setName(rs.getString("name"));
+                whitelistingDetailsVO.setIpAddress(rs.getString("ipAddress"));
+                list.add(whitelistingDetailsVO);
+            }
+            ps=conn.prepareStatement(countQuery.toString());
+            ps.setString(1, memberId);
+            rs=ps.executeQuery();
+            if (rs.next())
+            {
+                totalrecords = rs.getInt(1);
+            }
+            if (totalrecords != 0)
+            {
+                paginationVO.setTotalRecords(totalrecords);
+            }
+
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getWhiteListBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE,null,se.getMessage(),se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getWhiteListBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY,null,e.getMessage(),e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+    public List<WhitelistingDetailsVO> getWhiteListEmailDetailsForMerchant(String emailAddress,String accountId,String memberId) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps=null;
+        WhitelistingDetailsVO whitelistingDetailsVO = null;
+        List<WhitelistingDetailsVO> list= new ArrayList();
+        StringBuffer stringBuffer = new StringBuffer();
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+        try
+        {
+            conn = Database.getConnection();
+            stringBuffer.append("SELECT emailAddr,accountid FROM whitelist_details WHERE id>0 AND firstsix IS NULL OR firstsix=\"\" AND lastfour IS NULL OR lastfour=\"\" AND emailAddr IS NOT NULL AND emailAddr!=\"\" AND emailAddr!=\"NULL\" AND memberid=?");
+            StringBuffer countQuery =new StringBuffer("SELECT COUNT(*) FROM whitelist_details WHERE id>0");
+
+            if (emailAddress != null && !emailAddress.equals(""))
+            {
+                stringBuffer.append(" and emailAddr='" + emailAddress + "'");
+            }
+            if (accountId != null && !accountId.equals(""))
+            {
+                stringBuffer.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me,accountId));
+                countQuery.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me,accountId));
+            }
+
+            ps = conn.prepareStatement(stringBuffer.toString());
+            ps.setString(1,memberId);
+
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                whitelistingDetailsVO = new WhitelistingDetailsVO();
+                whitelistingDetailsVO.setEmail(rs.getString("emailAddr"));
+                whitelistingDetailsVO.setAccountid(Integer.parseInt(rs.getString("accountid")));
+                list.add(whitelistingDetailsVO);
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getWhiteListBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE,null,se.getMessage(),se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getWhiteListBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY,null,e.getMessage(),e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+    public List<WhitelistingDetailsVO> getWhiteListEmailDetailsForMerchantPage(String emailAddress,String accountId,String memberId,PaginationVO paginationVO) throws PZDBViolationException
+    {
+        int totalrecords=0;
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps=null;
+        WhitelistingDetailsVO whitelistingDetailsVO = null;
+        List<WhitelistingDetailsVO> list= new ArrayList();
+        StringBuffer stringBuffer = new StringBuffer();
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+        try
+        {
+            conn = Database.getConnection();
+            stringBuffer.append("SELECT id,emailAddr,accountid FROM whitelist_details WHERE id>0 AND firstsix IS NULL OR firstsix=\"\" AND lastfour IS NULL OR lastfour=\"\" AND emailAddr IS NOT NULL AND emailAddr!=\"\" AND emailAddr!=\"NULL\" AND memberid=?");
+            StringBuffer countQuery =new StringBuffer("SELECT COUNT(*) FROM whitelist_details WHERE id>0  AND firstsix IS NULL OR firstsix=\"\" AND lastfour IS NULL OR lastfour=\"\" AND emailAddr IS NOT NULL AND emailAddr!=\"\" AND emailAddr!=\"NULL\" AND memberid=?");
+
+            if (emailAddress != null && !emailAddress.equals(""))
+            {
+                stringBuffer.append(" and emailAddr='" + emailAddress + "'");
+                countQuery.append(" and emailAddr='" + emailAddress + "'");
+            }
+            if (accountId != null && !accountId.equals(""))
+            {
+                stringBuffer.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me,accountId));
+                countQuery.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me,accountId));
+            }
+            stringBuffer.append(" order by id desc limit "+paginationVO.getStart()+","+paginationVO.getEnd());
+            ps = conn.prepareStatement(stringBuffer.toString());
+            ps.setString(1,memberId);
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                whitelistingDetailsVO = new WhitelistingDetailsVO();
+                whitelistingDetailsVO.setId(rs.getString("id"));
+                whitelistingDetailsVO.setEmail(rs.getString("emailAddr"));
+                whitelistingDetailsVO.setAccountid(Integer.parseInt(rs.getString("accountid")));
+                list.add(whitelistingDetailsVO);
+            }
+            ps=conn.prepareStatement(countQuery.toString());
+            ps.setString(1, memberId);
+            rs=ps.executeQuery();
+            if (rs.next())
+            {
+                totalrecords = rs.getInt(1);
+            }
+            if (totalrecords != 0)
+            {
+                paginationVO.setTotalRecords(totalrecords);
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getWhiteListBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE,null,se.getMessage(),se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getWhiteListBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY,null,e.getMessage(),e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+    public List<WhitelistingDetailsVO> getWhiteListEmailDetailsForPartner(String emailAddress,String accountId,String memberId, int records, int pageno, HttpServletRequest req) throws PZDBViolationException
+    {
+        logger.debug("inside getWhiteListEmailDetailsForPartner memberid:::"+memberId);
+        int start = 0;
+        int end = 0;
+        Connection conn = null;
+        Functions functions = new Functions();
+        ResultSet rs = null;
+        ResultSet rs1 = null;
+        PreparedStatement ps=null;
+        PreparedStatement pstmt=null;
+        WhitelistingDetailsVO whitelistingDetailsVO = null;
+        List<WhitelistingDetailsVO> list= new ArrayList();
+        StringBuffer stringBuffer = new StringBuffer();
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+
+        start = (pageno - 1) * records;
+        end = records;
+        try
+        {
+            conn = Database.getConnection();
+            stringBuffer.append("SELECT emailAddr,accountid FROM whitelist_details WHERE id>0 ");
+            StringBuffer countQuery =new StringBuffer("SELECT COUNT(*) FROM whitelist_details WHERE id>0 ");
+
+            if (functions.isValueNull(memberId))
+            {
+                stringBuffer.append(" AND memberid =" + ESAPI.encoder().encodeForSQL(me,memberId));
+                countQuery.append(" AND memberid =" + ESAPI.encoder().encodeForSQL(me,memberId));
+            }
+            if (emailAddress != null && !emailAddress.equals(""))
+            {
+                stringBuffer.append(" and emailAddr='" + emailAddress + "'");
+                countQuery.append(" and emailAddr='" + emailAddress + "'");
+            }
+            if (accountId != null && !accountId.equals(""))
+            {
+                stringBuffer.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me,accountId));
+                countQuery.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me,accountId));
+            }
+            stringBuffer.append(" ORDER BY id DESC ");
+            stringBuffer.append(" limit "+start+","+end);
+
+            ps = conn.prepareStatement(stringBuffer.toString());
+            logger.debug("email query::::"+ps);
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                whitelistingDetailsVO = new WhitelistingDetailsVO();
+                whitelistingDetailsVO.setEmail(rs.getString("emailAddr"));
+                whitelistingDetailsVO.setAccountid(Integer.parseInt(rs.getString("accountid")));
+                list.add(whitelistingDetailsVO);
+            }
+            pstmt = conn.prepareStatement(countQuery.toString());
+            logger.debug("country pstmt::::"+pstmt);
+            rs1 = pstmt.executeQuery();
+
+            int totalrecords = 0;
+            if (rs1.next())
+                totalrecords = rs1.getInt(1);
+
+            req.setAttribute("totalrecords", totalrecords);
+            req.setAttribute("records", "0");
+            if (totalrecords > 0)
+            {
+                req.setAttribute("records", list.size());
+            }
+
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getWhiteListBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE,null,se.getMessage(),se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getWhiteListBin()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY,null,e.getMessage(),e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+    public boolean getMemberidAccountid(String memberId,String accountID)throws PZDBViolationException
+    {
+        Connection connection=null;
+        PreparedStatement preparedStatement=null;
+        ResultSet rs=null;
+        boolean flag=false;
+        try
+        {
+            connection=Database.getRDBConnection();
+            StringBuffer stringBuffer=new StringBuffer("select memberid,accountid from member_account_mapping where memberid=? and accountid=?");
+            preparedStatement=connection.prepareStatement(stringBuffer.toString());
+            preparedStatement.setString(1,memberId);
+            preparedStatement.setString(2,accountID);
+            rs=preparedStatement.executeQuery();
+            if(rs.next())
+            {
+                flag=true;
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getMemberidAccountid()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE,null,se.getMessage(),se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java","getMemberidAccountid()",null,"Common","DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY,null,e.getMessage(),e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return flag;
+    }
+    public int uploadBins(List<String> queryBatch) throws PZDBViolationException
+    {
+        Connection connection=null;
+        PreparedStatement preparedStatement=null;
+        int count = 0;
+        try
+        {
+            connection=Database.getConnection();
+            for(String batch:queryBatch){
+                if (batch != null && batch.length() > 0 && batch.charAt(batch.length() - 1) == ','){
+                    batch = batch.substring(0, batch.length() - 1);
+                }
+                preparedStatement =connection.prepareStatement(batch.toString());
+                count=count+preparedStatement.executeUpdate();
+            }
+        }
+        catch (SystemError systemError){
+            PZExceptionHandler.raiseDBViolationException("WhiteListDAO.java", "uploadBins()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, systemError.getMessage(), systemError.getCause());
+        }
+        catch (SQLException sql){
+            PZExceptionHandler.raiseDBViolationException("WhiteListDao.java", "uploadBins()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, sql.getMessage(), sql.getCause());
+        }
+        finally{
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return count;
+    }
+    public boolean removeWhitelistBinEntry(String Id)throws PZDBViolationException
+    {
+        Connection connection=null;
+        PreparedStatement preparedStatement=null;
+        boolean result=false;
+        try
+        {
+            connection=Database.getConnection();
+            StringBuffer query=new StringBuffer("delete from whitelist_bins WHERE id=?");
+            preparedStatement=connection.prepareStatement(query.toString());
+            preparedStatement.setString(1,Id);
+            int k=preparedStatement.executeUpdate();
+            if(k>0){
+                result=true;
+            }
+        }
+        catch (SQLException e){
+            logger.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "removeCardEmailEntry()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError){
+            logger.error("SystemError:::::",systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "removeCardEmailEntry()", null, "Common", "Sql exception while connecting to whitelist_details table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return result;
+    }
+}

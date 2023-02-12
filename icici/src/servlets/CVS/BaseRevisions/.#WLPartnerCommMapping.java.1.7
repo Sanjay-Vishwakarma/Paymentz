@@ -1,0 +1,157 @@
+import com.directi.pg.Admin;
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.manager.ChargeManager;
+import com.manager.utils.CommonFunctionUtil;
+import com.manager.vo.payoutVOs.WLPartnerCommissionVO;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+
+/**
+ * Created by Naushad on 11/28/2016.
+ */
+public class WLPartnerCommMapping extends HttpServlet
+{
+    private static Logger logger = new Logger(WLPartnerCommMapping.class.getName());
+    public void doGet(HttpServletRequest req,HttpServletResponse res) throws ServletException, IOException
+    {
+        doPost(req, res);
+    }
+    public void doPost(HttpServletRequest request, HttpServletResponse response)throws ServletException,IOException
+    {
+        logger.debug("Entering in  WLPartnerCommMapping");
+        HttpSession session = request.getSession();
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+
+        if (!Admin.isLoggedIn(session))
+        {   logger.debug("Admin is logout ");
+            response.sendRedirect("/icici/logout.jsp");
+            return;
+        }
+        RequestDispatcher rd=request.getRequestDispatcher("/wlpartnercommmapping.jsp?ctoken="+user.getCSRFToken());
+        StringBuffer sb= new StringBuffer();
+
+        if(!ESAPI.validator().isValidInput("partnername",request.getParameter("partnername"),"SafeString",10,false))
+        {
+            sb.append("Invalid Partner Name<BR>");
+        }
+        if(!ESAPI.validator().isValidInput("gatewaybankname",request.getParameter("gatewaybankname"),"SafeString",10,true))
+        {
+            sb.append("Invalid Gateway Name<BR>");
+        }
+        if(!ESAPI.validator().isValidInput("commissionname", request.getParameter("commissionname"), "SafeString", 255, false))
+        {
+            sb.append("Invalid Commission Name<BR>");
+        }
+        if (!ESAPI.validator().isValidInput("commissionvalue", request.getParameter("commissionvalue"), "NDigitsAmount", 17, false))
+        {
+            sb.append("Invalid Commission Value<BR>");
+        }
+        if(!ESAPI.validator().isValidInput("startdate", request.getParameter("startdate"), "fromDate", 16, false))
+        {
+            sb.append("Invalid Start Date <BR>");
+        }
+        if(!ESAPI.validator().isValidInput("enddate", request.getParameter("enddate"), "fromDate", 16, false))
+        {
+            sb.append("Invalid End Date <BR>");
+        }
+        if (!ESAPI.validator().isValidInput("sequencenum", request.getParameter("sequencenum"), "Numbers", 20, false))
+        {
+            sb.append("Invalid Sequence Number <BR>");
+        }
+        if (sb.length()>0)
+        {
+            request.setAttribute("statusMessage",sb.toString());
+            rd.forward(request,response);
+            return ;
+        }
+        String partnerName =request.getParameter("partnername");
+        String bankName =request.getParameter("gatewaybankname");
+        String commName =request.getParameter("commissionname");
+        String inputRequired =request.getParameter("inputrequired");
+        String commValue =request.getParameter("commissionvalue");
+        String sequenceNo =request.getParameter("sequencenum");
+        String isActive =request.getParameter("isactive");
+
+        CommonFunctionUtil commonFunctionUtil=new CommonFunctionUtil();
+        Functions functions =new Functions();
+        String message= commonFunctionUtil.newValidateDate(request.getParameter("startdate"), request.getParameter("enddate"),null,null);
+        if (functions.isValueNull(message))
+        {
+
+            request.setAttribute("statusMessage",message);
+            rd.forward(request, response);
+            return;
+        }
+
+        String effectiveStartDate= commonFunctionUtil.convertDatepickerToTimestamp(request.getParameter("startdate"), "00:00:00");
+        String effectiveEndDate=commonFunctionUtil.convertDatepickerToTimestamp(request.getParameter("enddate"), "23:59:59");
+        String status="";
+        if(!functions.isValueNull(bankName))
+        {
+          bankName="0";
+        }
+        WLPartnerCommissionVO wlPartnerCommissionVO =new WLPartnerCommissionVO();
+        wlPartnerCommissionVO.setPartnerId(partnerName);
+        wlPartnerCommissionVO.setPgTypeId(bankName);
+        wlPartnerCommissionVO.setCommissionId(commName);
+        wlPartnerCommissionVO.setCommissionValue(Double.parseDouble(commValue));
+        wlPartnerCommissionVO.setIsInputRequired(inputRequired);
+        wlPartnerCommissionVO.setSequenceNo(sequenceNo);
+        wlPartnerCommissionVO.setIsActive(isActive);
+        wlPartnerCommissionVO.setStartDate(effectiveStartDate);
+        wlPartnerCommissionVO.setEndDate(effectiveEndDate);
+
+        try
+        {
+            ChargeManager chargeManager=new ChargeManager();
+            boolean checkAvailability =chargeManager.checkCommissionAvailabilityWLPartner(wlPartnerCommissionVO);
+            if (checkAvailability)
+            {
+                boolean checkSequenceNoAvailabilityWLPartner = chargeManager.checkSequenceNoAvailabilityWLPartner(wlPartnerCommissionVO);
+                if (checkSequenceNoAvailabilityWLPartner)
+                {
+                    status=chargeManager.applyCommissionOnWLPartner(wlPartnerCommissionVO);
+                    request.setAttribute("statusMessage", status);
+                    rd = request.getRequestDispatcher("/wlpartnercommmapping.jsp?ctoken=" + user.getCSRFToken());
+                    rd.forward(request, response);
+                    return;
+                }
+                else
+                {
+                    status = "Please Provide Unique Sequence Number";
+                    request.setAttribute("statusMessage", status);
+                    rd = request.getRequestDispatcher("/wlpartnercommmapping.jsp?ctoken=" + user.getCSRFToken());
+                    rd.forward(request, response);
+                    return;
+                }
+            }
+            else
+            {
+                //status = "Please Provide Unique Sequence Number :"+sequenceNo;
+                status = "Commission is Already Mapped to the Partner "+partnerName;
+                request.setAttribute("statusMessage", status);
+                rd = request.getRequestDispatcher("/wlpartnercommmapping.jsp?ctoken=" + user.getCSRFToken());
+                rd.forward(request, response);
+                return;
+            }
+        }
+        catch (Exception e)
+        {
+            logger.error("Exception:::::::::"+e);
+            status="Internal error while process your request";
+        }
+        request.setAttribute("statusMessage", status.toString());
+        rd.forward(request,response);
+        return;
+    }
+
+}

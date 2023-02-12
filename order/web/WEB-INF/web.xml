@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--<!DOCTYPE web-app
+        PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+        "http://java.sun.com/dtd/web-app_2_3.dtd">
+
+
+<web-app>-->
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+                      http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+
+    <error-page>
+        <location>/error404.html</location>
+    </error-page>
+
+    <filter>
+        <filter-name>ESAPIOrderFilter</filter-name>
+        <filter-class>com.directi.pg.filters.ESAPIOrderFilter</filter-class>
+
+    </filter>
+
+    <filter-mapping>
+        <filter-name>ESAPIOrderFilter</filter-name>
+        <url-pattern>/servlet/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>ESAPIOrderFilter</filter-name>
+        <url-pattern>*.jsp</url-pattern>
+    </filter-mapping>
+
+<!--    <servlet>
+        <servlet-name>
+            servletToJsp
+        </servlet-name>
+        <servlet-class>
+            servletToJsp
+        </servlet-class>
+    </servlet>-->
+
+     <servlet>
+         <servlet-name>Order</servlet-name>
+         <servlet-class>Order</servlet-class>
+     </servlet>
+    <servlet>
+        <servlet-name>OrderDetail</servlet-name>
+        <servlet-class>OrderDetail</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>OrderDetails</servlet-name>
+        <servlet-class>OrderDetails</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ProofLetter</servlet-name>
+        <servlet-class>ProofLetter</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>BankConnHealthCheck</servlet-name>
+        <servlet-class>BankConnHealthCheck</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>BankConnHealthCheck</servlet-name>
+        <url-pattern>/servlet/BankConnHealthCheck</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>Order</servlet-name>
+        <url-pattern>/servlet/Order</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>OrderDetail</servlet-name>
+        <url-pattern>/servlet/OrderDetail</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>OrderDetails</servlet-name>
+        <url-pattern>/servlet/OrderDetails</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ProofLetter</servlet-name>
+        <url-pattern>/servlet/ProofLetter</url-pattern>
+    </servlet-mapping>
+
+
+
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>Protected Area</web-resource-name>
+            <!-- Define the context-relative URL(s) to be protected -->
+            <url-pattern>/logger.jsp</url-pattern>
+            <url-pattern>/servlet/TempBatch</url-pattern>
+            <url-pattern>/servlet/Batch</url-pattern>
+            <url-pattern>/servlet/TempConfirmBatch</url-pattern>
+            <url-pattern>/servlet/ConfirmBatch</url-pattern>
+            <!-- If you list http methods, only those methods are protected -->
+            <http-method>DELETE</http-method>
+            <http-method>GET</http-method>
+            <http-method>POST</http-method>
+            <http-method>PUT</http-method>
+        </web-resource-collection>
+        <auth-constraint>
+            <!-- Anyone with one of the listed roles may access this area -->
+            <role-name>payment</role-name>
+        </auth-constraint>
+    </security-constraint>
+
+    <!-- Default login configuration uses BASIC authentication-->
+
+    <login-config>
+        <auth-method>BASIC</auth-method>
+        <realm-name>Example Basic Authentication Area</realm-name>
+    </login-config>
+
+</web-app>

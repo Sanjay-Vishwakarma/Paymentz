@@ -1,0 +1,406 @@
+<%@ page import="com.directi.pg.Functions" %>
+<%@ page import="org.owasp.esapi.ESAPI" %>
+<%@ page import="org.owasp.esapi.errors.ValidationException" %>
+<%@ page import="com.manager.vo.TransactionVO" %>
+<%@ page import="com.manager.vo.PaginationVO" %>
+<%@ page import="java.util.List" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: admin
+  Date: 4/4/13
+  Time: 12:21 PM
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ include file="functions.jsp"%>
+<%@ include file="index.jsp"%>
+<html>
+<head>
+    <META content="text/html; charset=windows-1252" http-equiv=Content-Type>
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <title>Common Integration> Common Refund</title>
+    <script language="javascript">
+        function ToggleAll(checkbox)
+        {
+            flag = checkbox.checked;
+            var checkboxes = document.getElementsByName("trackingid");
+            var total_boxes = checkboxes.length;
+
+            for(i=0; i<total_boxes; i++ )
+            {
+                checkboxes[i].checked =flag;
+            }
+        }
+        function DoReverse()
+        {
+            var checkboxes = document.getElementsByName("trackingid");
+            var total_boxes = checkboxes.length;
+            flag = false;
+
+            for(i=0; i<total_boxes; i++ )
+            {
+                if(checkboxes[i].checked)
+                {
+                    flag= true;
+                    break;
+                }
+            }
+
+            if(!flag)
+            {
+                alert("Select at least one transaction");
+                return false;
+            }
+
+            if (confirm("Do you really want to reverse all selected transaction."))
+            {
+                document.reversalform.submit();
+            }
+        }
+    </script>
+</head>
+<%
+    ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+    if (com.directi.pg.Admin.isLoggedIn(session))
+    {
+        String str="";
+        String fdate=null;
+        String tdate=null;
+        String fmonth=null;
+        String tmonth=null;
+        String fyear=null;
+        String tyear=null;
+
+        try
+        {
+            fdate = ESAPI.validator().getValidInput("fdate",request.getParameter("fdate"),"Days",2,true);
+            tdate = ESAPI.validator().getValidInput("tdate",request.getParameter("tdate"),"Days",2,true);
+            fmonth = ESAPI.validator().getValidInput("fmonth",request.getParameter("fmonth"),"Months",2,true);
+            tmonth =  ESAPI.validator().getValidInput("tmonth",request.getParameter("tmonth"),"Months",2,true);
+            fyear = ESAPI.validator().getValidInput("fyear",request.getParameter("fyear"),"Years",4,true);
+            tyear = ESAPI.validator().getValidInput("tyear",request.getParameter("tyear"),"Years",4,true);
+        }
+        catch(ValidationException e)
+        {
+
+        }
+        Calendar rightNow = Calendar.getInstance();
+        String currentyear= "" + rightNow.get(rightNow.YEAR);
+        if (fdate == null) fdate = "" + 1;
+        if (tdate == null) tdate = "" + rightNow.get(rightNow.DATE);
+        if (fmonth == null) fmonth = "" + rightNow.get(rightNow.MONTH);
+        if (tmonth == null) tmonth = "" + rightNow.get(rightNow.MONTH);
+        if (fyear == null) fyear = "" + rightNow.get(rightNow.YEAR);
+        if (tyear == null) tyear = "" + rightNow.get(rightNow.YEAR);
+%>
+<body>
+<form action="/icici/servlet/CommonRefundList?ctoken=<%=ctoken%>" method="post" name="forms" >
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="panel panel-default" >
+                <div class="panel-heading" >
+                    Common Refund
+                </div>
+                <input type="hidden" id="ctoken" value="<%=ctoken%>" name="ctoken">
+                <table  align="center" width="95%" cellpadding="2" cellspacing="2" style="margin-left:2.5%;margin-right: 2.5% ">
+                    <tr>
+                        <td>
+                            <table border="0" cellpadding="5" cellspacing="0" width="100%"  align="center">
+                                <tr><td colspan="4">&nbsp;</td></tr>
+                                <tr>
+                                    <td width="4%" class="textb">&nbsp;</td>
+                                    <td width="8%" class="textb" >From</td>
+                                    <td width="3%" class="textb"></td>
+                                    <td width="12%" class="textb">
+                                        <select size="1" name="fdate" class="textb">
+                                            <%
+                                                if (fdate != null)
+                                                    out.println(Functions.dayoptions(1, 31, fdate));
+                                                else
+                                                    out.println(Functions.printoptions(1, 31));
+                                            %>
+                                        </select>
+                                        <select size="1" name="fmonth" class="textb">
+                                            <%
+                                                if (fmonth != null)
+                                                    out.println(Functions.newmonthoptions(1, 12, fmonth));
+                                                else
+                                                    out.println(Functions.printoptions(1, 12));
+                                            %>
+                                        </select>
+                                        <select size="1" name="fyear" class="textb">
+                                            <%
+                                                if (fyear != null)
+                                                    out.println(Functions.yearoptions(2005, Integer.parseInt(currentyear), fyear));
+                                                else
+                                                    out.println(Functions.printoptions(2005, 2013));
+                                            %>
+                                        </select>
+                                    </td>
+                                    <td width="4%" class="textb">&nbsp;</td>
+                                    <td width="8%" class="textb" >To</td>
+                                    <td width="3%" class="textb"></td>
+                                    <td width="12%" class="textb">
+                                        <select size="1" name="tdate" class="textb">
+
+                                            <%
+                                                if (tdate != null)
+                                                    out.println(Functions.dayoptions(1, 31, tdate));
+                                                else
+                                                    out.println(Functions.printoptions(1, 31));
+                                            %>
+                                        </select>
+
+                                        <select size="1" name="tmonth" class="textb">
+
+                                            <%
+                                                if (tmonth != null)
+                                                    out.println(Functions.newmonthoptions(1, 12, tmonth));
+                                                else
+                                                    out.println(Functions.printoptions(1, 12));
+                                            %>
+                                        </select>
+
+                                        <select size="1" name="tyear" class="textb" style="width:54px;">
+
+                                            <%
+                                                if (tyear != null)
+                                                    out.println(Functions.yearoptions(2005, Integer.parseInt(currentyear), tyear));
+                                                else
+                                                    out.println(Functions.printoptions(2005, 2013));
+                                            %>
+                                        </select>
+                                    </td>
+                                    <td width="4%" class="textb">&nbsp;</td>
+                                    <td width="8%" class="textb">Payment/Id</td>
+                                    <td width="3%" class="textb">&nbsp;</td>
+                                    <td width="12%" class="textb">
+                                        <input type=text name="paymentid" maxlength="50" class="txtbox" value="<%=ESAPI.encoder().encodeForHTMLAttribute(request.getParameter("paymentid")==null?"":request.getParameter("paymentid"))%>">
+                                    </td>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td width="4%" class="textb">&nbsp;</td>
+                                    <td width="8%" class="textb" >&nbsp;</td>
+                                    <td width="3%" class="textb">&nbsp;</td>
+                                    <td width="12%" class="textb">&nbsp;</td>
+
+                                    <td width="4%" class="textb">&nbsp;</td>
+                                    <td width="8%" class="textb" >&nbsp;</td>
+                                    <td width="3%" class="textb">&nbsp;</td>
+                                    <td width="12%" class="textb">&nbsp;</td>
+
+                                    <td width="4%" class="textb">&nbsp;</td>
+                                    <td width="8%" class="textb" >&nbsp;</td>
+                                    <td width="3%" class="textb">&nbsp;</td>
+                                    <td width="12%" class="textb">&nbsp;</td>
+                                </tr>
+                                <tr>
+                                    <td width="4%" class="textb">&nbsp;</td>
+                                    <td width="8%" class="textb" >&nbsp;</td>
+                                    <td width="3%" class="textb">&nbsp;</td>
+                                    <td width="12%" class="textb">&nbsp;</td>
+
+                                    <td width="4%" class="textb">&nbsp;</td>
+                                    <td width="8%" class="textb" >&nbsp;</td>
+                                    <td width="3%" class="textb">&nbsp;</td>
+                                    <td width="12%" class="textb">&nbsp;</td>
+
+                                    <td width="4%" class="textb">&nbsp;</td>
+                                    <td width="8%" class="textb" >&nbsp;</td>
+                                    <td width="3%" class="textb">&nbsp;</td>
+                                    <td width="12%" class="textb">&nbsp;</td>
+
+                                </tr>
+                                <tr>
+                                    <td width="4%" class="textb">&nbsp;</td>
+                                    <td width="8%" class="textb" >Tracking ID</td>
+                                    <td width="3%" class="textb"></td>
+                                    <td width="12%" class="textb">
+                                        <input maxlength="500" type="text" name="trackingid"  class="txtbox" value="<%=ESAPI.encoder().encodeForHTMLAttribute(request.getParameter("trackingid")==null?"":request.getParameter("trackingid"))%>">
+                                    </td>
+                                    <td width="4%" class="textb">&nbsp;</td>
+                                    <td width="8%" class="textb" >&nbsp;</td>
+                                    <td width="3%" class="textb">&nbsp;</td>
+                                    <td width="12%" class="textb">&nbsp;</td>
+
+                                    <td width="4%" class="textb">&nbsp;</td>
+                                    <td width="8%" class="textb" >&nbsp;</td>
+                                    <td width="3%" class="textb">&nbsp;</td>
+                                    <td width="12%" class="textb">
+                                        <button type="submit" class="buttonform" value="Submit">
+                                            <i class="fa fa-clock-o"></i>
+                                            &nbsp;&nbsp;Search
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td width="4%" class="textb">&nbsp;</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+<div class="reporttable">
+    <%  String error=(String ) request.getAttribute("error");
+        if(error !=null)
+        {
+            out.println("<center><font class=\"textb\"><b>"+error+"</b></font></center>");
+        }
+        String errormsg1 = (String)request.getAttribute("cbmessage");
+        if (errormsg1 == null)
+        {
+            errormsg1 = "";
+        }
+        else
+        {
+            out.println("<table align=\"center\"><tr><td valign=\"middle\"><font class=\"textb\"><b>");
+
+            out.println(errormsg1);
+
+            out.println("</b></font></td></tr></table>");
+        }
+
+        String currentblock=request.getParameter("currentblock");
+
+        if(currentblock==null)
+            currentblock="1";
+
+        if(request.getAttribute("refundVOList")!=null)
+        {
+
+            List<TransactionVO> refundVOList= (List<TransactionVO>) request.getAttribute("refundVOList");
+            PaginationVO paginationVO = (PaginationVO) request.getAttribute("paginationVO");
+            paginationVO.setInputs(paginationVO.getInputs()+"&ctoken="+ctoken);
+            if(refundVOList.size()>0)
+            {
+    %>
+
+    <form name="reversalform" action="CommonDoReverse?ctoken=<%=ctoken%>" method="post">
+        <table align=center width="100%" class="table table-striped table-bordered table-hover table-green dataTable">
+            <thead>
+            <tr>
+                <td width="4%" align="center" class="th0"><input type="checkbox" onClick="ToggleAll(this);" name="alltrans"></td>
+                <td  align="center" class="th0">TrackingID</td>
+                <td  align="center" class="th0">AccountID</td>
+                <td  align="center" class="th0">Toid</td>
+                <td  align="center" class="th0">Description</td>
+                <td  align="center" class="th0">Captured Amount</td>
+                <td  align="center" class="th0">Reversed Amount</td>
+                <td  align="center" class="th0">status</td>
+                <td  align="center" class="th0" width="15%">Time</td>
+                <td  align="center" class="th0" width="8%">PaymentID</td>
+                <td  align="center" class="th0" width="15%">Remark</td>
+                <td  align="center" width="15%" class="th0">Refund&nbsp;Amount</td>
+                <td  align="center" class="th0">Reason</td>
+                <td  align="center" class="th0">IsFraudTrans?</td>
+
+            </tr>
+            </thead>
+            <%
+                Functions functions=new Functions();
+                String style="class=td1";
+                String ext="light";
+                int pos = 0;
+                for(TransactionVO transactionVO : refundVOList)
+                {
+                    String paymentId =transactionVO.getPaymentId();
+                    String remark=transactionVO.getRemark();
+                    if(functions.isEmptyOrNull(paymentId))
+                    {
+                        paymentId = "";
+                    }
+
+                    if(functions.isEmptyOrNull(remark))
+                    {
+                        remark = "";
+                    }
+
+                    if(pos%2==0)
+                    {
+                        style="class=tr0";
+                        ext="dark";
+                    }
+                    else
+                    {
+                        style="class=tr1";
+                        ext="light";
+                    }
+
+                    out.println("<tr>");
+                    out.println("<td align=center "+style+">&nbsp;<input type=\"checkbox\" name=\"trackingid\" value=\""+transactionVO.getTrackingId()+"\"></td>");
+
+                    out.println("<td align=center "+style+">&nbsp;" +ESAPI.encoder().encodeForHTML(transactionVO.getTrackingId())+"</td>");
+                    out.println("<td align=center "+style+">&nbsp;"+ESAPI.encoder().encodeForHTML(transactionVO.getAccountId())+"<input type=\"hidden\" name=\"accountid_"+transactionVO.getTrackingId()+"\" value=\""+transactionVO.getAccountId()+"\"></td>");
+                    out.println("<td align=center "+style+">&nbsp;"+ESAPI.encoder().encodeForHTML(transactionVO.getToid())+"<input type=\"hidden\" name=\"toid_"+transactionVO.getTrackingId()+"\" value=\""+transactionVO.getToid()+"\"></td>");
+                    out.println("<td align=center "+style+">&nbsp;"+ESAPI.encoder().encodeForHTML(transactionVO.getOrderDesc())+"<input type=\"hidden\" name=\"desc_"+transactionVO.getTrackingId()+"\" value=\""+transactionVO.getOrderDesc()+"\"></td>");
+                    out.println("<td align=center "+style+">&nbsp;"+ESAPI.encoder().encodeForHTML(transactionVO.getAmount())+"<input type=\"hidden\" name=\"captureamount_"+transactionVO.getTrackingId()+"\" value=\""+transactionVO.getAmount()+"\"></td>");
+                    out.println("<td align=center "+style+">&nbsp;"+ESAPI.encoder().encodeForHTML(transactionVO.getReverseAmount())+"<input type=\"hidden\" name=\"refundamount_"+transactionVO.getReverseAmount()+"\" value=\""+transactionVO.getReverseAmount()+"\"></td>");
+                    out.println("<td align=center "+style+">&nbsp;"+ESAPI.encoder().encodeForHTML(transactionVO.getStatus())+"</td>"+"<input type=\"hidden\" name=\"status_"+transactionVO.getTrackingId()+"\" value=\""+transactionVO.getStatus()+"\"></td>");
+                    out.println("<td align=center "+style+">&nbsp;"+ESAPI.encoder().encodeForHTML(transactionVO.getDtStamp())+"</td>"+"<input type=\"hidden\" name=\"timestamp_"+transactionVO.getTrackingId()+"\" value=\""+transactionVO.getTimestamp()+"\"></td>");
+                    out.println("<td align=center "+style+">&nbsp;"+ESAPI.encoder().encodeForHTML(paymentId)+"</td>"+"<input type=\"hidden\" name=\"paymentid_"+paymentId+"\" value=\""+paymentId+"\"></td>");
+                    out.println("<td align=center "+style+">&nbsp;"+ESAPI.encoder().encodeForHTML(remark)+"</td>"+"<input type=\"hidden\" name=\"remark\" value=\""+remark+"\"></td>");
+                    out.println("<td align=center "+style+"><input type=\"text\" class=\"txtboxtabel\" name=\"refundamount_"+transactionVO.getTrackingId()+"\" value=\"\"></td>");
+                    out.println("<td align=center "+style+"><input type=\"text\" class=\"txtbox\" name=\"reason_"+transactionVO.getTrackingId()+"\" value=\"\"></td>");
+                    out.println("<td align=center "+style+">&nbsp;<select name=\"isFraud_"+transactionVO.getTrackingId()+"\"><option value=\"N\" default>N</option><option value=\"Y\">Y</option> </select></td>");
+                    out.println("</tr>");
+                }
+            %>
+            <thead>
+            <tr>
+                <td class="th0" colspan="14">
+                    <center><button type="submit" class="addnewmember" value="DO Reverse" onclick="return DoReverse()">DO Reverse</button></center>
+                </td>
+            </tr>
+            </thead>
+        </table>
+    </form>
+    <table align=center valign=top><tr>
+        <td align=center>
+            <jsp:include page="page.jsp" flush="true">
+                <jsp:param name="numrecords" value="<%=paginationVO.getTotalRecords()%>"/>
+                <jsp:param name="numrows" value="<%=paginationVO.getRecordsPerPage()%>"/>
+                <jsp:param name="pageno" value="<%=paginationVO.getPageNo()%>"/>
+                <jsp:param name="str" value="<%=paginationVO.getInputs()%>"/>
+                <jsp:param name="page" value="<%=paginationVO.getPage()%>"/>
+                <jsp:param name="currentblock" value="<%=paginationVO.getCurrentBlock()%>"/>
+                <jsp:param name="orderby" value=""/>
+            </jsp:include>
+        </td>
+    </tr>
+    </table>
+</div>
+<%
+            }
+            else
+            {
+                out.println(Functions.NewShowConfirmation("Sorry","No records found."));
+            }
+        }
+          /*  else
+            {
+                out.println(Functions.NewShowConfirmation("Sorry", "No records found."));
+            }*/
+        else
+        {
+            Functions functions=new Functions();
+            if (functions.isValueNull(request.getParameter("trackingid"))){
+
+            }else{
+                out.println(Functions.NewShowConfirmation("Sorry","No records found."));
+            }
+        }
+    }
+    else
+    {
+        response.sendRedirect("/icici/logout.jsp");
+        return;
+    }
+%>
+</body>
+</html>

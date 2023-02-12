@@ -1,0 +1,416 @@
+package net.partner;
+
+import com.directi.pg.Database;
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.ValidationErrorList;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: admin
+ * Date: 4/15/15
+ * Time: 3:21 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class SetReservesRiskmgmt extends HttpServlet
+{
+    private static Logger logger = new Logger(SetReservesRiskmgmt.class.getName());
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+
+        logger.debug("Entering in SetReserves");
+        HttpSession session = req.getSession();
+
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+        PartnerFunctions partner=new PartnerFunctions();
+        Functions functions = new Functions();
+        logger.debug("success");
+
+        String errorMsg = "";
+        if (!partner.isLoggedInPartner(session))
+        {
+            res.sendRedirect("/partner/Logout.jsp");
+            return;
+        }
+        errorMsg = validateParameters(req);
+
+        if (functions.isValueNull(req.getParameter("totalPayoutAmount")) && !ESAPI.validator().isValidInput("totalPayoutAmount",req.getParameter("totalPayoutAmount"),"Numbers",14,true))
+        {
+            errorMsg = errorMsg + "Invalid Total Payout Amount.";
+        }
+
+        if(!partner.isEmptyOrNull(errorMsg))
+        {
+
+            String redirectpage = "/viewmerchantrisk.jsp?ctoken="+user.getCSRFToken();
+            req.setAttribute("error", errorMsg);
+            RequestDispatcher rd = req.getRequestDispatcher(redirectpage);
+            rd.forward(req, res);
+            return;
+        }
+        else
+        {
+            String memberids[] = req.getParameterValues("memberid");
+            String accountIds[] = req.getParameterValues("accountids");
+            String aptprompts[] = req.getParameterValues("aptprompt");
+            String daily_amount_limit=req.getParameter("daily_amount_limit");
+            String monthly_amount_limit=req.getParameter("monthly_amount_limit");
+            String daily_card_limit=req.getParameter("daily_card_limit");
+            String weekly_card_limit=req.getParameter("weekly_card_limit");
+            String monthly_card_limit=req.getParameter("monthly_card_limit");
+            //String isrefund=req.getParameter("isrefund");
+            //String refunddailylimit=req.getParameter("refunddailylimit");
+            String query = null;
+            StringBuilder sSuccessMessage = new StringBuilder();
+            StringBuilder sErrorMessage = new StringBuilder();
+
+            String check_limit=req.getParameter("check_limit");
+            String daily_card_amount_limit=req.getParameter("daily_card_amount_limit");
+            String weekly_card_amount_limit=req.getParameter("weekly_card_amount_limit");
+            String monthly_card_amount_limit=req.getParameter("monthly_card_amount_limit");
+            String card_check_limit=req.getParameter("card_check_limit");
+            String card_transaction_limit=req.getParameter("card_transaction_limit");
+
+            String weekly_amount_limit = req.getParameter("weekly_amount_limit");
+            String card_velocity_check = req.getParameter("card_velocity_check");
+            String limitRouting =req.getParameter("limitRouting");
+            String vpaAddressLimitCheck= req.getParameter("vpaAddressLimitCheck");
+            String vpaAddressDailyCount=req.getParameter("vpaAddressDailyCount");
+            String vpaAddressAmountLimitCheck= req.getParameter("vpaAddressAmountLimitCheck");
+            String vpaAddressDailyAmountLimit=req.getParameter("vpaAddressDailyAmountLimit");
+
+            String payoutBankAccountNoLimitCheck= req.getParameter("payoutBankAccountNoLimitCheck");
+            String bankAccountNoDailyCount= req.getParameter("bankAccountNoDailyCount");
+            String payoutBankAccountNoAmountLimitCheck= req.getParameter("payoutBankAccountNoAmountLimitCheck");
+            String bankAccountNoDailyAmountLimit=req.getParameter("bankAccountNoDailyAmountLimit");
+            String customerIpLimitCheck= req.getParameter("customerIpLimitCheck");
+            String customerIpDailyCount= req.getParameter("customerIpDailyCount");
+            String customerIpAmountLimitCheck= req.getParameter("customerIpAmountLimitCheck");
+            String customerIpDailyAmountLimit= req.getParameter("customerIpDailyAmountLimit");
+            String customerNameLimitCheck= req.getParameter("customerNameLimitCheck");
+            String customerNameDailyCount = req.getParameter("customerNameDailyCount");
+            String customerNameAmountLimitCheck= req.getParameter("customerNameAmountLimitCheck");
+            String customerNameDailyAmountLimit= req.getParameter("customerNameDailyAmountLimit");
+            String customerEmailLimitCheck= req.getParameter("customerEmailLimitCheck");
+            String customerEmailDailyCount= req.getParameter("customerEmailDailyCount");
+            String customerEmailAmountLimitCheck= req.getParameter("customerEmailAmountLimitCheck");
+            String customerEmailDailyAmountLimit= req.getParameter("customerEmailDailyAmountLimit");
+            String customerPhoneLimitCheck= req.getParameter("customerPhoneLimitCheck");
+            String customerPhoneDailyCount= req.getParameter("customerPhoneDailyCount");
+            String customerPhoneAmountLimitCheck= req.getParameter("customerPhoneAmountLimitCheck");
+            String customerPhoneDailyAmountLimit= req.getParameter("customerPhoneDailyAmountLimit");
+
+            String vpaAddressMonthlyCount           = req.getParameter("vpaAddressMonthlyCount");
+            String vpaAddressMonthlyAmountLimit     = req.getParameter("vpaAddressMonthlyAmountLimit");
+            String customerEmailMonthlyCount        = req.getParameter("customerEmailMonthlyCount");
+            String customerEmailMonthlyAmountLimit  = req.getParameter("customerEmailMonthlyAmountLimit");
+            String customerPhoneMonthlyCount        = req.getParameter("customerPhoneMonthlyCount");
+            String customerPhoneMonthlyAmountLimit  = req.getParameter("customerPhoneMonthlyAmountLimit");
+            String bankAccountNoMonthlyCount        = req.getParameter("bankAccountNoMonthlyCount");
+            String bankAccountNoMonthlyAmountLimit  = req.getParameter("bankAccountNoMonthlyAmountLimit");
+            String customerIpMonthlyCount           = req.getParameter("customerIpMonthlyCount");
+            String customerIpMonthlyAmountLimit     = req.getParameter("customerIpMonthlyAmountLimit");
+            String customerNameMonthlyCount         = req.getParameter("customerNameMonthlyCount");
+            String customerNameMonthlyAmountLimit   = req.getParameter("customerNameMonthlyAmountLimit");
+            String totalPayoutAmount   = req.getParameter("totalPayoutAmount");
+
+            res.setContentType("text/html");
+           // PrintWriter out = res.getWriter();
+            int updRecs = 0;
+            Connection cn=null;
+            PreparedStatement pstmt = null;
+            if (memberids != null)
+            { //process only if there is at least one record to be updated
+                try
+                {
+                    //int size = reserves.length;
+                    for (int i = 0; i < 1; i++)
+                    {
+                        GatewayAccount account = GatewayAccountService.getGatewayAccount(accountIds[i]);
+                        //account.
+                        //String reserve = "", aptprompt = "", fixamount = "", accountID = "";
+                        String aptprompt = "",  accountID = "";
+
+
+                        aptprompt = getValidPercentage(aptprompts[i]);
+
+                        accountID =  Functions.checkStringNull(accountIds[i]);
+                        if(card_check_limit==null)
+                        {
+                            card_check_limit="0";
+                        }
+                        if(card_transaction_limit==null)
+                        {
+                            card_transaction_limit="0";
+                        }
+                        /*if(isrefund==null)
+                        {
+                            isrefund="N";
+                        }
+                        if(refunddailylimit==null)
+                        {
+                            refunddailylimit="0";
+                        }*/
+                        if(check_limit==null)
+                        {
+                            check_limit="0";
+                        }
+                        if(card_velocity_check==null)
+                        {
+                            card_check_limit="N";
+                        }
+                        if(limitRouting==null)
+                        {
+                            limitRouting="N";
+                        }
+
+                        if(accountID != null)
+                        {
+
+                            if (aptprompt== null)
+                            {
+                                aptprompt = String.valueOf(account.getHighRiskAmount());
+                            }
+                            // if (fixamount== null) { fixamount = "0";}
+                            if (daily_card_amount_limit== null) { daily_card_amount_limit = "1000.00";}
+                            if (weekly_card_amount_limit== null) { weekly_card_amount_limit = "5000.00";}
+                            if (monthly_card_amount_limit== null) { monthly_card_amount_limit = "10000.00";}
+                        }
+
+                        if(aptprompt==null)
+                        {
+                            aptprompt="0";
+                        }
+
+                        cn= Database.getConnection();
+                        //query = "update members set aptprompt=?,accountid=?,daily_amount_limit=?,monthly_amount_limit=?,daily_card_limit=?,weekly_card_limit=?,monthly_card_limit=?,check_limit=?,card_transaction_limit=?,card_check_limit=?,daily_card_amount_limit=?,weekly_card_amount_limit=?,monthly_card_amount_limit=?,refunddailylimit=?,weekly_amount_limit=? where memberid=?";
+                        query = "update members m JOIN merchant_configuration mc ON m.memberid=mc.memberid set aptprompt=?,accountid=?,daily_amount_limit=?,monthly_amount_limit=?,daily_card_limit=?,weekly_card_limit=?,monthly_card_limit=?,check_limit=?,card_transaction_limit=?,card_check_limit=?,daily_card_amount_limit=?,weekly_card_amount_limit=?,monthly_card_amount_limit=?,weekly_amount_limit=?,card_velocity_check=?,limitRouting=?,vpaAddressLimitCheck=?,vpaAddressDailyCount=?,vpaAddressAmountLimitCheck=?,vpaAddressDailyAmountLimit=?,payoutBankAccountNoLimitCheck=?,bankAccountNoDailyCount=?,payoutBankAccountNoAmountLimitCheck=?,bankAccountNoDailyAmountLimit=?,customerIpLimitCheck=?,customerIpDailyCount=?,customerIpAmountLimitCheck=?,customerIpDailyAmountLimit=?,customerNameLimitCheck=?,customerNameDailyCount=?,customerNameAmountLimitCheck=?,customerNameDailyAmountLimit=?,customerEmailLimitCheck=?,customerEmailDailyCount=?,customerEmailAmountLimitCheck=?,customerEmailDailyAmountLimit=?,customerPhoneLimitCheck=?,customerPhoneDailyCount=?,customerPhoneAmountLimitCheck=?,customerPhoneDailyAmountLimit=?,vpaAddressMonthlyCount=?,vpaAddressMonthlyAmountLimit=?,customerEmailMonthlyCount=?,customerEmailMonthlyAmountLimit=?,customerPhoneMonthlyCount=?,customerPhoneMonthlyAmountLimit=?,bankAccountNoMonthlyCount=?,bankAccountNoMonthlyAmountLimit=?,customerIpMonthlyCount=?,customerIpMonthlyAmountLimit=?,customerNameMonthlyCount=?,customerNameMonthlyAmountLimit=?, totalPayoutAmount = ? where m.memberid=?";
+                        pstmt= cn.prepareStatement(query);
+                        pstmt.setString(1,aptprompt);
+                        pstmt.setString(2,accountID);
+                        pstmt.setString(3,daily_amount_limit);
+                        pstmt.setString(4,monthly_amount_limit);
+                        pstmt.setString(5,daily_card_limit);
+                        pstmt.setString(6,weekly_card_limit);
+                        pstmt.setString(7,monthly_card_limit);
+                        pstmt.setString(8,check_limit);
+                        pstmt.setString(9,String.valueOf(card_transaction_limit));
+                        pstmt.setString(10,String.valueOf(card_check_limit));
+                        pstmt.setString(11,daily_card_amount_limit);
+                        pstmt.setString(12,weekly_card_amount_limit);
+                        pstmt.setString(13,monthly_card_amount_limit);
+                        pstmt.setString(14,weekly_amount_limit);
+                        pstmt.setString(15,card_velocity_check);
+                        pstmt.setString(16,limitRouting);
+                        pstmt.setString(17,vpaAddressLimitCheck);
+                        pstmt.setString(18,vpaAddressDailyCount);
+                        pstmt.setString(19,vpaAddressAmountLimitCheck);
+                        pstmt.setString(20,vpaAddressDailyAmountLimit);
+                        pstmt.setString(21,payoutBankAccountNoLimitCheck);
+                        pstmt.setString(22,bankAccountNoDailyCount);
+                        pstmt.setString(23,payoutBankAccountNoAmountLimitCheck);
+                        pstmt.setString(24,bankAccountNoDailyAmountLimit);
+                        pstmt.setString(25,customerIpLimitCheck);
+                        pstmt.setString(26,customerIpDailyCount);
+                        pstmt.setString(27,customerIpAmountLimitCheck);
+                        pstmt.setString(28,customerIpDailyAmountLimit);
+                        pstmt.setString(29,customerNameLimitCheck);
+                        pstmt.setString(30,customerNameDailyCount);
+                        pstmt.setString(31,customerNameAmountLimitCheck);
+                        pstmt.setString(32,customerNameDailyAmountLimit);
+                        pstmt.setString(33,customerEmailLimitCheck);
+                        pstmt.setString(34,customerEmailDailyCount);
+                        pstmt.setString(35,customerEmailAmountLimitCheck);
+                        pstmt.setString(36,customerEmailDailyAmountLimit);
+                        pstmt.setString(37,customerPhoneLimitCheck);
+                        pstmt.setString(38,customerPhoneDailyCount);
+                        pstmt.setString(39,customerPhoneAmountLimitCheck);
+                        pstmt.setString(40,customerPhoneDailyAmountLimit);
+                        pstmt.setString(41,vpaAddressMonthlyCount);
+                        pstmt.setString(42,vpaAddressMonthlyAmountLimit);
+                        pstmt.setString(43,customerEmailMonthlyCount);
+                        pstmt.setString(44,customerEmailMonthlyAmountLimit);
+                        pstmt.setString(45,customerPhoneMonthlyCount);
+                        pstmt.setString(46,customerPhoneMonthlyAmountLimit);
+                        pstmt.setString(47,bankAccountNoMonthlyCount);
+                        pstmt.setString(48,bankAccountNoMonthlyAmountLimit);
+                        pstmt.setString(49,customerIpMonthlyCount);
+                        pstmt.setString(50,customerIpMonthlyAmountLimit);
+                        pstmt.setString(51,customerNameMonthlyCount);
+                        pstmt.setString(52,customerNameMonthlyAmountLimit);
+                        pstmt.setString(53,totalPayoutAmount);
+
+                        pstmt.setString(54,memberids[i]);
+
+                        logger.debug("result " + query);
+                        int result = pstmt.executeUpdate();
+                        logger.debug("result " + query);
+
+
+                        if (result > 0)
+                        {
+                            updRecs++;
+                        }
+                    }//end for
+
+                }
+                catch (Exception e)
+                {
+                    logger.error("Exception---" + e);
+                    logger.error("Error while set reserves :",e);
+
+                    //sErrorMessage.append(errorMsg);
+                    req.setAttribute("error",errorMsg);
+
+
+                }//try catch ends
+                finally {
+                    Database.closePreparedStatement(pstmt);
+                    Database.closeConnection(cn);
+                }
+            }
+
+            sSuccessMessage.append(updRecs).append(" Records Updated");
+
+
+            StringBuilder chargeBackMessage = new StringBuilder();
+            //chargeBackMessage.append(sSuccessMessage.toString());
+            //chargeBackMessage.append("<BR/>");
+            chargeBackMessage.append(sErrorMessage.toString());
+
+            String redirectpage = "/viewmerchantrisk.jsp?ctoken="+user.getCSRFToken();
+            req.setAttribute("cbmessage", chargeBackMessage.toString());
+            req.setAttribute("success", sSuccessMessage.toString());
+            RequestDispatcher rd = req.getRequestDispatcher(redirectpage);
+            rd.forward(req, res);
+        }//post ends
+    }
+    private String getValidPercentage(String paramValue)
+    {
+        String returnVal = getValidAmount(paramValue);
+        if(returnVal != null)
+        {
+            returnVal =  "" + new BigDecimal(returnVal).multiply(new BigDecimal("100"));
+        }
+        return returnVal;
+    }
+    private String getValidAmount(String paramValue)
+    {
+        if ("N/A".equals(paramValue))
+        {
+            return null;
+        }
+        String returnVal = Functions.checkStringNull(paramValue);
+        if(returnVal == null )
+        {
+            returnVal = "0";
+        }
+        else
+        {
+            try
+            {
+                returnVal = "" + new BigDecimal(returnVal);
+            }
+            catch(NumberFormatException ne)
+            {  logger.error("Number Formet Exception",ne);
+
+                returnVal = "0";
+            }
+        }
+        return returnVal;
+    }
+
+    private String validateParameters(HttpServletRequest req)
+    {
+        InputValidator inputValidator = new InputValidator();
+        String error = "";
+        String EOL = "<br>";
+        List<InputFields> inputFieldsListOptional = new ArrayList<InputFields>();
+
+        inputFieldsListOptional.add(InputFields.DAILY_AMT_LIMIT);
+        inputFieldsListOptional.add(InputFields.MONTHLY_AMT_LIMIT);
+        inputFieldsListOptional.add(InputFields.WEEKLY_AMT_LIMIT);
+
+        inputFieldsListOptional.add(InputFields.DAILY_CARD_LIMIT);
+        inputFieldsListOptional.add(InputFields.WEEKLY_CARD_LIMIT);
+        inputFieldsListOptional.add(InputFields.MONTHLY_CARD_LIMIT);
+
+        inputFieldsListOptional.add(InputFields.HIGH_RISK_AMT);
+
+        inputFieldsListOptional.add(InputFields.DAILY_CARD_AMT_LIMIT);
+        inputFieldsListOptional.add(InputFields.WEEKLY_CARD_AMT_LIMIT);
+        inputFieldsListOptional.add(InputFields.MONTHLY_CARD_AMT_LIMIT);
+
+        inputFieldsListOptional.add(InputFields.VPA_ADDRESS_DAILY_COUNT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_IP_DAILY_COUNT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_NAME_DAILY_COUNT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_EMAIL_DAILY_COUNT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_PHONE_DAILY_COUNT);
+        inputFieldsListOptional.add(InputFields.VPA_ADDRESS_DAILY_AMOUNT_LIMIT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_IP_DAILY_AMOUNT_LIMIT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_NAME_DAILY_AMOUNT_LIMIT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_EMAIL_DAILY_AMOUNT_LIMIT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_PHONE_DAILY_AMOUNT_LIMIT);
+
+        inputFieldsListOptional.add(InputFields.CUSTOMER_IP_MONTHLY_COUNT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_IP_MONTHLY_AMOUNT_LIMIT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_NAME_MONTHLY_COUNT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_NAME_MONTHLY_AMOUNT_LIMIT);
+        inputFieldsListOptional.add(InputFields.VPA_ADDRESS_MONTHLY_COUNT);
+        inputFieldsListOptional.add(InputFields.VPA_ADDRESS_MONTHLY_AMOUNT_LIMIT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_EMAIL_MONTHLY_COUNT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_EMAIL_MONTHLY_AMOUNT_LIMIT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_PHONE_MONTHLY_COUNT);
+        inputFieldsListOptional.add(InputFields.CUSTOMER_PHONE_MONTHLY_AMOUNT_LIMIT);
+        inputFieldsListOptional.add(InputFields.BANK_ACCOUNT_NO_MONTHLY_COUNT);
+        inputFieldsListOptional.add(InputFields.BANK_ACCOUNT_NO_MONTHLY_AMOUNT_LIMIT);
+        inputFieldsListOptional.add(InputFields.BANK_ACCOUNT_NO_DAILY_AMOUNT_LIMIT);
+        inputFieldsListOptional.add(InputFields.BANK_ACCOUNT_NO_DAILY_COUNT);
+
+       /* inputFieldsListOptional.add(InputFields.MAX_SCORE_ALLOWED);
+        inputFieldsListOptional.add(InputFields.MAX_SCORE_REVERSEL);
+        inputFieldsListOptional.add(InputFields.REFUND_DAILY_LIMIT);
+*/
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.InputValidations(req,inputFieldsListOptional,errorList,false);
+
+        if(!errorList.isEmpty())
+        {
+            for(InputFields inputFields :inputFieldsListOptional)
+            {
+                if(errorList.getError(inputFields.toString())!=null)
+                {
+                    logger.debug(errorList.getError(inputFields.toString()).getLogMessage());
+                    error = error.concat(errorList.getError(inputFields.toString()).getMessage()+EOL);
+                }
+            }
+        }
+        return error;
+    }
+
+}

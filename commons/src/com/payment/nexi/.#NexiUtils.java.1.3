@@ -1,0 +1,185 @@
+package com.payment.nexi;
+
+/**
+ * Created by Admin on 5/23/2019.
+ */
+
+import com.directi.pg.*;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.PZTechnicalViolationException;
+import com.payment.exceptionHandler.constraintType.PZTechnicalExceptionEnum;
+import com.payment.utils.SSLUtils;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+
+import java.io.*;
+import java.security.MessageDigest;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Hashtable;
+import java.util.LinkedList;
+import java.util.ListIterator;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Vivek
+ * Date: 5/23/19
+ * Time: 4:11 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class NexiUtils
+{
+    public final static String charset = "UTF-8";
+    private static Logger log = new Logger(NexiUtils.class.getName());
+    private static TransactionLogger transactionLogger = new TransactionLogger(NexiUtils.class.getName());
+
+    public static String doPostHTTPSURLConnectionClient(String strURL,String req) throws PZTechnicalViolationException
+    {
+        transactionLogger.error("----inside Connection-----"+strURL);
+        String result = "";
+        System.setProperty("jsse.enableSNIExtension", "false");
+
+        PostMethod post = new PostMethod(strURL);
+
+        try
+        {
+            HttpClient httpClient = new HttpClient();
+            post.addRequestHeader("Content-Type", "application/json");
+            post.addRequestHeader("Accept", "application/json");
+            post.addRequestHeader("Cache-Control", "no-cache");
+            post.setRequestBody(req);
+            httpClient.executeMethod(post);
+            String response = new String(post.getResponseBody());
+            result= response;
+            /*System.setProperty("https.protocols", "TLSv1.2");
+
+            SSLUtils.setupSecurityProvider();
+            SSLUtils.trustAllHttpsCertificates();
+            StringEntity jsonRequest = new StringEntity(req, "UTF-8");
+            httpPost.addHeader("content-type", "application/json");
+            httpPost.setEntity(jsonRequest);
+
+            HttpResponse response = httpClient.execute(httpPost);
+            result=   EntityUtils.toString(response.getEntity(), "UTF-8");*/
+
+        }
+        catch (HttpException he)
+        {
+            transactionLogger.error("HttpException in NexiPaymentGateway---", he);
+        }
+        catch (IOException io)
+        {
+            transactionLogger.error("IOException in NexiPaymentGateway---", io);
+        }
+        finally
+        {
+            post.releaseConnection();
+        }
+        transactionLogger.error("result-----"+result);
+        return result;
+    }
+    public static String hashMac(String stringaMac) throws Exception
+    {
+        MessageDigest digest = MessageDigest.getInstance("SHA-1");
+        byte[] in = digest.digest(stringaMac.getBytes());
+
+        final StringBuilder builder = new StringBuilder();
+        for (byte b : in)
+        {
+            builder.append(String.format("%02x", b)); // converting to hexa decimal
+        }
+        return builder.toString();
+    }
+
+    public static Hashtable getValuesFromDb(String accountid)
+    {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        Hashtable dataHash = new Hashtable();
+        Functions functions = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            String query = "select * from gateway_accounts_nexi where accountid=?";
+            stmt = conn.prepareStatement(query);
+            stmt.setString(1,accountid);
+            ResultSet rs = stmt.executeQuery();
+            if(rs.next())
+            {
+                if(functions.isValueNull(rs.getString("3d_api_key")))
+                    dataHash.put("3d_api_key",rs.getString("3d_api_key"));
+                if(functions.isValueNull(rs.getString("3d_mac")))
+                    dataHash.put("3d_mac",rs.getString("3d_mac"));
+                if(functions.isValueNull(rs.getString("non3d_api_key")))
+                    dataHash.put("non3d_api_key",rs.getString("non3d_api_key"));
+                if(functions.isValueNull(rs.getString("non3d_mac")))
+                    dataHash.put("non3d_mac",rs.getString("non3d_mac"));
+            }
+
+        }
+        catch (SystemError se)
+        {
+            log.error("SystemError::::::",se);
+            transactionLogger.error("SystemError::::::",se);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQLException::::::",e);
+            transactionLogger.error("SQLException::::::",e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return dataHash;
+    }
+    public static String getTransactionType(String trackingid)
+    {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        Hashtable dataHash = new Hashtable();
+        Functions functions = new Functions();
+        String transType="";
+        try
+        {
+            conn = Database.getConnection();
+            String query = "select transType from transaction_common_details where trackingid=? and status='capturesuccess'";
+            stmt = conn.prepareStatement(query);
+            stmt.setString(1,trackingid);
+            ResultSet rs = stmt.executeQuery();
+            if(rs.next())
+            {
+                transType=rs.getString("transType");
+            }
+
+        }
+        catch (SystemError se)
+        {
+            log.error("SystemError::::::",se);
+            transactionLogger.error("SystemError::::::",se);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQLException::::::",e);
+            transactionLogger.error("SQLException::::::",e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return transType;
+    }
+
+}
+
+

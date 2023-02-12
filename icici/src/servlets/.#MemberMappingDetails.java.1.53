@@ -1,0 +1,230 @@
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccountService;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.codecs.Codec;
+import org.owasp.esapi.codecs.MySQLCodec;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+
+public class MemberMappingDetails extends HttpServlet
+{
+
+    private static Logger logger = new Logger(MemberMappingDetails.class.getName());
+    static Hashtable paymodeids=new Hashtable();
+    static Hashtable cardtypeids=new Hashtable();
+    static{
+        Connection conn=null;
+        ResultSet rs = null;
+        try
+        {
+            logger.error("Inside MemberMappingDetails Static block");
+            conn = Database.getConnection();
+            rs = Database.executeQuery("select * from payment_type", conn);
+            while (rs.next())
+            {
+                int paymodeid = rs.getInt("paymodeid");
+                String paymode = rs.getString("paymentType");
+                paymodeids.put(paymodeid + "", paymode);
+            }
+
+            rs=null;
+            rs = Database.executeQuery("select * from card_type", conn);
+            while (rs.next())
+            {
+                cardtypeids.put( rs.getInt("cardtypeid")+"", rs.getString("cardType"));
+            }
+        }
+        catch(Exception e)
+        {
+            logger.error("Exception while loading paymodeids",e);
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closeConnection(conn);
+        }
+    }
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        HttpSession session = req.getSession();
+        User user = (User) session.getAttribute("ESAPIUserSessionKey");
+        String url = "/membermappingpreference.jsp?ctoken=\"" + user.getCSRFToken() + "\"";
+
+        if (!Admin.isLoggedIn(session))
+        {
+            logger.debug("Admin is logout ");
+            res.sendRedirect("/icici/logout.jsp");
+            return;
+        }
+
+        res.setContentType("text/html");
+        String errormsg = "";
+        Functions functions = new Functions();
+        try
+        {
+            validateOptionalParameter(req);
+        }
+        catch (ValidationException e)
+        {
+            logger.error("ENTER valid data in memberid::::", e);
+            errormsg = errormsg + "Please Enter valid value in Member Id.";
+        }
+        String memberid = req.getParameter("memberid");
+        try
+        {
+            validateOptionalParameter(req);
+        }
+        catch (ValidationException e)
+        {
+            logger.error("ENTER valid data in accountid::::", e);
+            errormsg = errormsg + "Please Enter valid value in Account Id.";
+        }
+        String accountid = req.getParameter("accountid");
+        if (errormsg != "")
+        {
+            logger.debug("ENTER VALID DATA");
+            req.setAttribute("error", errormsg);
+        }
+        if (!functions.isValueNull(memberid) && !functions.isValueNull(accountid))
+        {
+            logger.error("kindly search Member Id and Account Id::::");
+            //errormsg = errormsg + "kindly search Member Id and Account Id";
+            req.setAttribute("accountid", accountid);
+            //req.setAttribute("accountids", loadGatewayAccounts());
+            req.setAttribute("paymodeids", loadPaymodeids());
+            req.setAttribute("cardtypeids", loadcardtypeids());
+            RequestDispatcher rd = req.getRequestDispatcher(url);
+            rd.forward(req, res);
+            return;
+        }
+        if(functions.isValueNull(memberid) || functions.isValueNull(accountid))
+        {
+            Hashtable hash = null;
+            Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+            StringBuffer query = new StringBuffer("select memberid,accountid,paymodeid,cardtypeid,monthly_amount_limit,daily_amount_limit,daily_card_limit,weekly_card_limit,monthly_card_limit,daily_card_amount_limit,weekly_card_amount_limit,monthly_card_amount_limit,min_transaction_amount,max_transaction_amount,isActive,priority,isTest,terminalid,weekly_amount_limit,is_recurring,isRestrictedTicketActive,isTokenizationActive,isManualRecurring,addressDetails,addressValidation,cardDetailRequired,isPSTTerminal,isCardEncryptionEnable,riskruleactivation,daily_avg_ticket,weekly_avg_ticket,monthly_avg_ticket,settlement_currency,min_payout_amount,payoutActivation,autoRedirectRequest,isCardWhitelisted,isEmailWhitelisted,currency_conversion,conversion_currency,binRouting,emi_support,whitelisting_details,cardLimitCheck,cardAmountLimitCheck,amountLimitCheck,actionExecutorId,actionExecutorName from member_account_mapping as M where accountid>0 ");
+            StringBuffer countquery = new StringBuffer("select count(*) from member_account_mapping where accountid>0 ");
+
+            if (functions.isValueNull(memberid) && functions.isEmptyOrNull(accountid))
+            {
+                query.append(" and memberid=" + ESAPI.encoder().encodeForSQL(me, memberid));
+                countquery.append(" and memberid=" + ESAPI.encoder().encodeForSQL(me, memberid));
+                url += "&memberid=\"" + memberid + "\"";
+            }
+            else if (functions.isEmptyOrNull(memberid) && functions.isValueNull(accountid))
+            {
+                query.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me, accountid));
+                countquery.append(" and accountid=" + ESAPI.encoder().encodeForSQL(me, accountid));
+                url += "&accountid=\"" + accountid + "\"";
+            }
+            else if (functions.isValueNull(memberid) && functions.isValueNull(accountid))
+            {
+                query.append(" and memberid= " + ESAPI.encoder().encodeForSQL(me, memberid) + " and accountid=" + ESAPI.encoder().encodeForSQL(me, accountid));
+                countquery.append(" and memberid= " + ESAPI.encoder().encodeForSQL(me, memberid) + " and accountid=" + ESAPI.encoder().encodeForSQL(me, accountid));
+                url += "&accountid=\"" + accountid + "\"";
+            }
+            query.append(" order by memberid ");
+            logger.debug("---query---" + query);
+
+            Connection con = null;
+            ResultSet rs = null;
+            try
+            {
+                //con = Database.getConnection();
+                con = Database.getRDBConnection();
+                if (true)
+                {
+                    hash = Database.getHashFromResultSet(Database.executeQuery(query.toString(), con));
+                    rs = Database.executeQuery(countquery.toString(), con);
+                    rs.next();
+                    int totalrecords = rs.getInt(1);
+
+                    hash.put("totalrecords", "" + totalrecords);
+                    hash.put("records", "0");
+                    if (totalrecords > 0)
+                        hash.put("records", "" + (hash.size() - 2));
+                }
+                else
+                {
+                    hash = new Hashtable();
+                    hash.put("records", "0");
+                    hash.put("totalrecords", "0");
+                }
+
+                req.setAttribute("memberdetails", hash);
+
+            }
+            catch (SystemError se)
+            {
+                logger.error("System Error::::", se);
+            }
+            catch (Exception e)
+            {
+                logger.error("Exception::::", e);
+            }
+            finally
+            {
+                try
+                {
+                    Database.closeResultSet(rs);
+                    con.close();
+                }
+                catch (SQLException e)
+                {
+                    logger.error("SQL Exception::::", e);
+                }
+            }
+        }
+        req.setAttribute("accountid", accountid);
+        //req.setAttribute("accountids",loadGatewayAccounts());
+        req.setAttribute("paymodeids", loadPaymodeids());
+        req.setAttribute("cardtypeids", loadcardtypeids());
+        RequestDispatcher rd = req.getRequestDispatcher(url);
+        rd.forward(req, res);
+    }
+
+    Hashtable loadPaymodeids()
+    {
+        return paymodeids;
+    }
+    Hashtable loadcardtypeids()
+    {
+        return cardtypeids;
+    }
+    Hashtable loadGatewayAccounts()
+    {
+        return GatewayAccountService.getMerchantDetails();
+    }
+    private void validateOptionalParameter(HttpServletRequest req) throws ValidationException
+    {
+        InputValidator inputValidator = new InputValidator();
+        List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+
+        inputFieldsListMandatory.add(InputFields.ACCOUNTID_SMALL);
+        inputFieldsListMandatory.add(InputFields.MEMBERID);
+        inputValidator.InputValidations(req,inputFieldsListMandatory,true);
+    }
+
+
+
+}

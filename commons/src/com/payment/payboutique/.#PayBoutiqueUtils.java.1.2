@@ -1,0 +1,344 @@
+package com.payment.payboutique;
+
+import com.directi.pg.Logger;
+import com.directi.pg.TransactionLogger;
+import com.payment.common.core.*;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.PZTechnicalViolationException;
+import com.payment.exceptionHandler.constraintType.PZTechnicalExceptionEnum;
+import com.payment.validators.vo.CommonValidatorVO;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.IOException;
+import java.io.StringReader;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Created by Balaji on 14-Oct-19.
+ */
+public class PayBoutiqueUtils
+{
+    private static TransactionLogger transactionLogger = new TransactionLogger(PayBoutiqueUtils.class.getName());
+    private static Logger log = new Logger(PayBoutiqueUtils.class.getName());
+    public static String getSHA512(String string) throws PZTechnicalViolationException
+    {
+        String sha = string.trim();
+
+        StringBuffer hexString = new StringBuffer();
+        try
+        {
+            MessageDigest digest = MessageDigest.getInstance("SHA-512");
+            byte[] hash = digest.digest(sha.getBytes());
+            for (int i = 0; i < hash.length; i++)
+            {
+                String hex = Integer.toHexString(0xff & hash[i]);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(PayBoutiqueUtils.class.getName(), "SHA256forSales()", null, "common", "NoSuchAlgorithm Exception while placing transaction", PZTechnicalExceptionEnum.NOSUCH_ALGO_EXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        return hexString.toString();
+    }
+    public String doPostHTTPSURLConnectionClient(String strURL, String req, String authType, String encodedCredentials) throws PZTechnicalViolationException
+    {
+       transactionLogger.error("Inside doPostHTTPSURLConnectionClient Method ");
+        String result = "";
+        PostMethod post = new PostMethod(strURL);
+        try
+        {
+            HttpClient httpClient = new HttpClient();
+            post.addRequestHeader("Authorization", authType + "  " + encodedCredentials);
+            post.addRequestHeader("Content-Type", "text/xml");
+            post.addRequestHeader("Cache-Control", "no-cache");
+            post.setRequestBody(req);
+
+            httpClient.executeMethod(post);
+            String response = new String(post.getResponseBody());
+            result = response;
+        }
+        catch (HttpException he)
+        {
+            transactionLogger.error("HttpException--" + he.getMessage());
+        }
+        catch (IOException io)
+        {
+            transactionLogger.error("IOException--"+io.getMessage());
+        }
+        finally
+        {
+            post.releaseConnection();
+        }
+        return result;
+    }
+
+    public String getSignature(String userId,String pass,String time)
+    {
+        String signature="";
+        try
+        {
+            String pass_hash = getSHA512(pass);
+            String pass_hash_upCase = pass_hash.toUpperCase();
+            signature = (getSHA512(userId.toUpperCase() + pass_hash_upCase + time.toUpperCase())).toUpperCase();
+            return signature;
+        }
+        catch(Exception e)
+        {
+            transactionLogger.error("Exception ---"+e);
+        }
+        return signature;
+    }
+
+    public Map<String, String> readSoapResponse(String response, String paymenttype) throws PZTechnicalViolationException
+    {
+        transactionLogger.error("Inside readSoapResponse ---");
+        Map<String, String> responseMap = new HashMap<String, String>();
+        try
+        {
+            Document doc = createDocumentFromString(response.trim());
+            NodeList header = doc.getElementsByTagName("Header");
+            NodeList identity = doc.getElementsByTagName("Identity");
+            NodeList error = doc.getElementsByTagName("Error");
+
+            if(paymenttype.equals("sale"))
+            {
+                NodeList order = doc.getElementsByTagName("Order");
+
+                responseMap.put("UserID", getTagValue("UserID", ((Element) identity.item(0))));
+                responseMap.put("Time", getTagValue("Time", ((Element) header.item(0))));
+                responseMap.put("MerchantID", getTagValue("MerchantID", ((Element) order.item(0))));
+                responseMap.put("OrderID", getTagValue("OrderID", ((Element) order.item(0))));
+                responseMap.put("AmountMerchantCurrency", getTagValue("AmountMerchantCurrency", ((Element) order.item(0))));
+                responseMap.put("MerchantCurrency", getTagValue("MerchantCurrency", ((Element) order.item(0))));
+                responseMap.put("ExpirationTime", getTagValue("ExpirationTime", ((Element) order.item(0))));
+                responseMap.put("Label", getTagValue("Label", ((Element) order.item(0))));
+                responseMap.put("AmountBuyerCurrency", getTagValue("AmountBuyerCurrency", ((Element) order.item(0))));
+                responseMap.put("BuyerCurrency", getTagValue("BuyerCurrency", ((Element) order.item(0))));
+                responseMap.put("RedirectURL", getTagValue("RedirectURL", ((Element) order.item(0))));
+                responseMap.put("IframeURL", getTagValue("IframeURL", ((Element) order.item(0))));
+                responseMap.put("Status", getTagValue("Status", ((Element) order.item(0))));
+                responseMap.put("ReferenceID", getTagValue("ReferenceID", ((Element) order.item(0))));
+                responseMap.put("Description", getTagValue("Description", ((Element) order.item(0))));
+                responseMap.put("InvoiceSplitNumber", getTagValue("InvoiceSplitNumber", ((Element) order.item(0))));
+
+//                responseMap.put("OrderId_error",getAttributeValue("OrderID",((Element) error)));
+                responseMap.put("ErrorID", getTagValue("ErrorID", ((Element) error.item(0))));
+                responseMap.put("ErrorMessage", getTagValue("ErrorMessage", ((Element) error.item(0))));
+                responseMap.put("ErrorOrderId", getTagValue("ErrorMessage", ((Element) error.item(0))));
+
+            }
+            if(paymenttype.equals("inquiry")){
+                NodeList reportedTransaction = doc.getElementsByTagName("ReportedTransaction");
+                NodeList card = doc.getElementsByTagName("Card");
+
+                responseMap.put("MerchantID", getTagValue("MerchantID", ((Element) reportedTransaction.item(0))));
+                responseMap.put("OrderID", getTagValue("OrderID", ((Element) reportedTransaction.item(0))));
+                responseMap.put("MerchantReference", getTagValue("MerchantReference", ((Element) reportedTransaction.item(0))));
+                responseMap.put("PaymentMethod", getTagValue("PaymentMethod", ((Element) reportedTransaction.item(0))));
+                responseMap.put("AmountMerchantCurrency", getTagValue("AmountMerchantCurrency", ((Element) reportedTransaction.item(0))));
+                responseMap.put("TotalOrderAmountMerchantCurrency", getTagValue("TotalOrderAmountMerchantCurrency", ((Element) reportedTransaction.item(0))));
+                responseMap.put("MerchantCurrency", getTagValue("MerchantCurrency", ((Element) reportedTransaction.item(0))));
+                responseMap.put("Label", getTagValue("Label", ((Element) reportedTransaction.item(0))));
+                responseMap.put("AmountBuyerCurrency", getTagValue("AmountBuyerCurrency", ((Element) reportedTransaction.item(0))));
+                responseMap.put("TotalOrderAmountBuyerCurrency", getTagValue("TotalOrderAmountBuyerCurrency", ((Element) reportedTransaction.item(0))));
+                responseMap.put("BuyerCurrency", getTagValue("BuyerCurrency", ((Element) reportedTransaction.item(0))));
+                responseMap.put("Status", getTagValue("Status", ((Element) reportedTransaction.item(0))));
+                responseMap.put("ReferenceID", getTagValue("ReferenceID", ((Element) reportedTransaction.item(0))));
+                responseMap.put("LastUpdate", getTagValue("LastUpdate", ((Element) reportedTransaction.item(0))));
+                responseMap.put("CreationDate", getTagValue("CreationDate", ((Element) reportedTransaction.item(0))));
+                responseMap.put("CaptureDate", getTagValue("CaptureDate", ((Element) reportedTransaction.item(0))));
+                responseMap.put("SettlementDate", getTagValue("SettlementDate", ((Element) reportedTransaction.item(0))));
+                responseMap.put("SettlementAmount", getTagValue("SettlementAmount", ((Element) reportedTransaction.item(0))));
+                responseMap.put("TotalOrderSettlementAmount", getTagValue("TotalOrderSettlementAmount", ((Element) reportedTransaction.item(0))));
+                responseMap.put("GrossSettlementAmount", getTagValue("GrossSettlementAmount", ((Element) reportedTransaction.item(0))));
+                responseMap.put("TotalOrderGrossSettlementAmount", getTagValue("TotalOrderGrossSettlementAmount", ((Element) reportedTransaction.item(0))));
+                responseMap.put("SettlementCurrency", getTagValue("SettlementCurrency", ((Element) reportedTransaction.item(0))));
+                responseMap.put("SiteAddress", getTagValue("SiteAddress", ((Element) reportedTransaction.item(0))));
+                responseMap.put("Live", getTagValue("Live", ((Element) reportedTransaction.item(0))));
+                responseMap.put("Description", getTagValue("Description", ((Element) reportedTransaction.item(0))));
+                responseMap.put("CardMask", getTagValue("CardMask", ((Element) card.item(0))));
+
+                responseMap.put("ErrorID", getTagValue("ErrorID", ((Element) error.item(0))));
+                responseMap.put("ErrorMessage", getTagValue("ErrorMessage", ((Element) error.item(0))));
+
+            }
+        }
+        catch(Exception e)
+            {
+            transactionLogger.error("Exception-----",e);
+        }
+        return responseMap;
+    }
+
+    private  String getTagValue(String sTag, Element eElement)
+    {
+        NodeList nlList = null;
+        String value = "";
+        if (eElement != null && eElement.getElementsByTagName(sTag) != null && eElement.getElementsByTagName(sTag).item(0) != null)
+        {
+            nlList = eElement.getElementsByTagName(sTag).item(0).getChildNodes();
+
+        }
+        if (nlList != null && nlList.item(0) != null)
+        {
+            Node nValue = (Node) nlList.item(0);
+            value = nValue.getNodeValue();
+        }
+        return value;
+    }
+//    private  String getAttributeValue(String sTag, Element eElement)
+//    {
+//        System.out.println("inside getAttributeValue()---------");
+//
+//        NodeList nlList = null;
+//        String value = "";
+//        if (eElement != null && eElement.getElementsByTagName("Error") != null)
+//        {
+//            nlList = eElement.getElementsByTagName("Error");
+//            value = eElement.getAttribute("OrderId");
+//            System.out.println("value----"+value);
+//        }
+//        if (nlList != null && nlList.item(0) != null)
+//        {
+//            Node nValue = (Node) nlList;
+////            value = nValue.getAttributes(sTag);
+//        }
+//        return value;
+//    }
+    public  Document createDocumentFromString(String xmlString) throws PZTechnicalViolationException
+    {
+        transactionLogger.error("Inside createDocumentFromString ---");
+        Document doc = null;
+        try
+        {
+            DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+            // root elements
+            doc = docBuilder.parse(new InputSource(new StringReader(xmlString.toString().trim())));
+        }
+        catch (ParserConfigurationException pce)
+        {
+            log.error("Exception in createDocumentFromString of ECPUtils", pce);
+            transactionLogger.error("Exception in createDocumentFromString of ECPUtils", pce);
+            PZExceptionHandler.raiseTechnicalViolationException("ECPUtils.java", "createDocumentFromString()", null, "common", "Technical Exception Occurred. Please contact your Admin:::", PZTechnicalExceptionEnum.PARSE_CONFIG_EXCEPTION, null, pce.getMessage(), pce.getCause());
+        }
+        catch (SAXException e)
+        {
+            log.error("Exception in createDocumentFromString ECPUtils", e);
+            transactionLogger.error("Exception in createDocumentFromString ECPUtils", e);
+            PZExceptionHandler.raiseTechnicalViolationException("ECPUtils.java", "createDocumentFromString()", null, "common", "Technical Exception Occurred. Please contact your Admin:::", PZTechnicalExceptionEnum.SAXEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        catch (IOException e)
+        {
+            log.error("Exception in createDocumentFromString ECPUtils", e);
+            transactionLogger.error("Exception in createDocumentFromString ECPUtils", e);
+            PZExceptionHandler.raiseTechnicalViolationException("ECPUtils.java", "createDocumentFromString()", null, "common", "Technical Exception Occurred. Please contact your Admin:::", PZTechnicalExceptionEnum.IOEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        return doc;
+    }
+
+  //  public String getRedirectForm(String trackingId, Comm3DResponseVO response3D)
+   /* {
+        transactionLogger.error("redirect url---" + response3D.getRedirectUrl());
+        transactionLogger.error("trackingid inside PAYBOUTIQUE utils-------"+trackingId);
+        StringBuilder html = new StringBuilder();
+        html.append("<script language=\"javascript\">window.onload=function(){document.pay_form.submit();}</script>\n");
+        html.append("<form id=\"pay_form\" name=\"pay_form\" action=\"").append(response3D.getRedirectUrl()).append("\" method=\"get\">\n");
+        html.append("</form>");
+
+        transactionLogger.error("html form----"+html.toString());
+        return html.toString();
+    }*/
+
+    public String getRedirectForm(String trackingId, CommResponseVO response3D)
+    {
+        transactionLogger.error("redirect url---" + response3D.getRedirectUrl());
+        transactionLogger.error("trackingid inside Bitcoin utils-------"+trackingId);
+        StringBuilder html = new StringBuilder();
+        html.append("<script language=\"javascript\">window.onload=function(){document.pay_form.submit();}</script>\n");
+        html.append("<form id=\"pay_form\" name=\"pay_form\" action=\"").append(response3D.getRedirectUrl()).append("\" method=\"post\">\n");
+        html.append("</form>");
+
+        transactionLogger.error("form----"+html.toString());
+        return html.toString();
+    }
+
+    public static CommRequestVO getCommRequestFromUtils(CommonValidatorVO commonValidatorVO)
+    {
+        transactionLogger.error("inside PayBoutiqueUtils getCommRequestFromUtils");
+        CommRequestVO commRequestVO = new CommRequestVO();
+        CommTransactionDetailsVO transDetailsVO = new CommTransactionDetailsVO();
+        CommMerchantVO commMerchantVO=new CommMerchantVO();
+
+        commMerchantVO.setHostUrl(commonValidatorVO.getMerchantDetailsVO().getHostUrl());
+        transDetailsVO.setAmount(commonValidatorVO.getTransDetailsVO().getAmount());
+        transDetailsVO.setCurrency(commonValidatorVO.getTransDetailsVO().getCurrency());
+        transDetailsVO.setOrderDesc(commonValidatorVO.getTransDetailsVO().getOrderDesc());
+        commRequestVO.setTransDetailsVO(transDetailsVO);
+        commRequestVO.setCommMerchantVO(commMerchantVO);
+
+        return commRequestVO;
+    }
+
+    public Map<String, String> readResponseXML(String response) throws PZTechnicalViolationException
+    {
+        transactionLogger.error("Inside readSoapResponse ---");
+        Map<String, String> responseMap = new HashMap<String, String>();
+        try
+        {
+            Document doc = createDocumentFromString(response.trim());
+            NodeList header = doc.getElementsByTagName("Header");
+            NodeList identity = doc.getElementsByTagName("Identity");
+            NodeList reportedTransaction = doc.getElementsByTagName("ReportedTransaction");
+
+            responseMap.put("UserID", getTagValue("UserID", ((Element) identity.item(0))));
+            responseMap.put("Time", getTagValue("Time", ((Element) header.item(0))));
+            responseMap.put("MerchantID", getTagValue("MerchantID", ((Element) reportedTransaction.item(0))));
+            responseMap.put("OrderID", getTagValue("OrderID", ((Element) reportedTransaction.item(0))));
+            responseMap.put("PaymentMethod", getTagValue("PaymentMethod", ((Element) reportedTransaction.item(0))));
+            responseMap.put("AmountMerchantCurrency", getTagValue("AmountMerchantCurrency", ((Element) reportedTransaction.item(0))));
+            responseMap.put("TotalOrderAmountMerchantCurrency", getTagValue("TotalOrderAmountMerchantCurrency", ((Element) reportedTransaction.item(0))));
+            responseMap.put("MerchantCurrency", getTagValue("MerchantCurrency", ((Element) reportedTransaction.item(0))));
+            responseMap.put("Label", getTagValue("Label", ((Element) reportedTransaction.item(0))));
+            responseMap.put("AmountBuyerCurrency", getTagValue("AmountBuyerCurrency", ((Element) reportedTransaction.item(0))));
+            responseMap.put("TotalOrderAmountBuyerCurrency", getTagValue("TotalOrderAmountBuyerCurrency", ((Element) reportedTransaction.item(0))));
+            responseMap.put("BuyerCurrency", getTagValue("BuyerCurrency", ((Element) reportedTransaction.item(0))));
+            responseMap.put("Status", getTagValue("Status", ((Element) reportedTransaction.item(0))));
+            responseMap.put("ReferenceID", getTagValue("ReferenceID", ((Element) reportedTransaction.item(0))));
+            responseMap.put("LastUpdate", getTagValue("LastUpdate", ((Element) reportedTransaction.item(0))));
+            responseMap.put("CreationDate", getTagValue("CreationDate", ((Element) reportedTransaction.item(0))));
+            responseMap.put("CaptureDate", getTagValue("CaptureDate", ((Element) reportedTransaction.item(0))));
+            responseMap.put("SettlementDate", getTagValue("SettlementDate", ((Element) reportedTransaction.item(0))));
+            responseMap.put("SettlementAmount", getTagValue("SettlementAmount", ((Element) reportedTransaction.item(0))));
+            responseMap.put("TotalOrderSettlementAmount", getTagValue("TotalOrderSettlementAmount", ((Element) reportedTransaction.item(0))));
+            responseMap.put("GrossSettlementAmount", getTagValue("GrossSettlementAmount", ((Element) reportedTransaction.item(0))));
+            responseMap.put("TotalOrderGrossSettlementAmount", getTagValue("TotalOrderGrossSettlementAmount", ((Element) reportedTransaction.item(0))));
+            responseMap.put("SettlementCurrency", getTagValue("SettlementCurrency", ((Element) reportedTransaction.item(0))));
+            responseMap.put("SiteAddress", getTagValue("SiteAddress", ((Element) reportedTransaction.item(0))));
+            responseMap.put("Live", getTagValue("Live", ((Element) reportedTransaction.item(0))));
+            responseMap.put("Description", getTagValue("Description", ((Element) reportedTransaction.item(0))));
+
+
+        }catch(Exception e)
+        {
+            transactionLogger.error("Exception-----",e);
+        }
+        return responseMap;
+    }
+}

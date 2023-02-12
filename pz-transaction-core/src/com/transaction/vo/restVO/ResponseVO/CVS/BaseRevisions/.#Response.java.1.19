@@ -1,0 +1,739 @@
+package com.transaction.vo.restVO.ResponseVO;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.util.List;
+
+/**
+ * Created by Sneha on 2/8/2016.
+ */
+@XmlRootElement(name = "response")
+@XmlAccessorType(XmlAccessType.FIELD)
+public class Response
+{
+    @XmlElement(name="paymentId")
+    String paymentId;
+
+    @XmlElement(name="status")
+    String status;
+
+    @XmlElement(name="registrationId")
+    String registrationId;
+
+    @XmlElement(name="partnerId")
+    String partnerId;
+
+    @XmlElement(name="memberId")
+    String memberId;
+
+    @XmlElement(name="holderId")
+    String holderId;
+
+    @XmlElement(name="paymentType")
+    String paymentType;
+
+    @XmlElement(name="paymentBrand")
+    String paymentBrand;
+
+    @XmlElement(name="paymentMode")
+    String paymentMode;
+
+    @XmlElement(name="firstName")
+    String firstName;
+
+    @XmlElement(name="lastName")
+    String lastName;
+
+    @XmlElement(name="amount")
+    String amount;
+
+    @XmlElement(name="refundAmount")
+    String refundAmount;
+
+    @XmlElement(name="payoutAmount")
+    String payoutAmount;
+
+    @XmlElement(name="currency")
+    String currency;
+
+    @XmlElement(name="descriptor")
+    String descriptor;
+
+    @XmlElement(name="result")
+    Result result;
+
+    @XmlElement(name="cards")
+    ListOfCards listOfCards;
+
+    @XmlElement(name="bankaccounts")
+    ListOfAccounts listOfAccounts;
+
+    @XmlElement(name="card")
+    Card card;
+
+    @XmlElement(name="customer")
+    Customer customer;
+
+
+    @XmlElement(name = "bankAccount")
+    BankAccount bankAccount;
+
+    @XmlElement(name="risk")
+    Risk risk;
+
+    @XmlElement (name="timestamp")
+    String timestamp;
+
+    @XmlElement(name = "token")
+    String token;
+
+    @XmlElement(name = "redirect")
+    Redirect redirect;
+
+    @XmlElement(name = "transaction")
+    List<Transaction> transactionList;
+
+    @XmlElement(name = "merchantTransactionId")
+    String merchantTransactionId;
+
+    @XmlElement(name = "customerId")
+    String customerId;
+
+    @XmlElement(name = "customerEmail")
+    String emailaddr;
+
+    @XmlElement(name = "date")
+    String date;
+
+    @XmlElement(name = "time")
+    String time;
+
+    @XmlElement (name="LoginName")
+    String LoginName;
+
+    @XmlElement (name="AuthToken")
+    String authToken;
+
+    @XmlElement (name="remark")
+    String remark;
+
+    @XmlElement (name="transactionStatus")
+    String transactionStatus;
+
+    @XmlElement (name="voucherNumber")
+    String voucherNumber;
+
+    @XmlElement (name="tmpl_amount")
+    String tmpl_amount;
+
+    @XmlElement (name="tmpl_currency")
+    String tmpl_currency;
+
+    @XmlElement (name="customerAccount")
+    String customerAccount;
+
+    @XmlElement(name="eci")
+    String eci;
+
+    @XmlElement(name = "invoiceId")
+    String invoiceId;
+
+    @XmlElement(name = "merchantUsersCommission")
+    String payoutCommissionAmount;
+
+    @XmlElement(name = "commissionCurrency")
+    String commissionCurrency;
+
+    @XmlElement(name = "commissionPaidToUser")
+    String commissionPaidToUser;
+
+    @XmlElement(name = "commissionPaidToUserCurrency")
+    String commissionPaidToUserCurrency;
+
+    @XmlElement(name = "checksum")
+    String checksum;
+
+    @XmlElement(name = "merchantWalletId")
+    String walletAddress;
+
+    @XmlElement(name = "orderDescription")
+    String orderDescription;
+
+    @XmlElement(name = "companyName")
+    String companyName;
+
+    @XmlElement(name = "merchantContact")
+    String merchantContact;
+
+    @XmlElement(name="installment")
+    String installment;
+
+    String cardNum;
+    String redirectUrl;
+    String notificationUrl;
+
+    @XmlElement(name="referenceId")
+    String referenceId;
+
+    @XmlElement(name="InitToken")
+    String InitToken;
+
+    public String getEmailaddr()
+    {
+        return emailaddr;
+    }
+
+    public void setEmailaddr(String emailaddr)
+    {
+        this.emailaddr = emailaddr;
+    }
+
+    public String getDate()
+    {
+        return date;
+    }
+
+    public void setDate(String date)
+    {
+        this.date = date;
+    }
+
+    public String getTime()
+    {
+        return time;
+    }
+
+    public void setTime(String time)
+    {
+        this.time = time;
+    }
+
+    public String getCustomerId()
+    {
+        return customerId;
+    }
+
+    public void setCustomerId(String customerId)
+    {
+        this.customerId = customerId;
+    }
+
+    public String getMerchantTransactionId()
+    {
+        return merchantTransactionId;
+    }
+
+    public void setMerchantTransactionId(String merchantTransactionId)
+    {
+        this.merchantTransactionId = merchantTransactionId;
+    }
+
+    public ListOfCards getListOfCards()
+    {
+        return listOfCards;
+    }
+
+    public void setListOfCards(ListOfCards listOfCards)
+    {
+        this.listOfCards = listOfCards;
+    }
+
+    public ListOfAccounts getListOfAccounts()
+    {
+        return listOfAccounts;
+    }
+
+    public void setListOfAccounts(ListOfAccounts listOfAccounts)
+    {
+        this.listOfAccounts = listOfAccounts;
+    }
+
+    public String getHolderId()
+    {
+        return holderId;
+    }
+
+    public void setHolderId(String holderId)
+    {
+        this.holderId = holderId;
+    }
+
+    public String getPartnerId()
+    {
+        return partnerId;
+    }
+
+    public void setPartnerId(String partnerId)
+    {
+        this.partnerId = partnerId;
+    }
+
+    public String getMemberId()
+    {
+        return memberId;
+    }
+
+    public void setMemberId(String memberId)
+    {
+        this.memberId = memberId;
+    }
+
+    public String getPaymentMode()
+    {
+        return paymentMode;
+    }
+
+    public void setPaymentMode(String paymentMode)
+    {
+        this.paymentMode = paymentMode;
+    }
+
+    public String getStatus()
+    {
+        return status;
+    }
+
+    public void setStatus(String status)
+    {
+        this.status = status;
+    }
+
+
+    public String getPaymentId()
+    {
+        return paymentId;
+    }
+
+    public void setPaymentId(String paymentId)
+    {
+        this.paymentId = paymentId;
+    }
+
+    public String getPaymentType()
+    {
+        return paymentType;
+    }
+
+    public void setPaymentType(String paymentType)
+    {
+        this.paymentType = paymentType;
+    }
+
+    public String getPaymentBrand()
+    {
+        return paymentBrand;
+    }
+
+    public void setPaymentBrand(String paymentBrand)
+    {
+        this.paymentBrand = paymentBrand;
+    }
+
+    public String getFirstName()
+    {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName)
+    {
+        this.firstName = firstName;
+    }
+
+    public String getLastName()
+    {
+        return lastName;
+    }
+
+    public void setLastName(String lastName)
+    {
+        this.lastName = lastName;
+    }
+
+    public String getAmount()
+    {
+        return amount;
+    }
+
+    public void setAmount(String amount)
+    {
+        this.amount = amount;
+    }
+
+    public String getRefundAmount()
+    {
+        return refundAmount;
+    }
+
+    public void setRefundAmount(String refundAmount)
+    {
+        this.refundAmount = refundAmount;
+    }
+
+    public String getPayoutAmount()
+    {
+        return payoutAmount;
+    }
+
+    public void setPayoutAmount(String payoutAmount)
+    {
+        this.payoutAmount = payoutAmount;
+    }
+
+    public String getCurrency()
+    {
+        return currency;
+    }
+
+    public void setCurrency(String currency)
+    {
+        this.currency = currency;
+    }
+
+    public String getDescriptor()
+    {
+        return descriptor;
+    }
+
+    public void setDescriptor(String descriptor)
+    {
+        this.descriptor = descriptor;
+    }
+
+    public Result getResult()
+    {
+        return result;
+    }
+
+    public void setResult(Result result)
+    {
+        this.result = result;
+    }
+
+    public Card getCard()
+    {
+        return card;
+    }
+
+    public void setCard(Card card)
+    {
+        this.card = card;
+    }
+
+    public BankAccount getBankAccount()
+    {
+        return bankAccount;
+    }
+
+    public void setBankAccount(BankAccount bankAccount)
+    {
+        this.bankAccount = bankAccount;
+    }
+
+    public Risk getRisk()
+    {
+        return risk;
+    }
+
+    public void setRisk(Risk risk)
+    {
+        this.risk = risk;
+    }
+
+    public String getTimestamp()
+    {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp)
+    {
+        this.timestamp = timestamp;
+    }
+
+    public String getRegistrationId()
+    {
+        return registrationId;
+    }
+
+    public void setRegistrationId(String registrationId)
+    {
+        this.registrationId = registrationId;
+    }
+
+    public String getToken()
+    {
+        return token;
+    }
+
+    public void setToken(String token)
+    {
+        this.token = token;
+    }
+
+    public Redirect getRedirect()
+    {
+        return redirect;
+    }
+
+    public void setRedirect(Redirect redirect)
+    {
+        this.redirect = redirect;
+    }
+
+    public String getInvoiceId()
+    {
+        return invoiceId;
+    }
+
+    public void setInvoiceId(String invoiceId)
+    {
+        this.invoiceId = invoiceId;
+    }
+
+    public List<Transaction> getTransactionList()
+    {
+        return transactionList;
+    }
+
+    public void setTransactionList(List<Transaction> transactionList)
+    {
+        this.transactionList = transactionList;
+    }
+
+    public String getLoginName()
+    {
+        return LoginName;
+    }
+
+    public void setLoginName(String loginName)
+    {
+        LoginName = loginName;
+    }
+
+    public String getAuthToken()
+    {
+        return authToken;
+    }
+
+    public void setAuthToken(String authToken)
+    {
+        this.authToken = authToken;
+    }
+
+    public String getRemark()
+    {
+        return remark;
+    }
+
+    public void setRemark(String remark)
+    {
+        this.remark = remark;
+    }
+
+    public String getTransactionStatus()
+    {
+        return transactionStatus;
+    }
+
+    public void setTransactionStatus(String transactionStatus)
+    {
+        this.transactionStatus = transactionStatus;
+    }
+
+    public String getVoucherNumber()
+    {
+        return voucherNumber;
+    }
+
+    public void setVoucherNumber(String voucherNumber)
+    {
+        this.voucherNumber = voucherNumber;
+    }
+
+    public String getTmpl_amount()
+    {
+        return tmpl_amount;
+    }
+
+    public void setTmpl_amount(String tmpl_amount)
+    {
+        this.tmpl_amount = tmpl_amount;
+    }
+
+    public String getTmpl_currency()
+    {
+        return tmpl_currency;
+    }
+
+    public void setTmpl_currency(String tmpl_currency)
+    {
+        this.tmpl_currency = tmpl_currency;
+    }
+
+    public String getCustomerAccount()
+    {
+        return customerAccount;
+    }
+
+    public void setCustomerAccount(String customerAccount)
+    {
+        this.customerAccount = customerAccount;
+    }
+
+    public Customer getCustomer()
+    {
+        return customer;
+    }
+
+    public void setCustomer(Customer customer)
+    {
+        this.customer = customer;
+    }
+
+    public String getEci()
+    {
+        return eci;
+    }
+
+    public void setEci(String eci)
+    {
+        this.eci = eci;
+    }
+
+    public String getPayoutCommissionAmount()
+    {
+        return payoutCommissionAmount;
+    }
+
+    public void setPayoutCommissionAmount(String payoutCommissionAmount)
+    {
+        this.payoutCommissionAmount = payoutCommissionAmount;
+    }
+
+    public String getCommissionCurrency()
+    {
+        return commissionCurrency;
+    }
+
+    public void setCommissionCurrency(String commissionCurrency)
+    {
+        this.commissionCurrency = commissionCurrency;
+    }
+
+    public String getDepositCommissionAmount()
+    {
+        return commissionPaidToUser;
+    }
+
+    public void setDepositCommissionAmount(String commissionPaidToUser)
+    {
+        this.commissionPaidToUser = commissionPaidToUser;
+    }
+
+    public String getCommissionPaidToUserCurrency()
+    {
+        return commissionPaidToUserCurrency;
+    }
+
+    public void setCommissionPaidToUserCurrency(String commissionPaidToUserCurrency)
+    {
+        this.commissionPaidToUserCurrency = commissionPaidToUserCurrency;
+    }
+
+    public String getCommissionPaidToUser()
+    {
+        return commissionPaidToUser;
+    }
+
+    public void setCommissionPaidToUser(String commissionPaidToUser)
+    {
+        this.commissionPaidToUser = commissionPaidToUser;
+    }
+
+    public String getChecksum()
+    {
+        return checksum;
+    }
+
+    public void setChecksum(String checksum)
+    {
+        this.checksum = checksum;
+    }
+
+    public String getCardNum()
+    {
+        return cardNum;
+    }
+
+    public String getWalletAddress()
+    {
+        return walletAddress;
+    }
+
+    public void setWalletAddress(String walletAddress)
+    {
+        this.walletAddress = walletAddress;
+    }
+
+    public void setCardNum(String cardNum)
+    {
+        this.cardNum = cardNum;
+    }
+
+    public String getRedirectUrl()
+    {
+        return redirectUrl;
+    }
+
+    public void setRedirectUrl(String redirectUrl)
+    {
+        this.redirectUrl = redirectUrl;
+    }
+
+    public String getOrderDescription() { return orderDescription; }
+
+    public void setOrderDescription(String orderDescription) { this.orderDescription = orderDescription; }
+
+    public String getCompanyName() { return companyName; }
+
+    public void setCompanyName(String companyName) { this.companyName = companyName; }
+
+    public String getMerchantContact() { return merchantContact; }
+
+    public void setMerchantContact(String merchantContact) { this.merchantContact = merchantContact; }
+
+    public String getNotificationUrl()
+    {
+        return notificationUrl;
+    }
+
+    public void setNotificationUrl(String notificationUrl)
+    {
+        this.notificationUrl = notificationUrl;
+    }
+
+    public String getInstallment() {return installment;}
+
+    public void setInstallment(String installment) {this.installment = installment;}
+
+    public String getReferenceId()
+    {
+        return referenceId;
+    }
+
+    public void setReferenceId(String referenceId)
+    {
+        this.referenceId = referenceId;
+    }
+
+    public String getInitToken()
+    {
+        return InitToken;
+    }
+
+    public void setInitToken(String initToken)
+    {
+        InitToken = initToken;
+    }
+}

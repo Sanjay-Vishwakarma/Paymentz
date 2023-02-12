@@ -1,0 +1,717 @@
+package com.payment.safexpay;
+
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.valueObjects.GenericAddressDetailsVO;
+import com.directi.pg.core.valueObjects.GenericCardDetailsVO;
+import com.manager.vo.MerchantDetailsVO;
+import com.paygate.ag.common.utils.PayGateCryptoUtils;
+import com.payment.apco.core.AsyncApcoPayQueryService;
+import com.payment.common.core.*;
+import com.payment.exceptionHandler.PZTechnicalViolationException;
+import com.payment.validators.vo.CommonValidatorVO;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.methods.PostMethod;
+
+import java.io.IOException;
+import java.sql.*;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.ResourceBundle;
+
+/**
+ * Created by jeet on 29/08/19.
+ */
+public class SafexPayUtils
+{
+    private final static SafexPayGatewayLogger transactionLogger = new SafexPayGatewayLogger(SafexPayUtils.class.getName());
+
+    private final static ResourceBundle RB = LoadProperties.getProperty("com.directi.pg.safexpay");
+    private final static ResourceBundle RB1 = LoadProperties.getProperty("com.directi.pg.3CharCountryList");
+    private final static ResourceBundle RBWallets = LoadProperties.getProperty("com.directi.pg.SEPWALLETS");
+    private final static ResourceBundle SEPBANKS = LoadProperties.getProperty("com.directi.pg.SEPBANKS");
+
+
+    public CommRequestVO getSafexPayRequestVO(CommonValidatorVO commonValidatorVO)
+    {
+
+        CommRequestVO commRequestVO = new CommRequestVO();
+        CommAddressDetailsVO addressDetailsVO = new CommAddressDetailsVO();
+        CommTransactionDetailsVO transDetailsVO = new CommTransactionDetailsVO();
+        CommCardDetailsVO cardDetailsVO = new CommCardDetailsVO();
+        CommMerchantVO commMerchantVO=new CommMerchantVO();
+        String payMode=commonValidatorVO.getPaymentMode();
+        transactionLogger.error("inside SafexPayRequest payMode------------------->"+payMode);
+        String processorName=commonValidatorVO.getProcessorName();
+        transactionLogger.error("inside SafexPayRequest processorName------------------->"+processorName);
+        Functions functions=new Functions();
+        commMerchantVO.setAccountId(commonValidatorVO.getMerchantDetailsVO().getAccountId());
+        commMerchantVO.setHostUrl(commonValidatorVO.getMerchantDetailsVO().getHostUrl());
+
+        addressDetailsVO.setPhone(commonValidatorVO.getAddressDetailsVO().getPhone());
+        addressDetailsVO.setEmail(commonValidatorVO.getAddressDetailsVO().getEmail());
+        transDetailsVO.setAmount(commonValidatorVO.getTransDetailsVO().getAmount());
+        transDetailsVO.setPaymentType(commonValidatorVO.getPaymentMode());
+
+        transactionLogger.error("paymentType is -----" + commonValidatorVO.getPaymentType());
+        transDetailsVO.setCardType(commonValidatorVO.getProcessorName());
+        transactionLogger.debug("currency---->" + commonValidatorVO.getTransDetailsVO().getCurrency());
+
+        addressDetailsVO.setCountry(commonValidatorVO.getAddressDetailsVO().getCountry());
+        transDetailsVO.setCurrency(commonValidatorVO.getTransDetailsVO().getCurrency());
+        //transDetailsVO.setCustomerId(commonValidatorVO.getVpa_address());
+       /* if("UPI".equalsIgnoreCase(payMode)){
+             transDetailsVO.setCustomerId(commonValidatorVO.getVpa_address());
+            commonValidatorVO.setCustomerId(commonValidatorVO.getVpa_address());
+        }
+
+        else if ("NBI".equalsIgnoreCase(payMode)&&functions.isValueNull(processorName)){
+            HashMap<String,String> hashMap=new HashMap<>();
+            Enumeration <String> banks=SEPBANKS.getKeys();
+             String str11="";
+
+            while(banks.hasMoreElements()){
+                String key = banks.nextElement();
+                str11=SEPBANKS.getString(key);
+                hashMap.put(str11,key);
+            }
+            String bankName= hashMap.get(processorName);
+            transactionLogger.debug("processor Bank Name --------->"+ bankName);
+            transDetailsVO.setCustomerId(bankName);
+            commonValidatorVO.setCustomerId(bankName);
+        }*/
+        commRequestVO.setAutoRedirectFlag(commonValidatorVO.getTerminalVO().getAutoRedirectRequest());
+        commRequestVO.setTransDetailsVO(transDetailsVO);
+        commRequestVO.setAddressDetailsVO(addressDetailsVO);
+        commRequestVO.setCardDetailsVO(cardDetailsVO);
+        commRequestVO.setCommMerchantVO(commMerchantVO);
+        return commRequestVO;
+    }
+
+    public  String generateAutoSubmitForm(CommonValidatorVO commonValidatorVO)
+    {
+        transactionLogger.error("inside get3DConfirmationForm");
+        String html = "";
+        try
+        {
+            GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(commonValidatorVO.getMerchantDetailsVO().getAccountId());
+            CommTransactionDetailsVO commTransactionDetailsVO = new CommTransactionDetailsVO();
+            GenericCardDetailsVO genericCardDetailsVO = commonValidatorVO.getCardDetailsVO();
+            MerchantDetailsVO merchantDetailsVO = commonValidatorVO.getMerchantDetailsVO();
+            GenericAddressDetailsVO genericAddressDetailsVO = commonValidatorVO.getAddressDetailsVO();
+
+            boolean isTest = gatewayAccount.isTest();
+            Functions functions = new Functions();
+            String merchant_key = gatewayAccount.getFRAUD_FTP_USERNAME();
+            transactionLogger.error("merchant_key --- " + merchant_key);
+            String payment_brand = commonValidatorVO.getPaymentBrand();
+            transactionLogger.error("payment_brand is -->" + payment_brand);
+            String processorName = commonValidatorVO.getProcessorName();
+            transactionLogger.error("processorName--" + processorName);
+            String card_Type = commonValidatorVO.getPaymentBrand();
+            transactionLogger.error("card_type --- " + card_Type);
+            String payment_Card = commonValidatorVO.getPaymentMode();
+            transactionLogger.error("payment_Card --- " + payment_Card);
+            //String payment_Type = GatewayAccountService.getPaymentMode(commonValidatorVO.getPaymentType());
+            String autoRedirect      =commonValidatorVO.getTerminalVO().getAutoRedirectRequest();
+            transactionLogger.error("safexpay utils autoRedirect --->" + autoRedirect);
+
+            String url = "";
+            String pg_id = "";
+            String paymode = "";
+            String scheme = "";
+            String card_name = "";
+            String emi_months = "";
+
+            String mobile_num = "";
+
+            if(functions.isValueNull(genericAddressDetailsVO.getPhone())){
+                mobile_num =genericAddressDetailsVO.getPhone().replace(" ","");
+            }
+            else {
+                mobile_num="9999999999";
+            }
+            String mobile_number = "";
+            String mobile_no = "";
+            String accountID=commonValidatorVO.getMerchantDetailsVO().getAccountId();
+            if (mobile_num.contains("-"))
+            {
+                String mobile_No[] = mobile_num.split("\\-");
+                mobile_number = mobile_No[0];
+                mobile_no = mobile_No[1];
+            }
+            if(mobile_num.length()>10){
+
+                mobile_no=mobile_num.substring(mobile_num.length() - 10);
+            }
+            else
+            {
+                mobile_no = mobile_num;
+            }
+            String unique_id = "";
+            String is_logged_in = "";
+            String country = "";
+
+            //Ship_details
+            String ship_address = "";
+            String ship_city = "";
+            String ship_state = "";
+            String ship_country = "";
+            String ship_zip = "";
+            String ship_days = "";
+            String address_count = "";
+            String currency="";
+
+            // Item_details
+            String item_count = "";
+            String item_value = "";
+            String item_category = "";
+
+             // Other_details
+            String udf_1 = "";
+            String udf_2 = "";
+            String udf_3 = "";
+            String udf_4 = "";
+            String udf_5 = "";
+            String vpa_address=commonValidatorVO.getVpa_address();
+
+
+            String pg_details = "";
+            String txn_details = "";
+            String card_details = "";
+            String cust_details = "";
+            String bill_details = "";
+            String ship_details = "";
+            String item_details = "";
+            String other_details = "";
+            String upi_details="";
+
+            String card_no = "";
+            if (functions.isValueNull(genericCardDetailsVO.getCardNum()))
+            {
+                card_no = genericCardDetailsVO.getCardNum();
+            }
+            else
+            {
+                card_no = "";
+            }
+            transactionLogger.debug("card_no --- " + functions.maskingPan(card_no));
+            String exp_month = "";
+            if (functions.isValueNull(genericCardDetailsVO.getExpMonth()))
+            {
+                exp_month = genericCardDetailsVO.getExpMonth();
+            }
+            else
+            {
+                exp_month = "";
+            }
+            transactionLogger.debug("exp_month --- " +functions.maskingNumber( exp_month));
+            String exp_year = "";
+            if (functions.isValueNull(genericCardDetailsVO.getExpYear()))
+            {
+                exp_year = genericCardDetailsVO.getExpYear();
+            }
+            else
+            {
+                exp_year = "";
+            }
+            transactionLogger.debug("exp_year --- " + functions.maskingNumber(exp_year));
+            String cvv2 = "";
+            if (functions.isValueNull(genericCardDetailsVO.getcVV()))
+            {
+                cvv2 = genericCardDetailsVO.getcVV();
+            }
+            else
+            {
+                cvv2 = "";
+            }
+            transactionLogger.debug("cvv2 --- " + functions.maskingNumber(cvv2));
+
+            if(!"UPI".equalsIgnoreCase(card_Type))
+            {
+                if (functions.isValueNull(genericAddressDetailsVO.getFirstname()))
+                {
+                    if (functions.isValueNull(genericAddressDetailsVO.getLastname()))
+                        card_name = genericAddressDetailsVO.getFirstname() + " " + genericAddressDetailsVO.getLastname(); // Name on the Card ..
+                    else
+                        card_name = genericAddressDetailsVO.getFirstname();
+                }
+                else
+                {
+                    card_name = "";
+                }
+            }
+            transactionLogger.debug("CardNme" + card_name);
+            String cust_name="";
+            transactionLogger.debug("CardNme" + card_name);
+            if(functions.isValueNull(payment_Card) && (payment_Card.equalsIgnoreCase("CC") || payment_Card.equalsIgnoreCase("DC"))){
+                cust_name = card_name;
+            }
+            else{
+                card_name="";
+            }
+            String bill_address = "";
+            String bill_city = "";
+            String bill_state = "";
+            String bill_country = "";
+            String bill_zip = "";
+            // Bill_details
+            if (functions.isValueNull(genericAddressDetailsVO.getStreet()))
+            {
+                bill_address = genericAddressDetailsVO.getStreet();
+            }
+            else
+            {
+                bill_address = "";
+            }
+
+            if (functions.isValueNull(genericAddressDetailsVO.getCity()))
+            {
+                bill_city = genericAddressDetailsVO.getCity();
+            }
+            else
+            {
+                bill_city = "";
+            }
+
+            if (functions.isValueNull(genericAddressDetailsVO.getState()))
+            {
+                bill_state = genericAddressDetailsVO.getState();
+            }
+            else
+            {
+                bill_state = "";
+            }
+
+            if (functions.isValueNull(genericAddressDetailsVO.getCountry()))
+            {
+                bill_country = genericAddressDetailsVO.getCountry();            }
+            else
+            {
+                bill_country = "";
+            }
+
+            if (functions.isValueNull(genericAddressDetailsVO.getZipCode()))
+            {
+                bill_zip = genericAddressDetailsVO.getZipCode();            }
+            else
+            {
+                bill_zip = "";
+            }
+
+            String email_id = "";
+            if (functions.isValueNull(genericAddressDetailsVO.getEmail()))
+            {
+                email_id = genericAddressDetailsVO.getEmail();
+                transactionLogger.debug("email_id ---" + email_id);
+            }
+            String ag_id = "paygate";
+            String txn_type = "SALE";
+            String channel = "WEB"; // WEB or MOBILE
+            String me_id = gatewayAccount.getMerchantId();
+            transactionLogger.error("me_id ---" + me_id);
+            String order_no = commonValidatorVO.getTrackingid();
+            transactionLogger.error("order_no--" + order_no);
+            String amount = commonValidatorVO.getTransDetailsVO().getAmount();
+            transactionLogger.debug("country in  pp --333333------"+commonValidatorVO.getAddressDetailsVO().getCountry());
+          /*  if (commonValidatorVO.getAddressDetailsVO().getCountry().length() == 2)
+            {
+                country = RB1.getString(genericAddressDetailsVO.getCountry());
+            }
+            else
+            {
+                country = "IND";
+            }*/
+            country = "IND";
+            currency = commonValidatorVO.getTransDetailsVO().getCurrency();
+
+            String termUrl = "";
+            if (functions.isValueNull(merchantDetailsVO.getHostUrl()))
+            {
+                termUrl = "https://" + merchantDetailsVO.getHostUrl() + RB.getString("HOST_URL");
+                transactionLogger.error("From HOST_URL notificationUrl ----" + termUrl);
+            }
+            else
+            {
+                termUrl = RB.getString("TERM_URL");
+                transactionLogger.error("From RB notificationUrl ----" + termUrl);
+            }
+
+            String success_url = termUrl + order_no + "&status=success";
+            String failure_url = termUrl + order_no + "&status=fail";
+            transactionLogger.error("success_url  --" + success_url);
+            transactionLogger.error("failure_url  --" + failure_url);
+
+            // Step 1-
+            if (functions.isValueNull(payment_Card) && (payment_Card.equalsIgnoreCase("CC") || payment_Card.equalsIgnoreCase("DC")))
+            {
+                transactionLogger.error("inside CC Or DC  --");
+                paymode = payment_Card;
+
+                if (isTest)
+                {
+                    transactionLogger.error("Inside isTest");
+                    pg_id = "107";
+                    emi_months = "6";
+                    scheme = "2";
+                    url = RB.getString("SALE_TEST_URL");
+                }
+                else
+                {
+                    transactionLogger.error("inside cc live-->");
+                    if (currency.equals("INR"))
+                    {
+                        if(functions.isValueNull(gatewayAccount.getFromAccountId())){
+                            transactionLogger.error("inside cc live-->"+pg_id);
+                            pg_id = gatewayAccount.getFromAccountId();
+                        }
+                        else{
+                            pg_id ="210";
+                        }
+                    }
+                    if (currency.equals("USD"))
+                    {
+                        pg_id = "602";
+                    }
+                    emi_months = "";
+                    url = RB.getString("SALE_LIVE_URL");
+
+                    if (card_Type.equalsIgnoreCase("VISA"))
+                        scheme = "1";
+                    else if (card_Type.equalsIgnoreCase("MC"))
+                        scheme = "2";
+                    else if (card_Type.equalsIgnoreCase("MAESTRO"))
+                        scheme = "5";
+                    else if (card_Type.equalsIgnoreCase("RUPAY") || card_Type.equalsIgnoreCase("DISC"))
+                        scheme = "6";
+                }
+            }
+            else if (functions.isValueNull(payment_Card) && payment_Card.equalsIgnoreCase("NBI"))
+            {
+                transactionLogger.error("payment_card  netbanking --- " + payment_Card);
+
+                paymode = "NB";
+                scheme = "7";
+                if (isTest)
+                {
+                    transactionLogger.error("inside NBI test --");
+                    pg_id = "63";
+                    emi_months = "7";
+                    url = RB.getString("SALE_TEST_URL");
+                }
+                else
+                {
+                    transactionLogger.error("inside NBI live --");
+                    pg_id = processorName; // todo
+                    transactionLogger.error("pg_id  in live mode --->" + pg_id);
+                    // pg_id=RB3.getString();
+                    url = RB.getString("SALE_LIVE_URL");
+                }
+            }
+            else if (functions.isValueNull(payment_Card) && payment_Card.equalsIgnoreCase("EWI"))
+            {
+                transactionLogger.error("payment_card of wallet is -->" + payment_Card);
+                paymode = "WA";
+                scheme = "7";
+                if (isTest)
+                {
+                    transactionLogger.error("inside EWI isTest -----");
+                    pg_id = "60"; //60
+                    emi_months = "7";
+                    url = RB.getString("SALE_TEST_URL");
+
+                }
+                else if (functions.isValueNull(processorName)&&processorName.contains(RBWallets.getString("PAYTM")))
+                {
+                    transactionLogger.error("inside paytm condition---->");
+                    paymode="PT";
+                    scheme="7";
+                    pg_id =processorName;
+                    url = RB.getString("SALE_LIVE_URL");
+
+                }
+                else
+                {
+                    transactionLogger.error("inside else safexpayutils autoRedirect---->"+autoRedirect);
+
+                    if("Y".equalsIgnoreCase(autoRedirect)&& RBWallets.containsKey(card_Type)){
+                    transactionLogger.error(" cardType safexpayutils......"+card_Type);
+
+                    processorName= RBWallets.getString(card_Type);
+                    transactionLogger.error("cardType safexpayutils......"+processorName);
+                        if("PAYTM".equalsIgnoreCase(card_Type)){
+                            paymode="PT";
+                        }
+
+                   }
+                    pg_id = processorName; // todo
+                    transactionLogger.error("pg_id  in live mode --->" + pg_id);
+                    // pg_id=RB3.getString();
+                    url = RB.getString("SALE_LIVE_URL");
+                }
+
+            }
+           //UPI
+            else if (functions.isValueNull(payment_Card) && payment_Card.equalsIgnoreCase("UPI"))
+            {
+                transactionLogger.error("payment_card  UPI --- " + payment_Card);
+                paymode = "UP";
+                scheme = "7";
+                if (isTest)
+                {
+                    transactionLogger.error("inside UPI test --");
+                    pg_id = "63";
+                    emi_months = "7";
+                    url = RB.getString("SALE_TEST_URL");
+                }
+                else  
+                {
+                    transactionLogger.error("inside NBI live --");
+                    pg_id = gatewayAccount.getFromMid(); // todo
+                    transactionLogger.error("pg_id  in live mode UPI --->" + pg_id);
+                    // pg_id=RB3.getString();
+                    url = RB.getString("SALE_LIVE_URL");
+                }
+            }
+            txn_details = ag_id.toString() + "|" + me_id.toString() + "|" + order_no.toString() + "|" + amount.toString() + "|" + country.toString() + "|" + currency.toString() + "|" + txn_type.toString() + "|" + success_url.toString() + "|" + failure_url.toString() + "|" + channel.toString();
+            transactionLogger.error("Txn_Details-->"+"trackingid"+order_no + txn_details);
+            me_id = me_id.toString();
+            pg_details = pg_id.toString() + "|" + paymode.toString() + "|" + scheme.toString() + "|" + emi_months.toString();
+            transactionLogger.error("pg_details-->" +"trackingid"+order_no+ pg_details);
+            card_details = card_no.toString() + "|" + exp_month.toString() + "|" + exp_year.toString() + "|" + cvv2.toString() + "|" + card_name.toString();
+            cust_details = cust_name.toString() + "|" + email_id.toString() + "|" + mobile_no.toString() + "|" + unique_id.toString() + "|" + is_logged_in.toString();
+            transactionLogger.error("cust_details-->"+"trackingid"+order_no + cust_details);
+            bill_details = bill_address.toString() + "|" + bill_city.toString() + "|" + bill_state.toString() + "|" + bill_country.toString() + "|" + bill_zip.toString();
+            transactionLogger.error("Bill_details-->"+"trackingid"+order_no + bill_details);
+            ship_details = ship_address + "|" + ship_city + "|" + ship_state + "|" + ship_country + "|" + ship_zip + "|" + ship_days + "|" + address_count;
+            transactionLogger.error("Ship_details-->"+"trackingid"+order_no + ship_details);
+            item_details = item_count + "|" + item_value + "|" + item_category;
+            transactionLogger.error("Item_details-->"+"trackingid"+order_no + item_details);
+            other_details = udf_1 + "|" + udf_2 + "|" + udf_3 + "|" + udf_4 + "|" + udf_5;
+            transactionLogger.error("Other_details-->"+"trackingid"+order_no + other_details);
+            upi_details = vpa_address;
+            transactionLogger.error("upi_details is -- >"+"trackingid"+order_no+upi_details);
+
+
+            String encrypted_txn_details = "";
+            String encrypted_card_details = "";
+            String encrypted_pg_details = "";
+            String encrypted_cust_details = "";
+            String encrypted_bill_details = "";
+            String encrypted_ship_details = "";
+            String encrypted_item_details = "";
+            String encrypted_other_details = "";
+            String encrypted_upi_details="";
+
+
+            encrypted_txn_details = PayGateCryptoUtils.encrypt(txn_details, merchant_key.toString());
+            encrypted_pg_details = PayGateCryptoUtils.encrypt(pg_details, merchant_key.toString());
+            encrypted_cust_details = PayGateCryptoUtils.encrypt(cust_details, merchant_key.toString());
+            encrypted_bill_details = PayGateCryptoUtils.encrypt(bill_details, merchant_key.toString());
+            encrypted_ship_details = PayGateCryptoUtils.encrypt(ship_details, merchant_key.toString());
+            encrypted_item_details = PayGateCryptoUtils.encrypt(item_details, merchant_key.toString());
+            encrypted_other_details = PayGateCryptoUtils.encrypt(other_details, merchant_key.toString());
+            encrypted_card_details = PayGateCryptoUtils.encrypt(card_details, merchant_key.toString());
+            if(functions.isValueNull(upi_details))
+            {
+                encrypted_upi_details = PayGateCryptoUtils.encrypt(upi_details, merchant_key.toString());
+            }
+            transactionLogger.error("encrypted_Txn_Details is -->" + encrypted_txn_details);
+            transactionLogger.error("encrypted_pg_details -->" + encrypted_pg_details);
+            transactionLogger.error("encrypted_cust_details -->" + encrypted_cust_details);
+            transactionLogger.error("encrypted_Bill_details -->" + encrypted_bill_details);
+            transactionLogger.error("encrypted_Ship_details-->" + encrypted_ship_details);
+            transactionLogger.error("encrypted_Item_details -->" + encrypted_item_details);
+            transactionLogger.error("encrypted_Other_details-->" + encrypted_other_details);
+            transactionLogger.error("encrypted_card_details-->" + encrypted_card_details);
+            transactionLogger.error("encrypted_upi_details-->" + encrypted_upi_details);
+
+            html = "<form name=\"creditcard_checkout\" method=\"POST\" action=\"" + url + "\">" +
+                    "<input type=\"hidden\" name=\"me_id\" id=\"me_id\" value=\"" + me_id + "\">" +
+                    "<input type=\"hidden\" name=\"txn_details\" id=\"txn_details\" value=\"" + encrypted_txn_details + "\">" +
+                    "<input type=\"hidden\" name=\"pg_details\" id=\"pg_details\" value=\"" + encrypted_pg_details + "\">" +
+                    "<input type=\"hidden\" name=\"card_details\" id=\"card_details\" value=\"" + encrypted_card_details + "\">" +
+                    "<input type=\"hidden\" name=\"cust_details\" id=\"cust_details\" value=\"" + encrypted_cust_details + "\">" +
+                    "<input type=\"hidden\" name=\"bill_details\" id=\"bill_details\" value=\"" + encrypted_bill_details + "\">" +
+                    "<input type=\"hidden\" name=\"ship_details\" id=\"ship_details\" value=\"" + encrypted_ship_details + "\">" +
+                    "<input type=\"hidden\" name=\"item_details\" id=\"item_details\" value=\"" + encrypted_item_details + "\">" +
+                    "<input type=\"hidden\" name=\"other_details\" id=\"other_details\" value=\"" + encrypted_other_details + "\">" +
+                    "<input type=\"hidden\" name=\"upi_details\" id=\"upi_details\" value=\"" + encrypted_upi_details + "\">" +
+                    "</form>" +
+                    "<script language=\"javascript\">document.creditcard_checkout.submit();</script>";
+
+            transactionLogger.error("form---" + html);
+          //  updateTransaction(commonValidatorVO.getTrackingid(),commonValidatorVO.getCustomerId());
+        }
+        catch (Exception e)
+        {
+            transactionLogger.error("Exception -----", e);
+        }
+        return html.toString();
+    }
+
+    public static String generateAutoSubmitForm(String actionUrl, String msgData, String paymentMethod)
+    {
+        transactionLogger.error("url---" + actionUrl);
+        String form = "<form name=\"creditcard_checkout\" method=\"POST\" action=\"" + actionUrl + "\">" +
+                "<input type=hidden name=msg id=msg value=\"" + msgData + "\">" +
+                "</form>" +
+                "<script language=\"javascript\">document.creditcard_checkout.submit();</script>";
+        return form.toString();
+    }
+
+    static String doPostHttpUrlConnection(String url ,String request)
+    {
+         String result = "";
+        PostMethod post = new PostMethod(url);
+        try
+        {
+            HttpClient httpClient = new HttpClient();
+            post.setRequestHeader("Content-Type", "application/json");
+
+            post.setRequestBody(request);
+            httpClient.executeMethod(post);
+            String response = new String(post.getResponseBody());
+            result = response;
+            transactionLogger.error("response-->" + result);
+        }
+        catch (HttpException e)
+        {
+            transactionLogger.error("HttpException--------->" + e);
+
+        }
+        catch (IOException e)
+        {
+            transactionLogger.error("IOException--------->"+e);
+        }
+        finally
+        {
+            post.releaseConnection();
+        }
+
+        return result;
+    }
+    public String getActionExecutorName(String trackingId)
+    {
+        transactionLogger.error("inside safexpay utils get Actionexecutorname -->");
+        String actionExecutorName = "";
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try
+        {
+           conn= Database.getConnection();
+           String sql = "select actionexecutorname from transaction_common_details where status='3D_authstarted' and trackingid=?";
+           ps=conn.prepareStatement(sql);
+           ps.setString(1,trackingId);
+           transactionLogger.error("getActionExecutorName query ---" + ps);
+           rs = ps.executeQuery();
+           while (rs.next())
+           {
+               actionExecutorName = rs.getString("actionexecutorname");
+           }
+        }catch (SQLException e)
+        {
+            transactionLogger.error("SQLException While getActionExecutorName --->" + e);
+        }
+        catch (SystemError e)
+        {
+            transactionLogger.error("System Error While getActionExecutorName --->" + e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+            Database.closePreparedStatement(ps);
+            Database.closeResultSet(rs);
+        }
+
+        return actionExecutorName;
+    }
+
+    public Boolean updateTransaction (String trackingid, String  customerId ){
+
+        transactionLogger.error("in side  updateTransaction----------->");
+        Connection con = null;
+        PreparedStatement psUpdateTransaction = null;
+        boolean isUpdate=false;
+        try
+        {
+
+            con= Database.getConnection();
+            String update = "update transaction_common set customerId= ? where trackingid=?";
+            psUpdateTransaction = con.prepareStatement(update.toString());
+            psUpdateTransaction.setString(1, customerId);
+            psUpdateTransaction.setString(2, trackingid);
+            transactionLogger.error("transaction common query----"+psUpdateTransaction);
+            int i=psUpdateTransaction.executeUpdate();
+            if(i>0)
+            {
+                isUpdate=true;
+            }
+        }
+
+        catch (SQLException e)
+        {
+            transactionLogger.error("SQLException----",e);
+
+        }
+        catch (SystemError systemError)
+        {
+            transactionLogger.error("SystemError----", systemError);
+        }
+        finally
+        {
+            Database.closePreparedStatement(psUpdateTransaction);
+            Database.closeConnection(con);
+        }
+        return isUpdate;
+
+    }
+    public static Boolean updatePayoutTransaction (String trackingid, String  paymentid, String authorization_code){
+
+        transactionLogger.error("in side  update Payout Transaction----------->");
+        Connection con = null;
+        PreparedStatement psUpdateTransaction = null;
+        boolean isUpdate=false;
+        try
+        {
+
+            con= Database.getConnection();
+            String update = "update transaction_common set paymentid= ? ,authorization_code=?where trackingid=?";
+            psUpdateTransaction = con.prepareStatement(update.toString());
+            psUpdateTransaction.setString(1, paymentid);
+            psUpdateTransaction.setString(2, authorization_code);
+            psUpdateTransaction.setString(3, trackingid);
+            transactionLogger.error("payout transaction common query----"+psUpdateTransaction);
+            int i=psUpdateTransaction.executeUpdate();
+            if(i>0)
+            {
+                isUpdate=true;
+            }
+        }
+
+        catch (SQLException e)
+        {
+            transactionLogger.error("SQLException----",e);
+
+        }
+        catch (SystemError systemError)
+        {
+            transactionLogger.error("SystemError----", systemError);
+        }
+        finally
+        {
+            Database.closePreparedStatement(psUpdateTransaction);
+            Database.closeConnection(con);
+        }
+        return isUpdate;
+
+    }
+
+
+
+}
+
+

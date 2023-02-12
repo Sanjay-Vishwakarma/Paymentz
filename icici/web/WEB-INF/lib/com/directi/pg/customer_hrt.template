@@ -1,0 +1,38 @@
+<html>
+<body style="font-size: 10pt; font-family: verdana" >
+Hello <#NAME#>,<br>
+<br>
+
+You had recently placed an Order <#DESCRIPTION#>, that you successfully paid for, using your
+Credit Card. The details of this transaction are given below.
+<br>
+<p><U>Transaction Details</U>
+<br>Tracking Id: <#TRACKINGID#>
+<br>Description: <#DESCRIPTION#>
+<br>Order Description: <#ORDERDESCRIPTION#>
+<br>Transaction Amount: <#CURRENCY#> <#TRANSAMOUNT#> <#TMPL_TRANSACTION#>
+<br>Captured Amount: <#CURRENCY#> <#CAPAMOUNT#>
+<br>Date of Transaction: <#DATE#>
+<br><br>
+<U>Credit Card Details</U>
+<br>Name on Card:<#NAME#>
+<br>Card Number: **** **** **** <#CCNUM#>
+<br>Expiry Date: <#EXPDATE#> </p>
+<p>
+Your Transaction has been classified as a HIGH RISK Transaction by our Credit Card Processor. This requires you to Fax us an Authorization for this transaction in order to complete the processing. This process is required by our Credit Card Processor to ensure that this transaction is being done by a genuine card-holder.
+<br><br>
+Please follow the steps below to authorise this transaction. Failure to follow these steps within 7 days of transaction will cancel this transaction
+<br><br>
+1. Visit <a href=""></a>. This will redirect you to our Secure Order Tracking and Authorization Webpage
+<br><br>
+2. In the form provided on that page, please enter your Credit Card Number and Expiry Date and click Continue. This will bring up a list of all Transactions you have done using your Credit Card through our Payment Gateway.
+<br><br>
+3. Scroll down to the transaction by searching on the "Description" corresponding to the above Order ID. The Status (last column) of this transaction will show as "Transaction Proof Required" with a link to "View Letter Format"
+<br><br>
+4. Please click on that link and follow the instructions on that page
+<br><br>
+Incase of any doubts or clarifications feel free to drop us a line.
+<br><br>
+<br>Best Regards,<br>
+<#SIGNATURE#>
+</p>

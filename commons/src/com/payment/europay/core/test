@@ -1,0 +1,12 @@
+<transactions_request mode="sync" accountId="1">
+  <transactions type="DB" method="CC" mcTxDate="Saturday, 06-Jul-13 16:24:42 UTC" mcTxId="OAYPKai">
+    <payment usageL2="Reference test second line" usageL1="Reference test first line" amount="1750" currency="USD"/>
+    <customer  birthMonth="06" birthDay="08" birthYear="1965" salutation="MRS" lastName="Doe" firstName="Jenny">
+      <addresses type="private" country="United States" state="LA" street="1184 Maple St Ext" zip="70122" city="New Orleans"/>
+      <identity ip="17.146.233.11" email="john_jenny.doe@mac.com"/>
+    </customer >
+    <creditCard ownerLastName="Arnold" ownerFirstName="Frank" expireMonth="07" expireYear="15" verification="531" number="4485895710308" brand="VISA"/>
+  </transactions>
+</transactions_request>
+
+

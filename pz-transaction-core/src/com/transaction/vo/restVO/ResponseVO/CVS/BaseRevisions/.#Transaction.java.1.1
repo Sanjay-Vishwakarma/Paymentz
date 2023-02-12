@@ -1,0 +1,144 @@
+package com.transaction.vo.restVO.ResponseVO;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
+/**
+ * Created by Pranav on 2/6/2017.
+ */
+@XmlRootElement(name="transactionDetails")
+@XmlAccessorType(XmlAccessType.FIELD)
+public class Transaction
+{
+    @XmlElement(name="amount")
+    String amount;
+
+    @XmlElement(name="currency")
+    String currency;
+
+    @XmlElement(name="descriptor")
+    String descriptor;
+
+    @XmlElement(name="systemPaymentId")
+    String systemPaymentId;
+
+    @XmlElement(name="transactionStatus")
+    String transactionStatus;
+
+    @XmlElement(name="count")
+    String count;
+
+    @XmlElement(name="captureamount")
+    String captureamount;
+
+    @XmlElement(name="refundamount")
+    String refundamount;
+
+    @XmlElement(name="chargebackamount")
+    String chargebackamount;
+
+    @XmlElement(name="date")
+    String date;
+
+    public String getAmount()
+    {
+        return amount;
+    }
+
+    public void setAmount(String amount)
+    {
+        this.amount = amount;
+    }
+
+    public String getCurrency()
+    {
+        return currency;
+    }
+
+    public void setCurrency(String currency)
+    {
+        this.currency = currency;
+    }
+
+    public String getDescriptor()
+    {
+        return descriptor;
+    }
+
+    public void setDescriptor(String descriptor)
+    {
+        this.descriptor = descriptor;
+    }
+
+    public String getSystemPaymentId()
+    {
+        return systemPaymentId;
+    }
+
+    public void setSystemPaymentId(String systemPaymentId)
+    {
+        this.systemPaymentId = systemPaymentId;
+    }
+
+    public String getTransactionStatus()
+    {
+        return transactionStatus;
+    }
+
+    public void setTransactionStatus(String transactionStatus)
+    {
+        this.transactionStatus = transactionStatus;
+    }
+
+    public String getCount()
+    {
+        return count;
+    }
+
+    public void setCount(String count)
+    {
+        this.count = count;
+    }
+
+    public String getCaptureamount()
+    {
+        return captureamount;
+    }
+
+    public void setCaptureamount(String captureamount)
+    {
+        this.captureamount = captureamount;
+    }
+
+    public String getRefundamount()
+    {
+        return refundamount;
+    }
+
+    public void setRefundamount(String refundamount)
+    {
+        this.refundamount = refundamount;
+    }
+
+    public String getChargebackamount()
+    {
+        return chargebackamount;
+    }
+
+    public void setChargebackamount(String chargebackamount)
+    {
+        this.chargebackamount = chargebackamount;
+    }
+
+    public String getDate()
+    {
+        return date;
+    }
+
+    public void setDate(String date)
+    {
+        this.date = date;
+    }
+}

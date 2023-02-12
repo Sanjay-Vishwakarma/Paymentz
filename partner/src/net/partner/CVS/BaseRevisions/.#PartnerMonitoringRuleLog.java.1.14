@@ -1,0 +1,305 @@
+package net.partner;
+
+import com.directi.pg.*;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.apache.commons.lang.StringUtils;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.ValidationErrorList;
+import org.owasp.esapi.codecs.Codec;
+import org.owasp.esapi.codecs.MySQLCodec;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+/**
+ * Created with IntelliJ IDEA.
+ * User: Jitendra
+ * Date: 05/01/18
+ * Time: 1:21 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class PartnerMonitoringRuleLog extends HttpServlet
+{
+    static Logger log = new Logger(PartnerTransaction.class.getName());
+    private Functions functions = new Functions();
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        HttpSession session = req.getSession();
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+        ResourceBundle rb1 = null;
+        String language_property1 = (String) session.getAttribute("language_property");
+        rb1 = LoadProperties.getProperty(language_property1);
+        String PartnerMonitoringRuleLog_PartnerID_errormsg = StringUtils.isNotEmpty(rb1.getString("PartnerMonitoringRuleLog_PartnerID_errormsg")) ? rb1.getString("PartnerMonitoringRuleLog_PartnerID_errormsg") : "Invalid Partner ID.";
+        String PartnerMonitoringRuleLog_memberid_errormsg = StringUtils.isNotEmpty(rb1.getString("PartnerMonitoringRuleLog_memberid_errormsg")) ? rb1.getString("PartnerMonitoringRuleLog_memberid_errormsg") : "Invalid Member ID.";
+        String PartnerMonitoringRuleLog_partner_member_errormsg = StringUtils.isNotEmpty(rb1.getString("PartnerMonitoringRuleLog_partner_member_errormsg")) ? rb1.getString("PartnerMonitoringRuleLog_partner_member_errormsg") : "Invalid partner member mapping.";
+        String PartnerMonitoringRuleLog_Partner_mapping_errormsg = StringUtils.isNotEmpty(rb1.getString("PartnerMonitoringRuleLog_Partner_mapping_errormsg")) ? rb1.getString("PartnerMonitoringRuleLog_Partner_mapping_errormsg") : "Invalid partner mapping.";
+
+
+        PartnerFunctions partner=new PartnerFunctions();
+        if (!partner.isLoggedInPartner(session))
+        {
+            res.sendRedirect("/partner/Logout.jsp");
+            return;
+        }
+        RequestDispatcher rd = req.getRequestDispatcher("/partnerMonitoringRuleLog.jsp?ctoken="+user.getCSRFToken());
+        String error = "";
+        int pageNo=1;
+        int records=30;
+        String merchantId=null;
+        String ruleId=null;
+        String terminalId=null;
+        String partnerid = null;
+        String errorMsg = "";
+        String EOL = "<BR>";
+        if (!ESAPI.validator().isValidInput("pid", req.getParameter("pid"), "Numbers", 10, true))
+        {
+            error =  PartnerMonitoringRuleLog_PartnerID_errormsg+ EOL ;
+        }
+        if (!ESAPI.validator().isValidInput("memberid", req.getParameter("memberid"), "Numbers", 10, false))
+        {
+            error = error + PartnerMonitoringRuleLog_memberid_errormsg + EOL ;
+        }
+        if (!ESAPI.validator().isValidInput("ruleid", req.getParameter("ruleid"), "StrictString", 500, true))
+        {
+            error = error + "Invalid Risk Rule Name" + EOL ;
+        }
+        try
+        {
+            validateOptionalParameter(req);
+        }
+        catch (ValidationException e)
+        {
+            error = error + e.getMessage() + EOL;
+        }
+
+        if(functions.isValueNull(error)){
+            req.setAttribute("error",error);
+            rd.forward(req, res);
+            return;
+        }
+
+        merchantId= req.getParameter("memberid");
+        String partnerId = (String) session.getAttribute("merchantid");
+        ruleId=req.getParameter("ruleid");
+        terminalId=req.getParameter("terminalid");
+        partnerid = req.getParameter("partnerid");
+        String fromDate = req.getParameter("fromdate");
+        String toDate = req.getParameter("todate");
+        String pid=req.getParameter("pid");
+        try
+        {
+            if(functions.isValueNull(req.getParameter("pid")) && partner.isPartnerSuperpartnerMapped(pid, partnerId))
+            {
+                if (!partner.isPartnerMemberMapped(merchantId, pid))
+               {
+                   req.setAttribute("error",PartnerMonitoringRuleLog_partner_member_errormsg);
+                   rd.forward(req, res);
+                   return;
+               }
+            }
+            else if(!functions.isValueNull(req.getParameter("pid"))){
+
+                if ( !partner.isPartnerSuperpartnerMembersMapped(merchantId, partnerId))
+                {
+                    req.setAttribute("error",PartnerMonitoringRuleLog_partner_member_errormsg);
+                    rd.forward(req, res);
+                    return;
+                }
+            }
+            else{
+                req.setAttribute("error",PartnerMonitoringRuleLog_Partner_mapping_errormsg);
+                rd.forward(req, res);
+                return;
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+
+        // pageNo = Functions.convertStringtoInt(req.getParameter("SPageno"), 1);
+      //  records = Functions.convertStringtoInt(req.getParameter("SRecords"), 30);
+
+        try
+        {
+            pageNo = Functions.convertStringtoInt(ESAPI.validator().getValidInput("SPageno",req.getParameter("SPageno"),"Numbers",5,true), 1);
+            records = Functions.convertStringtoInt(ESAPI.validator().getValidInput("SRecords",req.getParameter("SRecords"),"Numbers",5,true), 30);
+        }
+
+        catch(ValidationException e)
+        {
+            log.error("Invalid page no or records",e);
+            pageNo = 1;
+            records = 30;
+        }
+
+        try
+        {
+          /*  if (!partner.isPartnerMemberMapped(merchantId, partnerid))
+            {
+                System.out.println("partnre.......");
+                rd.forward(req, res);
+                return;
+            } */
+            Calendar rightNow = Calendar.getInstance();
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+
+            Date date=sdf.parse(fromDate);
+            rightNow.setTime(date);
+            String fdate=String.valueOf(rightNow.get(Calendar.DATE));
+            String fmonth=String.valueOf(rightNow.get(Calendar.MONTH));
+            String fyear=String.valueOf(rightNow.get(Calendar.YEAR));
+
+            date=sdf.parse(toDate);
+            rightNow.setTime(date);
+            String tdate=String.valueOf(rightNow.get(Calendar.DATE));
+            String tmonth=String.valueOf(rightNow.get(Calendar.MONTH));
+            String tyear=String.valueOf(rightNow.get(Calendar.YEAR));
+
+            String fdtstamp = Functions.converttomillisec(fmonth, fdate, fyear, "0", "0", "0");
+            String tdtstamp = Functions.converttomillisec(tmonth, tdate, tyear, "23", "59", "59");
+
+
+            Hashtable hash =listPartnerMonitoringRuleLog(tdtstamp, fdtstamp, records, pageNo, merchantId, terminalId, ruleId, partnerId);
+            req.setAttribute("transactionsdetails", hash);
+            req.setAttribute("memberid",merchantId);
+
+            req.setAttribute("msg", error);
+            rd = req.getRequestDispatcher("/partnerMonitoringRuleLog.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+        }
+        catch (SystemError se){
+            log.error("SystemError:::::",se);
+            req.setAttribute("msg","Internal System Error while getting list of Transactions");
+            rd.forward(req, res);
+            return;
+        }
+        catch (Exception e){
+            log.error("Exception:::::",e);
+            req.setAttribute("msg","Internal System Error while getting list of Transactions");
+            rd.forward(req, res);
+            return;
+        }
+    }
+
+    private String validateOptionalParameters(HttpServletRequest req)
+    {
+        InputValidator inputValidator = new InputValidator();
+        String error = "";
+        String EOL = "<BR>";
+        List<InputFields>  inputFieldsListOptional = new ArrayList<InputFields>();
+        inputFieldsListOptional.add(InputFields.MEMBERID);
+        /*inputFieldsListOptional.add(InputFields.TERMINALID);
+        inputFieldsListOptional.add(InputFields.RISKRULEID);
+        inputFieldsListOptional.add(InputFields.FDATE);
+        inputFieldsListOptional.add(InputFields.TDATE);*/
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.InputValidations(req,inputFieldsListOptional,errorList,false);
+
+        if(!errorList.isEmpty())
+        {
+            for(InputFields inputFields :inputFieldsListOptional)
+            {
+                if(errorList.getError(inputFields.toString())!=null)
+                {
+                    log.debug(errorList.getError(inputFields.toString()).getLogMessage());
+                    error = error+errorList.getError(inputFields.toString()).getMessage()+EOL;
+                }
+            }
+        }
+        return error;
+    }
+    public Hashtable listPartnerMonitoringRuleLog(String tdtstamp, String fdtstamp, int records, int pageno, String merchantid, String terminalid, String ruleid, String partnerId) throws SystemError
+    {
+
+        Connection cn=Database.getRDBConnection();
+        ResultSet rs = null;
+        Hashtable hash = null;
+        StringBuffer query = new StringBuffer();
+
+
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+        fdtstamp= ESAPI.encoder().encodeForSQL(me,fdtstamp);
+        tdtstamp=ESAPI.encoder().encodeForSQL(me,tdtstamp);
+
+        int start = 0; // start index
+        int end = 0; // end index
+        start = (pageno - 1) * records;
+        end = records;
+        log.debug("partnerid at line 178::::"+partnerId);
+
+        try
+        {
+            query.append("SELECT lma.`id`,alert_type,alert_team,lma.memberid,lma.terminalid,report,lma.`dtstamp`,lmad.`rule_name` FROM log_monitoring_alerts AS lma JOIN log_monitoring_alerts_details AS lmad ON lma.id=lmad.alert_id JOIN members AS m ON lma.memberid=m.memberid WHERE m.partnerId="+partnerId);
+            if (functions.isValueNull(fdtstamp))
+                query.append(" and lma.dtstamp >= " + fdtstamp);
+            if (functions.isValueNull(tdtstamp))
+                query.append(" and lma.dtstamp <= " + tdtstamp);
+            if(functions.isValueNull(merchantid)){
+                query.append(" and lma.memberid ="+merchantid);
+            }
+            if(functions.isValueNull(terminalid)){
+                query.append(" and lma.terminalid ="+terminalid);
+            }
+            if(functions.isValueNull(ruleid)){
+                query.append(" and lmad.rule_name ='"+ruleid+"'");
+            }
+            StringBuffer countQuery = new StringBuffer("select count(*) from ( " + query + ") as temp ");
+
+            query.append(" order by id DESC");
+
+            query.append(" limit " + start + "," + end);
+            log.error("query at line 202:::::"+query);
+
+            hash = Database.getHashFromResultSetForTransactionEntry(Database.executeQuery(query.toString(),cn));
+            rs = Database.executeQuery(countQuery.toString(),cn);
+
+            int totalrecords = 0;
+            if (rs.next())
+                totalrecords = rs.getInt(1);
+
+            hash.put("totalrecords", "" + totalrecords);
+            hash.put("records", "0");
+
+            if (totalrecords > 0)
+                hash.put("records", "" + (hash.size() - 2));
+        }
+        catch (SQLException se){
+            log.error("SQLException:::::",se);
+            throw new SystemError(se.toString());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closeConnection(cn);
+        }
+        return hash;
+    }
+
+    private void validateOptionalParameter(HttpServletRequest req) throws ValidationException
+    {
+        InputValidator inputValidator = new InputValidator();
+        List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+        inputFieldsListMandatory.add(InputFields.TERMINALID);
+       // inputFieldsListMandatory.add(InputFields.RISKRULEID);
+        inputFieldsListMandatory.add(InputFields.FDATE);
+        inputFieldsListMandatory.add(InputFields.TDATE);
+        inputFieldsListMandatory.add(InputFields.PAGENO);
+        inputFieldsListMandatory.add(InputFields.RECORDS);
+        inputValidator.InputValidations(req,inputFieldsListMandatory,true);
+    }
+}

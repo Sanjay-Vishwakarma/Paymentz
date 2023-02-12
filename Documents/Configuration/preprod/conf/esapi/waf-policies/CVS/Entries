@@ -1,0 +1,17 @@
+/add-header-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/add-httponly-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/add-secure-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/authentication-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/bean-shell-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/bean-shell-rule.bsh/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/detect-outbound-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/dynamic-insertion-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/enforce-https-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/must-match-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/replace-outbound-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/restrict-content-type-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/restrict-extension-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/restrict-method-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/restrict-source-ip-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/restrict-user-agent-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/
+/virtual-patch-policy.xml/1.1/Sun Sep 24 10:00:10 2017/-ko/

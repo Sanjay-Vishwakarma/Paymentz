@@ -1,0 +1,125 @@
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccountService;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.util.Hashtable;
+
+public class GetReversalDetails extends HttpServlet
+{
+
+    private static Logger logger = new Logger(GetReversalDetails.class.getName());
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+
+        HttpSession session = req.getSession();
+        PrintWriter printwriter = res.getWriter();
+        Merchants merchants = new Merchants();
+        Functions functions=new Functions();
+
+        if (!merchants.isLoggedIn(session))
+        {
+            res.sendRedirect("/merchant/logout.jsp");
+            return;
+        }
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+
+
+        logger.debug("CSRF check successful ");
+     //   String merchantid = (String) session.getAttribute("merchantid");
+
+
+        //int start = 0; // start index
+       // int end = 0; // end index
+      //  String str = null;
+
+
+        res.setContentType("text/html");
+
+        //PrintWriter out = res.getWriter();
+
+       // String data = req.getParameter("data");
+
+        //String icicitransid = Functions.checkStringNull(req.getParameter("icicitransid"));
+        String icicitransid = null;
+        String accountid=null;
+        try
+        {
+        icicitransid = ESAPI.validator().getValidInput("icicitransid",req.getParameter("icicitransid"),"Numbers",25,false);
+        accountid=  ESAPI.validator().getValidInput("accountid",req.getParameter("accountid"),"Numbers",25,false);
+        }
+        catch(ValidationException e)
+        {
+            logger.error("Invalid input",e);
+            icicitransid= null;
+         }
+
+        //Functions fn=new Functions();
+        Hashtable hash = null;
+        logger.info("Get particuler reversal detail from  trckingid");
+        String gateway =null;
+        if(functions.isValueNull(accountid))
+        {
+            gateway = GatewayAccountService.getGatewayAccount(accountid).getGateway();
+        }
+        String tableName = Database.getTableName(gateway);
+        StringBuilder query =null;
+        if(tableName.equals("transaction_icicicredit"))
+        {
+        query = new StringBuilder("select status,icicitransid,transid,description,captureamount,refundamount,accountid from transaction_icicicredit where icicitransid= ? ");
+        }
+        else
+        {
+        query = new StringBuilder("select status,trackingid as icicitransid,transid,description,currency,captureamount,refundamount,accountid from ").append(tableName).append(" where trackingid= ? ");
+        }
+
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try
+        {
+            conn = Database.getConnection();
+            pstmt = conn.prepareStatement(query.toString());
+            pstmt.setString(1,icicitransid);
+            hash = Database.getHashFromResultSet(pstmt.executeQuery());
+            req.setAttribute("reversaldetails", hash);
+
+            RequestDispatcher rd = req.getRequestDispatcher("/reversereason.jsp?ctoken=" + user.getCSRFToken());
+            rd.forward(req, res);
+        }
+        catch (SystemError se)
+        {
+            logger.error("System Error occur while fetch record of reversal",se);
+            printwriter.println(Functions.NewShowConfirmation1("Error!", "Internal System Error While getting Reversal Detail"));
+            //System.out.println(se.toString());
+
+        }
+        catch (Exception e)
+        {
+            logger.error("Exception occur while fetch record of reversal",e);
+            printwriter.println(Functions.NewShowConfirmation1("Error!", "Internal System Error While getting Reversal Detail"));
+        }
+        finally
+        {
+            Database.closePreparedStatement(pstmt);
+            Database.closeConnection(conn);
+        }
+
+    }
+}

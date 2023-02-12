@@ -1,0 +1,531 @@
+package com.payment.trustPay;
+
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.TransactionLogger;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.GenericRequestVO;
+import com.directi.pg.core.valueObjects.GenericResponseVO;
+import com.payment.common.core.CommRequestVO;
+import com.payment.exceptionHandler.*;
+import com.payment.exceptionHandler.constraint.PZGenericConstraint;
+import com.payment.exceptionHandler.constraintType.PZTechnicalExceptionEnum;
+import com.payment.trustPay.VO.responseVO.ResponseVO;
+import org.apache.commons.io.IOUtils;
+import org.codehaus.jackson.map.DeserializationConfig;
+import org.codehaus.jackson.map.ObjectMapper;
+
+import javax.net.ssl.HttpsURLConnection;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+
+/**
+ * Created by Sneha on 11/2/2016.
+ */
+public class TrustPayPaymentGateway extends AbstractPaymentGateway
+{
+    public static final String GATEWAY_TYPE = "trustpay";
+    public static final String PRE_AUTH = "PA";
+    public static final String CAPTURE = "CP";
+    public static final String DEBIT = "DB";
+    public static final String CREDIT = "CD";
+    public static final String REFUND = "RF";
+    public static final String REVERSAL = "RV";
+    private final static String TEST_URL = "https://test.oppwa.com/v1/payments";
+    private final static String LIVE_URL = "https://oppwa.com/v1/payments";
+    private static Logger log = new Logger(TrustPayPaymentGateway.class.getName());
+    private static TransactionLogger transactionLogger = new TransactionLogger(TrustPayPaymentGateway.class.getName());
+    private TrustPayUtility trustPayUtility = new TrustPayUtility();
+    private Functions functions = new Functions();
+
+    public TrustPayPaymentGateway(String accountId)
+    {
+        this.accountId = accountId;
+    }
+
+    public static void main(String[] args) throws IOException
+    {
+        InputStream is = null;
+        try
+        {
+            String id = "8a829449582ec5d501584367cd6f7428";
+//            URL url = new URL("https://test.oppwa.com/v1/payments/8a829449582ec5d501584367cd6f7428");
+            URL url = new URL("https://test.oppwa.com/v1/payments");
+
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+
+            String data = ""
+//                    + "authentication.userId=056fe948937521a995466ee9335141ab"
+//                    + "&authentication.password=demo"
+//                    + "&authentication.entityId=5062cb23dcb370c0c561f3f0c8c5886c"
+
+                    + "authentication.userId=8a82941856e5d17e0156e9dc95751a9f" //test
+                    + "&authentication.password=WZQhG2WBHm" //test
+                    + "&authentication.entityId=8a82941856e5d17e0156e9dcf91e1aa3" //test
+                    + "&amount=50.50"
+                    + "&currency=EUR"
+                    + "&paymentBrand=MASTER"
+                    + "&paymentType=DB"
+                    + "&card.number=5189820000000003"
+                    + "&card.holder=jane Jones"
+                    + "&card.expiryMonth=12"
+                    + "&card.expiryYear=2016"
+                    + "&card.cvv=123";
+//                    + "&testMode=EXTERNAL";
+
+            //System.out.println("request data -->" + data);
+
+            DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
+            wr.writeBytes(String.valueOf(data));
+            wr.flush();
+            wr.close();
+            int responseCode = conn.getResponseCode();
+
+            if (responseCode >= 400) is = conn.getErrorStream();
+            else is = conn.getInputStream();
+
+            String jsonString = IOUtils.toString(is);
+            //System.out.println("response----" + jsonString);
+
+            ResponseVO responseVO = new ResponseVO();
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            responseVO = objectMapper.readValue(jsonString, ResponseVO.class);
+
+            //System.out.println("responseVO.getAmount()--->" + responseVO.getAmount());
+        }
+        catch (Exception e)
+        {
+            e.getStackTrace();
+        }
+    }
+
+    @Override
+    public String getMaxWaitDays()
+    {
+        return null;
+    }
+
+    public GenericResponseVO processAuthentication(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        ResponseVO responseVO = new ResponseVO();
+
+        String userId = GatewayAccountService.getGatewayAccount(accountId).getFRAUD_FTP_USERNAME();
+        String password = GatewayAccountService.getGatewayAccount(accountId).getPassword();
+        String entityId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId();
+        String description = "";
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest = gatewayAccount.isTest();
+
+        String paymentBrand = null;
+        String status = "failed";
+        String descriptor = GatewayAccountService.getGatewayAccount(accountId).getDisplayName();
+
+        if("MC".equals(commRequestVO.getCardDetailsVO().getCardType()))
+            paymentBrand = "MASTER";
+        else
+            paymentBrand = commRequestVO.getCardDetailsVO().getCardType();
+
+        String data = "authentication.userId="+userId
+                + "&authentication.password="+password
+                + "&authentication.entityId="+entityId
+                + "&amount="+commRequestVO.getTransDetailsVO().getAmount()
+                + "&currency="+commRequestVO.getTransDetailsVO().getCurrency()
+                + "&paymentBrand="+paymentBrand
+                + "&paymentType="+PRE_AUTH
+                + "&card.number="+commRequestVO.getCardDetailsVO().getCardNum()
+                + "&card.holder="+commRequestVO.getAddressDetailsVO().getFirstname()+ " " +commRequestVO.getAddressDetailsVO().getLastname()
+                + "&card.expiryMonth="+commRequestVO.getCardDetailsVO().getExpMonth()
+                + "&card.expiryYear="+commRequestVO.getCardDetailsVO().getExpYear()
+                + "&card.cvv="+commRequestVO.getCardDetailsVO().getcVV();
+//                + "&testMode=EXTERNAL";
+
+        String dataLog = "authentication.userId="+userId
+                + "&authentication.password="+password
+                + "&authentication.entityId="+entityId
+                + "&amount="+commRequestVO.getTransDetailsVO().getAmount()
+                + "&currency="+commRequestVO.getTransDetailsVO().getCurrency()
+                + "&paymentBrand="+paymentBrand
+                + "&paymentType="+PRE_AUTH
+                + "&card.number="+functions.maskingPan(commRequestVO.getCardDetailsVO().getCardNum())
+                + "&card.holder="+commRequestVO.getAddressDetailsVO().getFirstname()+ " " +commRequestVO.getAddressDetailsVO().getLastname()
+                + "&card.expiryMonth="+functions.maskingNumber(commRequestVO.getCardDetailsVO().getExpMonth())
+                + "&card.expiryYear="+functions.maskingNumber(commRequestVO.getCardDetailsVO().getExpYear())
+                + "&card.cvv="+functions.maskingNumber(commRequestVO.getCardDetailsVO().getcVV());
+//                + "&testMode=EXTERNAL";
+
+        transactionLogger.error("TrustPay Request---" + trackingID + "--" + dataLog);
+        try
+        {
+            URL url = null;
+            if(isTest)
+                url = new URL(TEST_URL);
+            else
+                url = new URL(LIVE_URL);
+
+
+            String responseData = trustPayUtility.sendPaymentRequest(data, url);
+            transactionLogger.error("TrustPay Response----" + trackingID + "--" + responseData);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            responseVO = objectMapper.readValue(responseData, ResponseVO.class);
+            if(responseVO.getResult().getCode().equals("000.000.000") || responseVO.getResult().getCode().equals("000.000.100") || responseVO.getResult().getCode().equals("000.100.110") || responseVO.getResult().getCode().equals("000.100.111") || responseVO.getResult().getCode().equals("000.100.112"))
+            {
+                //System.out.println("inside setting status");
+                status = "success";
+                if (functions.isValueNull(responseVO.getDescriptor()))
+                {
+                    descriptor = responseVO.getDescriptor();
+                }
+            }
+            if(responseVO.getResult().getDescription().contains("'"))
+                description = responseVO.getResult().getDescription().replace("'","");
+            else
+                description = responseVO.getResult().getDescription();
+            responseVO.setStatus(status);
+            responseVO.setTransactionId(responseVO.getId());
+            responseVO.setDescription(description);
+            responseVO.setErrorCode(responseVO.getResult().getCode());
+            responseVO.setTransactionType(responseVO.getPaymentType());
+            responseVO.setRemark(description);
+            responseVO.setResponseTime(responseVO.getTimestamp());
+            responseVO.setDescriptor(descriptor);
+            responseVO.setResponseHashInfo(responseVO.getNdc());
+        }
+        catch (IOException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(TrustPayPaymentGateway.class.getName(), "processAuthentication()", null, "common", "Technical Exception while placing the transaction", PZTechnicalExceptionEnum.IOEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        return responseVO;
+    }
+
+    public GenericResponseVO processSale(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        ResponseVO responseVO = new ResponseVO();
+
+        String userId = GatewayAccountService.getGatewayAccount(accountId).getFRAUD_FTP_USERNAME();
+        String password = GatewayAccountService.getGatewayAccount(accountId).getPassword();
+        String entityId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId();
+        String description = "";
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest = gatewayAccount.isTest();
+
+        String paymentBrand = null;
+        String status = "failed";
+        String descriptor = GatewayAccountService.getGatewayAccount(accountId).getDisplayName();
+
+        if("MC".equals(commRequestVO.getCardDetailsVO().getCardType()))
+            paymentBrand = "MASTER";
+        else
+            paymentBrand = commRequestVO.getCardDetailsVO().getCardType();
+
+        String data = "authentication.userId="+userId
+                + "&authentication.password="+password
+                + "&authentication.entityId="+entityId
+                + "&amount="+commRequestVO.getTransDetailsVO().getAmount()
+                + "&currency="+commRequestVO.getTransDetailsVO().getCurrency()
+                + "&paymentBrand="+paymentBrand
+                + "&paymentType="+DEBIT
+                + "&card.number="+commRequestVO.getCardDetailsVO().getCardNum()
+                + "&card.holder="+commRequestVO.getAddressDetailsVO().getFirstname()+ " " +commRequestVO.getAddressDetailsVO().getLastname()
+                + "&card.expiryMonth="+commRequestVO.getCardDetailsVO().getExpMonth()
+                + "&card.expiryYear="+commRequestVO.getCardDetailsVO().getExpYear()
+                + "&card.cvv="+commRequestVO.getCardDetailsVO().getcVV();
+//                + "&testMode=EXTERNAL";
+
+        String datalog = "authentication.userId="+userId
+                + "&authentication.password="+password
+                + "&authentication.entityId="+entityId
+                + "&amount="+commRequestVO.getTransDetailsVO().getAmount()
+                + "&currency="+commRequestVO.getTransDetailsVO().getCurrency()
+                + "&paymentBrand="+paymentBrand
+                + "&paymentType="+DEBIT
+                + "&card.number="+functions.maskingPan(commRequestVO.getCardDetailsVO().getCardNum())
+                + "&card.holder="+commRequestVO.getAddressDetailsVO().getFirstname()+ " " +commRequestVO.getAddressDetailsVO().getLastname()
+                + "&card.expiryMonth="+functions.maskingNumber(commRequestVO.getCardDetailsVO().getExpMonth())
+                + "&card.expiryYear=" + functions.maskingNumber(commRequestVO.getCardDetailsVO().getExpYear())
+                + "&card.cvv=" + functions.maskingNumber(commRequestVO.getCardDetailsVO().getcVV());
+//                + "&testMode=EXTERNAL";
+
+        try
+        {
+            URL url = null;
+            if(isTest)
+                url = new URL(TEST_URL);
+            else
+                url = new URL(LIVE_URL);
+
+
+            transactionLogger.error("TrustPay Request-----"+trackingID+"--" + datalog);
+            String responseData = trustPayUtility.sendPaymentRequest(data, url);
+            log.debug("TrustPay Response---"+trackingID+"--"+responseData);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            responseVO = objectMapper.readValue(responseData, ResponseVO.class);
+            if(responseVO.getResult().getCode().equals("000.000.000") || responseVO.getResult().getCode().equals("000.000.100") || responseVO.getResult().getCode().equals("000.100.110") || responseVO.getResult().getCode().equals("000.100.111") || responseVO.getResult().getCode().equals("000.100.112"))
+            {
+                status = "success";
+                if (functions.isValueNull(responseVO.getDescriptor()))
+                {
+                    descriptor = responseVO.getDescriptor();
+                }
+            }
+            else
+            {
+                status = "failed";
+                responseVO.setDescription(responseVO.getResult().getDescription());
+                transactionLogger.debug("responseVO.getDescription()--------" + responseVO.getDescription());
+            }
+            if(responseVO.getResult().getDescription().contains("'"))
+                description = responseVO.getResult().getDescription().replace("'","");
+            else
+                description = responseVO.getResult().getDescription();
+            responseVO.setStatus(status);
+            responseVO.setTransactionId(responseVO.getId());
+            responseVO.setDescription(description);
+            responseVO.setErrorCode(responseVO.getResult().getCode());
+            responseVO.setTransactionType(responseVO.getPaymentType());
+            responseVO.setRemark(description);
+            responseVO.setResponseTime(responseVO.getTimestamp());
+            responseVO.setDescriptor(descriptor);
+            responseVO.setResponseHashInfo(responseVO.getNdc());
+        }
+        catch (IOException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(TrustPayPaymentGateway.class.getName(), "processSale()", null, "common", "Technical Exception while placing the transaction", PZTechnicalExceptionEnum.IOEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        return responseVO;
+    }
+
+    public GenericResponseVO processCapture(String trackingID, GenericRequestVO requestVO) throws PZConstraintViolationException, PZTechnicalViolationException, PZDBViolationException
+    {
+        ResponseVO responseVO = new ResponseVO();
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+
+        String userId = GatewayAccountService.getGatewayAccount(accountId).getFRAUD_FTP_USERNAME();
+        String password = GatewayAccountService.getGatewayAccount(accountId).getPassword();
+        String entityId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId();
+        String description = "";
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest = gatewayAccount.isTest();
+
+        String status = "failed";
+        String descriptor = GatewayAccountService.getGatewayAccount(accountId).getDisplayName();
+        String data = "authentication.userId="+userId
+                + "&authentication.password="+password
+                + "&authentication.entityId="+entityId
+                + "&amount="+commRequestVO.getTransDetailsVO().getAmount()
+                + "&currency="+commRequestVO.getTransDetailsVO().getCurrency()
+                + "&paymentType="+CAPTURE;
+//                + "&testMode=EXTERNAL";
+
+        try
+        {
+            URL url = null;
+            if(isTest)
+                url = new URL(TEST_URL+"/"+commRequestVO.getTransDetailsVO().getPreviousTransactionId());
+            else
+                url = new URL(LIVE_URL+"/"+commRequestVO.getTransDetailsVO().getPreviousTransactionId());
+
+            log.debug("TrustPay Capture Request--" + data);
+            String responseData = trustPayUtility.sendPaymentRequest(data, url);
+            log.debug("TrustPay Capture Response--"+responseData);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+
+            responseVO = objectMapper.readValue(responseData, ResponseVO.class);
+            if(responseVO.getResult().getCode().equals("000.000.000") || responseVO.getResult().getCode().equals("000.000.100") || responseVO.getResult().getCode().equals("000.100.110") || responseVO.getResult().getCode().equals("000.100.111") || responseVO.getResult().getCode().equals("000.100.112"))
+            {
+                //System.out.println("inside setting status");
+                status = "success";
+                if (functions.isValueNull(responseVO.getDescriptor()))
+                {
+                    descriptor = responseVO.getDescriptor();
+                }
+            }
+            if(responseVO.getResult().getDescription().contains("'"))
+                description = responseVO.getResult().getDescription().replace("'","");
+            else
+                description = responseVO.getResult().getDescription();
+            responseVO.setStatus(status);
+            responseVO.setTransactionId(responseVO.getId());
+            responseVO.setDescription(description);
+            responseVO.setErrorCode(responseVO.getResult().getCode());
+            responseVO.setTransactionType(responseVO.getPaymentType());
+            responseVO.setRemark(description);
+            responseVO.setResponseTime(responseVO.getTimestamp());
+            responseVO.setDescriptor(descriptor);
+            responseVO.setResponseHashInfo(responseVO.getNdc());
+        }
+        catch (IOException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(TrustPayPaymentGateway.class.getName(), "processCapture()", null, "common", "Technical Exception while placing the transaction", PZTechnicalExceptionEnum.IOEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        return responseVO;
+    }
+
+    public GenericResponseVO processVoid(String trackingID, GenericRequestVO requestVO) throws  PZTechnicalViolationException, PZConstraintViolationException, PZDBViolationException
+    {
+        ResponseVO responseVO = new ResponseVO();
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+
+        String userId = GatewayAccountService.getGatewayAccount(accountId).getFRAUD_FTP_USERNAME();
+        String password = GatewayAccountService.getGatewayAccount(accountId).getPassword();
+        String entityId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId();
+        String description = "";
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest = gatewayAccount.isTest();
+
+        String status = "failed";
+        String descriptor = GatewayAccountService.getGatewayAccount(accountId).getDisplayName();
+        String data = "authentication.userId="+userId
+                + "&authentication.password="+password
+                + "&authentication.entityId="+entityId
+                + "&paymentType="+REVERSAL;
+//                + "&testMode=EXTERNAL";
+
+        try
+        {
+            URL url = null;
+            if(isTest)
+                url = new URL(TEST_URL+"/"+commRequestVO.getTransDetailsVO().getPreviousTransactionId());
+            else
+                url = new URL(LIVE_URL+"/"+commRequestVO.getTransDetailsVO().getPreviousTransactionId());
+
+            log.debug("TrustPay Capture Request--" + data);
+            String responseData = trustPayUtility.sendPaymentRequest(data, url);
+            log.debug("TrustPay Capture Response--"+responseData);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            responseVO = objectMapper.readValue(responseData, ResponseVO.class);
+            if(responseVO.getResult().getCode().equals("000.000.000") || responseVO.getResult().getCode().equals("000.000.100") || responseVO.getResult().getCode().equals("000.100.110") || responseVO.getResult().getCode().equals("000.100.111") || responseVO.getResult().getCode().equals("000.100.112"))
+            {
+                //System.out.println("inside setting status");
+                status = "success";
+                if (functions.isValueNull(responseVO.getDescriptor()))
+                {
+                    descriptor = responseVO.getDescriptor();
+                }
+            }
+            if(responseVO.getResult().getDescription().contains("'"))
+                description = responseVO.getResult().getDescription().replace("'","");
+            else
+                description = responseVO.getResult().getDescription();
+            responseVO.setStatus(status);
+            responseVO.setTransactionId(responseVO.getId());
+            responseVO.setDescription(description);
+            responseVO.setErrorCode(responseVO.getResult().getCode());
+            responseVO.setTransactionType(responseVO.getPaymentType());
+            responseVO.setRemark(description);
+            responseVO.setResponseTime(responseVO.getTimestamp());
+            responseVO.setDescriptor(descriptor);
+            responseVO.setResponseHashInfo(responseVO.getNdc());
+        }
+        catch (IOException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(TrustPayPaymentGateway.class.getName(), "processVoid()", null, "common", "Technical Exception while placing the transaction", PZTechnicalExceptionEnum.IOEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        return responseVO;
+    }
+
+    public GenericResponseVO processRefund(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException, PZConstraintViolationException, PZDBViolationException
+    {
+        ResponseVO responseVO = new ResponseVO();
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+
+        String userId = GatewayAccountService.getGatewayAccount(accountId).getFRAUD_FTP_USERNAME();
+        String password = GatewayAccountService.getGatewayAccount(accountId).getPassword();
+        String entityId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId();
+        String description = "";
+
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest = gatewayAccount.isTest();
+
+        String status = null;
+        String descriptor = GatewayAccountService.getGatewayAccount(accountId).getDisplayName();
+        String data = "authentication.userId="+userId
+                + "&authentication.password="+password
+                + "&authentication.entityId="+entityId
+                + "&amount="+commRequestVO.getTransDetailsVO().getAmount()
+                + "&currency="+commRequestVO.getTransDetailsVO().getCurrency()
+                + "&paymentType="+REFUND;
+//                + "&testMode=EXTERNAL";
+
+        try
+        {
+            URL url = null;
+            if(isTest)
+                url = new URL(TEST_URL+"/"+commRequestVO.getTransDetailsVO().getPreviousTransactionId());
+            else
+                url = new URL(LIVE_URL+"/"+commRequestVO.getTransDetailsVO().getPreviousTransactionId());
+
+            log.debug("TrustPay Refund Request--" + data);
+            String responseData = trustPayUtility.sendPaymentRequest(data, url);
+            log.debug("TrustPay Refund Response--"+responseData);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            responseVO = objectMapper.readValue(responseData, ResponseVO.class);
+            if(responseVO.getResult().getCode().equals("000.000.000") || responseVO.getResult().getCode().equals("000.000.100") || responseVO.getResult().getCode().equals("000.100.110") || responseVO.getResult().getCode().equals("000.100.111") || responseVO.getResult().getCode().equals("000.100.112"))
+            {
+                status = "success";
+                if (functions.isValueNull(responseVO.getDescriptor()))
+                {
+                    descriptor = responseVO.getDescriptor();
+                }
+            }
+            if(responseVO.getResult().getDescription().contains("'"))
+                description = responseVO.getResult().getDescription().replace("'","");
+            else
+                description = responseVO.getResult().getDescription();
+            responseVO.setStatus(status);
+            responseVO.setTransactionId(responseVO.getId());
+            responseVO.setDescription(description);
+            responseVO.setErrorCode(responseVO.getResult().getCode());
+            responseVO.setTransactionType(responseVO.getPaymentType());
+            responseVO.setRemark(description);
+            responseVO.setResponseTime(responseVO.getTimestamp());
+            responseVO.setDescriptor(descriptor);
+            responseVO.setResponseHashInfo(responseVO.getNdc());
+        }
+        catch (IOException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(TrustPayUtility.class.getName(), "sendPaymentRequest()", null, "common", "Technical Exception while placing the transaction", PZTechnicalExceptionEnum.IOEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        return responseVO;
+    }
+    public GenericResponseVO processQuery(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        throw new PZGenericConstraintViolationException("Query Not Supported");
+    }
+
+    public GenericResponseVO processRebilling(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        PZGenericConstraint genConstraint = new PZGenericConstraint("TrustPayPaymentGateway","processRebilling",null,"common","This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",null);
+        throw new PZGenericConstraintViolationException(genConstraint,"This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",null);
+    }
+}

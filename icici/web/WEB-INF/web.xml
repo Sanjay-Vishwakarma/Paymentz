@@ -1,0 +1,4478 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+                      http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+
+
+    <error-page>
+        <location>/error404.html</location>
+    </error-page>
+
+    <filter>
+        <filter-name>UTF8Filter</filter-name>
+        <filter-class>com.directi.pg.filters.UTF8Filter</filter-class>
+        <init-param>
+            <param-name>requestEncoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+    </filter>
+
+    <filter>
+        <filter-name>ESAPIAdminFilter</filter-name>
+        <filter-class>com.directi.pg.filters.ESAPIAdminFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>UTF8Filter</filter-name>
+        <url-pattern>/servlet/*</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>ESAPIAdminFilter</filter-name>
+        <url-pattern>/servlet/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>ESAPIAdminFilter</filter-name>
+        <url-pattern>*.jsp</url-pattern>
+    </filter-mapping>
+
+    <servlet>
+        <servlet-name>InitServlet</servlet-name>
+        <servlet-class>InitServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet>
+        <servlet-name>FraudRuleList</servlet-name>
+        <servlet-class>FraudRuleList</servlet-class>
+    </servlet>
+
+
+    <servlet>
+        <servlet-name>ActionFraudSystem</servlet-name>
+        <servlet-class>ActionFraudSystem</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ActionHistory</servlet-name>
+        <servlet-class>ActionHistory</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ActionMemberAccountsCharges</servlet-name>
+        <servlet-class>ActionMemberAccountsCharges</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ActionMemberFraudSystem</servlet-name>
+        <servlet-class>ActionMemberFraudSystem</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ActionRollingReserveManager</servlet-name>
+        <servlet-class>ActionRollingReserveManager</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ActionWireManager</servlet-name>
+        <servlet-class>ActionWireManager</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ActionAgentWireManager</servlet-name>
+        <servlet-class>ActionAgentWireManager</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ActionPartnerWireManager</servlet-name>
+        <servlet-class>ActionPartnerWireManager</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>addGatewayAccounts</servlet-name>
+        <servlet-class>addGatewayAccounts</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>addGatewayType</servlet-name>
+        <servlet-class>addGatewayType</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AddMailMappingDetail</servlet-name>
+        <servlet-class>AddMailMappingDetail</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AddNewFraudSystem</servlet-name>
+        <servlet-class>AddNewFraudSystem</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AdminChargebackList</servlet-name>
+        <servlet-class>AdminChargebackList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AdminChargebackReverseList</servlet-name>
+        <servlet-class>AdminChargebackReverseList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AdminDoProofReceived</servlet-name>
+        <servlet-class>AdminDoProofReceived</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AdminDoReverseChargeback</servlet-name>
+        <servlet-class>AdminDoReverseChargeback</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AdminDoReverseTransaction</servlet-name>
+        <servlet-class>AdminDoReverseTransaction</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AdminFraudList</servlet-name>
+        <servlet-class>AdminFraudList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AdminProofrequiredList</servlet-name>
+        <servlet-class>AdminProofrequiredList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AdminReverseList</servlet-name>
+        <servlet-class>AdminReverseList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AdminTransactionDetails</servlet-name>
+        <servlet-class>AdminTransactionDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AgentMerchantDetails</servlet-name>
+        <servlet-class>AgentMerchantDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AgentMerchantTransactionSummary</servlet-name>
+        <servlet-class>AgentMerchantTransactionSummary</servlet-class>
+
+    </servlet>
+    <!--<servlet>
+        <servlet-name>AuthorizationCancel</servlet-name>
+        <servlet-class>AuthorizationCancel</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AuthorizationCancel</servlet-name>
+        <url-pattern>/servlet/AuthorizationCancel</url-pattern>
+    </servlet-mapping>-->
+    <servlet>
+        <servlet-name>BankMerchantSettlementList</servlet-name>
+        <servlet-class>BankMerchantSettlementList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>BankReceivedSettlementList</servlet-name>
+        <servlet-class>BankReceivedSettlementList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>BankRollingReserveList</servlet-name>
+        <servlet-class>BankRollingReserveList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>BankTransactionReport</servlet-name>
+        <servlet-class>BankTransactionReport</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>BankWireManagerList</servlet-name>
+        <servlet-class>BankWireManagerList</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ActionISOCommissionWireManager</servlet-name>
+        <servlet-class>ActionISOCommissionWireManager</servlet-class>
+    </servlet>
+
+
+    <servlet>
+        <servlet-name>ISOCommWireManagerList</servlet-name>
+        <servlet-class>ISOCommWireManagerList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ISOCommissionWireList</servlet-name>
+        <servlet-class>ISOCommissionWireList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AddNewISOCommWireList</servlet-name>
+        <servlet-class>AddNewISOCommWireList</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>UpdateISOCommWire</servlet-name>
+        <servlet-class>UpdateISOCommWire</servlet-class>
+    </servlet>
+
+
+    <servlet>
+        <servlet-name>BlockCountry</servlet-name>
+        <servlet-class>BlockCountry</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>BlockDomain</servlet-name>
+        <servlet-class>BlockDomain</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>BlockedCountryList</servlet-name>
+        <servlet-class>BlockedCountryList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>BlockedDomainList</servlet-name>
+        <servlet-class>BlockedDomainList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>BlockedEmailList</servlet-name>
+        <servlet-class>BlockedEmailList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>BlockedIPList</servlet-name>
+        <servlet-class>BlockedIPList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>BlockedMerchantList</servlet-name>
+        <servlet-class>BlockedMerchantList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>BlockEmail</servlet-name>
+        <servlet-class>BlockEmail</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>BlockIP</servlet-name>
+        <servlet-class>BlockIP</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>SetReservesDefault</servlet-name>
+        <servlet-class>SetReservesDefault</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>PartnerDetails</servlet-name>
+        <servlet-class>PartnerDetails</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>RejectedTransactionsList</servlet-name>
+        <servlet-class>RejectedTransactionsList</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ExportRejectedTransactionsList</servlet-name>
+        <servlet-class>ExportRejectedTransactionsList</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>CommonWhitelist</servlet-name>
+        <servlet-class>CommonWhitelist</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>MarkFraudTransaction</servlet-name>
+        <servlet-class>MarkFraudTransaction</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>MarkFraudTransaction</servlet-name>
+        <url-pattern>/servlet/MarkFraudTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AddMerchantWireAllTerminal</servlet-name>
+        <servlet-class>AddMerchantWireAllTerminal</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>AddMerchantWireAllTerminal</servlet-name>
+        <url-pattern>/servlet/AddMerchantWireAllTerminal</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>BlacklistBin</servlet-name>
+        <servlet-class>BlacklistBin</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>BlacklistBin</servlet-name>
+        <url-pattern>/servlet/BlacklistBin</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AgentPayoutReport</servlet-name>
+        <servlet-class>AgentPayoutReport</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>AgentPayoutReport</servlet-name>
+        <url-pattern>/servlet/AgentPayoutReport</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ReverseReport</servlet-name>
+        <servlet-class>ReverseReport</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ReverseReport</servlet-name>
+        <url-pattern>/servlet/ReverseReport</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>TransactionFraud</servlet-name>
+        <servlet-class>TransactionFraud</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>TransactionFraud</servlet-name>
+        <url-pattern>/servlet/TransactionFraud</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>ChargebackTransactionList</servlet-name>
+        <servlet-class>ChargebackTransactionList</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ChargebackTransactionList</servlet-name>
+        <url-pattern>/servlet/ChargebackTransactionList</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>MarkFraudChargeback</servlet-name>
+        <servlet-class>MarkFraudChargeback</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>MarkFraudChargeback</servlet-name>
+        <url-pattern>/servlet/MarkFraudChargeback</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>UploadSingleDetails</servlet-name>
+        <servlet-class>UploadSingleDetails</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>UploadSingleDetails</servlet-name>
+        <url-pattern>/servlet/UploadSingleDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CommonWhitelist</servlet-name>
+        <url-pattern>/servlet/CommonWhitelist</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet-mapping>
+        <servlet-name>RejectedTransactionsList</servlet-name>
+        <url-pattern>/servlet/RejectedTransactionsList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ExportRejectedTransactionsList</servlet-name>
+        <url-pattern>/servlet/ExportRejectedTransactionsList</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>WhiteListEmailDetails</servlet-name>
+        <servlet-class>WhiteListEmailDetails</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>WhiteListEmailDetails</servlet-name>
+        <url-pattern>/servlet/WhiteListEmailDetails</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>ManageMemberAccountCharges</servlet-name>
+        <servlet-class>ManageMemberAccountCharges</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ManageMemberAccountCharges</servlet-name>
+        <url-pattern>/servlet/ManageMemberAccountCharges</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PartnerTransactionReport</servlet-name>
+        <servlet-class>PartnerTransactionReport</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PartnerTransactionReport</servlet-name>
+        <url-pattern>/servlet/PartnerTransactionReport</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ExportExcelForPartnerTransactions</servlet-name>
+        <servlet-class>ExportExcelForPartnerTransactions</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ExportExcelForPartnerTransactions</servlet-name>
+        <url-pattern>/servlet/ExportExcelForPartnerTransactions</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ExportExcelForMerchant</servlet-name>
+        <servlet-class>ExportExcelForMerchant</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ExportExcelForMerchant</servlet-name>
+        <url-pattern>/servlet/ExportExcelForMerchant</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ExportFraudTransaction</servlet-name>
+        <servlet-class>ExportFraudTransaction</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ExportFraudTransaction</servlet-name>
+        <url-pattern>/servlet/ExportFraudTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ExportChargebackTransaction</servlet-name>
+        <servlet-class>ExportChargebackTransaction</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ExportChargebackTransaction</servlet-name>
+        <url-pattern>/servlet/ExportChargebackTransaction</url-pattern>
+    </servlet-mapping>
+
+    <!--<servlet>
+        <servlet-name>BusinessDashboardUtils</servlet-name>
+        <servlet-class>BusinessDashboardUtils</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>BusinessDashboardUtils</servlet-name>
+        <url-pattern>/servlet/BusinessDashboardUtils</url-pattern>
+    </servlet-mapping>-->
+
+    <servlet>
+        <servlet-name>CancelInvoice</servlet-name>
+        <servlet-class>CancelInvoice</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CaptureTransaction</servlet-name>
+        <servlet-class>CaptureTransaction</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ChargebackList</servlet-name>
+        <servlet-class>ChargebackList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ChargebackReport</servlet-name>
+        <servlet-class>ChargebackReport</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>ManagePartnerAllocatedAccountList</servlet-name>
+        <servlet-class>ManagePartnerAllocatedAccountList</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ManagePartnerAllocatedAccountList</servlet-name>
+        <url-pattern>/servlet/ManagePartnerAllocatedAccountList</url-pattern>
+    </servlet-mapping>
+
+    <!--<servlet>
+        <servlet-name>ChargesUtils</servlet-name>
+        <servlet-class>ChargesUtils</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ChargesUtils</servlet-name>
+        <url-pattern>/servlet/ChargesUtils</url-pattern>
+    </servlet-mapping>-->
+
+    <servlet>
+        <servlet-name>checkMerchantServlet</servlet-name>
+        <servlet-class>checkMerchantServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ChngPassword</servlet-name>
+        <servlet-class>ChngPassword</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CommonActionHistory</servlet-name>
+        <servlet-class>CommonActionHistory</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CommonChargebackList</servlet-name>
+        <servlet-class>CommonChargebackList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CommonDoChargeback</servlet-name>
+        <servlet-class>CommonDoChargeback</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CommonDoReverse</servlet-name>
+        <servlet-class>CommonDoReverse</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CommonInquiry</servlet-name>
+        <servlet-class>CommonInquiry</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CommonInquiryList</servlet-name>
+        <servlet-class>CommonInquiryList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CommonReconcilationList</servlet-name>
+        <servlet-class>CommonReconcilationList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CommonReconcilationProcess</servlet-name>
+        <servlet-class>CommonReconcilationProcess</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CommonReconciliationProcess</servlet-name>
+        <servlet-class>CommonReconciliationProcess</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CommonReconList</servlet-name>
+        <servlet-class>CommonReconList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CommonRefundList</servlet-name>
+        <servlet-class>CommonRefundList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CommonSettlementFile</servlet-name>
+        <servlet-class>CommonSettlementFile</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>Compliance</servlet-name>
+        <servlet-class>Compliance</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ConfirmBatch</servlet-name>
+        <servlet-class>ConfirmBatch</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CSEviewupdate</servlet-name>
+        <servlet-class>CSEviewupdate</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CSVCron</servlet-name>
+        <servlet-class>CSVCron</servlet-class>
+
+    </servlet>
+    <!--<servlet>
+        <servlet-name>CupBackendServlet</servlet-name>
+        <servlet-class>CupBackendServlet</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CupBackendServlet</servlet-name>
+        <url-pattern>/servlet/CupBackendServlet</url-pattern>
+    </servlet-mapping>-->
+    <!--<servlet>
+        <servlet-name>CupFrontendServlet</servlet-name>
+        <servlet-class>CupFrontendServlet</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CupFrontendServlet</servlet-name>
+        <url-pattern>/servlet/CupFrontendServlet</url-pattern>
+    </servlet-mapping>-->
+    <servlet>
+        <servlet-name>CupProcess</servlet-name>
+        <servlet-class>CupProcess</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CupServLet</servlet-name>
+        <servlet-class>CupServLet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>CustSuppSignup</servlet-name>
+        <servlet-class>CustSuppSignup</servlet-class>
+
+    </servlet>
+    <!--<servlet>
+        <servlet-name>DdpFrontendServlet</servlet-name>
+        <servlet-class>DdpFrontendServlet</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>DdpFrontendServlet</servlet-name>
+        <url-pattern>/servlet/DdpFrontendServlet</url-pattern>
+    </servlet-mapping>-->
+    <!--<servlet>
+        <servlet-name>DdpServlet</servlet-name>
+        <servlet-class>DdpServlet</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>DdpServlet</servlet-name>
+        <url-pattern>/servlet/DdpServlet</url-pattern>
+    </servlet-mapping>-->
+    <servlet>
+        <servlet-name>DeleteMailMapping</servlet-name>
+        <servlet-class>DeleteMailMapping</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>DoBulkChargebackTransaction</servlet-name>
+        <servlet-class>DoBulkChargebackTransaction</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>DoBulkReversalChargebackTransaction</servlet-name>
+        <servlet-class>DoBulkReversalChargebackTransaction</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>DoChargebackTransaction</servlet-name>
+        <servlet-class>DoChargebackTransaction</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>DoReverseFraudTransaction</servlet-name>
+        <servlet-class>DoReverseFraudTransaction</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>EcoreChargebackList</servlet-name>
+        <servlet-class>EcoreChargebackList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>EcoreChargebackTransaction</servlet-name>
+        <servlet-class>EcoreChargebackTransaction</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>EcoreCheckList</servlet-name>
+        <servlet-class>EcoreCheckList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>EcoreInquiry</servlet-name>
+        <servlet-class>EcoreInquiry</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>EcoreReconcilationList</servlet-name>
+        <servlet-class>EcoreReconcilationList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>EcoreReconcilationProcess</servlet-name>
+        <servlet-class>EcoreReconcilationProcess</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>EcoreRefundList</servlet-name>
+        <servlet-class>EcoreRefundList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>EcoreRefundTransaction</servlet-name>
+        <servlet-class>EcoreRefundTransaction</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>EditAgentDetails</servlet-name>
+        <servlet-class>EditAgentDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>EditCSEDetails</servlet-name>
+        <servlet-class>EditCSEDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>editGatewayAccountsDetails</servlet-name>
+        <servlet-class>editGatewayAccountsDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>editGatewayTypeDetails</servlet-name>
+        <servlet-class>editGatewayTypeDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>EditPartnerDetails</servlet-name>
+        <servlet-class>EditPartnerDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>EditShippingDetailList</servlet-name>
+        <servlet-class>EditShippingDetailList</servlet-class>
+
+    </servlet>
+    <!--<servlet>
+        <servlet-name>ErrorPage</servlet-name>
+        <servlet-class>ErrorPage</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ErrorPage</servlet-name>
+        <url-pattern>/servlet/ErrorPage</url-pattern>
+    </servlet-mapping>-->
+    <servlet>
+        <servlet-name>ErrorServlet</servlet-name>
+        <servlet-class>ErrorServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ExceptionalTransaction</servlet-name>
+        <servlet-class>ExceptionalTransaction</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ExportMemberDetails</servlet-name>
+        <servlet-class>ExportMemberDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ExportReserveFile</servlet-name>
+        <servlet-class>ExportReserveFile</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ExportShippingTransaction</servlet-name>
+        <servlet-class>ExportShippingTransaction</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ExportTransactions</servlet-name>
+        <servlet-class>ExportTransactions</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ExportChargeDetails</servlet-name>
+        <servlet-class>ExportChargeDetails</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ExportWhitelistDetails</servlet-name>
+        <servlet-class>ExportWhitelistDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>FinanceCron</servlet-name>
+        <servlet-class>FinanceCron</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>FraudReport</servlet-name>
+        <servlet-class>FraudReport</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>FraudTransactionList</servlet-name>
+        <servlet-class>FraudTransactionList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>FraudTransactionReverseList</servlet-name>
+        <servlet-class>FraudTransactionReverseList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>GenerateAgentPayoutServlet</servlet-name>
+        <servlet-class>GenerateAgentPayoutServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>GenerateBankAgentPayoutReport</servlet-name>
+        <servlet-class>GenerateBankAgentPayoutReport</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>GeneratePartnerPayoutServlet</servlet-name>
+        <servlet-class>GeneratePartnerPayoutServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>GenerateBankPartnerPayoutReport</servlet-name>
+        <servlet-class>GenerateBankPartnerPayoutReport</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>GeneratePayoutServlet</servlet-name>
+        <servlet-class>GeneratePayoutServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>GetChargebackDetails</servlet-name>
+        <servlet-class>GetChargebackDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>GetDetails</servlet-name>
+        <servlet-class>GetDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>GetGatewayAccount</servlet-name>
+        <servlet-class>GetGatewayAccount</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>GetMMStatus</servlet-name>
+        <servlet-class>GetMMStatus</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>Invoice</servlet-name>
+        <servlet-class>Invoice</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>InvoiceDetails</servlet-name>
+        <servlet-class>InvoiceDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>IpWhitelistConfig</servlet-name>
+        <servlet-class>IpWhitelistConfig</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ListAgentDetails</servlet-name>
+        <servlet-class>ListAgentDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ListChargeMaster</servlet-name>
+        <servlet-class>ListChargeMaster</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ListFraudSystem</servlet-name>
+        <servlet-class>ListFraudSystem</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>listGatewayAccountDetails</servlet-name>
+        <servlet-class>listGatewayAccountDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ListGatewayAccountsCharges</servlet-name>
+        <servlet-class>ListGatewayAccountsCharges</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>AddNewMonitoringParameter</servlet-name>
+        <servlet-class>AddNewMonitoringParameter</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>MonitoringRuleLog</servlet-name>
+        <servlet-class>MonitoringRuleLog</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>MonitoringRuleLog</servlet-name>
+        <url-pattern>/servlet/MonitoringRuleLog</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>MonitoringParameterMapping</servlet-name>
+        <servlet-class>MonitoringParameterMapping</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ActionGatewayAccountsCharges</servlet-name>
+        <servlet-class>ActionGatewayAccountsCharges</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UpdateGatewayAccountsCharges</servlet-name>
+        <servlet-class>UpdateGatewayAccountsCharges</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>listGatewayTypeDetails</servlet-name>
+        <servlet-class>listGatewayTypeDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ListMemberAccountsCharges</servlet-name>
+        <servlet-class>ListMemberAccountsCharges</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>ManageAccountChargesServlet</servlet-name>
+        <servlet-class>ManageAccountChargesServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ListMemberFraudSystem</servlet-name>
+        <servlet-class>ListMemberFraudSystem</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ListPartnerDetails</servlet-name>
+        <servlet-class>ListPartnerDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>Login</servlet-name>
+        <servlet-class>Login</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>MailMappingList</servlet-name>
+        <servlet-class>MailMappingList</servlet-class>
+
+    </servlet>
+    <!--<servlet>
+        <servlet-name>MailUIUtils</servlet-name>
+        <servlet-class>MailUIUtils</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MailUIUtils</servlet-name>
+        <url-pattern>/servlet/MailUIUtils</url-pattern>
+    </servlet-mapping>-->
+    <servlet>
+        <servlet-name>ManageMemberFraudSystem</servlet-name>
+        <servlet-class>ManageMemberFraudSystem</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>MemberDetailList</servlet-name>
+        <servlet-class>MemberDetailList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>MemberDetails</servlet-name>
+        <servlet-class>MemberDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>MemberList</servlet-name>
+        <servlet-class>MemberList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>MemberMappingDetails</servlet-name>
+        <servlet-class>MemberMappingDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>MerchantDetails</servlet-name>
+        <servlet-class>MerchantDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>MerchantIntimationMail</servlet-name>
+        <servlet-class>MerchantIntimationMail</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>MerchantTransMailList</servlet-name>
+        <servlet-class>MerchantTransMailList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>Migrate</servlet-name>
+        <servlet-class>Migrate</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ModifyBankRollingReserve</servlet-name>
+        <servlet-class>ModifyBankRollingReserve</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>MonthlyCron</servlet-name>
+        <servlet-class>MonthlyCron</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>MyMonedero</servlet-name>
+        <servlet-class>MyMonedero</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>MyMonederoActionHistory</servlet-name>
+        <servlet-class>MyMonederoActionHistory</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>NewAgent</servlet-name>
+        <servlet-class>NewAgent</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>NewMemberSignUp</servlet-name>
+        <servlet-class>NewMemberSignUp</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>NewPartner</servlet-name>
+        <servlet-class>NewPartner</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>NewPartnerLogo</servlet-name>
+        <servlet-class>NewPartnerLogo</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>NewPartnerIcon</servlet-name>
+        <servlet-class>servlets.NewPartnerIcon</servlet-class>
+
+    </servlet>
+    <!--    <servlet>
+        <servlet-name>NewPaymentServlet</servlet-name>
+        <servlet-class>NewPaymentServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>NewPostWait</servlet-name>
+        <servlet-class>NewPostWait</servlet-class>
+
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>NewPostWait</servlet-name>
+        <url-pattern>/servlet/NewPostWait</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>NewPaymentServlet</servlet-name>
+        <url-pattern>/servlet/NewPaymentServlet</url-pattern>
+    </servlet-mapping>-->
+    <servlet>
+        <servlet-name>PartnerMerchantDetails</servlet-name>
+        <servlet-class>PartnerMerchantDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PartnerMerchantTransSummary</servlet-name>
+        <servlet-class>PartnerMerchantTransSummary</servlet-class>
+
+    </servlet>
+    <!--    <servlet>
+        <servlet-name>PayDeltaRedirect</servlet-name>
+        <servlet-class>PayDeltaRedirect</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PayDeltaRedirect</servlet-name>
+        <url-pattern>/servlet/PayDeltaRedirect</url-pattern>
+    </servlet-mapping>-->
+    <!--<servlet>
+        <servlet-name>PayDRDataFeed</servlet-name>
+        <servlet-class>PayDRDataFeed</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PayDRDataFeed</servlet-name>
+        <url-pattern>/servlet/PayDRDataFeed</url-pattern>
+    </servlet-mapping>-->
+
+    <!--<servlet>
+        <servlet-name>PreWaitServlet</servlet-name>
+        <servlet-class>PreWaitServlet</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PreWaitServlet</servlet-name>
+        <url-pattern>/servlet/PreWaitServlet</url-pattern>
+    </servlet-mapping>-->
+    <servlet>
+        <servlet-name>PostPay</servlet-name>
+        <servlet-class>PostPay</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ProcessFIRCServlet</servlet-name>
+        <servlet-class>ProcessFIRCServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ProcessSyncTransaction</servlet-name>
+        <servlet-class>ProcessSyncTransaction</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>PwdForgot</servlet-name>
+        <servlet-class>PwdForgot</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>QwipiChargebackList</servlet-name>
+        <servlet-class>QwipiChargebackList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>QwipiChargebackTransaction</servlet-name>
+        <servlet-class>QwipiChargebackTransaction</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>QwipiCheckList</servlet-name>
+        <servlet-class>QwipiCheckList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>QwipiDetailList</servlet-name>
+        <servlet-class>QwipiDetailList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>QwipiInquiry</servlet-name>
+        <servlet-class>QwipiInquiry</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>QwipiReconcilationList</servlet-name>
+        <servlet-class>QwipiReconcilationList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>QwipiRefundList</servlet-name>
+        <servlet-class>QwipiRefundList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>QwipiRefundTransaction</servlet-name>
+        <servlet-class>QwipiRefundTransaction</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>QwipiVerifyOrderRefundAlertList</servlet-name>
+        <servlet-class>QwipiVerifyOrderRefundAlertList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>RawCancel</servlet-name>
+        <servlet-class>RawCancel</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>RawCheck</servlet-name>
+        <servlet-class>RawCheck</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>RawConfirmBatch</servlet-name>
+        <servlet-class>RawConfirmBatch</servlet-class>
+
+    </servlet>
+    <!--    <servlet>
+        <servlet-name>ReceiptPage</servlet-name>
+        <servlet-class>ReceiptPage</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ReceiptPage</servlet-name>
+        <url-pattern>/servlet/ReceiptPage</url-pattern>
+    </servlet-mapping>-->
+    <servlet>
+        <servlet-name>ReconcilationProcess</servlet-name>
+        <servlet-class>ReconcilationProcess</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>RegenerateInvoice</servlet-name>
+        <servlet-class>RegenerateInvoice</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>RegenerateInvoiceConfirm</servlet-name>
+        <servlet-class>RegenerateInvoiceConfirm</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>RemindInvoice</servlet-name>
+        <servlet-class>RemindInvoice</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>RemoteCancelTransaction</servlet-name>
+        <servlet-class>RemoteCancelTransaction</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>RetrivalRequestServlet</servlet-name>
+        <servlet-class>RetrivalRequestServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ReverseFraudTransactions</servlet-name>
+        <servlet-class>ReverseFraudTransactions</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>SearchCSE</servlet-name>
+        <servlet-class>SearchCSE</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>SendMailActiveMerchant</servlet-name>
+        <servlet-class>SendMailActiveMerchant</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>SetAccount</servlet-name>
+        <servlet-class>SetAccount</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>SetReserves</servlet-name>
+        <servlet-class>SetReserves</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ShippingDetailList</servlet-name>
+        <servlet-class>ShippingDetailList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>TempPod</servlet-name>
+        <servlet-class>TempPod</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>TempPodSubmit</servlet-name>
+        <servlet-class>TempPodSubmit</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>TestCaptureTransaction</servlet-name>
+        <servlet-class>TestCaptureTransaction</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>TestSettle</servlet-name>
+        <servlet-class>TestSettle</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>TransactionDetails</servlet-name>
+        <servlet-class>TransactionDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>TransactionStatus</servlet-name>
+        <servlet-class>TransactionStatus</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UnblockCountry</servlet-name>
+        <servlet-class>UnblockCountry</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UnblockDomain</servlet-name>
+        <servlet-class>UnblockDomain</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UnBlockedAccount</servlet-name>
+        <servlet-class>UnBlockedAccount</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UnblockEmail</servlet-name>
+        <servlet-class>UnblockEmail</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UnblockIP</servlet-name>
+        <servlet-class>UnblockIP</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UnreserveResellerFundServlet</servlet-name>
+        <servlet-class>UnreserveResellerFundServlet</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UpdateBankMerchantSettlement</servlet-name>
+        <servlet-class>UpdateBankMerchantSettlement</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UpdateBankReceivedSettlement</servlet-name>
+        <servlet-class>UpdateBankReceivedSettlement</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UpdateBankRollingReserve</servlet-name>
+        <servlet-class>UpdateBankRollingReserve</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UpdateBankWireManager</servlet-name>
+        <servlet-class>UpdateBankWireManager</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UpdateMerchantWire</servlet-name>
+        <servlet-class>UpdateMerchantWire</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UpdatePartnerWire</servlet-name>
+        <servlet-class>UpdatePartnerWire</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UpdateAgentWire</servlet-name>
+        <servlet-class>UpdateAgentWire</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UpdateKey</servlet-name>
+        <servlet-class>UpdateKey</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UpdateMailDetails</servlet-name>
+        <servlet-class>UpdateMailDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UpdateMemberAccountsCharges</servlet-name>
+        <servlet-class>UpdateMemberAccountsCharges</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UpdateMemberDetails</servlet-name>
+        <servlet-class>UpdateMemberDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UpdatePODDetails</servlet-name>
+        <servlet-class>UpdatePODDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>UploadCardFile</servlet-name>
+        <servlet-class>UploadCardFile</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>UploadBinFile</servlet-name>
+        <servlet-class>UploadBinFile</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>UploadBlacklistBinFile</servlet-name>
+        <servlet-class>UploadBlacklistBinFile</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>UploadFraudFile</servlet-name>
+        <servlet-class>UploadFraudFile</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>UploadBulkFraudList</servlet-name>
+        <servlet-class>UploadBulkFraudList</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>FraudNotification</servlet-name>
+        <servlet-class>FraudNotification</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>FraudNotificationAction</servlet-name>
+        <servlet-class>FraudNotificationAction</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>UTF8TestServlet</servlet-name>
+        <servlet-class>UTF8TestServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ViewAgentDetails</servlet-name>
+        <servlet-class>ViewAgentDetails</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>viewGatewayAccountDetails</servlet-name>
+        <servlet-class>viewGatewayAccountDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>viewGatewayTypeDetails</servlet-name>
+        <servlet-class>viewGatewayTypeDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ViewOrEditBankMerchantSettlement</servlet-name>
+        <servlet-class>ViewOrEditBankMerchantSettlement</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ViewOrEditBankReceivedSettlement</servlet-name>
+        <servlet-class>ViewOrEditBankReceivedSettlement</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ViewOrEditBankRollingReserve</servlet-name>
+        <servlet-class>ViewOrEditBankRollingReserve</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ViewOrEditBankWireManager</servlet-name>
+        <servlet-class>ViewOrEditBankWireManager</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ViewPartnerDetails</servlet-name>
+        <servlet-class>ViewPartnerDetails</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>WhiteListDetails</servlet-name>
+        <servlet-class>WhiteListDetails</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>WireList</servlet-name>
+        <servlet-class>WireList</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>AddMerchantWire</servlet-name>
+        <servlet-class>AddMerchantWire</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>AgentWireList</servlet-name>
+        <servlet-class>AgentWireList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>PartnerWireList</servlet-name>
+        <servlet-class>PartnerWireList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>GenerateWireServlet</servlet-name>
+        <servlet-class>GenerateWireServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>UpdateChargeMaster</servlet-name>
+        <servlet-class>UpdateChargeMaster</servlet-class>
+
+    </servlet>
+
+    <servlet>
+        <servlet-name>PopulateApplication</servlet-name>
+        <servlet-class>PopulateApplication</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>Navigation</servlet-name>
+        <servlet-class>Navigation</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AddNewAdminModule</servlet-name>
+        <servlet-class>AddNewAdminModule</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ManageAdminModuleMapping</servlet-name>
+        <servlet-class>ManageAdminModuleMapping</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>NewAdminSignUp</servlet-name>
+        <servlet-class>NewAdminSignUp</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>AdminDetailsList</servlet-name>
+        <servlet-class>AdminDetailsList</servlet-class>
+
+    </servlet>
+    <servlet>
+        <servlet-name>ListofAppMember</servlet-name>
+        <servlet-class>ListofAppMember</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>BankDetailsList</servlet-name>
+        <servlet-class>BankDetailsList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>UploadBankTemplate</servlet-name>
+        <servlet-class>UploadBankTemplate</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ViewBankTemplate</servlet-name>
+        <servlet-class>ViewBankTemplate</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>AppManagerStatus</servlet-name>
+        <servlet-class>AppManagerStatus</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ConsolidatedApplication</servlet-name>
+        <servlet-class>ConsolidatedApplication</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>CreateBankApplication</servlet-name>
+        <servlet-class>CreateBankApplication</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>AddPartnerAccountMapping</servlet-name>
+        <servlet-class>AddPartnerAccountMapping</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ViewKycDocument</servlet-name>
+        <servlet-class>ViewKycDocument</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ManagePartnerCommission</servlet-name>
+        <servlet-class>ManagePartnerCommission</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ListPartnerCommission</servlet-name>
+        <servlet-class>ListPartnerCommission</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ActionPartnerCommission</servlet-name>
+        <servlet-class>ActionPartnerCommission</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>UpdatePartnerCommission</servlet-name>
+        <servlet-class>UpdatePartnerCommission</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>RiskRuleDetails</servlet-name>
+        <servlet-class>RiskRuleDetails</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>AddRiskRuleDetails</servlet-name>
+        <servlet-class>AddRiskRuleDetails</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>SingleRiskRuleDetails</servlet-name>
+        <servlet-class>SingleRiskRuleDetails</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>SendMailToBank</servlet-name>
+        <servlet-class>SendMailToBank</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>BlackListDetails</servlet-name>
+        <servlet-class>BlackListDetails</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>BlacklistCard</servlet-name>
+        <servlet-class>BlacklistCard</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>BlacklistIp</servlet-name>
+        <servlet-class>BlacklistIp</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>BlacklistEmail</servlet-name>
+        <servlet-class>BlacklistEmail</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>BlacklistCountry</servlet-name>
+        <servlet-class>BlacklistCountry</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>BlacklistName</servlet-name>
+        <servlet-class>BlacklistName</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ListMerchantAgent</servlet-name>
+        <servlet-class>ListMerchantAgent</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ManageMerchantAgent</servlet-name>
+        <servlet-class>ManageMerchantAgent</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>AddNewFraudRule</servlet-name>
+        <servlet-class>AddNewFraudRule</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ManageFraudSystemAccount</servlet-name>
+        <servlet-class>ManageFraudSystemAccount</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ManageFraudSystemAccountSubAccount</servlet-name>
+        <servlet-class>ManageFraudSystemAccountSubAccount</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>FraudSystemAccountList</servlet-name>
+        <servlet-class>FraudSystemAccountList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>FraudSystemSubAccountList</servlet-name>
+        <servlet-class>FraudSystemSubAccountList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>FraudSystemMerchantSubAccountList</servlet-name>
+        <servlet-class>FraudSystemMerchantSubAccountList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>FraudSystemAccountRuleList</servlet-name>
+        <servlet-class>FraudSystemAccountRuleList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>FraudSystemSubAccountRuleList</servlet-name>
+        <servlet-class>FraudSystemSubAccountRuleList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ManageMarchantFraudAccount</servlet-name>
+        <servlet-class>ManageMarchantFraudAccount</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ActionFraudSystemAccount</servlet-name>
+        <servlet-class>ActionFraudSystemAccount</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ActionFraudSystemSubAccount</servlet-name>
+        <servlet-class>ActionFraudSystemSubAccount</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ActionFraudSystemMerchantAccount</servlet-name>
+        <servlet-class>ActionFraudSystemMerchantAccount</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ActionFraudRuleList</servlet-name>
+        <servlet-class>ActionFraudRuleList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ActionFraudSystemAccountRule</servlet-name>
+        <servlet-class>ActionFraudSystemAccountRule</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ActionFraudSystemSubAccountRule</servlet-name>
+        <servlet-class>ActionFraudSystemSubAccountRule</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ManageMerchantRandomCharge</servlet-name>
+        <servlet-class>ManageMerchantRandomCharge</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ListMerchantRandomCharges</servlet-name>
+        <servlet-class>ListMerchantRandomCharges</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ActionMerchantRandomCharges</servlet-name>
+        <servlet-class>ActionMerchantRandomCharges</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>FraudRuleChangeIntimationList</servlet-name>
+        <servlet-class>FraudRuleChangeIntimationList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>FraudRuleSendIntimation</servlet-name>
+        <servlet-class>FraudRuleSendIntimation</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>AddBankPartnerMapping</servlet-name>
+        <servlet-class>AddBankPartnerMapping</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>AddBankAgentMapping</servlet-name>
+        <servlet-class>AddBankAgentMapping</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>MerchantFraudRuleList</servlet-name>
+        <servlet-class>MerchantFraudRuleList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ManageAccountFraudRule</servlet-name>
+        <servlet-class>ManageAccountFraudRule</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>AccountFraudRuleList</servlet-name>
+        <servlet-class>AccountFraudRuleList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>AddBusinessRuleDetails</servlet-name>
+        <servlet-class>AddBusinessRuleDetails</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>BusinessRuleDetails</servlet-name>
+        <servlet-class>BusinessRuleDetails</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>SingleBusinessRuleDetails</servlet-name>
+        <servlet-class>SingleBusinessRuleDetails</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ViewPartnerBankAccountsDetails</servlet-name>
+        <servlet-class>ViewPartnerBankAccountsDetails</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ViewPartnerBankDetails</servlet-name>
+        <servlet-class>ViewPartnerBankDetails</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>GeneratedConsolidatedApplication</servlet-name>
+        <servlet-class>GeneratedConsolidatedApplication</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ManageBankApp</servlet-name>
+        <servlet-class>ManageBankApp</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ManageFraudSystemAccountRule</servlet-name>
+        <servlet-class>ManageFraudSystemAccountRule</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ManageFraudSystemSubAccountRule</servlet-name>
+        <servlet-class>ManageFraudSystemSubAccountRule</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ActionAgentCommission</servlet-name>
+        <servlet-class>ActionAgentCommission</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ManageAgentCommission</servlet-name>
+        <servlet-class>ManageAgentCommission</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>UpdateAgentCommission</servlet-name>
+        <servlet-class>UpdateAgentCommission</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ListAgentCommission</servlet-name>
+        <servlet-class>ListAgentCommission</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>UploadServlet</servlet-name>
+        <servlet-class>UploadServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>NewChildMemberSignUp</servlet-name>
+        <servlet-class>servlets.NewChildMemberSignUp</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>MemberUserList</servlet-name>
+        <servlet-class>servlets.MemberUserList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>EditMemberUserList</servlet-name>
+        <servlet-class>servlets.EditMemberUserList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ViewMemberUserList</servlet-name>
+        <servlet-class>servlets.ViewMemberUserList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>MemberUserTerminalList</servlet-name>
+        <servlet-class>servlets.MemberUserTerminalList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>AddUserTerminal</servlet-name>
+        <servlet-class>AddUserTerminal</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>SpeedOption</servlet-name>
+        <servlet-class>SpeedOption</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>GetDetailsAPI</servlet-name>
+        <servlet-class>servlets.GetDetailsAPI</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>MerchantRiskManagement</servlet-name>
+        <servlet-class>MerchantRiskManagement</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>MonitoringParameterMaster</servlet-name>
+        <servlet-class>MonitoringParameterMaster</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>DeleteRegistration</servlet-name>
+        <servlet-class>DeleteRegistration</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>MonitoringParameterMaster</servlet-name>
+        <url-pattern>/servlet/MonitoringParameterMaster</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GetDetailsAPI</servlet-name>
+        <url-pattern>/servlet/GetDetailsAPI</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>DeleteRegistration</servlet-name>
+        <url-pattern>/servlet/DeleteRegistration</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UpdateMonitoringParameterMapping</servlet-name>
+        <servlet-class>UpdateMonitoringParameterMapping</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>MonitoringGraphController</servlet-name>
+        <servlet-class>MonitoringGraphController</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ListOfMerchantRegistrations</servlet-name>
+        <servlet-class>ListOfMerchantRegistrations</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ListMerchantRegisterCard</servlet-name>
+        <servlet-class>ListMerchantRegisterCard</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>UploadNewTemplate</servlet-name>
+        <servlet-class>servlets.UploadNewTemplate</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>DeleteDetails</servlet-name>
+        <servlet-class>DeleteDetails</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>UploadNewTemplate</servlet-name>
+        <url-pattern>/servlet/UploadNewTemplate</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MonitoringGraphController</servlet-name>
+        <url-pattern>/servlet/MonitoringGraphController</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ListOfMerchantRegistrations</servlet-name>
+        <url-pattern>/servlet/ListOfMerchantRegistrations</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ListMerchantRegisterCard</servlet-name>
+        <url-pattern>/servlet/ListMerchantRegisterCard</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateMonitoringParameterMapping</servlet-name>
+        <url-pattern>/servlet/UpdateMonitoringParameterMapping</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>DeleteDetails</servlet-name>
+        <url-pattern>/servlet/DeleteDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>MappingMaster</servlet-name>
+        <servlet-class>MappingMaster</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>MappingMaster</servlet-name>
+        <url-pattern>/servlet/MappingMaster</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>WhitelistBin</servlet-name>
+        <servlet-class>WhitelistBin</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>WhitelistBin</servlet-name>
+        <url-pattern>/servlet/WhitelistBin</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>WLPartnerCommMapping</servlet-name>
+        <servlet-class>WLPartnerCommMapping</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>WLPartnerCommMapping</servlet-name>
+        <url-pattern>/servlet/WLPartnerCommMapping</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ListExchangeRates</servlet-name>
+        <servlet-class>ListExchangeRates</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ListExchangeRates</servlet-name>
+        <url-pattern>/servlet/ListExchangeRates</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UpdateCurrencyExchange</servlet-name>
+        <servlet-class>UpdateCurrencyExchange</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>UpdateCurrencyExchange</servlet-name>
+        <url-pattern>/servlet/UpdateCurrencyExchange</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>addNewExchangeRate</servlet-name>
+        <servlet-class>addNewExchangeRate</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>addNewExchangeRate</servlet-name>
+        <url-pattern>/servlet/addNewExchangeRate</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>WLPartnerCommMappingList</servlet-name>
+        <servlet-class>WLPartnerCommMappingList</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>WLPartnerCommMappingList</servlet-name>
+        <url-pattern>/servlet/WLPartnerCommMappingList</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AddTemplateColor</servlet-name>
+        <servlet-class>servlets.AddTemplateColor</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>AddTemplateColor</servlet-name>
+        <url-pattern>/servlet/AddTemplateColor</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>SetReservesTemplate</servlet-name>
+        <servlet-class>servlets.SetReservesTemplate</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>SetReservesTemplate</servlet-name>
+        <url-pattern>/servlet/SetReservesTemplate</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ActionWLPartnerCommMapping</servlet-name>
+        <servlet-class>ActionWLPartnerCommMapping</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ActionWLPartnerCommMapping</servlet-name>
+        <url-pattern>/servlet/ActionWLPartnerCommMapping</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UpdateWLPartnerCommMapping</servlet-name>
+        <servlet-class>UpdateWLPartnerCommMapping</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>UpdateWLPartnerCommMapping</servlet-name>
+        <url-pattern>/servlet/UpdateWLPartnerCommMapping</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>WLPartnerInvoiceList</servlet-name>
+        <servlet-class>WLPartnerInvoiceList</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>WLPartnerInvoiceList</servlet-name>
+        <url-pattern>/servlet/WLPartnerInvoiceList</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ActionWLInvoiceManager</servlet-name>
+        <servlet-class>ActionWLInvoiceManager</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ActionWLInvoiceManager</servlet-name>
+        <url-pattern>/servlet/ActionWLInvoiceManager</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>WhitelableInvoice</servlet-name>
+        <servlet-class>WhitelableInvoice</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>WhitelableInvoice</servlet-name>
+        <url-pattern>/servlet/WhitelableInvoice</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>WLPartnerInvoiceDynamicCharges</servlet-name>
+        <servlet-class>WLPartnerInvoiceDynamicCharges</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>WLPartnerInvoiceDynamicCharges</servlet-name>
+        <url-pattern>/servlet/WLPartnerInvoiceDynamicCharges</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UpdateWLInvoice</servlet-name>
+        <servlet-class>UpdateWLInvoice</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>UpdateWLInvoice</servlet-name>
+        <url-pattern>/servlet/UpdateWLInvoice</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>RiskRuleList</servlet-name>
+        <servlet-class>RiskRuleList</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>RiskRuleList</servlet-name>
+        <url-pattern>/servlet/RiskRuleList</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>RiskRuleMapping</servlet-name>
+        <servlet-class>RiskRuleMapping</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>RiskRuleMapping</servlet-name>
+        <url-pattern>/servlet/RiskRuleMapping</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet-mapping>
+        <servlet-name>MerchantRiskManagement</servlet-name>
+        <url-pattern>/servlet/MerchantRiskManagement</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SpeedOption</servlet-name>
+        <url-pattern>/servlet/SpeedOption</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UploadServlet</servlet-name>
+        <url-pattern>/servlet/UploadServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AdminModuleList</servlet-name>
+        <servlet-class>AdminModuleList</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>AdminModuleList</servlet-name>
+        <url-pattern>/servlet/AdminModuleList</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AdminModuleMappingList</servlet-name>
+        <servlet-class>AdminModuleMappingList</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>AdminModuleMappingList</servlet-name>
+        <url-pattern>/servlet/AdminModuleMappingList</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ActionAdminModule</servlet-name>
+        <servlet-class>ActionAdminModule</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>UpdateMonitoringParameterMaster</servlet-name>
+        <servlet-class>UpdateMonitoringParameterMaster</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>UpdateMonitoringParameterMaster</servlet-name>
+        <url-pattern>/servlet/UpdateMonitoringParameterMaster</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionAdminModule</servlet-name>
+        <url-pattern>/servlet/ActionAdminModule</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>PartnerFraudSystemAccountList</servlet-name>
+        <servlet-class>PartnerFraudSystemAccountList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ManagePartnerFraudSystemAccount</servlet-name>
+        <servlet-class>ManagePartnerFraudSystemAccount</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ViewPartnerFraudAccountsDetails</servlet-name>
+        <servlet-class>ViewPartnerFraudAccountsDetails</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>MerchantTerminalThresholdList</servlet-name>
+        <servlet-class>MerchantTerminalThresholdList</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>UpdateTerminalThreshold</servlet-name>
+        <servlet-class>UpdateTerminalThreshold</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>UpdateTerminalThreshold</servlet-name>
+        <url-pattern>/servlet/UpdateTerminalThreshold</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>MonitoringRiskRuleDetails</servlet-name>
+        <servlet-class>MonitoringRiskRuleDetails</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>MonitoringRiskRuleDetails</servlet-name>
+        <url-pattern>/servlet/MonitoringRiskRuleDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>GetRuleChangeHistoryDetails</servlet-name>
+        <servlet-class>GetRuleChangeHistoryDetails</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>GetDynamicInputCharges</servlet-name>
+        <servlet-class>GetDynamicInputCharges</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>GetSettlementCurrencyDetails</servlet-name>
+        <servlet-class>GetSettlementCurrencyDetails</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>MerchantPayoutReport</servlet-name>
+        <servlet-class>MerchantPayoutReport</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>MerchantPayoutReport</servlet-name>
+        <url-pattern>/servlet/MerchantPayoutReport</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GetSettlementCurrencyDetails</servlet-name>
+        <url-pattern>/servlet/GetSettlementCurrencyDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GetDynamicInputCharges</servlet-name>
+        <url-pattern>/servlet/GetDynamicInputCharges</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GetRuleChangeHistoryDetails</servlet-name>
+        <url-pattern>/servlet/GetRuleChangeHistoryDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>BlockedUserList</servlet-name>
+        <servlet-class>BlockedUserList</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>BlockedUserList</servlet-name>
+        <url-pattern>/servlet/BlockedUserList</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UnlockUser</servlet-name>
+        <servlet-class>UnlockUser</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UnlockUser</servlet-name>
+        <url-pattern>/servlet/UnlockUser</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MerchantTerminalThresholdList</servlet-name>
+        <url-pattern>/servlet/MerchantTerminalThresholdList</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ViewPartnerFraudAccountsDetails</servlet-name>
+        <url-pattern>/servlet/ViewPartnerFraudAccountsDetails</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ManagePartnerFraudSystemAccount</servlet-name>
+        <url-pattern>/servlet/ManagePartnerFraudSystemAccount</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PartnerFraudSystemAccountList</servlet-name>
+        <url-pattern>/servlet/PartnerFraudSystemAccountList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionAgentCommission</servlet-name>
+        <url-pattern>/servlet/ActionAgentCommission</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateAgentCommission</servlet-name>
+        <url-pattern>/servlet/UpdateAgentCommission</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ManageAgentCommission</servlet-name>
+        <url-pattern>/servlet/ManageAgentCommission</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ListAgentCommission</servlet-name>
+        <url-pattern>/servlet/ListAgentCommission</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ManagePartnerCommission</servlet-name>
+        <url-pattern>/servlet/ManagePartnerCommission</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ListPartnerCommission</servlet-name>
+        <url-pattern>/servlet/ListPartnerCommission</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionPartnerCommission</servlet-name>
+        <url-pattern>/servlet/ActionPartnerCommission</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdatePartnerCommission</servlet-name>
+        <url-pattern>/servlet/UpdatePartnerCommission</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AddPartnerAccountMapping</servlet-name>
+        <url-pattern>/servlet/AddPartnerAccountMapping</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SendMailToBank</servlet-name>
+        <url-pattern>/servlet/SendMailToBank</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CreateBankApplication</servlet-name>
+        <url-pattern>/servlet/CreateBankApplication</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ViewBankTemplate</servlet-name>
+        <url-pattern>/servlet/ViewBankTemplate</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>UploadBankTemplate</servlet-name>
+        <url-pattern>/servlet/UploadBankTemplate</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>FraudRuleList</servlet-name>
+        <url-pattern>/servlet/FraudRuleList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BankDetailsList</servlet-name>
+        <url-pattern>/servlet/BankDetailsList</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet-mapping>
+        <servlet-name>AddBankAgentMapping</servlet-name>
+        <url-pattern>/servlet/AddBankAgentMapping</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AddBankPartnerMapping</servlet-name>
+        <url-pattern>/servlet/AddBankPartnerMapping</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>FraudRuleSendIntimation</servlet-name>
+        <url-pattern>/servlet/FraudRuleSendIntimation</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ViewKycDocument</servlet-name>
+        <url-pattern>/servlet/ViewKycDocument</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>FraudRuleChangeIntimationList</servlet-name>
+        <url-pattern>/servlet/FraudRuleChangeIntimationList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionMerchantRandomCharges</servlet-name>
+        <url-pattern>/servlet/ActionMerchantRandomCharges</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ListMerchantRandomCharges</servlet-name>
+        <url-pattern>/servlet/ListMerchantRandomCharges</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ManageMerchantRandomCharge</servlet-name>
+        <url-pattern>/servlet/ManageMerchantRandomCharge</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionFraudSystemSubAccountRule</servlet-name>
+        <url-pattern>/servlet/ActionFraudSystemSubAccountRule</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionFraudSystemAccountRule</servlet-name>
+        <url-pattern>/servlet/ActionFraudSystemAccountRule</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionFraudRuleList</servlet-name>
+        <url-pattern>/servlet/ActionFraudRuleList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GeneratedConsolidatedApplication</servlet-name>
+        <url-pattern>/servlet/GeneratedConsolidatedApplication</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ManageBankApp</servlet-name>
+        <url-pattern>/servlet/ManageBankApp</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ViewPartnerBankDetails</servlet-name>
+        <url-pattern>/servlet/ViewPartnerBankDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ViewPartnerBankAccountsDetails</servlet-name>
+        <url-pattern>/servlet/ViewPartnerBankAccountsDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AddBusinessRuleDetails</servlet-name>
+        <url-pattern>/servlet/AddBusinessRuleDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BusinessRuleDetails</servlet-name>
+        <url-pattern>/servlet/BusinessRuleDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SingleBusinessRuleDetails</servlet-name>
+        <url-pattern>/servlet/SingleBusinessRuleDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AccountFraudRuleList</servlet-name>
+        <url-pattern>/servlet/AccountFraudRuleList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ManageAccountFraudRule</servlet-name>
+        <url-pattern>/servlet/ManageAccountFraudRule</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MerchantFraudRuleList</servlet-name>
+        <url-pattern>/servlet/MerchantFraudRuleList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionFraudSystemMerchantAccount</servlet-name>
+        <url-pattern>/servlet/ActionFraudSystemMerchantAccount</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionFraudSystemSubAccount</servlet-name>
+        <url-pattern>/servlet/ActionFraudSystemSubAccount</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionFraudSystemAccount</servlet-name>
+        <url-pattern>/servlet/ActionFraudSystemAccount</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ManageMarchantFraudAccount</servlet-name>
+        <url-pattern>/servlet/ManageMarchantFraudAccount</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>FraudSystemSubAccountRuleList</servlet-name>
+        <url-pattern>/servlet/FraudSystemSubAccountRuleList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>FraudSystemAccountRuleList</servlet-name>
+        <url-pattern>/servlet/FraudSystemAccountRuleList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ManageFraudSystemAccountRule</servlet-name>
+        <url-pattern>/servlet/ManageFraudSystemAccountRule</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ManageFraudSystemSubAccountRule</servlet-name>
+        <url-pattern>/servlet/ManageFraudSystemSubAccountRule</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>FraudSystemMerchantSubAccountList</servlet-name>
+        <url-pattern>/servlet/FraudSystemMerchantSubAccountList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>FraudSystemSubAccountList</servlet-name>
+        <url-pattern>/servlet/FraudSystemSubAccountList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>FraudSystemAccountList</servlet-name>
+        <url-pattern>/servlet/FraudSystemAccountList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ManageFraudSystemAccountSubAccount</servlet-name>
+        <url-pattern>/servlet/ManageFraudSystemAccountSubAccount</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ManageFraudSystemAccount</servlet-name>
+        <url-pattern>/servlet/ManageFraudSystemAccount</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AddNewFraudRule</servlet-name>
+        <url-pattern>/servlet/AddNewFraudRule</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ManageMerchantAgent</servlet-name>
+        <url-pattern>/servlet/ManageMerchantAgent</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ListMerchantAgent</servlet-name>
+        <url-pattern>/servlet/ListMerchantAgent</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ConsolidatedApplication</servlet-name>
+        <url-pattern>/servlet/ConsolidatedApplication</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AppManagerStatus</servlet-name>
+        <url-pattern>/servlet/AppManagerStatus</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlacklistEmail</servlet-name>
+        <url-pattern>/servlet/BlacklistEmail</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlacklistCountry</servlet-name>
+        <url-pattern>/servlet/BlacklistCountry</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlacklistName</servlet-name>
+        <url-pattern>/servlet/BlacklistName</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ListofAppMember</servlet-name>
+        <url-pattern>/servlet/ListofAppMember</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>WireList</servlet-name>
+        <url-pattern>/servlet/WireList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AddMerchantWire</servlet-name>
+        <url-pattern>/servlet/AddMerchantWire</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AgentWireList</servlet-name>
+        <url-pattern>/servlet/AgentWireList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PartnerWireList</servlet-name>
+        <url-pattern>/servlet/PartnerWireList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GenerateWireServlet</servlet-name>
+        <url-pattern>/servlet/GenerateWireServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>WhiteListDetails</servlet-name>
+        <url-pattern>/servlet/WhiteListDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>EcoreChargebackTransaction</servlet-name>
+        <url-pattern>/servlet/EcoreChargebackTransaction</url-pattern>
+    </servlet-mapping>
+    <!--    <servlet>
+        <servlet-name>WaitServlet</servlet-name>
+        <servlet-class>WaitServlet</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>WaitServlet</servlet-name>
+        <url-pattern>/servlet/WaitServlet</url-pattern>
+    </servlet-mapping>-->
+    <servlet-mapping>
+        <servlet-name>ViewPartnerDetails</servlet-name>
+        <url-pattern>/servlet/ViewPartnerDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ViewOrEditBankWireManager</servlet-name>
+        <url-pattern>/servlet/ViewOrEditBankWireManager</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ViewOrEditBankRollingReserve</servlet-name>
+        <url-pattern>/servlet/ViewOrEditBankRollingReserve</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ViewOrEditBankReceivedSettlement</servlet-name>
+        <url-pattern>/servlet/ViewOrEditBankReceivedSettlement</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ViewOrEditBankMerchantSettlement</servlet-name>
+        <url-pattern>/servlet/ViewOrEditBankMerchantSettlement</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>viewGatewayTypeDetails</servlet-name>
+        <url-pattern>/servlet/viewGatewayTypeDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>viewGatewayAccountDetails</servlet-name>
+        <url-pattern>/servlet/viewGatewayAccountDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ViewAgentDetails</servlet-name>
+        <url-pattern>/servlet/ViewAgentDetails</url-pattern>
+    </servlet-mapping>
+    <!--    <servlet>
+        <servlet-name>VBVWaitServlet</servlet-name>
+        <servlet-class>VBVWaitServlet</servlet-class>
+
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>VBVWaitServlet</servlet-name>
+        <url-pattern>/servlet/VBVWaitServlet</url-pattern>
+    </servlet-mapping>-->
+    <servlet-mapping>
+        <servlet-name>UTF8TestServlet</servlet-name>
+        <url-pattern>/servlet/UTF8TestServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UploadCardFile</servlet-name>
+        <url-pattern>/servlet/UploadCardFile</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UploadBinFile</servlet-name>
+        <url-pattern>/servlet/UploadBinFile</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UploadBlacklistBinFile</servlet-name>
+        <url-pattern>/servlet/UploadBlacklistBinFile</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UploadFraudFile</servlet-name>
+        <url-pattern>/servlet/UploadFraudFile</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>FraudNotification</servlet-name>
+        <url-pattern>/servlet/FraudNotification</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>FraudNotificationAction</servlet-name>
+        <url-pattern>/servlet/FraudNotificationAction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UploadBulkFraudList</servlet-name>
+        <url-pattern>/servlet/UploadBulkFraudList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdatePODDetails</servlet-name>
+        <url-pattern>/servlet/UpdatePODDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateMemberDetails</servlet-name>
+        <url-pattern>/servlet/UpdateMemberDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateMemberAccountsCharges</servlet-name>
+        <url-pattern>/servlet/UpdateMemberAccountsCharges</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateMailDetails</servlet-name>
+        <url-pattern>/servlet/UpdateMailDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateKey</servlet-name>
+        <url-pattern>/servlet/UpdateKey</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateBankWireManager</servlet-name>
+        <url-pattern>/servlet/UpdateBankWireManager</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateMerchantWire</servlet-name>
+        <url-pattern>/servlet/UpdateMerchantWire</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdatePartnerWire</servlet-name>
+        <url-pattern>/servlet/UpdatePartnerWire</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateAgentWire</servlet-name>
+        <url-pattern>/servlet/UpdateAgentWire</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateBankRollingReserve</servlet-name>
+        <url-pattern>/servlet/UpdateBankRollingReserve</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateBankReceivedSettlement</servlet-name>
+        <url-pattern>/servlet/UpdateBankReceivedSettlement</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateBankMerchantSettlement</servlet-name>
+        <url-pattern>/servlet/UpdateBankMerchantSettlement</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UnreserveResellerFundServlet</servlet-name>
+        <url-pattern>/servlet/UnreserveResellerFundServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UnblockIP</servlet-name>
+        <url-pattern>/servlet/UnblockIP</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UnblockEmail</servlet-name>
+        <url-pattern>/servlet/UnblockEmail</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UnBlockedAccount</servlet-name>
+        <url-pattern>/servlet/UnBlockedAccount</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UnblockDomain</servlet-name>
+        <url-pattern>/servlet/UnblockDomain</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UnblockCountry</servlet-name>
+        <url-pattern>/servlet/UnblockCountry</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>TransactionStatus</servlet-name>
+        <url-pattern>/servlet/TransactionStatus</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>TransactionDetails</servlet-name>
+        <url-pattern>/servlet/TransactionDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>TestSettle</servlet-name>
+        <url-pattern>/servlet/TestSettle</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>TestCaptureTransaction</servlet-name>
+        <url-pattern>/servlet/TestCaptureTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>TempPodSubmit</servlet-name>
+        <url-pattern>/servlet/TempPodSubmit</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>TempPod</servlet-name>
+        <url-pattern>/servlet/TempPod</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ShippingDetailList</servlet-name>
+        <url-pattern>/servlet/ShippingDetailList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SetReserves</servlet-name>
+        <url-pattern>/servlet/SetReserves</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SetAccount</servlet-name>
+        <url-pattern>/servlet/SetAccount</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SendMailActiveMerchant</servlet-name>
+        <url-pattern>/servlet/SendMailActiveMerchant</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SearchCSE</servlet-name>
+        <url-pattern>/servlet/SearchCSE</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ReverseFraudTransactions</servlet-name>
+        <url-pattern>/servlet/ReverseFraudTransactions</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>RetrivalRequestServlet</servlet-name>
+        <url-pattern>/servlet/RetrivalRequestServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>RemoteCancelTransaction</servlet-name>
+        <url-pattern>/servlet/RemoteCancelTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>RemindInvoice</servlet-name>
+        <url-pattern>/servlet/RemindInvoice</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>RegenerateInvoiceConfirm</servlet-name>
+        <url-pattern>/servlet/RegenerateInvoiceConfirm</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>RegenerateInvoice</servlet-name>
+        <url-pattern>/servlet/RegenerateInvoice</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ReconcilationProcess</servlet-name>
+        <url-pattern>/servlet/ReconcilationProcess</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>RawConfirmBatch</servlet-name>
+        <url-pattern>/servlet/RawConfirmBatch</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>RawCheck</servlet-name>
+        <url-pattern>/servlet/RawCheck</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>RawCancel</servlet-name>
+        <url-pattern>/servlet/RawCancel</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>QwipiVerifyOrderRefundAlertList</servlet-name>
+        <url-pattern>/servlet/QwipiVerifyOrderRefundAlertList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>QwipiRefundTransaction</servlet-name>
+        <url-pattern>/servlet/QwipiRefundTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>QwipiRefundList</servlet-name>
+        <url-pattern>/servlet/QwipiRefundList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>QwipiReconcilationList</servlet-name>
+        <url-pattern>/servlet/QwipiReconcilationList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>QwipiInquiry</servlet-name>
+        <url-pattern>/servlet/QwipiInquiry</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>QwipiDetailList</servlet-name>
+        <url-pattern>/servlet/QwipiDetailList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>QwipiCheckList</servlet-name>
+        <url-pattern>/servlet/QwipiCheckList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>QwipiChargebackList</servlet-name>
+        <url-pattern>/servlet/QwipiChargebackList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PwdForgot</servlet-name>
+        <url-pattern>/servlet/PwdForgot</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ProcessSyncTransaction</servlet-name>
+        <url-pattern>/servlet/ProcessSyncTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ProcessFIRCServlet</servlet-name>
+        <url-pattern>/servlet/ProcessFIRCServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PostPay</servlet-name>
+        <url-pattern>/servlet/PostPay</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PartnerMerchantTransSummary</servlet-name>
+        <url-pattern>/servlet/PartnerMerchantTransSummary</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PartnerMerchantDetails</servlet-name>
+        <url-pattern>/servlet/PartnerMerchantDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>NewPartnerLogo</servlet-name>
+        <url-pattern>/servlet/NewPartnerLogo</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>NewPartnerIcon</servlet-name>
+        <url-pattern>/servlet/NewPartnerIcon</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>NewPartner</servlet-name>
+        <url-pattern>/servlet/NewPartner</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>NewMemberSignUp</servlet-name>
+        <url-pattern>/servlet/NewMemberSignUp</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>NewAgent</servlet-name>
+        <url-pattern>/servlet/NewAgent</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MyMonederoActionHistory</servlet-name>
+        <url-pattern>/servlet/MyMonederoActionHistory</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MyMonedero</servlet-name>
+        <url-pattern>/servlet/MyMonedero</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MonthlyCron</servlet-name>
+        <url-pattern>/servlet/MonthlyCron</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ModifyBankRollingReserve</servlet-name>
+        <url-pattern>/servlet/ModifyBankRollingReserve</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>Migrate</servlet-name>
+        <url-pattern>/servlet/Migrate</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MerchantTransMailList</servlet-name>
+        <url-pattern>/servlet/MerchantTransMailList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MerchantIntimationMail</servlet-name>
+        <url-pattern>/servlet/MerchantIntimationMail</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MerchantDetails</servlet-name>
+        <url-pattern>/servlet/MerchantDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MemberMappingDetails</servlet-name>
+        <url-pattern>/servlet/MemberMappingDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MemberList</servlet-name>
+        <url-pattern>/servlet/MemberList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MemberDetails</servlet-name>
+        <url-pattern>/servlet/MemberDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MemberDetailList</servlet-name>
+        <url-pattern>/servlet/MemberDetailList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ManageMemberFraudSystem</servlet-name>
+        <url-pattern>/servlet/ManageMemberFraudSystem</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MailMappingList</servlet-name>
+        <url-pattern>/servlet/MailMappingList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>Login</servlet-name>
+        <url-pattern>/servlet/Login</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ListPartnerDetails</servlet-name>
+        <url-pattern>/servlet/ListPartnerDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ListMemberFraudSystem</servlet-name>
+        <url-pattern>/servlet/ListMemberFraudSystem</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ListMemberAccountsCharges</servlet-name>
+        <url-pattern>/servlet/ListMemberAccountsCharges</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ManageAccountChargesServlet</servlet-name>
+        <url-pattern>/servlet/ManageAccountChargesServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>listGatewayTypeDetails</servlet-name>
+        <url-pattern>/servlet/listGatewayTypeDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ListGatewayAccountsCharges</servlet-name>
+        <url-pattern>/servlet/ListGatewayAccountsCharges</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AddNewMonitoringParameter</servlet-name>
+        <url-pattern>/servlet/AddNewMonitoringParameter</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>MonitoringParameterMapping</servlet-name>
+        <url-pattern>/servlet/MonitoringParameterMapping</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionGatewayAccountsCharges</servlet-name>
+        <url-pattern>/servlet/ActionGatewayAccountsCharges</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateGatewayAccountsCharges</servlet-name>
+        <url-pattern>/servlet/UpdateGatewayAccountsCharges</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>listGatewayAccountDetails</servlet-name>
+        <url-pattern>/servlet/listGatewayAccountDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ListFraudSystem</servlet-name>
+        <url-pattern>/servlet/ListFraudSystem</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ListChargeMaster</servlet-name>
+        <url-pattern>/servlet/ListChargeMaster</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ListAgentDetails</servlet-name>
+        <url-pattern>/servlet/ListAgentDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>IpWhitelistConfig</servlet-name>
+        <url-pattern>/servlet/IpWhitelistConfig</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>InvoiceDetails</servlet-name>
+        <url-pattern>/servlet/InvoiceDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>Invoice</servlet-name>
+        <url-pattern>/servlet/Invoice</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GetMMStatus</servlet-name>
+        <url-pattern>/servlet/GetMMStatus</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GetGatewayAccount</servlet-name>
+        <url-pattern>/servlet/GetGatewayAccount</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GetDetails</servlet-name>
+        <url-pattern>/servlet/GetDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GetChargebackDetails</servlet-name>
+        <url-pattern>/servlet/GetChargebackDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GeneratePayoutServlet</servlet-name>
+        <url-pattern>/servlet/GeneratePayoutServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GenerateAgentPayoutServlet</servlet-name>
+        <url-pattern>/servlet/GenerateAgentPayoutServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GenerateBankAgentPayoutReport</servlet-name>
+        <url-pattern>/servlet/GenerateBankAgentPayoutReport</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GeneratePartnerPayoutServlet</servlet-name>
+        <url-pattern>/servlet/GeneratePartnerPayoutServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>GenerateBankPartnerPayoutReport</servlet-name>
+        <url-pattern>/servlet/GenerateBankPartnerPayoutReport</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>FraudTransactionReverseList</servlet-name>
+        <url-pattern>/servlet/FraudTransactionReverseList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>FraudTransactionList</servlet-name>
+        <url-pattern>/servlet/FraudTransactionList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>FraudReport</servlet-name>
+        <url-pattern>/servlet/FraudReport</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>FinanceCron</servlet-name>
+        <url-pattern>/servlet/FinanceCron</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ExportTransactions</servlet-name>
+        <url-pattern>/servlet/ExportTransactions</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ExportChargeDetails</servlet-name>
+        <url-pattern>/servlet/ExportChargeDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ExportWhitelistDetails</servlet-name>
+        <url-pattern>/servlet/ExportWhitelistDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ExportShippingTransaction</servlet-name>
+        <url-pattern>/servlet/ExportShippingTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ExportReserveFile</servlet-name>
+        <url-pattern>/servlet/ExportReserveFile</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ExportMemberDetails</servlet-name>
+        <url-pattern>/servlet/ExportMemberDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ExceptionalTransaction</servlet-name>
+        <url-pattern>/servlet/ExceptionalTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ErrorServlet</servlet-name>
+        <url-pattern>/servlet/ErrorServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>EditShippingDetailList</servlet-name>
+        <url-pattern>/servlet/EditShippingDetailList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>EditPartnerDetails</servlet-name>
+        <url-pattern>/servlet/EditPartnerDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>editGatewayTypeDetails</servlet-name>
+        <url-pattern>/servlet/editGatewayTypeDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>editGatewayAccountsDetails</servlet-name>
+        <url-pattern>/servlet/editGatewayAccountsDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>EditCSEDetails</servlet-name>
+        <url-pattern>/servlet/EditCSEDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>EditAgentDetails</servlet-name>
+        <url-pattern>/servlet/EditAgentDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>EcoreRefundTransaction</servlet-name>
+        <url-pattern>/servlet/EcoreRefundTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>EcoreRefundList</servlet-name>
+        <url-pattern>/servlet/EcoreRefundList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>EcoreReconcilationProcess</servlet-name>
+        <url-pattern>/servlet/EcoreReconcilationProcess</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>EcoreReconcilationList</servlet-name>
+        <url-pattern>/servlet/EcoreReconcilationList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>EcoreInquiry</servlet-name>
+        <url-pattern>/servlet/EcoreInquiry</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>EcoreCheckList</servlet-name>
+        <url-pattern>/servlet/EcoreCheckList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>EcoreChargebackList</servlet-name>
+        <url-pattern>/servlet/EcoreChargebackList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>DoReverseFraudTransaction</servlet-name>
+        <url-pattern>/servlet/DoReverseFraudTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>DoChargebackTransaction</servlet-name>
+        <url-pattern>/servlet/DoChargebackTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>DoBulkReversalChargebackTransaction</servlet-name>
+        <url-pattern>/servlet/DoBulkReversalChargebackTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>DoBulkChargebackTransaction</servlet-name>
+        <url-pattern>/servlet/DoBulkChargebackTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>DeleteMailMapping</servlet-name>
+        <url-pattern>/servlet/DeleteMailMapping</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CustSuppSignup</servlet-name>
+        <url-pattern>/servlet/CustSuppSignup</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CupServLet</servlet-name>
+        <url-pattern>/servlet/CupServLet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CupProcess</servlet-name>
+        <url-pattern>/servlet/CupProcess</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CSVCron</servlet-name>
+        <url-pattern>/servlet/CSVCron</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CSEviewupdate</servlet-name>
+        <url-pattern>/servlet/CSEviewupdate</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ConfirmBatch</servlet-name>
+        <url-pattern>/servlet/ConfirmBatch</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>Compliance</servlet-name>
+        <url-pattern>/servlet/Compliance</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CommonSettlementFile</servlet-name>
+        <url-pattern>/servlet/CommonSettlementFile</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CommonRefundList</servlet-name>
+        <url-pattern>/servlet/CommonRefundList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CommonReconList</servlet-name>
+        <url-pattern>/servlet/CommonReconList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CommonReconciliationProcess</servlet-name>
+        <url-pattern>/servlet/CommonReconciliationProcess</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CommonReconcilationProcess</servlet-name>
+        <url-pattern>/servlet/CommonReconcilationProcess</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CommonReconcilationList</servlet-name>
+        <url-pattern>/servlet/CommonReconcilationList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CommonInquiryList</servlet-name>
+        <url-pattern>/servlet/CommonInquiryList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CommonInquiry</servlet-name>
+        <url-pattern>/servlet/CommonInquiry</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CommonDoReverse</servlet-name>
+        <url-pattern>/servlet/CommonDoReverse</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CommonDoChargeback</servlet-name>
+        <url-pattern>/servlet/CommonDoChargeback</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CommonChargebackList</servlet-name>
+        <url-pattern>/servlet/CommonChargebackList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CommonActionHistory</servlet-name>
+        <url-pattern>/servlet/CommonActionHistory</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ChngPassword</servlet-name>
+        <url-pattern>/servlet/ChngPassword</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>checkMerchantServlet</servlet-name>
+        <url-pattern>/servlet/checkMerchantServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ChargebackReport</servlet-name>
+        <url-pattern>/servlet/ChargebackReport</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ChargebackList</servlet-name>
+        <url-pattern>/servlet/ChargebackList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CaptureTransaction</servlet-name>
+        <url-pattern>/servlet/CaptureTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CancelInvoice</servlet-name>
+        <url-pattern>/servlet/CancelInvoice</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlockIP</servlet-name>
+        <url-pattern>/servlet/BlockIP</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlockEmail</servlet-name>
+        <url-pattern>/servlet/BlockEmail</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlockedMerchantList</servlet-name>
+        <url-pattern>/servlet/BlockedMerchantList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlockedIPList</servlet-name>
+        <url-pattern>/servlet/BlockedIPList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlockedEmailList</servlet-name>
+        <url-pattern>/servlet/BlockedEmailList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlockedDomainList</servlet-name>
+        <url-pattern>/servlet/BlockedDomainList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlockedCountryList</servlet-name>
+        <url-pattern>/servlet/BlockedCountryList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlockDomain</servlet-name>
+        <url-pattern>/servlet/BlockDomain</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlockCountry</servlet-name>
+        <url-pattern>/servlet/BlockCountry</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BankWireManagerList</servlet-name>
+        <url-pattern>/servlet/BankWireManagerList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionISOCommissionWireManager</servlet-name>
+        <url-pattern>/servlet/ActionISOCommissionWireManager</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ISOCommWireManagerList</servlet-name>
+        <url-pattern>/servlet/ISOCommWireManagerList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ISOCommissionWireList</servlet-name>
+        <url-pattern>/servlet/ISOCommissionWireList</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>UpdateISOCommWire</servlet-name>
+        <url-pattern>/servlet/UpdateISOCommWire</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet-mapping>
+        <servlet-name>AddNewISOCommWireList</servlet-name>
+        <url-pattern>/servlet/AddNewISOCommWireList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BankTransactionReport</servlet-name>
+        <url-pattern>/servlet/BankTransactionReport</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BankRollingReserveList</servlet-name>
+        <url-pattern>/servlet/BankRollingReserveList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BankReceivedSettlementList</servlet-name>
+        <url-pattern>/servlet/BankReceivedSettlementList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BankMerchantSettlementList</servlet-name>
+        <url-pattern>/servlet/BankMerchantSettlementList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AgentMerchantTransactionSummary</servlet-name>
+        <url-pattern>/servlet/AgentMerchantTransactionSummary</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AgentMerchantDetails</servlet-name>
+        <url-pattern>/servlet/AgentMerchantDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AdminTransactionDetails</servlet-name>
+        <url-pattern>/servlet/AdminTransactionDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AdminReverseList</servlet-name>
+        <url-pattern>/servlet/AdminReverseList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AdminProofrequiredList</servlet-name>
+        <url-pattern>/servlet/AdminProofrequiredList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AdminFraudList</servlet-name>
+        <url-pattern>/servlet/AdminFraudList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AdminDoReverseTransaction</servlet-name>
+        <url-pattern>/servlet/AdminDoReverseTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AdminDoReverseChargeback</servlet-name>
+        <url-pattern>/servlet/AdminDoReverseChargeback</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AdminDoProofReceived</servlet-name>
+        <url-pattern>/servlet/AdminDoProofReceived</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AdminChargebackReverseList</servlet-name>
+        <url-pattern>/servlet/AdminChargebackReverseList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AdminChargebackList</servlet-name>
+        <url-pattern>/servlet/AdminChargebackList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AddNewFraudSystem</servlet-name>
+        <url-pattern>/servlet/AddNewFraudSystem</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AddMailMappingDetail</servlet-name>
+        <url-pattern>/servlet/AddMailMappingDetail</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>addGatewayType</servlet-name>
+        <url-pattern>/servlet/addGatewayType</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>addGatewayAccounts</servlet-name>
+        <url-pattern>/servlet/addGatewayAccounts</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionWireManager</servlet-name>
+        <url-pattern>/servlet/ActionWireManager</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionAgentWireManager</servlet-name>
+        <url-pattern>/servlet/ActionAgentWireManager</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionPartnerWireManager</servlet-name>
+        <url-pattern>/servlet/ActionPartnerWireManager</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionRollingReserveManager</servlet-name>
+        <url-pattern>/servlet/ActionRollingReserveManager</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionMemberFraudSystem</servlet-name>
+        <url-pattern>/servlet/ActionMemberFraudSystem</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionMemberAccountsCharges</servlet-name>
+        <url-pattern>/servlet/ActionMemberAccountsCharges</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionHistory</servlet-name>
+        <url-pattern>/servlet/ActionHistory</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ActionFraudSystem</servlet-name>
+        <url-pattern>/servlet/ActionFraudSystem</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>QwipiChargebackTransaction</servlet-name>
+        <url-pattern>/servlet/QwipiChargebackTransaction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateChargeMaster</servlet-name>
+        <url-pattern>/servlet/UpdateChargeMaster</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PopulateApplication</servlet-name>
+        <url-pattern>/servlet/PopulateApplication</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>Navigation</servlet-name>
+        <url-pattern>/servlet/Navigation</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AddNewAdminModule</servlet-name>
+        <url-pattern>/servlet/AddNewAdminModule</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ManageAdminModuleMapping</servlet-name>
+        <url-pattern>/servlet/ManageAdminModuleMapping</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>NewAdminSignUp</servlet-name>
+        <url-pattern>/servlet/NewAdminSignUp</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AdminDetailsList</servlet-name>
+        <url-pattern>/servlet/AdminDetailsList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlackListDetails</servlet-name>
+        <url-pattern>/servlet/BlackListDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlacklistCard</servlet-name>
+        <url-pattern>/servlet/BlacklistCard</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>BlacklistIp</servlet-name>
+        <url-pattern>/servlet/BlacklistIp</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>RiskRuleDetails</servlet-name>
+        <url-pattern>/servlet/RiskRuleDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AddRiskRuleDetails</servlet-name>
+        <url-pattern>/servlet/AddRiskRuleDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SingleRiskRuleDetails</servlet-name>
+        <url-pattern>/servlet/SingleRiskRuleDetails</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>NewChildMemberSignUp</servlet-name>
+        <url-pattern>/servlet/NewChildMemberSignUp</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>MemberUserList</servlet-name>
+        <url-pattern>/servlet/MemberUserList</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>EditMemberUserList</servlet-name>
+        <url-pattern>/servlet/EditMemberUserList</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ViewMemberUserList</servlet-name>
+        <url-pattern>/servlet/ViewMemberUserList</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>MemberUserTerminalList</servlet-name>
+        <url-pattern>/servlet/MemberUserTerminalList</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>AddUserTerminal</servlet-name>
+        <url-pattern>/servlet/AddUserTerminal</url-pattern>
+    </servlet-mapping>
+    <!-- Default login configuration uses BASIC authentication-->
+
+    <login-config>
+        <auth-method>BASIC</auth-method>
+        <realm-name>Example Basic Authentication Area</realm-name>
+    </login-config>
+
+    <servlet>
+        <servlet-name>AddSmsMappingDetail</servlet-name>
+        <servlet-class>AddSmsMappingDetail</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>AddSmsMappingDetail</servlet-name>
+        <url-pattern>/servlet/AddSmsMappingDetail</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>SmsMappingList</servlet-name>
+        <servlet-class>SmsMappingList</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>SmsMappingList</servlet-name>
+        <url-pattern>/servlet/SmsMappingList</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>DeleteSMSMapping</servlet-name>
+        <servlet-class>DeleteSMSMapping</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>DeleteSMSMapping</servlet-name>
+        <url-pattern>/servlet/DeleteSMSMapping</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AddContractualPartner</servlet-name>
+        <servlet-class>AddContractualPartner</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ContractualPartner</servlet-name>
+        <servlet-class>ContractualPartner</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>UpdateContractualPartner</servlet-name>
+        <servlet-class>UpdateContractualPartner</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ConsolidatedHistory</servlet-name>
+        <servlet-class>ConsolidatedHistory</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ConsolidatedHistoryAction</servlet-name>
+        <servlet-class>ConsolidatedHistoryAction</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>BankMapping</servlet-name>
+        <servlet-class>BankMapping</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>PartnerBankMapping</servlet-name>
+        <servlet-class>PartnerBankMapping</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>AddNewBank</servlet-name>
+        <servlet-class>AddNewBank</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>PartnerNewTheme</servlet-name>
+        <servlet-class>PartnerNewTheme</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>PartnerCurrentTheme</servlet-name>
+        <servlet-class>PartnerCurrentTheme</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>PartnerTheme</servlet-name>
+        <servlet-class>PartnerTheme</servlet-class>
+    </servlet>
+
+
+    <servlet-mapping>
+        <servlet-name>ConsolidatedHistory</servlet-name>
+        <url-pattern>/servlet/ConsolidatedHistory</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ConsolidatedHistoryAction</servlet-name>
+        <url-pattern>/servlet/ConsolidatedHistoryAction</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ContractualPartner</servlet-name>
+        <url-pattern>/servlet/ContractualPartner</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AddContractualPartner</servlet-name>
+        <url-pattern>/servlet/AddContractualPartner</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>UpdateContractualPartner</servlet-name>
+        <url-pattern>/servlet/UpdateContractualPartner</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet-mapping>
+        <servlet-name>BankMapping</servlet-name>
+        <url-pattern>/servlet/BankMapping</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PartnerBankMapping</servlet-name>
+        <url-pattern>/servlet/PartnerBankMapping</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>AddNewBank</servlet-name>
+        <url-pattern>/servlet/AddNewBank</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PartnerNewTheme</servlet-name>
+        <url-pattern>/servlet/PartnerNewTheme</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PartnerCurrentTheme</servlet-name>
+        <url-pattern>/servlet/PartnerCurrentTheme</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PartnerTheme</servlet-name>
+        <url-pattern>/servlet/PartnerTheme</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SetReservesDefault</servlet-name>
+        <url-pattern>/servlet/SetReservesDefault</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PartnerDetails</servlet-name>
+        <url-pattern>/servlet/PartnerDetails</url-pattern>
+    </servlet-mapping>
+
+    <!--<servlet>
+        <servlet-name>CommonManualCron</servlet-name>
+        <servlet-class>CommonManualCron</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>CommonManualCron</servlet-name>
+        <url-pattern>/servlet/CommonManualCron</url-pattern>
+    </servlet-mapping>-->
+
+
+    <servlet>
+        <servlet-name>AllocationUser</servlet-name>
+        <servlet-class>servlets.AllocationUser</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>AllocationUser</servlet-name>
+        <url-pattern>/servlet/AllocationUser</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>NewChildPartnerSignUp</servlet-name>
+        <servlet-class>servlets.NewChildPartnerSignUp</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>NewChildPartnerSignUp</servlet-name>
+        <url-pattern>/servlet/NewChildPartnerSignUp</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>PartnerUserList</servlet-name>
+        <servlet-class>servlets.PartnerUserList</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>EditPartnerUserList</servlet-name>
+        <servlet-class>servlets.EditPartnerUserList</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>PartnerUserModuleAllocation</servlet-name>
+        <servlet-class>servlets.PartnerUserModuleAllocation</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>PartnerUserModuleAllocation</servlet-name>
+        <url-pattern>/servlet/PartnerUserModuleAllocation</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PartnerModuleAllocation</servlet-name>
+        <servlet-class>servlets.PartnerModuleAllocation</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>PartnerModuleAllocation</servlet-name>
+        <url-pattern>/servlet/PartnerModuleAllocation</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ExportExcelForBankTransactions</servlet-name>
+        <servlet-class>servlets.ExportExcelForBankTransactions</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ExportExcelForBankTransactions</servlet-name>
+        <url-pattern>/servlet/ExportExcelForBankTransactions</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>EditPartnerUserList</servlet-name>
+        <url-pattern>/servlet/EditPartnerUserList</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PartnerUserList</servlet-name>
+        <url-pattern>/servlet/PartnerUserList</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ExportSFTPTransaction</servlet-name>
+        <servlet-class>servlets.ExportSFTPTransaction</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ExportSFTPTransaction</servlet-name>
+        <url-pattern>/servlet/ExportSFTPTransaction</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>AddPayout</servlet-name>
+        <servlet-class>servlets.AddPayout</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>AddPayout</servlet-name>
+        <url-pattern>/servlet/AddPayout</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PayoutDetailsUpdate</servlet-name>
+        <servlet-class>servlets.PayoutDetailsUpdate</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>PayoutDetailsUpdate</servlet-name>
+        <url-pattern>/servlet/PayoutDetailsUpdate</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>WhitelistBinCountry</servlet-name>
+        <servlet-class>servlets.WhitelistBinCountry</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>WhitelistBinCountry</servlet-name>
+        <url-pattern>/servlet/WhitelistBinCountry</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>BankTransactionInquiry</servlet-name>
+        <servlet-class>servlets.BankTransactionInquiry</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>BankTransactionInquiry</servlet-name>
+        <url-pattern>/servlet/BankTransactionInquiry</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>RefundBankTransactionInquiry</servlet-name>
+        <servlet-class>servlets.RefundBankTransactionInquiry</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>RefundBankTransactionInquiry</servlet-name>
+        <url-pattern>/servlet/RefundBankTransactionInquiry</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ExportTerminalDetails</servlet-name>
+        <servlet-class>servlets.ExportTerminalDetails</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ExportTerminalDetails</servlet-name>
+        <url-pattern>/servlet/ExportTerminalDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>VerifyMerchantRegistration</servlet-name>
+        <servlet-class>servlets.VerifyMerchantRegistration</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>VerifyMerchantRegistration</servlet-name>
+        <url-pattern>/servlet/VerifyMerchantRegistration</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PartnerFavicon</servlet-name>
+        <servlet-class>servlets.PartnerFavicon</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PartnerFavicon</servlet-name>
+        <url-pattern>/servlet/PartnerFavicon</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UpdateReconciliationTxn</servlet-name>
+        <servlet-class>servlets.UpdateReconciliationTxn</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UpdateReconciliationTxn</servlet-name>
+        <url-pattern>/servlet/UpdateReconciliationTxn</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PartnerEmailSetting</servlet-name>
+        <servlet-class>PartnerEmailSetting</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PartnerEmailSetting</servlet-name>
+        <url-pattern>/servlet/PartnerEmailSetting</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UpdateEmailSetting</servlet-name>
+        <servlet-class>UpdateEmailSetting</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UpdateEmailSetting</servlet-name>
+        <url-pattern>/servlet/UpdateEmailSetting</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ConsolidatedMerchantPayoutReport</servlet-name>
+        <servlet-class>ConsolidatedMerchantPayoutReport</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ConsolidatedMerchantPayoutReport</servlet-name>
+        <url-pattern>/servlet/ConsolidatedMerchantPayoutReport</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ConsolidatedGetSettlementCurrencyDetails</servlet-name>
+        <servlet-class>ConsolidatedGetSettlementCurrencyDetails</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ConsolidatedGetSettlementCurrencyDetails</servlet-name>
+        <url-pattern>/servlet/ConsolidatedGetSettlementCurrencyDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ConsolidatedAgentPayoutReport</servlet-name>
+        <servlet-class>ConsolidatedAgentPayoutReport</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ConsolidatedAgentPayoutReport</servlet-name>
+        <url-pattern>/servlet/ConsolidatedAgentPayoutReport</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>FraudAlertTransactionList</servlet-name>
+        <servlet-class>FraudAlertTransactionList</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>FraudAlertTransactionList</servlet-name>
+        <url-pattern>/servlet/FraudAlertTransactionList</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ExportFraudAlertTransactions</servlet-name>
+        <servlet-class>ExportFraudAlertTransactions</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ExportFraudAlertTransactions</servlet-name>
+        <url-pattern>/servlet/ExportFraudAlertTransactions</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>TransactionDetailsInquiryServlet</servlet-name>
+        <servlet-class>TransactionDetailsInquiryServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TransactionDetailsInquiryServlet</servlet-name>
+        <url-pattern>/servlet/TransactionDetailsInquiryServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>CommonChargebackUpload</servlet-name>
+        <servlet-class>CommonChargebackUpload</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CommonChargebackUpload</servlet-name>
+        <url-pattern>/servlet/CommonChargebackUpload</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UploadChargebackFile</servlet-name>
+        <servlet-class>UploadChargebackFile</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UploadChargebackFile</servlet-name>
+        <url-pattern>/servlet/UploadChargebackFile</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UploadChargebackList</servlet-name>
+        <servlet-class>UploadChargebackList</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UploadChargebackList</servlet-name>
+        <url-pattern>/servlet/UploadChargebackList</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ExportActionHistory</servlet-name>
+        <servlet-class>servlets.ExportActionHistory</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ExportActionHistory</servlet-name>
+        <url-pattern>/servlet/ExportActionHistory</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>CommonPayout</servlet-name>
+        <servlet-class>CommonPayout</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CommonPayout</servlet-name>
+        <url-pattern>/servlet/CommonPayout</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>BlacklistVpaAddress</servlet-name>
+        <servlet-class>servlets.BlacklistVpaAddress</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>BlacklistVpaAddress</servlet-name>
+        <url-pattern>/servlet/BlacklistVpaAddress</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>SendNotification</servlet-name>
+        <servlet-class>servlets.SendNotification</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>SendNotification</servlet-name>
+        <url-pattern>/servlet/SendNotification</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ActivityTracker</servlet-name>
+        <servlet-class>ActivityTracker</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ActivityTracker</servlet-name>
+        <url-pattern>/servlet/ActivityTracker</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>CopyTerminal</servlet-name>
+        <servlet-class>CopyTerminal</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CopyTerminal</servlet-name>
+        <url-pattern>/servlet/CopyTerminal</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ForgotPasswordAdminList</servlet-name>
+        <url-pattern>/servlet/ForgotPasswordAdminList</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>ForgotPasswordAdminList</servlet-name>
+        <servlet-class>servlets.ForgotPasswordAdminList</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>UploadMerchantLogo</servlet-name>
+        <url-pattern>/servlet/UploadMerchantLogo</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>UploadMerchantLogo</servlet-name>
+        <servlet-class>servlets.UploadMerchantLogo</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>RecurringModule</servlet-name>
+        <url-pattern>/servlet/RecurringModule</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>RecurringModule</servlet-name>
+        <servlet-class>servlets.RecurringModule</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>RbidDetails</servlet-name>
+        <url-pattern>/servlet/RbidDetails</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>RbidDetails</servlet-name>
+        <servlet-class>servlets.RbidDetails</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>PayoutAmountLimit</servlet-name>
+        <servlet-class>PayoutAmountLimit</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PayoutAmountLimit</servlet-name>
+        <url-pattern>/servlet/PayoutAmountLimit</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>BlockPhoneNumber</servlet-name>
+        <servlet-class>servlets.BlockPhoneNumber</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>BlockPhoneNumber</servlet-name>
+        <url-pattern>/servlet/BlockPhoneNumber</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UploadBlockPhone</servlet-name>
+        <servlet-class>servlets.UploadBlockPhone</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UploadBlockPhone</servlet-name>
+        <url-pattern>/servlet/UploadBlockPhone</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UploadBlacklistIp</servlet-name>
+        <servlet-class>servlets.UploadBlacklistIp</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UploadBlacklistIp</servlet-name>
+        <url-pattern>/servlet/UploadBlacklistIp</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>VpaAddressDetails</servlet-name>
+        <servlet-class>servlets.VpaAddressDetails</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>VpaAddressDetails</servlet-name>
+        <url-pattern>/servlet/VpaAddressDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>EmailDetails</servlet-name>
+        <servlet-class>servlets.EmailDetails</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>EmailDetails</servlet-name>
+        <url-pattern>/servlet/EmailDetails</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>AddMerchantTemplateColors</servlet-name>
+        <servlet-class>servlets.AddMerchantTemplateColors </servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AddMerchantTemplateColors</servlet-name>
+        <url-pattern>/servlet/AddMerchantTemplateColors</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>SetMerchantReservesTemplate</servlet-name>
+        <servlet-class>servlets.SetMerchantReservesTemplate</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SetMerchantReservesTemplate</servlet-name>
+        <url-pattern>/servlet/SetMerchantReservesTemplate</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>BlacklistBankAccountNo</servlet-name>
+        <servlet-class>servlets.BlacklistBankAccountNo</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>BlacklistBankAccountNo</servlet-name>
+        <url-pattern>/servlet/BlacklistBankAccountNo</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UpdateUserAccount</servlet-name>
+        <servlet-class>servlets.UpdateUserAccount</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UpdateUserAccount</servlet-name>
+        <url-pattern>/servlet/UpdateUserAccount</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UploadRefundFile</servlet-name>
+        <servlet-class>servlets.UploadRefundFile</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UploadRefundFile</servlet-name>
+        <url-pattern>/servlet/UploadRefundFile</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UploadRefundList</servlet-name>
+        <servlet-class>servlets.UploadRefundList</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UploadRefundList</servlet-name>
+        <url-pattern>/servlet/UploadRefundList</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>UploadBankAccount</servlet-name>
+        <servlet-class>servlets.UploadBankAccount</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UploadBankAccount</servlet-name>
+        <url-pattern>/servlet/UploadBankAccount</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>BdPayoutBatch</servlet-name>
+        <servlet-class>servlets.BdPayoutBatch</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>BdPayoutBatch</servlet-name>
+        <url-pattern>/servlet/BdPayoutBatch</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PayoutTransactionDetails</servlet-name>
+        <servlet-class>servlets.PayoutTransactionDetails</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PayoutTransactionDetails</servlet-name>
+        <url-pattern>/servlet/PayoutTransactionDetails</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ExportPayoutTransactions</servlet-name>
+        <servlet-class>servlets.ExportPayoutTransactions</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ExportPayoutTransactions</servlet-name>
+        <url-pattern>/servlet/ExportPayoutTransactions</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ResetPassword</servlet-name>
+        <servlet-class>servlets.ResetPassword</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ResetPassword</servlet-name>
+        <url-pattern>/servlet/ResetPassword</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ResetPasswordPartner</servlet-name>
+        <servlet-class>servlets.ResetPasswordPartner</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ResetPasswordPartner</servlet-name>
+        <url-pattern>/servlet/ResetPasswordPartner</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>TransactionsLogs</servlet-name>
+        <servlet-class>servlets.TransactionsLogs</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TransactionsLogs</servlet-name>
+        <url-pattern>/servlet/TransactionsLogs</url-pattern>
+    </servlet-mapping>
+
+</web-app>

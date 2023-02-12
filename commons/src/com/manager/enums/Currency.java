@@ -1,0 +1,40 @@
+package com.manager.enums;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Supriya
+ * Date: 01/5/17
+ * Time: 4:21 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public enum Currency
+{
+    USD("USD"),
+    EUR("EUR"),
+    GBP("GBP"),
+    CAD("CAD"),
+    INR("INR"),
+    PEN("PEN"),
+    JPY("JPY"),
+    SEK("SEK"),
+    NOK("NOK"),
+    DKK("DKK"),
+    RUB("RUB"),
+    TRY("TRY"),
+    AUD("AUD"),
+    BRL("BRL"),
+    BDT("BDT"),
+    NGN("NGN");
+
+
+    private String currency;
+    Currency(String currency)
+    {
+        this.currency = currency;
+    }
+    @Override
+    public String toString()
+    {
+        return currency;
+    }
+}

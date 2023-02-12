@@ -1,0 +1,18 @@
+upload ICICIPaymentgateway class
+
+insert member_pg_preferences (memberid,icicimerchantid,username,password,type) values (4,'00001165','','','auth');
+insert member_pg_preferences (memberid,icicimerchantid,username,password,type) values (516,'00001165','','','auth');
+
+
+insert member_pg_preferences (memberid,icicimerchantid,username,password,type) values (4,'00001165','','','capture');
+insert member_pg_preferences (memberid,icicimerchantid,username,password,type) values (516,'00001165','','','capture');
+
+Account Number:001105007870
+Direct Information Pvt. Ltd
+
+
+upload key for 1165
+
+
+restart server
+

@@ -1,0 +1,517 @@
+<%@ page import="com.directi.pg.Logger" %>
+<%@ page import="com.directi.pg.Functions" %>
+<%@ page import="com.directi.pg.Logger" %>
+<%@ page import="org.owasp.esapi.ESAPI" %>
+<%@ page import="org.owasp.esapi.errors.ValidationException" %>
+<%@ page import="org.owasp.esapi.User" %>
+<%@ page import="java.util.*" %>
+<%@ page import="java.util.stream.Collectors" %>
+
+<%--
+  Created by IntelliJ IDEA.
+  User: Sanjay
+  Date: 1/10/2022
+  Time: 3:37 PM
+  To change this template use File | Settings | File Templates.
+--%>
+
+
+<%@ include file="index.jsp" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%!
+    private static Logger logger = new Logger("bdPayoutBatch.jsp");
+%>
+<%
+    String accountid = request.getParameter("accountid") == null ? "" : request.getParameter("accountid");
+    String memberid = request.getParameter("toid") == null ? "" : request.getParameter("toid");
+    String walletname = request.getParameter("walletname") == null ? "" :request.getParameter("walletname");
+    String startTime = Functions.checkStringNull(request.getParameter("starttime"));
+    String endTime = Functions.checkStringNull(request.getParameter("endtime"));
+
+    Functions functions = new Functions();
+    String str = "";
+
+    if (startTime == null) startTime = "00:00:00";
+    if (endTime == null) endTime = "23:59:59";
+
+    String fdate = null;
+    String tdate = null;
+    String fmonth = null;
+    String tmonth = null;
+    String fyear = null;
+    String tyear = null;
+
+
+    try
+    {
+        fdate = ESAPI.validator().getValidInput("fdate", request.getParameter("fdate"), "Days", 2, true);
+        tdate = ESAPI.validator().getValidInput("tdate", request.getParameter("tdate"), "Days", 2, true);
+        fmonth = ESAPI.validator().getValidInput("fmonth", request.getParameter("fmonth"), "Months", 2, true);
+        tmonth = ESAPI.validator().getValidInput("tmonth", request.getParameter("tmonth"), "Months", 2, true);
+        fyear = ESAPI.validator().getValidInput("fyear", request.getParameter("fyear"), "Years", 4, true);
+        tyear = ESAPI.validator().getValidInput("tyear", request.getParameter("tyear"), "Years", 4, true);
+    }
+    catch (ValidationException e)
+    {
+        logger.error("Date Format Exception while select");
+    }
+
+    Calendar rightNow = Calendar.getInstance();
+    String currentyear = "" + rightNow.get(Calendar.YEAR);
+    if (fdate == null) fdate = "" + 1;
+    if (tdate == null) tdate = "" + rightNow.get(Calendar.DATE);
+    if (fmonth == null) fmonth = "" + rightNow.get(Calendar.MONTH);
+    if (tmonth == null) tmonth = "" + rightNow.get(Calendar.MONTH);
+    if (fyear == null) fyear = "" + rightNow.get(Calendar.YEAR);
+    if (tyear == null) tyear = "" + rightNow.get(Calendar.YEAR);
+
+    if (fdate != null) str = str + "fdate=" + fdate;
+    if (tdate != null) str = str + "&tdate=" + tdate;
+    if (fmonth != null) str = str + "&fmonth=" + fmonth;
+    if (tmonth != null) str = str + "&tmonth=" + tmonth;
+    if (fyear != null) str = str + "&fyear=" + fyear;
+    if (tyear != null) str = str + "&tyear=" + tyear;
+    if (startTime != null) str = str + "&starttime=" + startTime;
+    if (endTime != null) str = str + "&endtime=" + endTime;
+
+
+    int pageno = Functions.convertStringtoInt(ESAPI.encoder().encodeForHTML(request.getParameter("SPageno")), 1);
+    int pagerecords = Functions.convertStringtoInt(ESAPI.encoder().encodeForHTML(request.getParameter("SRecords")), 30);
+
+%>
+<html>
+<head>
+    <title>Payout Batch</title>
+
+    <META content="text/html; charset=windows-1252" http-equiv=Content-Type>
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+
+    <script type="text/javascript" src="/icici/javascript/jquery.min.js?ver=1"></script>
+    <script src="/icici/css/jquery-ui.min.js"></script>
+    <script src="/icici/javascript/gateway-account-member-terminalid1.js"></script>
+
+    <script>
+        function searchForm()
+        {
+            $('#search').val('search');
+            $('#uploadForm').removeAttr('enctype');
+        }
+        function downLoadExcel()
+        {
+
+        }
+    </script>
+
+
+    <script>
+        function validateInput()
+        {
+
+            var error = "";
+            var toid = document.getElementById("toid").value;
+            var accountid = document.getElementById("accountid").value;
+            var walletname = document.getElementById("walletname").value;
+
+            console.log("toid ", +toid);
+            console.log("accountid ", +accountid);
+            console.log("walletname ", +walletname);
+
+            if (toid == "")
+            {
+                error += "Please Enter Member Id \n";
+            }
+
+            if (accountid == "")
+            {
+                error += "Please Enter Account Id \n";
+            }
+
+            if (walletname == "")
+            {
+                error += "Please Enter Walletname \n";
+            }
+
+            console.log("validateInput " + error);
+            if (error != "")
+            {
+                alert(error);
+                return false;
+            }
+            else
+            {
+                $('#search').val('download');
+                document.getElementById("uploadForm").submit();
+            }
+        }
+
+    </script>
+</head>
+<body>
+
+
+<%
+    ctoken = ((User) session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+    if (com.directi.pg.Admin.isLoggedIn(session))
+    {
+%>
+
+    <form name="form" method="post" id="uploadForm" action="/icici/servlet/BdPayoutBatch?ctoken=<%=ctoken%>">
+        <input type="hidden" value="<%=ctoken%>" name="ctoken">
+        <input type="hidden" value="" name="action" id="search">
+
+        <div class="row">
+            <div class="col-lg-12" style="position:static;">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <p>Payout Batch</p>
+                    </div>
+                    <br>
+
+                    <div style="width: 100%;overflow: auto;">
+                        <table align="center" width="95%" cellpadding="2" cellspacing="2"
+                               style="margin-left:2.5%;margin-right: 2.5% ">
+                            <input type="hidden" value="<%=ctoken%>" name="ctoken" id="ctoken">
+                            <tr>
+                                <td>
+                                    <table border="0" cellpadding="5" cellspacing="0" width="100%" align="center">
+                                        <tr>
+                                            <td colspan="12">&nbsp;</td>
+                                        </tr>
+                                        <tr>
+                                            <td width="4%" class="textb">&nbsp;</td>
+                                            <td width="8%" class="textb">From *</td>
+                                            <td width="3%" class="textb"></td>
+                                            <td width="7%" class="textb">
+                                                <select size="1" name="fdate" value="">
+                                                    <%
+                                                        if (fdate != null)
+                                                            out.println(Functions.dayoptions(1, 31, fdate));
+                                                        else
+                                                            out.println(Functions.printoptions(1, 31));
+                                                    %>
+                                                </select>
+                                                <select size="1" name="fmonth" value="">
+                                                    <%
+                                                        if (fmonth != null)
+                                                            out.println(Functions.newmonthoptions(1, 12, fmonth));
+                                                        else
+                                                            out.println(Functions.printoptions(1, 12));
+                                                    %>
+                                                </select>
+                                                <select size="1" name="fyear" value="">
+                                                    <%
+                                                        if (fyear != null)
+                                                            out.println(Functions.yearoptions(2005, Integer.parseInt(currentyear), fyear));
+                                                        else
+                                                            out.println(Functions.printoptions(2005, 2020));
+                                                    %>
+                                                </select>
+                                            </td>
+                                            <td width="10%" class="textb">
+                                                <input type="text" size="6" placeholder="HH:MM:SS" name="starttime"
+                                                       maxlength="8" value="<%=startTime%>"/>
+                                            </td>
+                                            <td width="4%" class="textb">To *</td>
+                                            <td width="3%" class="textb"></td>
+                                            <td width="10%" class="textb">
+                                                <select size="1" name="tdate">
+                                                    <%
+                                                        if (tdate != null)
+                                                            out.println(Functions.dayoptions(1, 31, tdate));
+                                                        else
+                                                            out.println(Functions.printoptions(1, 31));
+                                                    %>
+                                                </select>
+                                                <select size="1" name="tmonth">
+                                                    <%
+                                                        if (tmonth != null)
+                                                            out.println(Functions.newmonthoptions(1, 12, tmonth));
+                                                        else
+                                                            out.println(Functions.printoptions(1, 12));
+                                                    %>
+                                                </select>
+                                                <select size="1" name="tyear">
+                                                    <%
+                                                        if (tyear != null)
+                                                            out.println(Functions.yearoptions(2005, Integer.parseInt(currentyear), tyear));
+                                                        else
+                                                            out.println(Functions.printoptions(2005, 2020));
+                                                    %>
+                                                </select>
+                                            </td>
+                                            <td width="8%" class="textb">
+                                                <input type="text" size="6" placeholder="HH:MM:SS" name="endtime" style="margin-left: 20%;"
+                                                       maxlength="8" value="<%=endTime%>"/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td width="4%" class="textb">&nbsp;</td>
+                                            <td width="8%" class="textb">&nbsp;</td>
+                                            <td width="3%" class="textb">&nbsp;</td>
+                                            <td width="7%" class="textb">&nbsp;</td>
+
+                                            <td width="4%" class="textb">&nbsp;</td>
+                                            <td width="8%" class="textb">&nbsp;</td>
+                                            <td width="3%" class="textb">&nbsp;</td>
+                                            <td width="7%" class="textb">&nbsp;</td>
+
+                                            <td width="4%" class="textb">&nbsp;</td>
+                                            <td width="8%" class="textb">&nbsp;</td>
+                                            <td width="3%" class="textb">&nbsp;</td>
+                                            <td width="12%" class="textb">&nbsp;</td>
+
+                                        </tr>
+                                        <tr>
+                                            <td width="4%" class="textb">&nbsp;</td>
+                                            <td width="4%" class="textb">Merchant Id *</td>
+                                            <td width="3%" class="textb"></td>
+                                            <td width="12%" class="textb">
+                                                <input type=text name="toid" id="toid" maxlength="50" value="<%=ESAPI.encoder().encodeForHTMLAttribute(memberid)%>" class="txtbox"
+                                                       size="50">
+                                            </td>
+
+
+                                            <td width="4%" class="textb">&nbsp;</td>
+                                            <td width="8%" class="textb">Wallet Name *</td>
+                                            <td width="3%" class="textb">&nbsp;</td>
+                                            <td width="7%" class="textb">
+                                                <input type=text name="walletname" id="walletname" maxlength="50" value="<%=ESAPI.encoder().encodeForHTMLAttribute(walletname)%>" class="txtbox"
+                                                       size="10">
+                                            </td>
+
+                                            <td width="4%" class="textb">&nbsp;</td>
+                                            <td width="5%" class="textb">Account Id *</td>
+                                            <td width="3%" class="textb"></td>
+                                            <td width="7%" class="textb">
+                                                <input type=text name="accountid" id="accountid" maxlength="50" value="<%=ESAPI.encoder().encodeForHTMLAttribute(accountid)%>" class="txtbox"
+                                                       size="20">
+                                            </td>
+
+                                        </tr>
+                                        <tr>
+                                            <td width="4%" class="textb">&nbsp;</td>
+                                            <td width="8%" class="textb">&nbsp;</td>
+                                            <td width="3%" class="textb">&nbsp;</td>
+                                            <td width="7%" class="textb">&nbsp;</td>
+
+                                            <td width="4%" class="textb">&nbsp;</td>
+                                            <td width="8%" class="textb">&nbsp;</td>
+                                            <td width="3%" class="textb">&nbsp;</td>
+                                            <td width="7%" class="textb">&nbsp;</td>
+
+                                            <td width="4%" class="textb">&nbsp;</td>
+                                            <td width="8%" class="textb">&nbsp;</td>
+                                            <td width="3%" class="textb">&nbsp;</td>
+                                            <td width="12%" class="textb">&nbsp;</td>
+
+                                        </tr>
+
+                                        <tr>
+
+                                            <td width="4%" class="textb">&nbsp;</td>
+                                            <td width="8%" class="textb">&nbsp;</td>
+                                            <td width="3%" class="textb">&nbsp;</td>
+                                            <td width="12%" class="textb">&nbsp;</td>
+
+                                        </tr>
+                                        <tr>
+                                            <td width="4%" class="textb">&nbsp;</td>
+                                            <td width="8%" class="textb">&nbsp;</td>
+                                            <td width="3%" class="textb">&nbsp;</td>
+                                            <td width="12%" class="textb">&nbsp;</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td width="4%" class="textb">&nbsp;</td>
+                                            <td width="8%" class="textb">
+                                                <button onclick="searchForm()" id="serachData" type="submit" name="search" value="serachData"
+                                                        style="display: inline-block!important;"
+                                                        class="btn btn-default center-block"><i
+                                                        class="fa fa-clock-o"></i>
+                                                    &nbsp;&nbsp;Search
+                                                </button>
+                                            </td>
+                                            <td width="4%" class="txtb">&nbsp;</td>
+                                            <td width="4%" class="textb">
+                                                <button onclick="validateInput()" id="downloadExcel" type="button" name="download" value="downloadExcel"
+                                                        style="display: inline-block!important;"
+                                                        class="btn btn-default center-block"><i
+                                                        class="fa fa-download"></i>
+                                                    &nbsp;&nbsp;Download Batch
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td width="2%" class="txtb">&nbsp;</td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <%--Report table--%>
+<div class="reporttable">
+    <%
+        String errormsg1 = (String)request.getAttribute("message");
+        String error = (String)request.getAttribute("error");
+        if (errormsg1 == null)
+        {
+            errormsg1 = "";
+        }
+        else
+        {
+            out.println("<table align=\"center\"><tr><td valign=\"middle\"><font class=\"textb\" >");
+            out.println(errormsg1);
+            out.println("</font></td></tr></table>");
+        }
+        if (error == null)
+        {
+            error = "";
+        }
+        else
+        {
+            out.println("<table align=\"center\"><tr><td valign=\"middle\"><font class=\"textb\" >");
+            out.println(error);
+            out.println("</font></td></tr></table>");
+        }
+
+        Hashtable hash =null;
+        if(request.getAttribute("payoutbatch") !=null)
+        {
+            hash = (Hashtable)request.getAttribute("payoutbatch");
+        }
+//        str = str + "&ctoken=" + ctoken;
+//        System.out.println("bdPAyoutBatch hash--"+hash);
+        if (hash != null && hash.size() > 0)
+        {
+            Set<String> actionEntrySet = hash.keySet();
+            List <String> listSet = new ArrayList<>();
+            listSet.addAll(actionEntrySet);
+            Hashtable temphash=null;
+    %>
+
+
+    <table align=center width="90%" border="1" class="table table-striped table-bordered table-hover table-green dataTable">
+        <thead>
+        <tr>
+            <td valign="middle" align="center" class="th0">Sys BatchID</td>
+            <td valign="middle" align="center" class="th0">Bank BatchID </td>
+            <td valign="middle" align="center" class="th0">Sys Batch Date</td>
+            <td valign="middle" align="center" class="th0">Bank Batch Date</td>
+            <td valign="middle" align="center" class="th0">Sys Batch Count</td>
+            <td valign="middle" align="center" class="th0">Bank Batch Count</td>
+            <td valign="middle" align="center" class="th0">Sys Batch Amount</td>
+            <td valign="middle" align="center" class="th0">Bank Batch Amount</td>
+            <td valign="middle" align="center" class="th0">System Status </td>
+            <td valign="middle" align="center" class="th0">Bank Status </td>
+            <td valign="middle" align="center" class="th0">Wallet Name</td>
+            <td valign="middle" align="center" class="th0" colspan="4">Action</td>
+            </td>
+        </tr>
+        </thead>
+        <%
+            String style="class=tr0";
+            String ext="light";
+            Hashtable inner=null;
+//            listSet.sort(Comparator.reverseOrder());
+//            listSet.stream().sorted().collect(Collectors.toList());
+            List<String>sortedList =  listSet.stream().map(Integer::valueOf).sorted().map(String::valueOf).collect(Collectors.toList());
+            System.out.println("sorted listt---"+sortedList);
+            for (String key1 : sortedList)
+            {
+                temphash=(Hashtable)hash.get(key1);
+
+                String sysBatchid=ESAPI.encoder().encodeForHTML((String)temphash.get("sysBatchid"));
+                String bankBatchid=ESAPI.encoder().encodeForHTML((String)temphash.get("bankBatchid"));
+                String sysBatchdate=ESAPI.encoder().encodeForHTML((String)temphash.get("sysBatchdate"));
+                String bankDate=ESAPI.encoder().encodeForHTML((String)temphash.get("bankDate"));
+                String sysCount=ESAPI.encoder().encodeForHTML((String)temphash.get("sysCount"));
+                String bankCount=ESAPI.encoder().encodeForHTML((String)temphash.get("bankCount"));
+                String sysAmount=ESAPI.encoder().encodeForHTML((String)temphash.get("sysAmount"));
+                String bankAmount=ESAPI.encoder().encodeForHTML((String)temphash.get("bankAmount"));
+                String sysStatus=ESAPI.encoder().encodeForHTML((String)temphash.get("sysStatus"));
+                String bankStatus=ESAPI.encoder().encodeForHTML((String)temphash.get("bankStatus"));
+                String walletName=ESAPI.encoder().encodeForHTML((String)temphash.get("walletName"));
+
+
+        %>
+        <tr>
+            <td align="center" <%=style%>><%=sysBatchid%></td>
+            <td align="center"<%=style%>><%=bankBatchid%></td>
+            <td align="center" <%=style%>><%=sysBatchdate%></td>
+            <%
+                if(!functions.isValueNull(bankDate))
+                {
+                    bankDate="-";
+                }
+            %>
+            <td align="center" <%=style%>><%=bankDate%></td>
+            <td align="center"<%=style%>><%=sysCount%></td>
+            <td align="center"<%=style%>><%=bankCount%></td>
+            <td align="center"<%=style%>><%=sysAmount%></td>
+            <%
+                if(!functions.isValueNull(bankAmount))
+                {
+                    bankAmount="-";
+                }
+            %>
+            <td align="center"<%=style%>><%=bankAmount%></td>
+            <td align="center"<%=style%>><%=sysStatus%></td>
+            <td align="center"<%=style%>><%=bankStatus%></td>
+            <td align="center"<%=style%>><%=walletName%></td>
+
+            <td align="center" <%=style%>>&nbsp;<form action="/icici/servlet/BdPayoutBatch?ctoken=<%=ctoken%>" method="post">
+                <input type="hidden" name="deleteBatch" value="<%=sysBatchid%>">
+                <input type="hidden" name="action" value="deleteBatch">
+                <input type="hidden" name="deleteWalletName" value="<%=walletName%>">
+                <input type="submit" class="gotoauto" value="Delete Batch">
+            </form></td>
+            <td align="center" <%=style%>>&nbsp;<form action="/icici/bdPayoutDetailsUpdate.jsp?ctoken=<%=ctoken%>" method="post">
+                <input type="hidden" name="sysBatchid" value="<%=sysBatchid%>">
+                <input type="hidden" name="action" value="updateBatch">
+                <input type="submit" class="gotoauto" value="Update Batch Id">
+            </form></td>
+            <td align="center" <%=style%>>&nbsp;<form action="/icici/servlet/BdPayoutBatch?ctoken=<%=ctoken%>" method="post">
+                <input type="hidden" name="reconBatch" value=""><input type="hidden" name="reconBatch" value="">
+                <input type="hidden" name="reconBatch" value=""><input type="submit" class="gotoauto" value="Recon Batch"></form></td>
+
+            <%
+                }
+            %>
+        </tr>
+    </table>
+
+    <%
+        }
+        else
+        {
+            out.println(Functions.NewShowConfirmation("Sorry","No records found."));
+
+                   /* out.println("<table align=\"center\" style=\" margin-right:38%\"><tr><td valign=\"middle\"><font class=\"textb\" >");
+                    out.println("Sorry, No records found.");
+                    out.println("</font></td></tr></table>");*/
+//                    out.println(Functions.NewShowConfirmation("Sorry","No records found."));
+
+        }
+    %>
+    <%
+        }
+        else
+        {
+            response.sendRedirect("/icici/logout.jsp");
+            return;
+        }
+    %>
+
+
+
+
+</div>
+</body>
+</html>

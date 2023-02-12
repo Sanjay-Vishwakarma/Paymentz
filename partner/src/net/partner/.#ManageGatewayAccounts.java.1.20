@@ -1,0 +1,356 @@
+package net.partner;
+
+import com.directi.pg.Logger;
+import com.directi.pg.core.GatewayAccountService;
+import com.manager.dao.GatewayAccountDAO;
+import com.payment.exceptionHandler.PZDBViolationException;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+
+
+/**
+ * Created by Sneha on 2/9/15.
+ */
+public class ManageGatewayAccounts extends HttpServlet
+{
+    static Logger log = new Logger(ManageGatewayAccounts.class.getName());
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doProcess(request, response);
+    }
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doProcess(request, response);
+    }
+    public void doProcess(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+
+        HttpSession session = req.getSession();
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+        PartnerFunctions partner=new PartnerFunctions();
+        if (!partner.isLoggedInPartner(session))
+        {
+            res.sendRedirect("/partner/Logout.jsp");
+            return;
+        }
+
+        RequestDispatcher rd = req.getRequestDispatcher("/manageGatewayAccount.jsp?ctoken=" + user.getCSRFToken());
+
+        GatewayAccountDAO accountDAO = new GatewayAccountDAO();
+        StringBuffer msg = new StringBuffer();
+        StringBuffer successMsg = new StringBuffer();
+
+        String tableName = "";
+        String columnName = "";
+        boolean flag = true;
+        String partnerid = req.getParameter("partnerid");
+        String mid = req.getParameter("mid");
+        String pgtypeid = req.getParameter("pgtypeid");
+        String isCVVRequired ="Y";
+        String mcc = req.getParameter("mcc");
+        String displayName = req.getParameter("displayName");
+       // String username = req.getParameter("username");
+        String pwd = req.getParameter("pwd");
+        String shortName = req.getParameter("shortname");
+        String path = req.getParameter("path");
+        String is3dSupportAccount = req.getParameter("is3dSupportAccount");
+        //System.out.println("is3dSupportAccount");
+        String isTestAccount = req.getParameter("isTestAccount");
+        String isActiveAccount = req.getParameter("isActiveAccount");
+        String isMultipleRefund = req.getParameter("isMultipleRefund");
+        String PartialRefund = req.getParameter("PartialRefund");
+        String emiSupport = req.getParameter("emiSupport");
+        String isSubmitted =  req.getParameter("isSubmitted");
+        String site =  req.getParameter("site");
+        int monthlyCardLimit =0;
+        int dailyCardLimit =0;
+        int weeklyCardLimit =0;
+        int isMasterCardSupported = 1;
+
+        Double dailyAmountLimit = 0.00;
+        Double monthlyAmountLimit = 0.00;
+        Double dailyCardAmountLimit = 0.00;
+        Double weeklyCardAmountLimit = 0.00;
+        Double monthlyCardAmountLimit = 0.00;
+        Double weeklyAmountLimit = 0.00;
+
+        String cardLimitCheck=req.getParameter("cardLimitCheck");
+        String cardAmountlimitCheck=req.getParameter("cardAmountLimitCheck");
+        String amountLimitCheck=req.getParameter("amountLimitCheck");
+        isMasterCardSupported=Integer.parseInt(req.getParameter("ismastercardsupported"));
+        String isrecurring=req.getParameter("isrecurring");
+        String addressValidation=req.getParameter("addressValidation");
+        String isDynamicDescriptor=req.getParameter("isDynamicDescriptor");
+        String isForexMid=req.getParameter("isForexMid");
+        String role =(String)session.getAttribute("role");
+        String username =(String)session.getAttribute("username");
+        String actionExecutorId = (String)session.getAttribute("merchantid");
+        String actionExecutorName=role+"-"+username;
+
+        if (!ESAPI.validator().isValidInput("mid", mid, "SafeString", 255, false))
+        {
+            msg.append("Invalid MerchantId<BR>");
+            flag=false;
+        }
+        if (!ESAPI.validator().isValidInput("pgtypeid", pgtypeid, "Numbers",10,false))
+        {
+            msg.append("Invalid BankName<BR>");
+            flag=false;
+        }
+        if (!ESAPI.validator().isValidInput("mcc", mcc, "SafeString", 100, false))
+        {
+            msg.append("Invalid MCC/Alias Name<BR>");
+            flag=false;
+        }
+        if (!ESAPI.validator().isValidInput("displayname", displayName, "SafeString", 255, false))
+        {
+            msg.append("Invalid Billing Descriptor<BR>");
+            flag=false;
+        }
+        if (!ESAPI.validator().isValidInput("username", username,"SafeString", 255, true))
+        {
+            msg.append("Invalid UserName<BR>");
+            flag=false;
+        }
+        if (!ESAPI.validator().isValidInput("pwd", pwd,"SafeString", 255, true))
+        {
+            msg.append("Invalid Password<BR>");
+            flag=false;
+        }
+        if (!(ESAPI.validator().isValidInput("site",site,"URL",100,true)))
+        {
+            log.debug("Invalid site.");
+            msg.append("Invalid site<BR>");
+            flag = false;
+        }
+        if (!ESAPI.validator().isValidInput("is3dSupportAccount", is3dSupportAccount,"SafeString", 10, true))
+        {
+            msg.append("Invalid is3dSupportAccount<BR>");
+            flag=false;
+        }
+
+        if (!ESAPI.validator().isValidInput("isTestAccount", isTestAccount,"SafeString", 10, true))
+        {
+            msg.append("Invalid isTestAccount<BR>");
+            flag=false;
+        }
+        if (!ESAPI.validator().isValidInput("isActiveAccount", isActiveAccount,"SafeString", 10, true))
+        {
+            msg.append("Invalid isActiveAccount<BR>");
+            flag=false;
+        }
+        if (!ESAPI.validator().isValidInput("isMultipleRefund", isMultipleRefund,"SafeString", 10, true))
+        {
+            msg.append("Invalid isMultipleRefund<BR>");
+            flag=false;
+        }
+        if (!ESAPI.validator().isValidInput("PartialRefund", PartialRefund,"SafeString", 10, true))
+        {
+            msg.append("Invalid PartialRefund <BR>");
+            flag=false;
+        }
+         if(!ESAPI.validator().isValidInput("emiSupport",emiSupport,"SafeString",10,true))
+         {
+             msg.append("Invalid emiSupport<BR>");
+             flag=false;
+         }
+        if (!(ESAPI.validator().isValidInput("dailycardlimit", (String) req.getParameter("dailycardlimit"), "Number", 10, true)))
+        {
+            log.debug("Invalid daily card limit ");
+            msg.append("Invalid daily card limit .<BR>");
+            flag = false;
+        }
+        else
+        {
+            if (req.getParameter("dailycardlimit").length() > 0)
+                dailyCardLimit = Integer.parseInt(req.getParameter("dailycardlimit"));
+        }
+        if (!(ESAPI.validator().isValidInput("weeklycardlimit", (String) req.getParameter("weeklycardlimit"), "Number", 10, true)))
+        {
+            log.debug("Invalid weekly card limit");
+            msg.append("Invalid weekly card limit.<BR>");
+            flag = false;
+        }
+        else
+        {
+            if (req.getParameter("weeklycardlimit").length() > 0)
+                weeklyCardLimit = Integer.parseInt(req.getParameter("weeklycardlimit"));
+        }
+        if (!(ESAPI.validator().isValidInput("monthlycardlimit", (String) req.getParameter("monthlycardlimit"), "Number", 10, true)))
+        {
+            log.debug("Invalid monthly card limit ");
+            msg.append("Invalid monthly card limit.<BR>");
+            flag = false;
+        }
+        else
+        {
+            if (req.getParameter("monthlycardlimit").length() > 0)
+                monthlyCardLimit = Integer.parseInt(req.getParameter("monthlycardlimit"));
+        }
+        if (!(ESAPI.validator().isValidInput("dailyamountlimit", req.getParameter("dailyamountlimit"), "AmountStr", 10, true)))
+        {
+            log.debug("Invalid daily amount limit.");
+            msg.append("Invalid daily amount limit.<BR>");
+            flag = false;
+        }
+        else
+        {
+            if (req.getParameter("dailyamountlimit").length() > 0)
+                dailyAmountLimit = Double.parseDouble(req.getParameter("dailyamountlimit"));
+        }
+        if (!(ESAPI.validator().isValidInput("weeklyamountlimit", req.getParameter("weeklyamountlimit"), "AmountStr", 10, true)))
+        {
+            log.debug("Invalid weekly amount limit ");
+            msg.append("Invalid weekly amount limit.<BR>");
+            flag = false;
+        }
+        else
+        {
+            if (req.getParameter("weeklyamountlimit").length() > 0)
+                weeklyAmountLimit = Double.parseDouble(req.getParameter("weeklyamountlimit"));
+        }
+        if (!(ESAPI.validator().isValidInput("monthlyamountlimit", (String) req.getParameter("monthlyamountlimit"), "AmountStr", 10, true)))
+        {
+            log.debug("Invalid monthly amount limit");
+            msg.append("Invalid Monthly Amount limit.<BR>");
+            flag = false;
+        }
+        else
+        {
+            if (req.getParameter("monthlyamountlimit").length() > 0)
+                monthlyAmountLimit = Double.parseDouble(req.getParameter("monthlyamountlimit"));
+        }
+
+        if (!(ESAPI.validator().isValidInput("dailycardamountlimit", (String) req.getParameter("dailycardamountlimit"), "AmountStr", 10, true)))
+        {
+            log.debug("Invalid daily card amount limit");
+            msg.append("Invalid daily card amount limit .<BR>");
+            flag = false;
+        }
+        else
+        {
+            if (req.getParameter("dailycardamountlimit").length() > 0)
+                dailyCardAmountLimit = Double.parseDouble(req.getParameter("dailycardamountlimit"));
+        }
+        if (!(ESAPI.validator().isValidInput("weeklycardamountlimit", (String) req.getParameter("weeklycardamountlimit"), "AmountStr", 10, true)))
+        {
+            log.debug("Invalid weekly card amount limit.");
+            msg.append("Invalid weekly card amount limit.<BR>");
+            flag = false;
+        }
+        else
+        {
+            if (req.getParameter("weeklycardamountlimit").length() > 0)
+                weeklyCardAmountLimit = Double.parseDouble(req.getParameter("weeklycardamountlimit"));
+        }
+        if (!(ESAPI.validator().isValidInput("monthlycardamountlimit", (String) req.getParameter("monthlycardamountlimit"), "AmountStr", 10, true)))
+        {
+            log.debug("Invalid monthly card amount limit.");
+            msg.append("Invalid monthly card amount limit.<BR>");
+            flag = false;
+        }
+        else
+        {
+            if (req.getParameter("monthlycardamountlimit").length() > 0)
+                monthlyCardAmountLimit = Double.parseDouble(req.getParameter("monthlycardamountlimit"));
+        }
+
+        if("true".equals(isSubmitted))
+        {
+            if (req.getParameter("columnnames") != null && req.getParameter("columnnames").length() > 0)
+            {
+
+                if (!ESAPI.validator().isValidInput("columnnames", (String) req.getParameter("columnnames"), "SafeString", 500, false))
+                {
+                    log.debug("Invalid column names.");
+                    msg.append("Invalid column names.<BR>");
+                    flag = false;
+                }
+                else
+                {
+                    columnName = req.getParameter("columnnames");
+                }
+            }
+            if (!ESAPI.validator().isValidInput("gatewaytablename", (String) req.getParameter("gatewaytablename"), "SafeString", 50, true))
+            {
+                log.debug("Invalid gateway table name.");
+                msg.append("Invalid gateway table name.<BR>");
+                flag = false;
+            }
+            else
+            {
+                tableName = req.getParameter("gatewaytablename");
+            }
+        }
+
+        if(msg.length()>0)
+        {
+            req.setAttribute("msg",msg.toString());
+            rd.forward(req,res);
+            return;
+        }
+        if(req.getParameterMap().containsKey("iscvvrequired"))
+        {
+            isCVVRequired=req.getParameter("iscvvrequired");
+        }
+        try
+        {
+
+            Double minTransactionAmount = 0.00;
+            Double maxTransactionAmount = 0.00;
+
+            boolean isMidUnique = accountDAO.isMIDUnique(mid, pgtypeid, mcc);
+            if(!isMidUnique)
+            {
+                req.setAttribute("msg","Gateway Accounts with same merchantId, pgtypeId, aliasName already exists");
+                rd.forward(req,res);
+                return;
+            }
+
+            String status = "";
+            if (flag)
+            {
+                status = accountDAO.createBankAccount(mid, pgtypeid, isCVVRequired, mcc, displayName, isMasterCardSupported,shortName, site,path,is3dSupportAccount,username, pwd, "",monthlyCardLimit, dailyAmountLimit, monthlyAmountLimit, dailyCardLimit, weeklyCardLimit, minTransactionAmount, maxTransactionAmount, dailyCardAmountLimit, weeklyCardAmountLimit, monthlyCardAmountLimit, isTestAccount,isActiveAccount,isMultipleRefund ,PartialRefund,emiSupport,partnerid, "1", weeklyAmountLimit, isrecurring,cardLimitCheck,cardAmountlimitCheck,amountLimitCheck,addressValidation,isDynamicDescriptor,isForexMid,actionExecutorId,actionExecutorName,tableName,columnName,req);
+                if("success".equals(status))
+                {
+                    successMsg.append("Bank Account Added Successfully");
+                    GatewayAccountService.loadGatewayAccounts();
+                }
+                else
+                {
+                    msg.append("Bank Account Adding Failed");
+                }
+            }
+            else
+            {
+                msg.append(status);
+            }
+        }
+        catch (PZDBViolationException e)
+        {
+            msg.append("Exception While Adding Bank Account::");
+            msg.append(e);
+            log.debug("Exception While Adding Bank Account::"+e);
+        }
+        catch (Exception e)
+        {
+            msg.append("Exception While Loading Bank Account After Adding New Bank Account::");
+            msg.append(e);
+            log.debug("Exception While Loading Bank Account After Adding New Bank Account::"+e);
+        }
+        req.setAttribute("msg",msg.toString());
+        req.setAttribute("success",successMsg.toString());
+        req.setAttribute("actionExecutorId",msg.toString());
+        req.setAttribute("actionExecutorName",msg.toString());
+        rd = req.getRequestDispatcher("/gatewayAccountInterface.jsp?ctoken=" + user.getCSRFToken());
+        rd.forward(req,res);
+    }
+}

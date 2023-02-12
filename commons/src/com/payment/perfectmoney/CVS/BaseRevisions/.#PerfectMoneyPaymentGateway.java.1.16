@@ -1,0 +1,336 @@
+package com.payment.perfectmoney;
+
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.GenericRequestVO;
+import com.directi.pg.core.valueObjects.GenericResponseVO;
+import com.manager.PaymentManager;
+import com.payment.common.core.*;
+import com.payment.exceptionHandler.*;
+import com.payment.exceptionHandler.constraint.PZGenericConstraint;
+import com.payment.exceptionHandler.constraintType.PZConstraintExceptionEnum;
+import com.payment.exceptionHandler.constraintType.PZTechnicalExceptionEnum;
+import com.payment.exceptionHandler.errorcode.ErrorCodeUtils;
+import com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorName;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeListVO;
+import com.payment.validators.vo.CommonValidatorVO;
+
+import java.util.HashMap;
+import java.util.ResourceBundle;
+
+/**
+ * Created by Uday on 7/5/17.
+ */
+public class PerfectMoneyPaymentGateway extends AbstractPaymentGateway
+{
+    public static final String GATEWAY_TYPE = "perfectmny";
+    final static ResourceBundle RB = LoadProperties.getProperty("com.directi.pg.perfectmoney");
+    private static TransactionLogger transactionLogger = new TransactionLogger(PerfectMoneyPaymentGateway.class.getName());
+
+    public PerfectMoneyPaymentGateway(String accountId)
+    {
+        this.accountId = accountId;
+    }
+
+    public static void main(String[] args) throws PZTechnicalViolationException
+    {
+        try{
+            PerfectMoneyUtils p =new PerfectMoneyUtils();
+            /*String createVoucher =
+                    "AccountID=4269559"+
+                            "&PassPhrase=s1234567"+
+                            "&Payer_Account=E14176310"+
+                            "&Amount=1.00" +
+                            "&PAYMENT_ID=3222233";
+
+            //System.out.println("request1::::" + createVoucher);
+            String createVoucherresponse = PerfectMoneyUtils.doPostHTTPSURLConnection("https://perfectmoney.is/acct/ev_create.asp", createVoucher);
+            System.out.println("response1::::" + createVoucherresponse);*/
+
+            /*String payVoucher =
+                    "AccountID=4269559"+
+                            "&PassPhrase=s1234567"+
+                            "&Payee_Account=E14176310"+
+                            "&ev_number=5671000178" +
+                            "&ev_code=8237371929107293" +
+                            "&PAYMENT_ID=3222233";
+
+            //System.out.println("request1::::" + createVoucher);
+            String createVoucherresponse = PerfectMoneyUtils.doPostHTTPSURLConnection("https://perfectmoney.is/acct/ev_activate.asp", payVoucher);
+            System.out.println("response1::::" + createVoucherresponse);*/
+
+            String createVoucher =
+                    "AccountID=8692963"+
+                            "&PassPhrase=s1234567"+
+                            "&startmonth=01"+
+                            "&startday=6" +
+                            "&startyear=2019"+
+                            "&endmonth=01"+
+                            "&endday=08" +
+                            "&endyear=2019"+
+                            "&payment_id=2264739";
+
+            //System.out.println("request1::::" + createVoucher);
+            String createVoucherresponse = PerfectMoneyUtils.doPostHTTPSURLConnection("https://perfectmoney.is/acct/historycsv.asp", createVoucher);
+
+            CommResponseVO commResponseVO = p.readInquiryResponse(createVoucherresponse);
+            //System.out.println("response1::::" + createVoucherresponse);
+
+        }
+        catch (Exception e){
+            //e.printStackTrace();
+        }
+    }
+
+    @Override
+    public String getMaxWaitDays()
+    {
+        return null;
+    }
+
+    public GenericResponseVO processSale(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        errorCodeListVO.addListOfError(errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_FUNCTIONALITY_NOT_ALLOWED));
+        PZGenericConstraint genConstraint = new PZGenericConstraint("PerfectMoneyPaymentGateway","processAuthentication",null,"common","This Functionality is not supported by PerfectMoney gateway. Please contact your Tech. support Team:::",errorCodeListVO);
+        throw new PZGenericConstraintViolationException(genConstraint,"This processSale is not supported by PerfectMoney gateway. Please contact your Tech. support Team:::",null);
+    }
+
+    public GenericResponseVO processAuthentication(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        errorCodeListVO.addListOfError(errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_FUNCTIONALITY_NOT_ALLOWED));
+        PZGenericConstraint genConstraint = new PZGenericConstraint("PerfectMoneyPaymentGateway","processAuthentication",null,"common","This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::",errorCodeListVO);
+        throw new PZGenericConstraintViolationException(genConstraint,"This Functionality is not supported by PerfectMoney gateway. Please contact your Tech. support Team:::",null);
+    }
+
+    public GenericResponseVO processQuery(String trackingID, GenericRequestVO requestVO) throws PZConstraintViolationException,PZTechnicalViolationException
+    {
+        transactionLogger.error("Inside Process Inquiry PM Trackingid---"+trackingID);
+        GatewayAccount gatewayAccount= GatewayAccountService.getGatewayAccount(accountId);
+        CommResponseVO commResponseVO = new CommResponseVO();
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        PerfectMoneyUtils perfectMoneyUtils = new PerfectMoneyUtils();
+
+        Functions functions = new Functions();
+        CommAddressDetailsVO commAddressDetailsVO = commRequestVO.getAddressDetailsVO();
+
+        String transactionDate = commAddressDetailsVO.getTime();
+        String eDate = "";
+        String month = "";
+        String year = "";
+        int sDate = 1;
+
+
+        if(functions.isValueNull(transactionDate))
+        {
+            if(transactionDate.contains(" "))
+            {
+                String splitString[] = transactionDate.split(" ");
+                if(splitString[0].contains("-"))
+                {
+                    String tDate[] = splitString[0].split("-");
+
+                    year = tDate[0];
+                    month = tDate[1];
+                    eDate = tDate[2];
+
+                    sDate = Integer.parseInt(tDate[2])-2;
+                }
+            }
+        }
+        try
+        {
+            String inquiry =
+                "AccountID="+gatewayAccount.getFRAUD_FTP_USERNAME()+
+                "&PassPhrase="+gatewayAccount.getFRAUD_FTP_PASSWORD()+
+                "&startmonth="+month+
+                "&startday="+sDate+
+                "&startyear="+year+
+                "&endmonth="+month+
+                "&endday="+eDate+
+                "&endyear="+year+
+                "&payment_id="+trackingID;
+
+            transactionLogger.error("PerfectMoney Inquiry Request---"+inquiry);
+
+            //System.out.println("request1::::" + createVoucher);
+            String inquiryResponse = PerfectMoneyUtils.doPostHTTPSURLConnection("https://perfectmoney.is/acct/historycsv.asp", inquiry);
+            transactionLogger.error("PerfectMoney Inquiry Response---" + inquiryResponse);
+
+            commResponseVO = perfectMoneyUtils.readInquiryResponse(inquiryResponse);
+        }
+        catch (PZTechnicalViolationException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(PZTechnicalViolationException.class.getName(), "processQuery()", null, "common", "Technical Exception while placing the transaction", PZTechnicalExceptionEnum.IOEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        return commResponseVO;
+    }
+
+    public GenericResponseVO processRefund(String trackingID, GenericRequestVO requestVO) throws PZConstraintViolationException
+    {
+        PZExceptionHandler.raiseConstraintViolationException("PerfectMoneyPaymentGateway","processRefund()",null,"common","Functionality not allowed for supporting Gateway", PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,null,null,null);
+        return null;
+    }
+
+    public GenericResponseVO processCapture(String trackingID, GenericRequestVO requestVO) throws PZConstraintViolationException
+    {
+        PZExceptionHandler.raiseConstraintViolationException("PerfectMoneyPaymentGateway","processCapture()",null,"common","Functionality not allowed for supporting Gateway", PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED,null,null,null);
+        return null;
+    }
+
+    public GenericResponseVO processVoid(String trackingID, GenericRequestVO requestVO) throws PZConstraintViolationException
+    {
+        PZExceptionHandler.raiseConstraintViolationException("PerfectMoneyPaymentGateway", "processVoid()", null, "common", "Functionality not allowed for supporting Gateway", PZConstraintExceptionEnum.INVALID_PARAMETER_ENTERED, null, null, null);
+        return null;
+    }
+
+    public GenericResponseVO processPayout(String trackingId,GenericRequestVO genericRequestVO)throws PZConstraintViolationException,PZTechnicalViolationException
+    {
+        CommRequestVO commRequestVO=(CommRequestVO)genericRequestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        CommTransactionDetailsVO transactionDetailsVO=commRequestVO.getTransDetailsVO();
+        CommMerchantVO commMerchantVO=commRequestVO.getCommMerchantVO();
+        CommCardDetailsVO  commCardDetailsVO=commRequestVO.getCardDetailsVO();
+        //GatewayAccount gatewayAccount= GatewayAccountService.getGatewayAccount(commMerchantVO.getAccountId());
+
+        String merchantId=commMerchantVO.getMerchantId();
+        String accountId=commMerchantVO.getMerchantUsername();
+        String password=commMerchantVO.getPassword();
+
+        /*System.out.println("in gw acc---"+commMerchantVO.getAccountId());
+        System.out.println("in gw mid---"+merchantId+"--"+password);*/
+
+        String customerAccount="";
+        if(transactionDetailsVO.getCustomerBankId()==null){
+            customerAccount=commCardDetailsVO.getAccountNumber();//"U7654321";//Payee Account
+        }else{
+            customerAccount=transactionDetailsVO.getCustomerBankId();
+        }
+
+        transactionLogger.debug("customerAccount----"+customerAccount);
+
+        String amount=transactionDetailsVO.getAmount();
+
+        String status="" ;
+        String remark="";
+
+        try{
+            String payoutRequest =
+                    "AccountID="+accountId+"" +
+                            "&PassPhrase="+password+""+
+                            "&Payer_Account="+merchantId+""+
+                            "&Payee_Account="+customerAccount+""+
+                            "&Amount="+amount+"" +
+                            "&PAYMENT_ID="+trackingId+"";
+
+            transactionLogger.error("-----payoutRequest----" + payoutRequest);
+            String payoutResponse = PerfectMoneyUtils.doPostHTTPSURLConnection(RB.getString("PAYOUTURL"), payoutRequest);
+            transactionLogger.error("-----payoutResponse----" + payoutResponse);
+
+            PerfectMoneyUtils perfectMoneyUtils=new PerfectMoneyUtils();
+            HashMap hashMap=perfectMoneyUtils.readPayoutOpResponse(payoutResponse);
+
+            transactionLogger.error("hashMap::::" + hashMap);
+
+            String payeeAccountName=(String)hashMap.get("payeeAccountName");
+            String payeeAccount=(String)hashMap.get("payeeAccount");
+            String payerAccount=(String)hashMap.get("payerAccount");
+            String paymentAmount=(String)hashMap.get("paymentAmount");
+            String paymentBatchNum=(String)hashMap.get("paymentBatchNum");
+            String paymentId=(String)hashMap.get("paymentId");
+            String error=(String)hashMap.get("error");
+            String code=(String)hashMap.get("code");
+            String period=(String)hashMap.get("period");
+
+            if(error==null || error=="" || error=="null"){
+                status="success";
+                remark="Payout Successful";
+            }
+            else{
+                status="failed";
+                remark="Payout Failed";
+            }
+            commResponseVO.setMerchantOrderId(trackingId);
+            commResponseVO.setTransactionId(paymentBatchNum);
+            commResponseVO.setStatus(status);
+            //commResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+            commResponseVO.setDescription(remark);
+            commResponseVO.setRemark(remark);
+            commResponseVO.setResponseTime("");
+
+        }
+        catch (PZTechnicalViolationException e)
+        {
+            PZExceptionHandler.raiseTechnicalViolationException(PZTechnicalViolationException.class.getName(), "processAuthentication()", null, "common", "Technical Exception while placing the transaction", PZTechnicalExceptionEnum.IOEXCEPTION, null, e.getMessage(), e.getCause());
+        }
+        return commResponseVO;
+    }
+
+    private String depositVoucher(CommonValidatorVO commonValidatorVO)throws PZDBViolationException,PZTechnicalViolationException
+    {
+        String html = "";
+        GatewayAccount gatewayAccount= GatewayAccountService.getGatewayAccount(accountId);
+        Functions functions = new Functions();
+        PerfectMoneyUtils p = new PerfectMoneyUtils();
+        CommRequestVO commRequestVO = null;
+
+
+        String payVoucher =
+                "AccountID="+gatewayAccount.getFRAUD_FTP_USERNAME()+
+                        "&PassPhrase="+gatewayAccount.getFRAUD_FTP_PASSWORD()+
+                        "&Payee_Account="+gatewayAccount.getMerchantId()+
+                        "&ev_number="+commonValidatorVO.getCardDetailsVO().getVoucherNumber()+
+                        "&ev_code="+commonValidatorVO.getCardDetailsVO().getSecurity_Code();
+
+        transactionLogger.error("S2S Voucher Request---"+payVoucher);
+
+        String voucherResponse = PerfectMoneyUtils.doPostHTTPSURLConnection(RB.getString("VOUCHERS2SURL"), payVoucher);
+
+        transactionLogger.error("S2S Voucher Response---"+voucherResponse);
+
+        HashMap responseHash = p.readS2SVoucherResponse(voucherResponse);
+
+        transactionLogger.error("responseHash---"+responseHash);
+        String remark = (String)responseHash.get("error");
+        if(!functions.isValueNull((String)responseHash.get("error")))
+        {
+            html = "success";
+        }
+        else
+        {
+            html = "failed";
+        }
+        if(functions.isValueNull((String)responseHash.get("voucherAmount")))
+            commonValidatorVO.getTransDetailsVO().setAmount((String)responseHash.get("voucherAmount"));
+        if(functions.isValueNull((String)responseHash.get("voucherCurrency")))
+            commonValidatorVO.getTransDetailsVO().setCurrency((String) responseHash.get("voucherCurrency"));
+
+        p.updateTransaction(commonValidatorVO, html, remark, (String) responseHash.get("paymentBatchNum"), gatewayAccount.getMerchantId());
+
+        return html;
+    }
+
+    public String processAutoRedirect(CommonValidatorVO commonValidatorVO) throws PZTechnicalViolationException, PZDBViolationException
+    {
+        transactionLogger.error(":::::Entered into processAutoRedirect for PerfectMoney:::::");
+        transactionLogger.error(":::::Voucher Details PerfectMoney"+commonValidatorVO.getCardDetailsVO().getVoucherNumber());
+        Functions functions = new Functions();
+
+        String html = "";
+        PerfectMoneyUtils perfectMoneyUtils = new PerfectMoneyUtils();
+
+        if(functions.isValueNull(commonValidatorVO.getCardDetailsVO().getVoucherNumber()) && functions.isValueNull(commonValidatorVO.getCardDetailsVO().getSecurity_Code()))
+        {
+            html = this.depositVoucher(commonValidatorVO);
+        }
+        else
+            html = perfectMoneyUtils.generateAutoSubmitForm(commonValidatorVO);
+
+        return html;
+    }
+}

@@ -1,0 +1,321 @@
+package net.partner;
+
+import com.directi.pg.*;
+import com.manager.BlacklistManager;
+import com.manager.vo.PaginationVO;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.ValidationErrorList;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.List;
+
+import java.util.*;
+
+
+/**
+ * Created by Sanjay on 10 Nov 2018.
+ */
+public class BlacklistIp extends HttpServlet
+{
+    private static Logger logger = new Logger(BlacklistIp.class.getName());
+    private static Logger log = new Logger(BlacklistIp.class.getName());
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        logger.debug("Entering in BlockedIPList---" + req.getParameter("sbtn"));
+
+        HttpSession session = Functions.getNewSession(req);
+        PartnerFunctions partnerFunctions = new PartnerFunctions();
+        String partnerId = session.getAttribute("partnerId").toString();
+        PaginationVO paginationVO = new PaginationVO();
+        Functions functions = new Functions();
+        BlacklistManager blacklistManager = new BlacklistManager();
+
+
+        User user = (User) session.getAttribute("ESAPIUserSessionKey");
+
+        if (!partnerFunctions.isLoggedInPartner(session))
+        {
+            res.sendRedirect("/partner/logout.jsp");
+            return;
+        }
+
+        RequestDispatcher rd = req.getRequestDispatcher("/blacklistIp.jsp?ctoken=" + user.getCSRFToken());
+
+        String role=(String)session.getAttribute("role");
+        String username=(String)session.getAttribute("username");
+        String actionExecutorId=(String)session.getAttribute("merchantid");
+        String actionExecutorName=role+"-"+username;
+
+        String action = req.getParameter("upload");
+        String memberId = req.getParameter("memberid");
+        String pid = req.getParameter("pid");
+        String selectIpVersion = req.getParameter("type");
+        String allIP = req.getParameter("ipAddress");
+        String delete = req.getParameter("delete");
+        String[] ids = req.getParameterValues("id");
+
+        List listOfall = null;
+        Hashtable recordHash = null;
+        Hashtable tempHash = null;
+        String msg = "";
+        String startIp = "";
+        String error = "";
+        String EOL = "<BR>";
+        int pageno = 1;
+        int records = 15;
+
+        boolean isIPv4 = false;
+        boolean isIPv6 = false;
+
+        error = error + validateOptionalParameter(req);
+        if (error.length() > 0)
+        {
+            req.setAttribute("error", error);
+            rd.forward(req, res);
+            return;
+        }
+
+        try
+        {
+            pageno = Functions.convertStringtoInt(ESAPI.validator().getValidInput("SPageno", req.getParameter("SPageno"), "Numbers", 5, true), 1);
+            records = Functions.convertStringtoInt(ESAPI.validator().getValidInput("SRecords", req.getParameter("SRecords"), "Numbers", 5, true), 15);
+        }
+        catch (ValidationException e)
+        {
+            logger.error("Invalid page no or records", e);
+            pageno = 1;
+            records = 15;
+        }
+
+        paginationVO.setInputs("memberid=" + memberId + "&type=" + selectIpVersion + "&ipAddress=" + allIP+ "&pid=" + pid);
+        paginationVO.setPageNo(pageno);
+        paginationVO.setRecordsPerPage(records);
+
+        try
+        {
+
+            error = validateOptionalParameter(req);
+                    if (!ESAPI.validator().isValidInput("pid", pid, "Numbers", 10, true))
+                    {
+                        error = "Invalid PartnerId" + EOL;
+                    }
+                    if (!ESAPI.validator().isValidInput("memberid", memberId, "Numbers", 20, false))
+                    {
+                        error = "Invalid MemberID or MemberID should not be empty" + EOL;
+                    }
+                    else
+                    {
+
+                        if (functions.isValueNull(pid) && !partnerFunctions.isPartnerMemberMapped(memberId, pid))
+                        {
+                            error = "Partner ID/Member ID NOT mapped." + EOL;
+                        }
+                        else if (!functions.isValueNull(req.getParameter("pid")) && !partnerFunctions.isPartnerSuperpartnerMembersMapped(memberId, partnerId))
+                        {
+                            error = "Partner ID/Member ID NOT mapped." + EOL;
+                        }
+                    }
+                    if (error.length() > 0)
+                    {
+                        req.setAttribute("error", error);
+                        rd.forward(req, res);
+                        return;
+                    }
+
+                    isIPv4 = isIPv4(req.getParameter("ipAddress"));
+                    isIPv6 = isIPv6(req.getParameter("ipAddress"));
+
+                    if (isIPv4 == true && isIPv6 == false && selectIpVersion.equals("IPv4") && functions.isValueNull(allIP))
+                    {
+                        selectIpVersion = req.getParameter("type");
+                    }
+                    else if (isIPv6 == true && isIPv4 == false && selectIpVersion.equals("IPv6") && functions.isValueNull(allIP))
+                    {
+                        selectIpVersion = req.getParameter("type");
+                    }
+                    else if (selectIpVersion.equals(""))
+                    {
+                        listOfall = blacklistManager.getBlockedipForPartner(memberId, allIP, selectIpVersion, actionExecutorId,actionExecutorName, paginationVO);
+                    }
+                    else if (isIPv6 == true && selectIpVersion.equals("IPv4"))
+                    {
+                        error = ("Invalid Ip Address");
+                    }
+                    else if (isIPv4 == true && selectIpVersion.equals("IPv6"))
+                    {
+                        error = ("Invalid Ip Address");
+                    }
+                    else
+                    {
+                        error = "Please enter valid " + selectIpVersion + " Address";
+                    }
+
+                    if (error.length() > 0)
+                    {
+                        req.setAttribute("error", error);
+                        rd.forward(req, res);
+                        return;
+                    }
+                listOfall = blacklistManager.getBlockedipForPartner(memberId, allIP, selectIpVersion, actionExecutorId,actionExecutorName,paginationVO);
+                if ("upload".equalsIgnoreCase(action))
+                {
+                    if (!functions.isValueNull(allIP))
+                    {
+                        error = "Please enter valid " + selectIpVersion + " Address";
+                    }
+                    if (!functions.isValueNull(selectIpVersion) || selectIpVersion.equals(""))
+                    {
+                        error = "Please select IP Type";
+                    }
+
+                    boolean isGloballyFound = false;
+                    if (functions.isValueNull(allIP))
+                    {
+                        isGloballyFound = blacklistManager.checkForGlobal(allIP);
+                    }
+                    if (isGloballyFound == true)
+                    {
+                        error = "IP Address is Globally Blocked";
+
+                    }
+                    if (error.length() > 0)
+                    {
+                        req.setAttribute("error", error);
+                        rd.forward(req, res);
+                        return;
+                    }
+                    boolean isDuplicateIpFound = false;
+                    recordHash = blacklistManager.retrievIPForMerchant(memberId, allIP, selectIpVersion, paginationVO, false);
+                    for (int pos = 1; pos <= recordHash.size() - 2; pos++)
+                    {
+                        String id = Integer.toString(pos);
+                        tempHash = (Hashtable) recordHash.get(id);
+                        startIp = (String) tempHash.get("ipAddress");
+                        if (startIp.equals(req.getParameter("ipAddress")))
+                        {
+                            isDuplicateIpFound = true;
+                            break;
+                        }
+                    }
+                    if (isDuplicateIpFound)
+                    {
+                        error = "IP Already Blocked";
+                        req.setAttribute("error", error);
+                        rd.forward(req, res);
+                        return;
+                    }
+                    else
+                    {
+                        blacklistManager.insertIPForMerchant(memberId, allIP, selectIpVersion, actionExecutorId,actionExecutorName);
+                        msg = "IP Address Blocked Successfully.";
+                        req.setAttribute("msg", msg);
+                    }
+                    listOfall = blacklistManager.getBlockedip(memberId, allIP, selectIpVersion, paginationVO);
+                }
+
+                if ("delete".equalsIgnoreCase(delete))
+                {
+                    for (String id : ids)
+                    {
+                        blacklistManager.deleteIPForMerchant(id);
+                    }
+                    msg = "IP Address Deleted Successfully";
+                    listOfall = blacklistManager.getBlockedip(memberId, allIP, selectIpVersion, paginationVO);
+                }
+
+        }
+        catch (Exception e)
+        {
+            logger.debug("Exception::::" + e);
+        }
+        req.setAttribute("listOfall", listOfall);
+        req.setAttribute("memberId", memberId);
+        req.setAttribute("paginationVO", paginationVO);
+        req.setAttribute("error", error);
+        req.setAttribute("msg", msg);
+        rd.forward(req, res);
+    }
+
+    private boolean isIPv4(String ipAddress)
+    {
+        boolean status = false;
+        int count = 1;
+        char c;
+        for (int i = 1; i < ipAddress.length(); i++)
+        {
+            c = ipAddress.charAt(i);
+            if (c == '.')
+            {
+                count++;
+            }
+        }
+        if (count == 4)
+        {
+            status = true;
+        }
+        return status;
+    }
+
+    private boolean isIPv6(String ipAddress)
+    {
+        boolean status = false;
+        int count = 1;
+        char c;
+        for (int i = 1; i < ipAddress.length(); i++)
+        {
+            c = ipAddress.charAt(i);
+            if (c == ':')
+            {
+                count++;
+            }
+        }
+        if (count == 8)
+        {
+            status = true;
+        }
+        return status;
+    }
+
+    private String validateOptionalParameter(HttpServletRequest req)
+    {
+        InputValidator inputValidator = new InputValidator();
+        String error = "";
+        String EOL = "<BR>";
+        List<InputFields> inputFieldsListOptional = new ArrayList<InputFields>();
+        inputFieldsListOptional.add(InputFields.IPADDRESS);
+        inputFieldsListOptional.add(InputFields.PAGENO);
+        inputFieldsListOptional.add(InputFields.RECORDS);
+
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.InputValidations(req, inputFieldsListOptional, errorList, true);
+
+        if (!errorList.isEmpty())
+        {
+            for (InputFields inputFields : inputFieldsListOptional)
+            {
+                if (errorList.getError(inputFields.toString()) != null)
+                {
+                    logger.debug(errorList.getError(inputFields.toString()).getLogMessage());
+                    error = error + errorList.getError(inputFields.toString()).getMessage() + EOL;
+                }
+            }
+        }
+        return error;
+    }
+}

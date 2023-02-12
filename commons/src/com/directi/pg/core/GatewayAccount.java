@@ -1,0 +1,684 @@
+package com.directi.pg.core;
+
+import com.directi.pg.Logger;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: jignesh.r
+ * Date: Feb 27, 2007
+ * Time: 6:59:28 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class GatewayAccount
+{
+    private static Logger log = new Logger(GatewayAccount.class.getName());
+    int dailyCardLimit;
+    int weeklyCardLimit;
+    int monthlyCardLimit;
+    float dailyCardAmountLimit;
+    float weeklyCardAmountLimit;
+    float monthlyCardAmountLimit;
+    private int accountId;
+    private String merchantId;
+    private String MPIId;
+    private String pgTypeId;
+    private String aliasName;
+    private String displayName;
+    private boolean masterCardSupported;
+    private boolean cvvRequired;
+    private String agentId;
+    private String partnerId;
+    private String isRecurring;
+    private String isDynamicDescriptor;
+    private String _3DSupportAccount;
+    private boolean isTest;
+    private boolean isActive;
+    private String addressValidation;
+    private String password;
+    private float dailyAmountLimit;
+    private float monthlyAmountLimit;
+    private float minTransactionAmount;
+    private float mazTransactionAmount;
+    private float weeklyAmountLimit;
+    private String FRAUD_FTP_SITE;
+    private String FRAUD_FTP_PATH;
+    private String FRAUD_FTP_USERNAME;
+    private String FRAUD_FTP_PASSWORD;
+    private String FRAUD_FILE_SHORT_NAME;
+    private String CHARGEBACK_FTP_PATH;
+    private String forexMid;
+    private String emiSupport;
+    private String cardCheckLimit;
+    private String cardAmountLimitCheckAcc;
+    private String amountLimitCheckAcc;
+    private boolean partialRefund;
+    private String isMultipleRefund;
+    private String actionExecutorId;
+    private String actionExecutorName;
+    private String fromAccountId;
+    private String fromMid;
+    private String threeDsVersion;
+    private String daily_Account_Amount_Limit;
+    private String monthly_Account_Amount_Limit;
+    private String weekly_Account_Amount_Limit;
+
+    private String daily_card_limit_check;
+    private String weekly_card_limit_check;
+    private String monthly_card_limit_check;
+
+    private String daily_Amount_Range;
+    private String daily_Amount_Range_Check;
+
+    public String getDaily_Amount_Range_Check()
+    {
+        return daily_Amount_Range_Check;
+    }
+
+    public void setDaily_Amount_Range_Check(String daily_Amount_Range_Check)
+    {
+        this.daily_Amount_Range_Check = daily_Amount_Range_Check;
+    }
+
+    public String getDaily_Amount_Range()
+    {
+        return daily_Amount_Range;
+    }
+
+    public void setDaily_Amount_Range(String daily_Amount_Range)
+    {
+        this.daily_Amount_Range = daily_Amount_Range;
+    }
+
+    public void setMerchantId(String merchantId)
+    {
+        this.merchantId = merchantId;
+    }
+
+
+    public GatewayAccount()
+    {
+
+    }
+    public GatewayAccount(ResultSet rs) throws SQLException
+    {
+        accountId = rs.getInt("accountid");
+        merchantId = rs.getString("merchantid");
+        // MPIId = rs.getString("mpiid");
+        pgTypeId = rs.getString("pgtypeid");
+        aliasName = rs.getString("aliasname");
+        displayName = rs.getString("displayname");
+        masterCardSupported = rs.getBoolean("ismastercardsupported");
+        cvvRequired = rs.getBoolean("isCVVrequired");
+        dailyAmountLimit=rs.getFloat("daily_amount_limit");
+        monthlyAmountLimit=rs.getFloat("monthly_amount_limit");
+        dailyCardLimit=rs.getInt("daily_card_limit");
+        weeklyCardLimit=rs.getInt("weekly_card_limit");
+        monthlyCardLimit=rs.getInt("monthly_card_limit");
+        minTransactionAmount=rs.getFloat("min_transaction_amount");
+        mazTransactionAmount=rs.getFloat("max_transaction_amount");
+        password=rs.getString("passwd");
+        dailyCardAmountLimit=rs.getFloat("daily_card_amount_limit");
+        weeklyCardAmountLimit=rs.getFloat("weekly_card_amount_limit");
+        monthlyCardAmountLimit=rs.getFloat("monthly_card_amount_limit");
+        isTest=rs.getBoolean("istest");
+        isActive=rs.getBoolean("isactive");
+        weeklyAmountLimit=rs.getFloat("weekly_amount_limit");
+        partnerId=rs.getString("partnerid");
+        agentId=rs.getString("agentid");
+
+        FRAUD_FILE_SHORT_NAME = rs.getString("shortname");
+        FRAUD_FTP_SITE = rs.getString("site");
+        FRAUD_FTP_PATH = rs.getString("path");
+        CHARGEBACK_FTP_PATH = rs.getString("chargeback_path");
+        FRAUD_FTP_USERNAME = rs.getString("username");
+        FRAUD_FTP_PASSWORD = rs.getString("passwd");
+        addressValidation = rs.getString("addressValidation");
+        //recurringType = rs.getString("recurringType");
+        isRecurring = rs.getString("is_recurring");
+        isDynamicDescriptor = rs.getString("isDynamicDescriptor");
+        _3DSupportAccount=rs.getString("3dSupportAccount");
+        forexMid=rs.getString("isForexMid");
+        emiSupport=rs.getString("emiSupport");
+        cardCheckLimit=rs.getString("cardLimitCheck");
+        cardAmountLimitCheckAcc=rs.getString("cardAmountLimitCheckAcc");
+        amountLimitCheckAcc=rs.getString("amountLimitCheckAcc");
+        partialRefund=rs.getBoolean("partialRefund");
+        isMultipleRefund=rs.getString("isMultipleRefund");
+        actionExecutorId = rs.getString("actionExecutorId");
+        actionExecutorName = rs.getString("actionExecutorName");
+        fromAccountId = rs.getString("fromAccountId");
+        fromMid = rs.getString("fromMid");
+        threeDsVersion = rs.getString("threeDsVersion");
+        daily_Account_Amount_Limit  = rs.getString("Daily_Account_Amount_Limit");
+        monthly_Account_Amount_Limit = rs.getString("Monthly_Account_Amount_Limit");
+        weekly_Account_Amount_Limit = rs.getString("Weekly_Account_Amount_Limit");
+
+        daily_card_limit_check=rs.getString("daily_card_limit_check");
+        weekly_card_limit_check=rs.getString("weekly_card_limit_check");
+        monthly_card_limit_check=rs.getString("monthly_card_limit_check");
+
+    }
+
+    public boolean isTest()
+    {
+        return isTest;
+    }
+
+    public void setTest(boolean test)
+    {
+        isTest = test;
+    }
+
+    public boolean isActive()
+    {
+        return isActive;
+    }
+
+    public void setActive(boolean active)
+    {
+        isActive = active;
+    }
+
+    public String getIsDynamicDescriptor()
+    {
+        return isDynamicDescriptor;
+    }
+
+    public void setIsDynamicDescriptor(String isDynamicDescriptor)
+    {
+        this.isDynamicDescriptor = isDynamicDescriptor;
+    }
+
+    public String getAddressValidation()
+    {
+        return addressValidation;
+    }
+
+    public void setAddressValidation(String addressValidation)
+    {
+        this.addressValidation = addressValidation;
+    }
+
+    public String getPassword()
+    {
+        return password;
+    }
+
+    public void setPassword(String password)
+    {
+        this.password = password;
+    }
+
+    public float getWeeklyAmountLimit()
+    {
+        return weeklyAmountLimit;
+    }
+
+    public void setWeeklyAmountLimit(float weeklyAmountLimit)
+    {
+        this.weeklyAmountLimit = weeklyAmountLimit;
+    }
+
+    public float getMinTransactionAmount()
+    {
+        return minTransactionAmount;
+    }
+
+    public void setMinTransactionAmount(float minTransactionAmount)
+    {
+        this.minTransactionAmount = minTransactionAmount;
+    }
+
+    public float getMazTransactionAmount()
+    {
+        return mazTransactionAmount;
+    }
+
+    public void setMazTransactionAmount(float mazTransactionAmount)
+    {
+        this.mazTransactionAmount = mazTransactionAmount;
+    }
+
+    public float getDailyCardAmountLimit()
+    {
+        return dailyCardAmountLimit;
+    }
+
+    public void setDailyCardAmountLimit(float dailyCardAmountLimit)
+    {
+        this.dailyCardAmountLimit = dailyCardAmountLimit;
+    }
+
+    public float getWeeklyCardAmountLimit()
+    {
+        return weeklyCardAmountLimit;
+    }
+
+    public void setWeeklyCardAmountLimit(float weeklyCardAmountLimit)
+    {
+        this.weeklyCardAmountLimit = weeklyCardAmountLimit;
+    }
+
+    public float getMonthlyCardAmountLimit()
+    {
+        return monthlyCardAmountLimit;
+    }
+
+    public void setMonthlyCardAmountLimit(float monthlyCardAmountLimit)
+    {
+        this.monthlyCardAmountLimit = monthlyCardAmountLimit;
+    }
+
+    public int getDailyCardLimit()
+    {
+        return dailyCardLimit;
+    }
+
+    public void setDailyCardLimit(int dailyCardLimit)
+    {
+        this.dailyCardLimit = dailyCardLimit;
+    }
+
+    public int getWeeklyCardLimit()
+    {
+        return weeklyCardLimit;
+    }
+
+    public void setWeeklyCardLimit(int weeklyCardLimit)
+    {
+        this.weeklyCardLimit = weeklyCardLimit;
+    }
+
+    public int getMonthlyCardLimit()
+    {
+        return monthlyCardLimit;
+    }
+
+    public void setMonthlyCardLimit(int monthlyCardLimit)
+    {
+        this.monthlyCardLimit = monthlyCardLimit;
+    }
+
+    public float getDailyAmountLimit()
+    {
+        return dailyAmountLimit;
+    }
+
+    public void setDailyAmountLimit(float dailyAmountLimit)
+    {
+        this.dailyAmountLimit = dailyAmountLimit;
+    }
+
+    public float getMonthlyAmountLimit()
+    {
+        return monthlyAmountLimit;
+    }
+
+    public void setMonthlyAmountLimit(float monthlyAmountLimit)
+    {
+        this.monthlyAmountLimit = monthlyAmountLimit;
+    }
+
+    public boolean isMasterCardSupported()
+    {
+        return masterCardSupported;
+    }
+
+    public String getFRAUD_FTP_SITE()
+    {
+        return FRAUD_FTP_SITE;
+    }
+
+    public String getCHARGEBACK_FTP_PATH()
+    {
+        return CHARGEBACK_FTP_PATH;
+    }
+
+    public String getFRAUD_FTP_PATH()
+    {
+        return FRAUD_FTP_PATH;
+    }
+
+    public String getFRAUD_FTP_USERNAME()
+    {
+        return FRAUD_FTP_USERNAME;
+    }
+
+    public String getFRAUD_FTP_PASSWORD()
+    {
+        return FRAUD_FTP_PASSWORD;
+    }
+
+    public String getFRAUD_FILE_SHORT_NAME()
+    {
+        return FRAUD_FILE_SHORT_NAME;
+    }
+
+    public boolean isCvvRequired()
+    {
+        return cvvRequired;
+    }
+
+    public String getAgentId()
+    {
+        return agentId;
+    }
+
+    public void setAgentId(String agentId)
+    {
+        this.agentId = agentId;
+    }
+
+    public String getPartnerId()
+    {
+        return partnerId;
+    }
+
+    public void setPartnerId(String partnerId)
+    {
+        this.partnerId = partnerId;
+    }
+
+    public String getIsRecurring()
+    {
+        return isRecurring;
+    }
+
+    public void setIsRecurring(String isRecurring)
+    {
+        this.isRecurring = isRecurring;
+    }
+
+    public int getAccountId()
+    {
+        return accountId;
+    }
+
+    public String getAliasName()
+    {
+        return aliasName;
+    }
+
+    public void setAccountId(int accountId)
+    {
+        this.accountId = accountId;
+    }
+
+    public String getDisplayName()
+    {
+        return displayName;
+    }
+
+    public String getMerchantId()
+    {
+        return merchantId;
+    }
+
+    public String getPgTypeId()
+    {
+        return pgTypeId;
+    }
+
+    public String getMPIId()
+    {
+        return MPIId;
+    }
+
+    public void setMPIId(String MPIId)
+    {
+        this.MPIId = MPIId;
+    }
+
+    public String getCurrency()
+    {
+        return GatewayTypeService.getGatewayType(pgTypeId).getCurrency();
+    }
+
+    public String getGateway()
+    {
+        return GatewayTypeService.getGatewayType(pgTypeId).getGateway();
+    }
+
+    public String getGatewayName()
+    {
+        return GatewayTypeService.getGatewayType(pgTypeId).getName();
+    }
+
+    public int getChargePercentage()
+    {
+        return GatewayTypeService.getGatewayType(pgTypeId).getChargePercentage();
+    }
+
+    public int getTaxPercentage()
+    {
+        return GatewayTypeService.getGatewayType(pgTypeId).getTaxPercentage();
+    }
+
+    public int getChargesAccount()
+    {
+        return GatewayTypeService.getGatewayType(pgTypeId).getChargesAccount();
+    }
+
+    public int getTaxAccount()
+    {
+        return GatewayTypeService.getGatewayType(pgTypeId).getTaxAccount();
+    }
+
+    public int getWithdrawalCharge()
+    {
+        return GatewayTypeService.getGatewayType(pgTypeId).getWithdrawalCharge();
+    }
+
+    public int getReversalCharge()
+    {
+        return GatewayTypeService.getGatewayType(pgTypeId).getReversalCharge();
+    }
+
+    public int getChargebackCharge()
+    {
+        return GatewayTypeService.getGatewayType(pgTypeId).getChargebackCharge();
+    }
+
+    public String getAddress()
+    {
+        return GatewayTypeService.getGatewayType(pgTypeId).getAddress();
+    }
+
+    public int getHighRiskAmount()
+    {
+        return GatewayTypeService.getGatewayType(pgTypeId).getHighRiskAmount();
+    }
+
+    public String get_3DSupportAccount()
+    {
+        return _3DSupportAccount;
+    }
+
+    public void set_3DSupportAccount(String _3DSupportAccount)
+    {
+        this._3DSupportAccount = _3DSupportAccount;
+    }
+
+    public String getForexMid(){ return forexMid; }
+
+    public String getEmiSupport()
+    {
+        return emiSupport;
+    }
+
+    public void setEmiSupport(String emiSupport)
+    {
+        this.emiSupport = emiSupport;
+    }
+
+    public String toString()
+    {
+        return " { " + " accountId=" + accountId + " merchantId=" + merchantId + " pgTypeId=" + pgTypeId + " aliasName=" + aliasName + " displayName=" + displayName + " masterCardSupported=" + masterCardSupported + " cvvRequired = " + cvvRequired + " } ";
+    }
+    public String getCardCheckLimit()
+    {
+        return cardCheckLimit;
+    }
+
+    public void setCardCheckLimit(String cardCheckLimit)
+    {
+        this.cardCheckLimit = cardCheckLimit;
+    }
+
+    public String getCardAmountLimitCheckAcc()
+    {
+        return cardAmountLimitCheckAcc;
+    }
+
+    public void setCardAmountLimitCheckAcc(String cardAmountLimitCheckAcc)
+    {
+        this.cardAmountLimitCheckAcc = cardAmountLimitCheckAcc;
+    }
+
+    public String getAmountLimitCheckAcc()
+    {
+        return amountLimitCheckAcc;
+    }
+
+    public void setAmountLimitCheckAcc(String amountLimitCheckAcc)
+    {
+        this.amountLimitCheckAcc = amountLimitCheckAcc;
+    }
+
+    public boolean isPartialRefund() { return partialRefund; }
+
+    public void setPartialRefund(boolean partialRefund) { this.partialRefund = partialRefund; }
+
+    public static Logger getLog()
+    {
+        return log;
+    }
+
+    public static void setLog(Logger log)
+    {
+        GatewayAccount.log = log;
+    }
+
+    public String getActionExecutorId()
+    {
+        return actionExecutorId;
+    }
+
+    public void setActionExecutorId(String actionExecutorId)
+    {
+        this.actionExecutorId = actionExecutorId;
+    }
+
+    public String getActionExecutorName()
+    {
+        return actionExecutorName;
+    }
+
+    public void setActionExecutorName(String actionExecutorName)
+    {
+        this.actionExecutorName = actionExecutorName;
+    }
+
+    public String getIsMultipleRefund()
+    {
+        return isMultipleRefund;
+    }
+
+    public void setIsMultipleRefund(String isMultipleRefund)
+    {
+        this.isMultipleRefund = isMultipleRefund;
+    }
+
+    public String getFromAccountId()
+    {
+        return fromAccountId;
+    }
+
+    public void setFromAccountId(String fromAccountId)
+    {
+        this.fromAccountId = fromAccountId;
+    }
+
+    public String getFromMid()
+    {
+        return fromMid;
+    }
+
+    public void setFromMid(String fromMid)
+    {
+        this.fromMid = fromMid;
+    }
+
+    public String getThreeDsVersion()
+    {
+        return threeDsVersion;
+    }
+
+    public void setThreeDsVersion(String threeDsVersion)
+    {
+        this.threeDsVersion = threeDsVersion;
+    }
+
+    public String getDaily_Account_Amount_Limit()
+    {
+        return daily_Account_Amount_Limit;
+    }
+
+    public void setDaily_Account_Amount_Limit(String daily_Account_Amount_Limit)
+    {
+        this.daily_Account_Amount_Limit = daily_Account_Amount_Limit;
+    }
+
+    public String getMonthly_Account_Amount_Limit()
+    {
+        return monthly_Account_Amount_Limit;
+    }
+
+    public void setMonthly_Account_Amount_Limit(String monthly_Account_Amount_Limit)
+    {
+        this.monthly_Account_Amount_Limit = monthly_Account_Amount_Limit;
+    }
+
+    public String getWeekly_Account_Amount_Limit()
+    {
+        return weekly_Account_Amount_Limit;
+    }
+
+    public void setWeekly_Account_Amount_Limit(String weekly_Account_Amount_Limit)
+    {
+        this.weekly_Account_Amount_Limit = weekly_Account_Amount_Limit;
+    }
+
+    public String getDaily_card_limit_check()
+    {
+        return daily_card_limit_check;
+    }
+
+    public void setDaily_card_limit_check(String daily_card_limit_check)
+    {
+        this.daily_card_limit_check = daily_card_limit_check;
+    }
+
+    public String getWeekly_card_limit_check()
+    {
+        return weekly_card_limit_check;
+    }
+
+    public void setWeekly_card_limit_check(String weekly_card_limit_check)
+    {
+        this.weekly_card_limit_check = weekly_card_limit_check;
+    }
+
+    public String getMonthly_card_limit_check()
+    {
+        return monthly_card_limit_check;
+    }
+
+    public void setMonthly_card_limit_check(String monthly_card_limit_check)
+    {
+        this.monthly_card_limit_check = monthly_card_limit_check;
+    }
+}

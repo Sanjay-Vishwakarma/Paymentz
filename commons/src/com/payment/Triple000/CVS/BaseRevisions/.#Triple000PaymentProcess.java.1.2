@@ -1,0 +1,116 @@
+package com.payment.Triple000;
+
+import com.directi.pg.Functions;
+import com.directi.pg.TransactionLogger;
+import com.manager.TransactionManager;
+import com.manager.vo.AsyncParameterVO;
+import com.manager.vo.DirectKitResponseVO;
+import com.manager.vo.TransactionDetailsVO;
+import com.payment.common.core.*;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.request.PZPayoutRequest;
+import com.payment.validators.vo.CommonValidatorVO;
+
+/**
+ * Created by Admin on 10/14/2020.
+ */
+public class Triple000PaymentProcess extends CommonPaymentProcess
+{
+    private static TransactionLogger transactionLogger =new TransactionLogger(Triple000PaymentProcess.class.getName());
+
+    public String get3DConfirmationForm(String trackingId, String ctoken, Comm3DResponseVO response3D)
+    {
+        Functions functions = new Functions();
+        transactionLogger.error("3d page displayed....." + response3D.getUrlFor3DRedirect());
+
+        StringBuffer html = new StringBuffer(response3D.getUrlFor3DRedirect());
+
+        transactionLogger.debug("form----"+html.toString());
+        return html.toString();
+    }
+    public void set3DResponseVO(DirectKitResponseVO directKitResponseVO, Comm3DResponseVO response3D, CommonValidatorVO commonValidatorVO)
+    {
+        AsyncParameterVO asyncParameterVO = null;
+        transactionLogger.debug("inside Triple000 payment process---" + response3D.getUrlFor3DRedirect());
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("error_code");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("error_code"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("message");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("message"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("resp_time");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("resp_time"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("type");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("type"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("operator_id");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("operator_id"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("ext_id");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("ext_id"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("card_type");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("card_type"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("currency");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("currency"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("trxn_amount");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("trxn_amount"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("authtype");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("authtype"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+
+        asyncParameterVO = new AsyncParameterVO();
+        asyncParameterVO.setName("html_data");
+        asyncParameterVO.setValue(response3D.getRequestMap().get("html_data"));
+        directKitResponseVO.addListOfAsyncParameters(asyncParameterVO);
+    }
+
+    public void setPayoutVOParamsextension(CommRequestVO requestVO, PZPayoutRequest payoutRequest) throws PZDBViolationException
+    {
+        CommAddressDetailsVO commAddressDetailsVO=requestVO.getAddressDetailsVO();
+        CommTransactionDetailsVO commTransactionDetailsVO=requestVO.getTransDetailsVO();
+        CommCardDetailsVO commCardDetailsVO=requestVO.getCardDetailsVO();
+        TransactionManager transactionManager=new TransactionManager();
+        TransactionDetailsVO transactionDetailsVO=transactionManager.getTransDetailFromCommon(String.valueOf(payoutRequest.getTrackingId()));
+        commAddressDetailsVO.setFirstname(transactionDetailsVO.getFirstName());
+        commAddressDetailsVO.setLastname(transactionDetailsVO.getLastName());
+        commAddressDetailsVO.setCountry(transactionDetailsVO.getCountry());
+        commAddressDetailsVO.setEmail(transactionDetailsVO.getEmailaddr());
+        commAddressDetailsVO.setZipCode(transactionDetailsVO.getZip());
+        commAddressDetailsVO.setPhone(transactionDetailsVO.getTelno());
+        commAddressDetailsVO.setCardHolderIpAddress(payoutRequest.getIpAddress());
+        commAddressDetailsVO.setCustomerid(transactionDetailsVO.getCustomerId());
+        commAddressDetailsVO.setCity(transactionDetailsVO.getCity());
+        commAddressDetailsVO.setState(transactionDetailsVO.getState());
+        commAddressDetailsVO.setStreet(transactionDetailsVO.getStreet());
+        commCardDetailsVO.setCardType(transactionDetailsVO.getCardtype());
+
+        requestVO.setAddressDetailsVO(commAddressDetailsVO);
+        requestVO.setCardDetailsVO(commCardDetailsVO);
+        requestVO.setTransDetailsVO(commTransactionDetailsVO);
+    }
+}

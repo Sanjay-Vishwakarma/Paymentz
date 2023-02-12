@@ -1,0 +1,639 @@
+package com.payment;
+
+import com.directi.pg.*;
+import com.manager.vo.PaginationVO;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Hashtable;
+import java.util.LinkedHashMap;
+import java.util.TreeMap;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Jinesh
+ * Date: 3/28/14
+ * Time: 3:16 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class IPEntry
+{
+    static Logger log = new Logger(IPEntry.class.getName());
+
+    public Hashtable selectMemberIdForDropDown()
+    {
+        Hashtable dataHash = new Hashtable();
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            String query = "select memberid,company_name from members ORDER BY memberid ASC";
+            PreparedStatement p = conn.prepareStatement(query);
+            ResultSet resultSet = p.executeQuery();
+
+            while(resultSet.next())
+            {
+                dataHash.put(String.valueOf(resultSet.getInt("memberid")),resultSet.getString("company_name"));
+            }
+        }
+        catch (SQLException se)
+        {
+            log.error("SQLException ::::::: Leaving transactionEntry ", se);
+        }
+        catch (SystemError se)
+        {
+            log.error("System Error ", se);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+
+        return dataHash;
+    }
+
+    public LinkedHashMap<Integer, String> selectMemberidForDropDown(String memberid)
+    {   LinkedHashMap<Integer, String> memberHash = new LinkedHashMap();
+        Connection con=null;
+        try
+        {
+            con=Database.getRDBConnection();
+            String qry="select memberid,company_name from members ORDER BY memberid ASC";
+            PreparedStatement pstmt= con.prepareStatement(qry);
+            ResultSet rs=pstmt.executeQuery();
+            while(rs.next())
+            {
+                memberHash.put(Integer.valueOf(String.valueOf(rs.getInt("memberid"))),rs.getString("company_name"));
+            }
+        }
+        catch(Exception e)
+        {
+            log.error("error",e);
+        }
+        finally {
+            Database.closeConnection(con);
+        }
+        return memberHash;
+    }
+    public Hashtable selectPartnerIdForDropDown()
+    {
+        Hashtable dataHash = new Hashtable();
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            String query = "select partnerId,partnerName from partners ORDER BY partnerId ASC";
+            PreparedStatement p = conn.prepareStatement(query);
+            ResultSet resultSet = p.executeQuery();
+
+            while(resultSet.next())
+            {
+                dataHash.put(String.valueOf(resultSet.getInt("partnerId")),resultSet.getString("partnerName"));
+            }
+        }
+        catch (SQLException se)
+        {
+            log.error("SQLException ::::::: Leaving transactionEntry ", se);
+        }
+        catch (SystemError se)
+        {
+            log.error("System Error ", se);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+
+        return dataHash;
+    }
+    public LinkedHashMap<Integer, String> selectPartnerIdForDropDown(String partnerid)
+    {   LinkedHashMap<Integer, String> partnerhash = new LinkedHashMap();
+        Connection con=null;
+        try
+        {
+            con=Database.getRDBConnection();
+            String qry="select partnerId,partnerName from partners ORDER BY partnerId ASC";
+            PreparedStatement pstmt= con.prepareStatement(qry);
+            ResultSet rs=pstmt.executeQuery();
+            while(rs.next())
+            {
+                partnerhash.put(Integer.valueOf(String.valueOf(rs.getInt("partnerId"))),rs.getString("partnerName"));
+            }
+        }
+        catch(Exception e)
+        {
+            log.error("error",e);
+        }
+        finally {
+            Database.closeConnection(con);
+        }
+        return partnerhash;
+    }
+
+    public TreeMap<String, String> selectAllPartnerId()
+    {   TreeMap<String, String> treeMap = new TreeMap<>();
+        Connection con=null;
+        try
+        {
+            con=Database.getRDBConnection();
+            String qry="select partnerId,partnerName from partners ORDER BY partnerId ASC";
+            PreparedStatement pstmt= con.prepareStatement(qry);
+            log.debug("partnerid query:::::"+pstmt);
+            ResultSet rs=pstmt.executeQuery();
+            while(rs.next())
+            {
+                treeMap.put(String.valueOf(rs.getInt("partnerId")),String.valueOf(rs.getInt("partnerId"))+"-"+rs.getString("partnerName"));
+            }
+        }
+        catch(Exception e)
+        {
+            log.error("error",e);
+        }
+        finally {
+            Database.closeConnection(con);
+        }
+        return treeMap;
+    }
+
+
+    public Hashtable selectAgentIdForDropDown()
+    {
+        Hashtable agentHash = new Hashtable();
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            String query = "SELECT agentId,login FROM agents  ORDER BY agentId ASC";
+            PreparedStatement p = conn.prepareStatement(query);
+            ResultSet resultSet = p.executeQuery();
+            while (resultSet.next())
+            {
+                agentHash.put(String.valueOf(resultSet.getInt("agentId")),resultSet.getString("login"));
+            }
+        }
+        catch (SystemError systemError)
+        {
+            log.error("System Error..."+systemError);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Exception..."+e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return agentHash;
+    }
+    public LinkedHashMap<Integer, String> selectAgentIDForDropDown(String agentid)
+    {   LinkedHashMap<Integer, String> agenthash = new LinkedHashMap();
+        Connection con=null;
+        try
+        {
+            con=Database.getRDBConnection();
+            String qry="SELECT agentId,login FROM agents  ORDER BY agentId ASC";
+            PreparedStatement pstmt= con.prepareStatement(qry);
+            ResultSet rs=pstmt.executeQuery();
+            while(rs.next())
+            {
+                agenthash.put(Integer.valueOf(String.valueOf(rs.getInt("agentId"))),rs.getString("login"));
+            }
+        }
+        catch(Exception e)
+        {
+            log.error("error",e);
+        }
+        finally {
+            Database.closeConnection(con);
+        }
+        return agenthash;
+    }
+
+    public TreeMap<String, String> selectAllAgentNameList()
+    {
+        log.debug("::::::inside selectAllAgentNameList:::::");
+        TreeMap<String, String> treeMap = new TreeMap<>();
+        Connection con=null;
+        try
+        {
+            con=Database.getRDBConnection();
+            String qry="SELECT agentId,login FROM agents  ORDER BY agentId ASC";
+            PreparedStatement pstmt= con.prepareStatement(qry);
+            log.debug("agentid query::::"+pstmt);
+            ResultSet rs=pstmt.executeQuery();
+            while(rs.next())
+            {
+                treeMap.put(String.valueOf(rs.getInt("agentId")),String.valueOf(rs.getInt("agentId"))+"-"+rs.getString("login"));
+            }
+        }
+        catch(Exception e)
+        {
+            log.error("error",e);
+        }
+        finally {
+            Database.closeConnection(con);
+        }
+        return treeMap;
+    }
+
+
+    public Hashtable retrievIPForMerchant(String memberId,PaginationVO paginationVO,boolean isLimit)
+    {
+        Hashtable recordHash = new Hashtable();
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            StringBuffer query =new StringBuffer("SELECT memberId as Id, ipAddress,type FROM ipwhitelist WHERE memberId=?");
+            if(isLimit==true)
+            {
+                query.append("LIMIT "+paginationVO.getStart()+","+paginationVO.getEnd());
+            }
+            String count = "SELECT COUNT(*) FROM ipwhitelist WHERE memberId=?";
+
+            PreparedStatement p = conn.prepareStatement(query.toString());
+            p.setString(1,memberId);
+            log.debug("IPEntry PS:::::"+p);
+            PreparedStatement p1 = conn.prepareStatement(count);
+            p1.setString(1,memberId);
+            recordHash = Database.getHashFromResultSet(p.executeQuery());
+            ResultSet rs = p1.executeQuery();
+            rs.next();
+            int totalRecords = rs.getInt(1);
+            recordHash.put("totalrecords", "" + totalRecords);
+            recordHash.put("records", "0");
+
+            if (totalRecords > 0)
+                recordHash.put("records", "" + (recordHash.size() - 2));
+
+            /*while (rs.next())
+            {
+                recordHash.put(memberId,rs.getString("ipAddress"));
+            }*/
+
+        }
+        catch (SystemError systemError)
+        {
+            log.error("System Error..." + systemError);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Exception..."+e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return recordHash;
+    }
+
+    public Hashtable retrievIPForPartner(String partnerId,PaginationVO paginationVO,boolean isLimit)
+    {
+        Hashtable recordHash = new Hashtable();
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            StringBuffer query =new StringBuffer("SELECT partnerId as Id, ipAddress,type FROM ipwhitelist WHERE partnerId=?");
+            if(isLimit==true)
+            {
+                query.append("LIMIT "+paginationVO.getStart()+","+paginationVO.getEnd());
+            }
+            String count = "SELECT COUNT(*) FROM ipwhitelist WHERE partnerId=?";
+
+            PreparedStatement p = conn.prepareStatement(query.toString());
+            p.setString(1,partnerId);
+            recordHash=Database.getHashFromResultSet(p.executeQuery());
+
+            PreparedStatement p1 = conn.prepareStatement(count);
+            p1.setString(1,partnerId);
+            recordHash = Database.getHashFromResultSet(p.executeQuery());
+            ResultSet rs = p1.executeQuery();
+            rs.next();
+            int totalRecords = rs.getInt(1);
+
+            recordHash.put("totalrecords", "" + totalRecords);
+            recordHash.put("records", "0");
+
+            if (totalRecords > 0)
+                recordHash.put("records", "" + (recordHash.size() - 2));
+
+
+
+        }
+        catch (SystemError systemError)
+        {
+            log.error("System Error..." + systemError);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Exception..."+e);
+        }
+
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return recordHash;
+    }
+
+    public Hashtable retrievIPForAgent(String agentId,PaginationVO paginationVO,boolean isLimit)
+    {
+        Hashtable recordHash = new Hashtable();
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            StringBuffer query =new StringBuffer("SELECT agentId as Id, ipAddress,type FROM ipwhitelist WHERE agentId=?");
+            if(isLimit==true)
+            {
+                query.append("LIMIT "+paginationVO.getStart()+","+paginationVO.getEnd());
+            }
+            String count = "SELECT COUNT(*) FROM ipwhitelist WHERE agentId=?";
+
+            PreparedStatement p = conn.prepareStatement(query.toString());
+            p.setString(1,agentId);
+            recordHash=Database.getHashFromResultSet(p.executeQuery());
+
+            PreparedStatement p1 = conn.prepareStatement(count);
+            p1.setString(1,agentId);
+            recordHash = Database.getHashFromResultSet(p.executeQuery());
+            ResultSet rs = p1.executeQuery();
+            rs.next();
+            int totalRecords = rs.getInt(1);
+
+            recordHash.put("totalrecords", "" + totalRecords);
+            recordHash.put("records", "0");
+
+            if (totalRecords > 0)
+                recordHash.put("records", "" + (recordHash.size() - 2));
+        }
+        catch (SystemError systemError)
+        {
+            log.error("System Error..." + systemError);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Exception..."+e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return recordHash;
+    }
+
+    public void deleteIPForMerchant(String memberId,String ipAddress)
+    {
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            String query = "DELETE FROM ipwhitelist WHERE memberId=? and ipAddress=?";
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            pstmt.setString(1,memberId);
+            pstmt.setString(2,ipAddress);
+
+            pstmt.executeUpdate();
+        }
+        catch (SystemError systemError)
+        {
+            log.error("System Error..." + systemError);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Exception..."+e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+    }
+
+    public void deleteIPForPartner(String partnerId,String ipAddress)
+    {
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            String query = "DELETE FROM ipwhitelist WHERE partnerId=? and ipAddress=?";
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            pstmt.setString(1,partnerId);
+            pstmt.setString(2,ipAddress);
+
+            pstmt.executeUpdate();
+        }
+        catch (SystemError systemError)
+        {
+            log.error("System Error..." + systemError);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Exception..."+e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+
+    }
+
+
+    public void deleteIPForAgent(String agentId,String ipAddress)
+    {
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            String query = "DELETE FROM ipwhitelist WHERE agentId=? and ipAddress=?";
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            pstmt.setString(1,agentId);
+            pstmt.setString(2,ipAddress);
+
+            pstmt.executeUpdate();
+        }
+        catch (SystemError systemError)
+        {
+            log.error("System Error..." + systemError);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Exception..."+e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+    }
+    public Hashtable retrievIPForMerchant1(String memberId,String ipAddress,String type,PaginationVO paginationVO,boolean isLimit)
+    {
+        Hashtable recordHash = new Hashtable();
+        Connection conn = null;
+        Functions functions=new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            StringBuffer query =new StringBuffer("SELECT id, ipAddress,type FROM ipwhitelist WHERE memberId=?");
+            StringBuffer count =new StringBuffer("SELECT COUNT(*) FROM ipwhitelist WHERE memberId=?");
+            if(functions.isValueNull(ipAddress) && ! "".equals(ipAddress))
+            {
+                query.append(" AND ipAddress='"+ipAddress+"'");
+                count.append(" AND ipAddress='"+ipAddress+"'");
+            }
+            if(functions.isValueNull(type))
+            {
+                query.append(" AND type='"+type+"'");
+                count.append(" AND type='"+type+"'");
+            }
+            if(isLimit==true)
+            {
+                query.append(" order by id desc LIMIT "+paginationVO.getStart()+","+paginationVO.getEnd());
+            }
+
+            PreparedStatement p = conn.prepareStatement(query.toString());
+            p.setString(1,memberId);
+            PreparedStatement p1 = conn.prepareStatement(count.toString());
+            p1.setString(1,memberId);
+            recordHash = Database.getHashFromResultSet(p.executeQuery());
+            ResultSet rs = p1.executeQuery();
+            rs.next();
+            int totalRecords = rs.getInt(1);
+            recordHash.put("totalrecords", "" + totalRecords);
+            recordHash.put("records", "0");
+
+            if (totalRecords > 0)
+                recordHash.put("records", "" + (recordHash.size() - 2));
+
+            /*while (rs.next())
+            {
+                recordHash.put(memberId,rs.getString("ipAddress"));
+            }*/
+
+        }
+        catch (SystemError systemError)
+        {
+            log.error("System Error..." + systemError);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Exception..."+e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return recordHash;
+    }
+    public void deleteIPForMerchant1(String id)
+    {
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            String query = "DELETE FROM ipwhitelist WHERE id=?";
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            pstmt.setString(1,id);
+            pstmt.executeUpdate();
+        }
+        catch (SystemError systemError)
+        {
+            log.error("System Error..." + systemError);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Exception..."+e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+    }
+    public void insertIPForMerchant(String memberId,String ipAddress,String type)//String endIpAddress
+    {
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            String query = "INSERT INTO ipwhitelist (memberId,ipAddress,type) VALUES (?,?,?)";
+            PreparedStatement p =conn.prepareStatement(query);
+            p.setString(1,memberId);
+            p.setString(2,ipAddress);
+            p.setString(3,type);
+
+            p.executeUpdate();
+            log.debug("inserted..."+p);
+        }
+        catch (SystemError systemError)
+        {
+            log.error("System Error..." + systemError);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Exception..."+e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+    }
+
+    public void insertIPForPartner(String partnerId,String ipAddress,String type)
+    {
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            String query = "INSERT INTO ipwhitelist (partnerId,ipAddress,type) VALUES (?,?,?)";
+            PreparedStatement p =conn.prepareStatement(query);
+            p.setString(1,partnerId);
+            p.setString(2,ipAddress);
+            p.setString(3,type);
+
+            p.executeUpdate();
+            log.debug("inserted..."+p);
+        }
+        catch (SystemError systemError)
+        {
+            log.error("System Error..." + systemError);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Exception..."+e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+    }
+
+    public void insertIPForAgent(String agentId,String ipAddress,String type)
+    {
+        Connection conn = null;
+        try
+        {
+            conn = Database.getConnection();
+            String query = "INSERT INTO ipwhitelist (agentId,ipAddress,type) VALUES (?,?,?)";
+            PreparedStatement p =conn.prepareStatement(query);
+            p.setString(1,agentId);
+            p.setString(2,ipAddress);
+            p.setString(3,type);
+
+            p.executeUpdate();
+            log.debug("inserted..."+p);
+        }
+        catch (SystemError systemError)
+        {
+            log.error("System Error..." + systemError);
+        }
+        catch (SQLException e)
+        {
+            log.error("SQL Exception..."+e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+    }
+}

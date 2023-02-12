@@ -1,0 +1,194 @@
+package com.fraud.filters;
+
+
+import com.auth.AuthFunctions;
+import com.directi.pg.Functions;
+import com.fraud.dao.FraudDAO;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.Logger;
+import org.owasp.esapi.User;
+
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Created by Admin on 2/28/2018.
+ */
+public class ESAPIFraudServicesFilter implements Filter
+{
+    private static final Set<String> excludedFiles = new HashSet<String>();
+    private static final Set<String> postCall = new HashSet<String>();
+    static
+    {
+
+        //excludedFiles.add("customerRegistration");
+        excludedFiles.add("authToken");
+        excludedFiles.add("regenerateToken");
+        excludedFiles.add("docVerifyUplaod");
+
+        postCall.add("customerRegistration");
+        postCall.add("docVerification");
+        postCall.add("newTransaction");
+        //  postCall.add("docVerifyUplaod");
+        //  postCall.add("regenerateToken");
+
+    }
+    private final Logger logger = ESAPI.getLogger("ESAPIFraudServicesFilter");
+
+    public void init(FilterConfig filterConfig) {
+        String path = filterConfig.getInitParameter("resourceDirectory");
+        if ( path != null ) {
+            ESAPI.securityConfiguration().setResourceDirectory( path );
+        }
+    }
+
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws IOException
+    {
+        HttpServletRequest request = (HttpServletRequest) req;
+        HttpServletResponse response = (HttpServletResponse) resp;
+        ESAPI.httpUtilities().setCurrentHTTP(request, response);
+        FraudDAO fraudTransactionDAO=new FraudDAO();
+
+        logger.error(Logger.SECURITY_FAILURE, "URI-123 ESAPIFraudServicesFilter--: " + ESAPI.httpUtilities().getCurrentRequest().getRequestURI());
+
+        try
+        {
+            // figure out who the current user is
+            if (excludedFiles.contains(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+            {
+                String token = "";
+                token = request.getParameter("AuthToken");
+                logger.error(Logger.SECURITY_FAILURE, "token FraudServices from Request----" + token);
+                //System.out.println("inside exclude :"+getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI()));
+                ESAPI.httpUtilities().setNoCacheHeaders(response);
+                //Functions.setCookie(request);
+
+            }
+            if (postCall.contains(getFileName(ESAPI.httpUtilities().getCurrentRequest().getRequestURI())))
+            {
+                logger.error(Logger.SECURITY_FAILURE,"inside postCALL::::");
+                Functions functions = new Functions();
+                AuthFunctions authFunctions = new AuthFunctions();
+                String token = "";
+                HttpSession session = request.getSession(true);
+
+                logger.error(Logger.SECURITY_FAILURE, "token request FraudServices----" + request.getParameter("AuthToken"));
+                logger.error(Logger.SECURITY_FAILURE, "token header FraudServices----" + request.getHeader("AuthToken"));
+                if (functions.isValueNull(request.getHeader("AuthToken")))
+                {
+                    token = request.getHeader("AuthToken");
+                    logger.error(Logger.SECURITY_FAILURE, "token FraudServices from Header----" + token);
+                }
+                else if (functions.isValueNull(request.getParameter("AuthToken")))
+                {
+                    token = request.getParameter("AuthToken");
+                    logger.error(Logger.SECURITY_FAILURE, "token FraudServices from Request----" + token);
+                }
+
+                if (functions.isValueNull(token))
+                {
+
+                    //logger.error(Logger.SECURITY_FAILURE, "token-TransactionServices---" + token);
+
+                    String userName = authFunctions.getUserName(token);
+                    String role = authFunctions.getUserRole(token);
+                    logger.error(Logger.SECURITY_FAILURE, "In Included Details-FraudServices--: " + userName + "-token-" + token + "-role-" + role);
+
+                    if (userName != null)
+                    {
+                        request.setAttribute("role", role);
+                        User user = (User) ESAPI.authenticator().getUser(userName);
+                        if(user!=null)
+                        {
+                            boolean isTokenValid = authFunctions.verifyToken(token, userName, role);
+                            logger.error(Logger.SECURITY_FAILURE, "In Included Files List Token-FraudServices--: " + isTokenValid);
+                            logger.error(Logger.SECURITY_FAILURE, "In Included Details-FraudServices--: " + userName + "-token-" + token + "-role-" + role);
+                            logger.error(Logger.SECURITY_FAILURE, "user-FraudServices---" + user.getAccountName());
+
+                            if (isTokenValid)
+                            {
+                                logger.error(Logger.SECURITY_FAILURE, "In Token Valid---");
+                                session.setAttribute("ESAPIUserSessionKey", user);
+                                ESAPI.authenticator().setCurrentUser(user);
+                                request.setAttribute("authfail", true);
+                                request.setAttribute("userName",userName);
+                            }
+                            else
+                            {
+                                logger.error(Logger.SECURITY_FAILURE, "In Token In Valid---");
+                                session.setAttribute("ESAPIUserSessionKey", null);
+                                //ESAPI.authenticator().setCurrentUser(null);
+                                request.setAttribute("authfail", false);
+                            }
+                        }
+                        else
+                        {
+                            logger.error(Logger.SECURITY_FAILURE, "In Token In Valid---");
+                            session.setAttribute("ESAPIUserSessionKey", null);
+                            //ESAPI.authenticator().setCurrentUser(null);
+                            request.setAttribute("authfail", false);
+                        }
+
+                    }
+                    else
+                    {
+                        session.setAttribute("ESAPIUserSessionKey", null);
+                        //ESAPI.authenticator().setCurrentUser(null);
+                        request.setAttribute("authfail", false);
+                    }
+
+                }
+                else
+                {
+                    session.setAttribute("ESAPIUserSessionKey", null);
+                    //ESAPI.authenticator().setCurrentUser(null);
+                    request.setAttribute("authfail", false);
+                }
+            }
+            response.setHeader("X-Frame-Options", "SAMEORIGIN");
+            response.setHeader("Cache-Control","no-cache"); //HTTP 1.1
+            response.setHeader("Pragma","no-cache"); //HTTP 1.0
+            response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
+
+            chain.doFilter(request, response);
+
+            // set up response with content type
+            //ESAPI.httpUtilities().setContentType( response );
+
+            // set no-cache headers on every response
+            // only do this if the entire site should not be cached
+            // otherwise you should do this strategically in your controller or actions
+            ESAPI.httpUtilities().setNoCacheHeaders( response );
+
+        } catch (Exception e) {
+
+            logger.error( Logger.SECURITY_FAILURE, "Error in ESAPI security filters FraudServices:::", e );
+            request.setAttribute("message", e.getMessage() );
+
+        } finally {
+            // VERY IMPORTANT
+            // clear out the ThreadLocal variables in the authent
+            // icator
+            // some containers could possibly reuse this thread without clearing the User
+            //ESAPI.clearCurrent();
+        }
+    }
+
+    private String getFileName(String requestURI)
+    {
+        String filename = null;
+
+        filename = requestURI.substring(requestURI.lastIndexOf("/")+1);
+
+        return filename;  //To change body of created methods use File | Settings | File Templates.
+    }
+
+    public void destroy() {
+        // finalize
+    }
+}

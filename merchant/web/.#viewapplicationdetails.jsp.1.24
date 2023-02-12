@@ -1,0 +1,338 @@
+<%@ page import="com.directi.pg.Functions" %>
+<%@ page import="com.vo.applicationManagerVOs.*" %>
+<%@ page import="com.manager.vo.fileRelatedVOs.UploadLabelVO" %>
+<%@ page import="java.util.*" %>
+<%@ page import="com.vo.applicationManagerVOs.ApplicationManagerVO" %>
+<%@ page import="com.directi.pg.LoadProperties" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+
+<%@include file="Top.jsp"%>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<%--<script src="/merchant/NewCss/libs/jquery-icheck/icheck.min.js"></script>--%>
+<%
+  Functions functions = new Functions();
+  ApplicationManagerVO applicationManagerVO=null;
+  ResourceBundle rb1 = null;
+  String language_property1 = (String)session.getAttribute("language_property");
+  rb1 = LoadProperties.getProperty(language_property1);
+  String viewapplicationdetails_Update_Mail = rb1.getString("viewapplicationdetails_Update_Mail");
+  String viewapplicationdetails_View_KYC = rb1.getString("viewapplicationdetails_View_KYC");
+  String viewapplicationdetails_Sr_No = rb1.getString("viewapplicationdetails_Sr_No");
+  String viewapplicationdetails_Document_Name = rb1.getString("viewapplicationdetails_Document_Name");
+  String viewapplicationdetails_File_Name = rb1.getString("viewapplicationdetails_File_Name");
+  String viewapplicationdetails_Timestamp = rb1.getString("viewapplicationdetails_Timestamp");
+  String viewapplicationdetails_View_File = rb1.getString("viewapplicationdetails_View_File");
+
+  Map<String,FileDetailsListVO> fileDetailsVOHashMap=null;
+  List<UploadLabelVO> uploadLabelVOList=null;
+  if(session.getAttribute("applicationManagerVO")!=null)
+  {
+    applicationManagerVO= (ApplicationManagerVO) session.getAttribute("applicationManagerVO");
+  }
+
+  if(applicationManagerVO.getFileDetailsVOs()!=null)
+  {
+    fileDetailsVOHashMap= applicationManagerVO.getFileDetailsVOs();
+  }
+  else
+  {
+    fileDetailsVOHashMap=new HashMap<String, FileDetailsListVO>();
+  }
+
+
+%>
+
+
+<html>
+<head>
+
+  <style type="text/css">
+
+
+    /********************Table Responsive Start**************************/
+
+    @media (max-width: 640px){
+
+      table {border: 0;}
+
+      /*table tr {
+          padding-top: 20px;
+          padding-bottom: 20px;
+          display: block;
+      }*/
+
+      table thead { display: none;}
+
+      tr:nth-child(odd), tr:nth-child(even) {background: #ffffff;}
+
+      table td {
+        display: block;
+        border-bottom: none;
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      table td:before {
+        content: attr(data-label);
+        float: left;
+        width: 100%;
+        font-weight: bold;
+      }
+
+      table tr:nth-child(odd) {background: #cacaca!important;}
+
+    }
+
+    table {
+      width: 100%;
+      max-width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      display: table;
+      border-collapse: separate;
+      border-color: grey;
+    }
+
+    thead {
+      display: table-header-group;
+      vertical-align: middle;
+      border-color: inherit;
+
+    }
+
+    tr:nth-child(odd) {background: #F9F9F9;}
+
+    tr {
+      display: table-row;
+      vertical-align: inherit;
+      border-color: inherit;
+    }
+
+    th {padding-right: 1em;text-align: left;font-weight: bold;}
+
+    td, th {display: table-cell;vertical-align: inherit;}
+
+    tbody {
+      display: table-row-group;
+      vertical-align: middle;
+      border-color: inherit;
+    }
+
+    td {
+      padding-top: 6px;
+      padding-bottom: 6px;
+      padding-left: 10px;
+      padding-right: 10px;
+      vertical-align: top;
+      border-bottom: none;
+    }
+
+    .table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td{border-top: 1px solid #ddd;}
+
+    /********************Table Responsive Ends**************************/
+
+    #companycontent{
+      margin-top: 0;
+    }
+
+    #companyid_container{
+      padding-right: 0!important;
+      padding-left: 0!important;
+    }
+
+    #ownershipid, #businessid, #bankappid, #cardid, #uploadid, #uploadviewid{
+      /*margin-left: auto!important;*/
+    }
+
+    #ownershipid > .content, #businessid > .content, #bankappid > .content, #cardid > .content, #uploadid > .content, #uploadviewid > .content{
+      margin-top: 0!important;
+    }
+
+    @supports (-ms-ime-align:auto) {
+
+      span.multiselect-native-select {
+        position: static!important;
+        /*position: absolute!important;
+        width: 100%!important;
+        bottom: -35px!important;*/
+      }
+    }
+
+    @media (max-width: 480px){
+      /*      #wrapper .content-page {
+              padding-left: 50px;
+            }*/
+
+      #ownershipid, #businessid, #bankappid, #cardid, #uploadid, #uploadviewid{
+        padding-left: 0!important;
+      }
+    }
+
+    @media(max-width: 991px) {
+      .additional-btn {
+        float: left;
+        margin-left: 30px;
+        margin-top: 10px;
+        position: inherit!important;
+      }
+    }
+
+    .input-group-addon {
+      background-color: #eee!important;
+      color: #555!important;
+    }
+
+    #income_sources_other {
+      width: 10%!important;
+    }
+
+    input[type=checkbox] {
+      margin-left: -20px!important;
+      width: inherit!important;
+    }
+
+    #view_css{
+      padding-left: 15px!important;
+    }
+
+    #mainbtn-id{
+      border: 1px solid #b2b2b2!important;
+      font-weight: bold!important;
+      background-color: #eee!important;
+      color: #555!important;
+      opacity: 1!important;
+    }
+
+
+
+  </style>
+
+</head>
+<body>
+
+<div class="content-page">
+  <div class="content">
+    <div class="row" style="/*margin-top: 100px;margin-left: 226px;background-color: #ffffff*/">
+      <%--      <div class="col-md-8 col-md-offset-2" style="margin-left: 0;width:99.666667%">
+              <form action="/merchant/servlet/ApplyModificationMail?ctoken=<%=ctoken%>" method="post">
+                <button  type="submit" class="buttonform btn btn-default" name="submit" style="/*width:300px;float:right */">
+                  Update Mail
+                </button>
+              </form>
+            </div>--%>
+      <div class="col-sm-12 portlets ui-sortable">
+        <div class="widget" style="background-color: transparent;">
+          <div class="widget-header transparent">
+            <%--<h2><strong><i class="fa fa-th-large"></i>&nbsp;&nbsp;Note</strong></h2>--%>
+            <div class="additional-btn">
+              <form action="/merchant/servlet/ApplyModificationMail?ctoken=<%=ctoken%>" method="post">
+                <button  type="submit" class="buttonform btn btn-default" name="submit" style="/*width:300px;float:right */">
+                  <%=viewapplicationdetails_Update_Mail%>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<jsp:include page="companyprofile.jsp">
+  <jsp:param name="view" value="true" />N
+</jsp:include>
+<jsp:include page="ownershipprofile.jsp">
+  <jsp:param name="view" value="true" />
+</jsp:include>
+<jsp:include page="businessprofile.jsp">
+  <jsp:param name="view" value="true" />
+</jsp:include>
+<jsp:include page="bankapplication.jsp">
+  <jsp:param name="view" value="true" />
+</jsp:include>
+<jsp:include page="cardholderprofile.jsp">
+  <jsp:param name="view" value="true" />
+</jsp:include>
+
+
+<div class="content-page" id="uploadviewid">
+  <div class="content" style="margin-bottom: 0;">
+    <!-- Page Heading Start -->
+    <div class="page-heading" style="margin-bottom: 0;">
+
+      <div class="row">
+
+
+
+        <div class="col-sm-12 portlets ui-sortable">
+
+          <div class="widget" style="margin-bottom: 0;">
+
+            <div class="widget-header transparent">
+              <h2><strong><i class="fa fa-th-large"></i>&nbsp;&nbsp;<%=viewapplicationdetails_View_KYC%></strong></h2>
+              <div class="additional-btn">
+                <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+              </div>
+            </div>
+
+            <div class="widget-content padding">
+              <div id="horizontal-form">
+                <form name="form" action="/merchant/servlet/ViewKycDocument?ctoken=<%=ctoken%>" method="post" id="myformname" target="_blank">
+                  <table align=center style="width:100%" border="1" class="table table-striped table-bordered table-green dataTable">
+                    <thead>
+                    <tr>
+                      <td valign="middle" align="center" class="th0" style="color: white;vertical-align: middle;text-align: center;font-family: Open Sans;font-size: 13px;font-weight: 600;"><%=viewapplicationdetails_Sr_No%></td>
+                      <td valign="middle" align="center" class="th0" style="color: white;vertical-align: middle;text-align: center;font-family: Open Sans;font-size: 13px;font-weight: 600;"><%=viewapplicationdetails_Document_Name%></td>
+                      <td valign="middle" align="center" class="th0" style="color: white;vertical-align: middle;text-align: center;font-family: Open Sans;font-size: 13px;font-weight: 600;"><%=viewapplicationdetails_File_Name%></td>
+                      <td valign="middle" align="center" class="th0" style="color: white;vertical-align: middle;text-align: center;font-family: Open Sans;font-size: 13px;font-weight: 600;"><%=viewapplicationdetails_Timestamp%></td>
+                      <td valign="middle" align="center" class="th0" style="color: white;vertical-align: middle;text-align: center;font-family: Open Sans;font-size: 13px;font-weight: 600;"><%=viewapplicationdetails_View_File%></td>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                      <%
+                        int srno=1;
+
+                        for(FileDetailsListVO fileDetailsVOList : fileDetailsVOHashMap.values())
+                        {
+                      %>
+                      <td class="tr0" data-label="Sr No" align="center" style="font-family: Open Sans;font-size: 13px;font-weight: 600;"><%=srno%></td>
+                    </tr>
+                    <%
+                      for(AppFileDetailsVO fileDetailsVO : fileDetailsVOList.getFiledetailsvo())
+                      {
+                        //System.out.println("MemberID---"+applicationManagerVO.getMemberId());
+                    %>
+                    <td>&nbsp;</td>
+                    <td class="tr0" data-label="Label Name" align="center" style="font-family: Open Sans;font-size: 13px;font-weight: 600;"><%=fileDetailsVO.getFieldName()%></td>
+                    <td class="tr0" data-label="Document Name" align="center" style="font-family: Open Sans;font-size: 13px;font-weight: 600;"><%=fileDetailsVO.getFilename()%></td>
+                    <td class="tr0" data-label="Timestamp" align="center" style="font-family: Open Sans;font-size: 13px;font-weight: 600;"><%=fileDetailsVO.getTimestamp()%></td>
+                    <td class="tr0" data-label="View File" align="center" style="font-family: Open Sans;font-size: 13px;font-weight: 600;">
+                      <form name="form" action="/merchant/servlet/ViewKycDocument?ctoken=<%=ctoken%>" method="post">
+                        <input type="hidden" name="memberId" value="<%=applicationManagerVO.getMemberId()%>">
+                        <input type="hidden" name="action" value="<%=fileDetailsVO.getFieldName()+"|View|"+fileDetailsVO.getMappingId()+"|"+fileDetailsVO.getFilename()%>">
+                        <input type="image" src="<%="PDF".equalsIgnoreCase(fileDetailsVO.getFileType())?"/partner/images/pdflogo.jpg":("XLSX".equalsIgnoreCase(fileDetailsVO.getFileType())?"/partner/images/excel.png":("JPG".equalsIgnoreCase(fileDetailsVO.getFileType())?"/partner/images/JPG1.jpg":"PNG".equalsIgnoreCase(fileDetailsVO.getFileType())?"/partner/images/PNGimg.jpg":"/partner/images/pdflogo.jpg"))%>" width="15%">
+                      </form>
+                    </td>
+                    </tr>
+                    </tbody>
+                    <%
+                        }
+                        srno++;
+                      }
+                    %>
+                  </table>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

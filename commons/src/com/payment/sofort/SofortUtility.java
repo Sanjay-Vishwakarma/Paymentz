@@ -1,0 +1,117 @@
+package com.payment.sofort;
+
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.payment.common.core.*;
+import com.payment.sofort.VO.IdealRequestVO;
+import com.payment.validators.vo.CommonValidatorVO;
+
+import java.util.Hashtable;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Admin
+ * Date: 21/1/15
+ * Time: 6:44 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class SofortUtility
+{
+
+
+    public CommRequestVO getSofortRequestVO(CommonValidatorVO commonValidatorVO)
+    {
+        CommRequestVO commRequestVO = null;
+        CommAddressDetailsVO addressDetailsVO = new CommAddressDetailsVO();
+        CommTransactionDetailsVO transDetailsVO = new CommTransactionDetailsVO();
+
+        GatewayAccount account = GatewayAccountService.getGatewayAccount(commonValidatorVO.getMerchantDetailsVO().getAccountId());
+        //String merctId = account.getMerchantId();
+        //String username = account.getFRAUD_FTP_USERNAME();
+        //String password = account.getFRAUD_FTP_PASSWORD();
+        addressDetailsVO.setEmail(commonValidatorVO.getAddressDetailsVO().getEmail());
+        addressDetailsVO.setPhone(commonValidatorVO.getAddressDetailsVO().getPhone());
+        addressDetailsVO.setBirthdate(commonValidatorVO.getAddressDetailsVO().getBirthdate());
+        addressDetailsVO.setSex(commonValidatorVO.getAddressDetailsVO().getSex());
+        addressDetailsVO.setFirstname(commonValidatorVO.getAddressDetailsVO().getFirstname());
+        addressDetailsVO.setLastname(commonValidatorVO.getAddressDetailsVO().getLastname());
+        addressDetailsVO.setCardHolderIpAddress(commonValidatorVO.getAddressDetailsVO().getCardHolderIpAddress());
+        addressDetailsVO.setCountry(commonValidatorVO.getAddressDetailsVO().getCountry());
+        addressDetailsVO.setCity(commonValidatorVO.getAddressDetailsVO().getCity());
+        addressDetailsVO.setState(commonValidatorVO.getAddressDetailsVO().getState());
+        addressDetailsVO.setStreet(commonValidatorVO.getAddressDetailsVO().getStreet());
+        addressDetailsVO.setZipCode(commonValidatorVO.getAddressDetailsVO().getZipCode());
+        addressDetailsVO.setLanguage(commonValidatorVO.getAddressDetailsVO().getLanguage());
+
+        transDetailsVO.setAmount(commonValidatorVO.getTransDetailsVO().getAmount()); //Amount * 100 according to the docs
+        transDetailsVO.setCurrency(commonValidatorVO.getTransDetailsVO().getCurrency());
+        transDetailsVO.setOrderId(commonValidatorVO.getTransDetailsVO().getOrderId());
+        transDetailsVO.setOrderDesc(commonValidatorVO.getTransDetailsVO().getOrderDesc());
+        transDetailsVO.setCardType(commonValidatorVO.getPaymentBrand());
+
+        CommMerchantVO merchantAccountVO = new CommMerchantVO();
+        // merchantAccountVO.setMerchantId(merctId);
+        // merchantAccountVO.setPassword(password);
+        //merchantAccountVO.setMerchantUsername(username);
+        merchantAccountVO.setDisplayName(commonValidatorVO.getMerchantDetailsVO().getMemberId());
+        merchantAccountVO.setAliasName(commonValidatorVO.getMerchantDetailsVO().getSiteName());
+        merchantAccountVO.setHostUrl(commonValidatorVO.getMerchantDetailsVO().getHostUrl());
+
+        commRequestVO = PaymentProcessRequestVOFactory.getRequestVOInstance(Integer.parseInt(commonValidatorVO.getMerchantDetailsVO().getAccountId()));
+
+        commRequestVO.setAddressDetailsVO(addressDetailsVO);
+        commRequestVO.setCommMerchantVO(merchantAccountVO);
+        commRequestVO.setTransDetailsVO(transDetailsVO);
+
+        return commRequestVO;
+    }
+
+    public CommRequestVO getIdealRequestVO(CommonValidatorVO commonValidatorVO)
+    {
+        CommRequestVO commRequestVO = null;
+        CommAddressDetailsVO addressDetailsVO = new CommAddressDetailsVO();
+        CommTransactionDetailsVO transDetailsVO = new CommTransactionDetailsVO();
+
+        GatewayAccount account = GatewayAccountService.getGatewayAccount(commonValidatorVO.getMerchantDetailsVO().getAccountId());
+        //String merctId = account.getMerchantId();
+        //String username = account.getFRAUD_FTP_USERNAME();
+        //String password = account.getFRAUD_FTP_PASSWORD();
+       // addressDetailsVO.setEmail(commonValidatorVO.getAddressDetailsVO().getEmail());
+        //addressDetailsVO.setPhone(commonValidatorVO.getAddressDetailsVO().getPhone());
+
+        transDetailsVO.setAmount(commonValidatorVO.getTransDetailsVO().getAmount()); //Amount * 100 according to the docs
+        transDetailsVO.setCurrency(commonValidatorVO.getTransDetailsVO().getCurrency());
+        transDetailsVO.setOrderId(commonValidatorVO.getTransDetailsVO().getOrderId());
+        transDetailsVO.setOrderDesc(commonValidatorVO.getTransDetailsVO().getOrderDesc());
+
+        CommMerchantVO merchantAccountVO = new CommMerchantVO();
+        // merchantAccountVO.setMerchantId(merctId);
+        // merchantAccountVO.setPassword(password);
+        //merchantAccountVO.setMerchantUsername(username);
+        merchantAccountVO.setDisplayName(commonValidatorVO.getMerchantDetailsVO().getMemberId());
+        merchantAccountVO.setAliasName(commonValidatorVO.getMerchantDetailsVO().getSiteName());
+
+        commRequestVO = PaymentProcessRequestVOFactory.getRequestVOInstance(Integer.parseInt(commonValidatorVO.getMerchantDetailsVO().getAccountId()));
+
+        commRequestVO.setAddressDetailsVO(addressDetailsVO);
+        commRequestVO.setCommMerchantVO(merchantAccountVO);
+        commRequestVO.setTransDetailsVO(transDetailsVO);
+        Hashtable bankDeatils = new Hashtable();
+        bankDeatils.put("senderBankCode",commonValidatorVO.getSenderBankCode());
+        commRequestVO.setAdditioanlParams(bankDeatils);
+        return commRequestVO;
+    }
+
+    public CommRequestVO getSofortRequestVOForInquiry(String paymentId, String trackingId, String accountId)
+    {
+        CommRequestVO commRequestVO = null;
+        CommTransactionDetailsVO transDetailsVO = new CommTransactionDetailsVO();
+        transDetailsVO.setPreviousTransactionId(paymentId);
+        commRequestVO = PaymentProcessRequestVOFactory.getRequestVOInstance(Integer.parseInt(accountId));
+        commRequestVO.setTransDetailsVO(transDetailsVO);
+
+        return commRequestVO;
+    }
+
+
+}

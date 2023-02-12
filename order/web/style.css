@@ -1,0 +1,96 @@
+.headertd{background:#2379A5;text-valign: center;text-align: center;font-family:verdana,arial}
+.headerfont{color:#ffffff;font-family:verdana,arial;font-size:10px;FONT-WEIGHT: bold}
+.headerfont1{color:#ffffff;font-family:verdana,arial;font-size:10px;FONT-WEIGHT: bold}
+.tr0{
+	color:#001962;
+	background:#E6F5FF;
+	font-family:verdana,arial;
+	font-size: 11px;
+	font-weight: normal;
+}
+.tr1{
+	color:#001962;
+	background:#F1F3F5;
+	font-family:verdana,arial;
+	font-size: 11px;
+	font-weight: normal;
+}
+.submit{FONT-WEIGHT: bold; FONT-SIZE: 8pt; COLOR: #f1ede0; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif; BACKGROUND-COLOR:#9F0000}
+.textBoxes {FONT-SIZE: 8pt; FONT-FAMILY: verdana,arial,sans-serif}
+.search{font-family:verdana,arial;font-size:11px}
+.Dtd1{background:#CCCCCC;text-valign: center;text-align: LEFT;font-size:12px;font-family:arial,verdana,helvetica}
+.Dtd2{background:#B1B1B1;text-valign: center;text-align: LEFT;font-size:12px;font-family:arial,verdana,helvetica}
+.Dtd3{background:#FFFFFF;text-valign: center;text-align: LEFT;font-size:12px;font-family:arial,verdana,helvetica}
+.Dtd4{text-valign: center;text-align: LEFT;font-size:12px;font-family:arial,verdana,helvetica}
+.addform{font-family:verdana,arial;font-size:12px}
+.info{font-family:arial,verdana,helvetica;font-size:12px;COLOR: #ff0000;}
+.high{font-family:arial,verdana,helvetica;font-size:12px;COLOR: #0000ff;}
+.black{font-family:arial,verdana,helvetica;font-size:12px;COLOR: #000000;}
+.star{color:#ff0000;font-family:verdana,arial;font-size:10px;}
+.label{color:#f1ede0;font-family:verdana,arial;font-size:11px;FONT-WEIGHT: bold}
+.title{color:#001962;font-family:verdana,arial;font-size:22px;FONT-WEIGHT: bold;text-align:center}
+.subtitle{color:#001962;font-family:verdana,arial;font-size:15px;FONT-WEIGHT: bold;text-align:center}
+.th0{color:#ffffff;background:#B2B2B2;text-valign:center;text-align:center;font-family:verdana,arial;font-size:12px; FONT-WEIGHT: bold}
+.th1{color:#ffffff;background:#949494;text-valign:center;text-align:center;font-family:verdana,arial;font-size:12px; FONT-WEIGHT: bold}
+.menufont{
+	color:#FFFFFF;
+	text-valign:center;
+	text-align:center;
+	font-family:verdana,arial;
+	font-size:12px;
+	background : Black;
+}
+.button1{BACKGROUND-COLOR:#CCCCCC;color:#ffffff;text-valign: center;text-align: center;font-family:verdana,arial;FONT-WEIGHT: bold; font-size:11px}
+.button{BACKGROUND-COLOR:#007ACC;color:#ffffff;text-valign: center;text-align: center;font-family:verdana,arial;FONT-WEIGHT: bold; font-size:11px}
+.merchant{color:#7D0000;text-valign:center;text-align:center;font-family:verdana,arial;font-size:12px; FONT-WEIGHT: bold}
+.text{color:#001962;text-valign:left;font-family:verdana,arial;font-size:12px;}
+.textb{color:#001962;text-valign:center;font-family:verdana,arial;font-size:12px; FONT-WEIGHT: bold}
+A:HOVER.link {
+	color: #B4735C;
+	text-valign:center;
+	text-align:center;
+	font-family:verdana,arial;
+	font-size:12px;
+	FONT-WEIGHT: bold;
+	text-decoration:underline
+}
+.link{color:#7D0000;text-valign:center;text-align:center;font-family:verdana,arial;font-size:12px; FONT-WEIGHT: bold; text-decoration:underline}
+.nolink{
+	color:#B4735C;
+	text-valign:center;
+	text-align:center;
+	font-family:verdana,arial;
+	font-size: 11px;
+	FONT-WEIGHT: bold;
+	text-decoration: none;
+}
+.negbal{
+	color : Red;
+}
+
+
+
+a{
+	alink:#ff0000;
+	vlink:#ff0000;
+	link:#ff0000;
+	text-decoration:none;
+	color : White;
+	font : Verdana, Arial, sans-serif;
+}
+.th0{
+	color:#ffffff;
+	background:#B2B2B2;
+	text-align:center;
+	font-family:verdana,arial;
+	font-size:12px;
+	FONT-WEIGHT: bold;
+}
+.th1{
+	color:#ffffff;
+	background:#949494;
+	text-align:center;
+	font-family:verdana,arial;
+	font-size: 12px;
+	FONT-WEIGHT: bold
+}

@@ -1,0 +1,281 @@
+<%@ page import="com.directi.pg.Functions" %>
+<%@ include file="top.jsp"%>
+<%@ page import="org.owasp.esapi.ESAPI" %>
+<%@ page import="java.util.*" %>
+<%@ page import="com.directi.pg.LoadProperties" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: Jinesh
+  Date: 1/5/2016
+  Time: 12:41 PM
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+
+<html>
+<head>
+  <META content="text/html; charset=windows-1252" http-equiv=Content-Type>
+  <meta http-equiv="Expires" content="0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <%
+    String company = ESAPI.encoder().encodeForHTML((String)session.getAttribute("partnername"));
+  %>
+
+  <title><%=company%> User Management> Partner User Management</title>
+  <script language="javascript">
+    function DoReverse(ctoken)
+    {
+      if (confirm("Do you really want to Delete this User ?"))
+      {
+        return true;
+      }
+      else
+        return false;
+    }
+  </script>
+  <script>
+    function ConfirmUnblock()
+    {
+      var x = confirm("Do you really want to Unblock this User ?");
+      if (x)
+        return true;
+      else
+        return false;
+    }
+  </script>
+  <script src="/partner/javascript/autocomplete_partner_memberid.js"></script>
+</head>
+<body>
+<%
+  ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+ // String company = ESAPI.encoder().encodeForHTML((String)session.getAttribute("partnername"));
+  session.setAttribute("submit","partnerChildList");
+  PartnerFunctions partner1=new PartnerFunctions();
+  if (partner.isLoggedInPartner(session))
+  {
+    String partnerId = (String) session.getAttribute("merchantid");
+    String Config = "";
+    String pid = null;
+    String Roles = partner.getRoleofPartner(String.valueOf(session.getAttribute("merchantid")));
+    if(Roles.contains("superpartner")){
+      pid=Functions.checkStringNull(request.getParameter("pid"))==null?"":request.getParameter("pid");
+    }else{
+      Config = "disabled";
+      pid = String.valueOf(session.getAttribute("merchantid"));
+    }
+
+    ResourceBundle rb1 = null;
+    String language_property1 = (String)session.getAttribute("language_property");
+    rb1 = LoadProperties.getProperty(language_property1);
+
+    String partnerChildList_User_Management = rb1.getString("partnerChildList_User_Management");
+    String partnerChildList_Partner_ID = rb1.getString("partnerChildList_Partner_ID");
+    String partnerChildList_Search = rb1.getString("partnerChildList_Search");
+    String partnerChildList_Partners_Partner_List = rb1.getString("partnerChildList_Partners_Partner_List");
+    String partnerChildList_Partners_Sr_no = rb1.getString("partnerChildList_Partners_Sr_no");
+    String partnerChildList_Partners_User_Name = rb1.getString("partnerChildList_Partners_User_Name");
+    String partnerChildList_Partners_Contact_Email = rb1.getString("partnerChildList_Partners_Contact_Email");
+    String partnerChildList_Partners_Action = rb1.getString("partnerChildList_Partners_Action");
+    String partnerChildList_No_Recoreds_Found = rb1.getString("partnerChildList_No_Recoreds_Found");
+%>
+
+<div class="content-page">
+  <div class="content">
+    <!-- Page Heading Start -->
+    <div class="page-heading">
+
+      <div class="pull-right">
+        <div class="btn-group">
+          <form action="/partner/partnerChildSignup.jsp?ctoken=<%=ctoken%>" method="POST">
+            <button class="btn-xs" type="submit" value="partnerChildList" name="submit" name="B1" style="background: transparent;border: 0;">
+              <img style="height: 35px;" src="/partner/images/newuser.png">
+            </button>
+          </form>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-12 portlets ui-sortable">
+          <div class="widget">
+            <div class="widget-header transparent">
+              <h2><strong><i class="fa fa-th-large"></i>&nbsp;&nbsp;<%=partnerChildList_User_Management%></strong>
+              </h2>
+              <div class="additional-btn">
+                <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+              </div>
+            </div>
+            <div class="widget-content">
+              <div id="horizontal-form">
+                <form action="/partner/net/PartnerUserList?ctoken=<%=ctoken%>" method="post" name="forms" class="form-horizontal">
+                  <input type="hidden" value="<%=partnerId%>" name="partnerid" id="partnerid">
+                  <input type="hidden" value="<%=ctoken%>" name="ctoken" id="ctoken">
+                  <%
+                    int pageno=partner1.convertStringtoInt(ESAPI.encoder().encodeForHTML(request.getParameter("SPageno")),1);
+                    int pagerecords=partner1.convertStringtoInt(ESAPI.encoder().encodeForHTML(request.getParameter("SRecords")), 15);
+
+                    Functions functions = new Functions();
+                    String memberid = (String)request.getAttribute("memberid");
+                    String error = (String) request.getAttribute("error");
+                    String success = (String) request.getAttribute("success");
+                    if(functions.isValueNull(error))
+                    {
+                                            /*out.println("<center><font class=\"textb\">"+(String) request.getAttribute("error")+"</font></center><br/><br/>");*/
+                      out.println("<h5 class=\"bg-infoorange\" style=\"text-align: center;\"><i class=\"fa fa-exclamation-triangle\"></i>&nbsp;&nbsp;"+error+"</h5>");
+                    }
+
+                    if(functions.isValueNull(success))
+                    {
+                                            /*out.println("<center><font class=\"textb\">"+(String) request.getAttribute("error")+"</font></center><br/><br/>");*/
+                      out.println("<h5 class=\"bg-info\" style=\"text-align: center;\"><i class=\"fa fa-info-circle\"></i>&nbsp;&nbsp;"+success+"</h5>");
+                    }
+                  %>
+                  <div class="form-group col-md-8">
+                    <label class="col-sm-3 control-label"><%=partnerChildList_Partner_ID%></label>
+                    <div class="col-sm-6">
+                      <input name="pid" id="pid" value="<%=pid%>" class="form-control" autocomplete="on" <%=Config%>>
+                      <input type="hidden" name="pid" value="<%=pid%>">
+                    </div>
+                  </div>
+                  <%--<div class="form-group col-md-3 has-feedback">&nbsp;</div>--%>
+                  <div class="form-group col-md-3">
+                    <div class="col-sm-offset-2 col-sm-3">
+                      <button type="submit" class="btn btn-default"><i class="fa fa-clock-o"></i>
+                        &nbsp;&nbsp;<%=partnerChildList_Search%></button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row reporttable">
+        <div class="col-md-12">
+          <div class="widget">
+            <div class="widget-header">
+              <h2><i class="fa fa-table"></i>&nbsp;&nbsp;<strong><%=partnerChildList_Partners_Partner_List%></strong></h2>
+              <div class="additional-btn">
+                <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+              </div>
+            </div>
+            <div class="widget-content padding" style="overflow-y: auto;">
+              <%
+                StringBuffer requestParameter = new StringBuffer();
+                Enumeration<String> stringEnumeration = request.getParameterNames();
+                while(stringEnumeration.hasMoreElements())
+                {
+                  String name=stringEnumeration.nextElement();
+                  if("SPageno".equals(name) || "SRecords".equals(name))
+                  {
+
+                  }
+                  else
+                    requestParameter.append("<input type='hidden' name='"+name+"' value=\""+request.getParameter(name)+"\"/>");
+                }
+                requestParameter.append("<input type='hidden' name='SPageno' value='"+pageno+"'/>");
+                requestParameter.append("<input type='hidden' name='SRecords' value='"+pagerecords+"'/>");
+
+                int records = 0;
+                Hashtable temphash=null;
+
+                Hashtable detailHash = (Hashtable)request.getAttribute("detailHash");
+                if(detailHash!=null && (detailHash.size()!=0 && detailHash.size()!=1))
+                {
+                  detailHash = (Hashtable)request.getAttribute("detailHash");
+                  records=Integer.parseInt((String) detailHash.get("records"));
+
+                }
+
+                String msg= (String) request.getAttribute("msg");
+                if (functions.isValueNull(msg)){
+                  out.println(Functions.NewShowConfirmation1("",msg));
+                }
+                else if(records>0)
+                {
+              %>
+              <table id="myTable" class="display table table-striped table-bordered" width="100%" style="font-family:Open Sans;font-size: 13px;font-weight: 600;width: 100%;">
+                <thead>
+                <tr style="background-color: #7eccad !important;color: white;">
+                  <th valign="middle" align="center" style="text-align: center"><%=partnerChildList_Partners_Sr_no%></th>
+                  <th valign="middle" align="center" style="text-align: center"><%=partnerChildList_Partner_ID%></th>
+                  <th valign="middle" align="center" style="text-align: center"><%=partnerChildList_Partners_User_Name%></th>
+                  <th valign="middle" align="center" style="text-align: center"><%=partnerChildList_Partners_Contact_Email%></th>
+                  <th valign="middle" align="center" colspan="7" style="text-align: center"><%=partnerChildList_Partners_Action%></th>
+                </tr>
+                </thead>
+                <tbody>
+                <%
+                    String style="class=td1";
+                    String ext="light";
+
+                    for(int i = 1;i<=records;i++)
+                    {
+                      String id=Integer.toString(i);
+
+                      int srno=i+ records;
+
+                      if(i%2==0)
+                      {
+                        style="class=tr1";
+                        ext="dark";
+                      }
+                      else
+                      {
+                        style="class=tr0";
+                        ext="light";
+                      }
+
+                      temphash=(Hashtable)detailHash.get(id);
+
+                      String login=ESAPI.encoder().encodeForHTML((String) temphash.get("login"));
+                      String unblock=partner.getUnblockStatus(login);
+                      String disabled="";
+                      if ("unlocked".equalsIgnoreCase(unblock)){
+                        disabled="disabled";
+                      }
+                      out.println("<tr>");
+                      out.println("<td align=\"center\"  data-label=\"Sr no\" "+style+">&nbsp;"+i+ "</td>");
+                      out.println("<td align=\"center\"  data-label=\"partnerid\" "+style+">&nbsp;"+ESAPI.encoder().encodeForHTML((String)temphash.get("partnerid"))+"<input type=\"hidden\" name=\"partnerid\" value=\""+temphash.get("partnerid")+"\"></td>");
+                      out.println("<td align=\"center\"  data-label=\"Login\" "+style+">&nbsp;"+ESAPI.encoder().encodeForHTML((String)temphash.get("login"))+"<input type=\"hidden\" name=\"login\" value=\""+temphash.get("login")+"\"></td>");
+                      out.println("<td align=\"center\"  data-label=\"Contact Email\" "+style+">&nbsp;"+functions.getEmailMasking((String)temphash.get("contact_emails"))+"<input type=\"hidden\" name=\"emailaddress\" value=\""+temphash.get("contact_emails")+"\"></td>");
+                      out.println("<td align=\"center\" data-label=\"Action\" "+style+"><form action=\"/partner/net/EditPartnerUserList?ctoken="+ctoken+"\" method=\"POST\"><input type=\"hidden\" name=\"login\" value=\""+ESAPI.encoder().encodeForHTML((String) temphash.get("login"))+"\"><button type=\"submit\" name=\"User Management\" value=\"View\" class=\"btn btn-default gotoauto\" ><input type=\"hidden\" name=\"action\" value=\"View\">View</button>");
+                      out.println(requestParameter.toString());
+                      out.println("</form></td>");
+                      out.println("<td align=\"center\" data-label=\"Action\" "+style+"><form action=\"/partner/net/EditPartnerUserList?ctoken="+ctoken+"\" method=\"POST\"><input type=\"hidden\" name=\"memberid\" value=\""+ESAPI.encoder().encodeForHTML((String)request.getAttribute("memberid"))+"\"><input type=\"hidden\" name=\"login\" value=\""+ESAPI.encoder().encodeForHTML((String) temphash.get("login"))+"\"><button type=\"submit\" name=\"User Management\" value=\"Edit\" class=\"btn btn-default gotoauto\"><input type=\"hidden\" name=\"action\" value=\"modify1\">Edit</button>");
+                      out.println(requestParameter.toString());
+                      out.println("</form></td>");
+                      out.println("<td align=\"center\" data-label=\"Action\" "+style+"><form action=\"/partner/net/EditPartnerUserList?ctoken="+ctoken+"\" method=\"POST\" name=\"formAction\" onSubmit=\"return DoReverse('"+ctoken+"')\"><input type=\"hidden\" name=\"memberid\" value=\""+ESAPI.encoder().encodeForHTML((String)request.getAttribute("memberid"))+"\"><input type=\"hidden\" name=\"login\" value=\""+ESAPI.encoder().encodeForHTML((String) temphash.get("login"))+"\"><button type=\"submit\" name=\"User Management\" value=\"Delete\" class=\"btn btn-default gotoauto\"><input type=\"hidden\" name=\"action\" value=\"delete\">Delete</i></button>");
+                      out.println(requestParameter.toString());
+                      out.println("</form></td>");
+                      out.println("<td align=\"center\" data-label=\"Action\" "+style+"><form action=\"/partner/partnerAllocationUser.jsp?ctoken="+ctoken+"\" method=\"POST\"><input type=\"hidden\" name=\"partnerid\" value=\""+ESAPI.encoder().encodeForHTML((String)temphash.get("partnerid"))+"\"><input type=\"hidden\" name=\"login\" value=\""+ESAPI.encoder().encodeForHTML((String) temphash.get("login"))+"\"><input type=\"hidden\" name=\"userid\" value=\""+ESAPI.encoder().encodeForHTML((String) temphash.get("userid"))+"\"><input type=\"submit\" name=\"MerchantModuleMappingList\" value=\"Module Allocation\" class=\"btn btn-default gotoauto\" width=\"100\">");
+                      out.println(requestParameter.toString());
+                      out.println("</form></td>");
+                      out.println("<td align=\"center\" data-label=\"Action\" "+style+"><form action=\"/partner/net/UnblockPartnerUser?ctoken="+ctoken+"\" method=\"POST\"><input type=\"hidden\" name=\"partnerid\" value=\""+ESAPI.encoder().encodeForHTML((String)temphash.get("partnerid"))+"\"><input type=\"hidden\" name=\"login\" value=\""+ESAPI.encoder().encodeForHTML((String) temphash.get("login"))+"\"><input type=\"hidden\" name=\"userid\" value=\""+ESAPI.encoder().encodeForHTML((String) temphash.get("userid"))+"\"><input type=\"hidden\" name=\"unblocked\" value=\"\"+ESAPI.encoder().encodeForHTML((String) temphash.get(\"login\"))+\"\"><input type=\"submit\" name=\"Unblock\" value=\"Unblock\" id=\"unblock\" Onclick=\"return ConfirmUnblock();\" class=\"btn btn-default gotoauto\" width=\"100\"" +disabled+" >");
+                      out.println(requestParameter.toString());
+                      out.println("</form></td>");
+                      out.println("</tr>");
+                    }
+                  }
+                  else if (records==0)
+                  {
+                    out.println(Functions.NewShowConfirmation1("",partnerChildList_No_Recoreds_Found));
+                  }
+                %>
+                </tbody>
+              </table>
+              <%--</div>--%>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<%
+  }
+%>
+</body>
+</html>

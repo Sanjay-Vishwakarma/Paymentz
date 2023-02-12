@@ -1,0 +1,3061 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="transecute" default="all">
+  
+  
+  <property file="PaymentzStaging.properties"/>
+  <!-- Uncomment the following property if no tests compilation is needed -->
+  <!-- 
+  <property name="skip.tests" value="true"/>
+   -->
+  
+  <!-- Compiler options -->
+  
+  <property name="compiler.debug" value="on"/>
+  <property name="compiler.generate.no.warnings" value="on"/>
+  <property name="compiler.args" value=""/>
+  <property name="compiler.max.memory" value="700m"/>
+  <patternset id="ignored.files">
+    <exclude name="**/CVS/**"/>
+    <exclude name="**/SCCS/**"/>
+    <exclude name="**/RCS/**"/>
+    <exclude name="**/rcs/**"/>
+    <exclude name="**/.DS_Store/**"/>
+    <exclude name="**/.svn/**"/>
+    <exclude name="**/.pyc/**"/>
+    <exclude name="**/.pyo/**"/>
+    <exclude name="**/*.pyc/**"/>
+    <exclude name="**/*.pyo/**"/>
+    <exclude name="**/.git/**"/>
+    <exclude name="**/*.hprof/**"/>
+    <exclude name="**/_svn/**"/>
+    <exclude name="**/.hg/**"/>
+    <exclude name="**/*.lib/**"/>
+    <exclude name="**/*~/**"/>
+    <exclude name="**/__pycache__/**"/>
+    <exclude name="**/.bundle/**"/>
+    <exclude name="**/*.rbc/**"/>
+    <exclude name="**/vssver.scc/**"/>
+    <exclude name="**/vssver2.scc/**"/>
+  </patternset>
+  <patternset id="compiler.excluded">
+    <exclude name="${basedir}/../../../testmoto/src/TransecuteTransactionPageTest.java"/>
+  </patternset>
+  <patternset id="library.patterns">
+    <include name="*.war"/>
+    <include name="*.ear"/>
+    <include name="*.apk"/>
+    <include name="*.zip"/>
+    <include name="*.swc"/>
+    <include name="*.ane"/>
+    <include name="*.egg"/>
+    <include name="*.jar"/>
+  </patternset>
+  <patternset id="compiler.resources">
+    <include name="**/?*.properties"/>
+    <include name="**/?*.xml"/>
+    <include name="**/?*.gif"/>
+    <include name="**/?*.png"/>
+    <include name="**/?*.jpeg"/>
+    <include name="**/?*.jpg"/>
+    <include name="**/?*.html"/>
+    <include name="**/?*.dtd"/>
+    <include name="**/?*.tld"/>
+    <include name="**/?*.properties"/>
+    <include name="**/?*.xml"/>
+    <include name="**/?*.html"/>
+    <include name="**/?*.dtd"/>
+    <include name="**/?*.tld"/>
+    <include name="**/?*.gif"/>
+    <include name="**/?*.png"/>
+    <include name="**/?*.jpeg"/>
+    <include name="**/?*.jpg"/>
+    <include name="**/?*.template"/>
+  </patternset>
+  
+  <!-- JDK definitions -->
+  
+  <property name="jdk.bin.1.8" value="${jdk.home.1.8}/bin"/>
+  <path id="jdk.classpath.1.8">
+    <fileset dir="${jdk.home.1.8}">
+      <include name="jre/lib/charsets.jar"/>
+      <include name="jre/lib/deploy.jar"/>
+      <include name="jre/lib/javaws.jar"/>
+      <include name="jre/lib/jce.jar"/>
+      <include name="jre/lib/jfr.jar"/>
+      <include name="jre/lib/jfxswt.jar"/>
+      <include name="jre/lib/jsse.jar"/>
+      <include name="jre/lib/management-agent.jar"/>
+      <include name="jre/lib/plugin.jar"/>
+      <include name="jre/lib/resources.jar"/>
+      <include name="jre/lib/rt.jar"/>
+      <include name="jre/lib/ext/access-bridge-64.jar"/>
+      <include name="jre/lib/ext/cldrdata.jar"/>
+      <include name="jre/lib/ext/dnsns.jar"/>
+      <include name="jre/lib/ext/jaccess.jar"/>
+      <include name="jre/lib/ext/jfxrt.jar"/>
+      <include name="jre/lib/ext/localedata.jar"/>
+      <include name="jre/lib/ext/nashorn.jar"/>
+      <include name="jre/lib/ext/sunec.jar"/>
+      <include name="jre/lib/ext/sunjce_provider.jar"/>
+      <include name="jre/lib/ext/sunmscapi.jar"/>
+      <include name="jre/lib/ext/sunpkcs11.jar"/>
+      <include name="jre/lib/ext/zipfs.jar"/>
+    </fileset>
+  </path>
+  
+  <property name="project.jdk.home" value="${jdk.home.1.8}"/>
+  <property name="project.jdk.bin" value="${jdk.bin.1.8}"/>
+  <property name="project.jdk.classpath" value="jdk.classpath.1.8"/>
+  
+  
+  <!-- Project Libraries -->
+  
+  <path id="library.transecute_lib.classpath">
+    <pathelement location="${basedir}/../../../commons/lib/PMPTDES.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/PaymentClient.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/SofortLibJavaCore-1.0.2.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/SofortLibJavaIdeal-1.0.2.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/SofortLibJavaPayment-1.0.2.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/SofortLibJavaRefund-1.0.2.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/Universal_Java_Plugin_3.2.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/aciplugins_latest_08122012.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/activation.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/agAES.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/annotations-api.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/apache-mime4j-core-0.7.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/apache-mime4j-dom-0.7.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/asm-1.0.2.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/asm-3.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/asm-5.0.4.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/axiom-api-1.2.14.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/axis-ant.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/axis.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/axis2-1.6.2.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/bcpg-jdk15on-1.52.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/bcpkix-jdk15on-158.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/bcprov-jdk15on-158.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/boilerpipe-1.1.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/bsh-2.0b5.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/catalina-ant.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/catalina-ha.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/catalina-storeconfig.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/catalina-tribes.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/catalina.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/cglib-nodep-2.2.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/client.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/commons-cli-1.3.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/commons-codec-1.10.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/commons-collections-3.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/commons-discovery-0.2.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/commons-el.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/commons-fileupload-1.2.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/commons-httpclient-3.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/commons-io-1.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/commons-lang-2.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/commons-logging-1.0.4.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/commons-net-3.4.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/crawler4j-3.4.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/cryptix32.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/dom4j-1.6.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/ecj-4.2.2.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/ecj-4.4.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/ecj-4.4.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/ecj-4.5.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/eclipselink-2.5.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/el-api.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/esapi-2.0.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/geronimo-stax-api_1.0_spec-1.0.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/gson-2.8.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/httpclient-4.5.3.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/httpcore-4.4.6.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/imap.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/itext-2.1.7.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jackson-annotations-2.8.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jackson-core-2.8.4.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jackson-databind-2.8.4.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jakarta-oro-2.0.5.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jakarta-regexp-1.2.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jasper-el.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jasper.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/java-jwt-3.2.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/javatuples-1.2.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jaxb-api.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jaxm.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jaxp.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jaxrpc.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jaxws-rt.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jbcrypt-0.4.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jcert.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jdbc2_0-stdext.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jdbm-1.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jdom-1.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jdom.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jdom2-2.0.6.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jdring.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/je-4.0.92.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jersey-bundle-1.19.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jersey-multipart-1.19.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jettison-1.2.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jline-1.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jndi.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jnet.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/joda-time-1.6.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jpos-2.1.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jsch-0.1.44.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/json-20080701.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jsoup-1.6.3.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jsp-api.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jsr250-api-1.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jsse.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/jta-spec1_0_1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/junit-4.10.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/kxml2-2.3.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/kxml2-min-2.3.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/ldap.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/log4j-1.2.4.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/mail.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/mailapi.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/metadata-extractor-2.4.0-beta-1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/mimepull-1.6.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/mysql-connector-java-5.1.6-bin.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/ob_lbutil.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/org.osgi.core-6.0.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/paydollar.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/poi-2.5.1-final-20040804.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/pop3.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/saaj.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/sbm-java-plugin-1.8-jar-with-dependencies.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/servlet-api.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/sfa.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/smtp.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/soap.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/stax-1.2.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/stax-api-1.0.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/tagsoup-1.2.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/tika-core-1.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/tika-parsers-1.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/tomcat-api.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/tomcat-coyote.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/tomcat-dbcp.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/tomcat-jdbc.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/tomcat-jni.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/tomcat-spdy.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/tomcat-util-scan.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/tomcat-util.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/tomcat-websocket.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/tomcat7-websocket.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/tyrex-0.9.7.0.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/websocket-api.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/wsdl4j-1.5.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/wstx-asl-3.2.7.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/xercesImpl-2.9.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/xml-apis-1.4.01.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/xmlbeans-5.3.0-rc1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/xmlpull-1.1.3.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/xom-1.1.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/xpp3_min-1.1.4c.jar"/>
+    <pathelement location="${basedir}/../../../commons/lib/xstream-1.4.3.jar"/>
+  </path>
+  
+  <!-- Modules -->
+  
+  
+  <!-- Module commons -->
+  
+  <dirname property="module.commons.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.commons" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.commons" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.commons" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.commons" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="commons.output.dir" value="${module.commons.basedir}/../../../commons/target/target"/>
+  <property name="commons.testoutput.dir" value="${module.commons.basedir}/../../../commons/target/target"/>
+  
+  <path id="commons.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="commons.module.production.classpath">
+    <path refid="${module.jdk.classpath.commons}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="commons.runtime.production.module.classpath">
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="commons.module.classpath">
+    <path refid="${module.jdk.classpath.commons}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="commons.runtime.module.classpath">
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.commons">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.commons">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.commons"/>
+  </patternset>
+  
+  <path id="commons.module.sourcepath">
+    <dirset dir="${module.commons.basedir}/../../../commons">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.commons" depends="compile.module.commons.production,compile.module.commons.tests" description="Compile module commons"/>
+  
+  <target name="compile.module.commons.production" description="Compile module commons; production classes">
+    <mkdir dir="${commons.output.dir}"/>
+    <javac destdir="${commons.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.commons}/javac">
+      <compilerarg line="${compiler.args.commons}"/>
+      <bootclasspath refid="commons.module.bootclasspath"/>
+      <classpath refid="commons.module.production.classpath"/>
+      <src refid="commons.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.commons"/>
+    </javac>
+    
+    <copy todir="${commons.output.dir}">
+      <fileset dir="${module.commons.basedir}/../../../commons/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.commons"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.commons.tests" depends="compile.module.commons.production" description="compile module commons; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.commons" description="cleanup module">
+    <delete dir="${commons.output.dir}"/>
+    <delete dir="${commons.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module newtemplates -->
+  
+  <dirname property="module.newtemplates.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.newtemplates" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.newtemplates" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.newtemplates" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.newtemplates" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="newtemplates.output.dir" value="${module.newtemplates.basedir}/../../../newtemplates/target"/>
+  <property name="newtemplates.testoutput.dir" value="${module.newtemplates.basedir}/../../../newtemplates/target"/>
+  
+  <path id="newtemplates.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="newtemplates.module.production.classpath">
+    <path refid="${module.jdk.classpath.newtemplates}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="newtemplates.runtime.production.module.classpath">
+    <pathelement location="${newtemplates.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="newtemplates.module.classpath">
+    <path refid="${module.jdk.classpath.newtemplates}"/>
+    <pathelement location="${newtemplates.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="newtemplates.runtime.module.classpath">
+    <pathelement location="${newtemplates.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.newtemplates">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.newtemplates">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.newtemplates"/>
+  </patternset>
+  
+  <path id="newtemplates.module.sourcepath">
+    <dirset dir="${module.newtemplates.basedir}/../../../newtemplates">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.newtemplates" depends="compile.module.newtemplates.production,compile.module.newtemplates.tests" description="Compile module newtemplates"/>
+  
+  <target name="compile.module.newtemplates.production" description="Compile module newtemplates; production classes">
+    <mkdir dir="${newtemplates.output.dir}"/>
+    <javac destdir="${newtemplates.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.newtemplates}/javac">
+      <compilerarg line="${compiler.args.newtemplates}"/>
+      <bootclasspath refid="newtemplates.module.bootclasspath"/>
+      <classpath refid="newtemplates.module.production.classpath"/>
+      <src refid="newtemplates.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.newtemplates"/>
+    </javac>
+    
+    <copy todir="${newtemplates.output.dir}">
+      <fileset dir="${module.newtemplates.basedir}/../../../newtemplates/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.newtemplates"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.newtemplates.tests" depends="compile.module.newtemplates.production" description="compile module newtemplates; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.newtemplates" description="cleanup module">
+    <delete dir="${newtemplates.output.dir}"/>
+    <delete dir="${newtemplates.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module php -->
+  
+  <dirname property="module.php.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.php" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.php" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.php" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.php" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="php.output.dir" value="undefined"/>
+  <property name="php.testoutput.dir" value="undefined"/>
+  
+  <path id="php.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="php.module.production.classpath">
+    <path refid="${module.jdk.classpath.php}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="php.runtime.production.module.classpath">
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="php.module.classpath">
+    <path refid="${module.jdk.classpath.php}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="php.runtime.module.classpath">
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.php">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.php">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.php"/>
+  </patternset>
+  
+  
+  <target name="compile.module.php" depends="compile.module.php.production,compile.module.php.tests" description="Compile module php"/>
+  
+  <target name="compile.module.php.production" description="Compile module php; production classes"/>
+  
+  <target name="compile.module.php.tests" depends="compile.module.php.production" description="compile module php; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.php" description="cleanup module">
+    <delete dir="${php.output.dir}"/>
+    <delete dir="${php.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module order -->
+  
+  <dirname property="module.order.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.order" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.order" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.order" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.order" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="order.output.dir" value="${module.order.basedir}/../../../order/target"/>
+  <property name="order.testoutput.dir" value="${module.order.basedir}/../../../order/target"/>
+  
+  <path id="order.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="order.module.production.classpath">
+    <path refid="${module.jdk.classpath.order}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="order.runtime.production.module.classpath">
+    <pathelement location="${order.output.dir}"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="order.module.classpath">
+    <path refid="${module.jdk.classpath.order}"/>
+    <pathelement location="${order.output.dir}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="order.runtime.module.classpath">
+    <pathelement location="${order.output.dir}"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.order">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.order">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.order"/>
+  </patternset>
+  
+  <path id="order.module.sourcepath">
+    <dirset dir="${module.order.basedir}/../../../order">
+      <include name="src/servlets"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.order" depends="compile.module.order.production,compile.module.order.tests" description="Compile module order"/>
+  
+  <target name="compile.module.order.production" depends="compile.module.commons" description="Compile module order; production classes">
+    <mkdir dir="${order.output.dir}"/>
+    <javac destdir="${order.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.order}/javac">
+      <compilerarg line="${compiler.args.order}"/>
+      <bootclasspath refid="order.module.bootclasspath"/>
+      <classpath refid="order.module.production.classpath"/>
+      <src refid="order.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.order"/>
+    </javac>
+    
+    <copy todir="${order.output.dir}">
+      <fileset dir="${module.order.basedir}/../../../order/src/servlets">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.order"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.order.tests" depends="compile.module.order.production" description="compile module order; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.order" description="cleanup module">
+    <delete dir="${order.output.dir}"/>
+    <delete dir="${order.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module pz-core -->
+  
+  <dirname property="module.pz-core.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.pz-core" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.pz-core" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.pz-core" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.pz-core" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="pz-core.output.dir" value="${module.pz-core.basedir}/../../../pz-core/target"/>
+  <property name="pz-core.testoutput.dir" value="${module.pz-core.basedir}/../../../pz-core/target"/>
+  
+  <path id="pz-core.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="pz-core.module.production.classpath">
+    <path refid="${module.jdk.classpath.pz-core}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="pz-core.runtime.production.module.classpath">
+    <pathelement location="${pz-core.output.dir}"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="pz-core.module.classpath">
+    <path refid="${module.jdk.classpath.pz-core}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="pz-core.runtime.module.classpath">
+    <pathelement location="${pz-core.output.dir}"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.pz-core">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.pz-core">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.pz-core"/>
+  </patternset>
+  
+  <path id="pz-core.module.sourcepath">
+    <dirset dir="${module.pz-core.basedir}/../../../pz-core">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.pz-core" depends="compile.module.pz-core.production,compile.module.pz-core.tests" description="Compile module pz-core"/>
+  
+  <target name="compile.module.pz-core.production" depends="compile.module.commons" description="Compile module pz-core; production classes">
+    <mkdir dir="${pz-core.output.dir}"/>
+    <javac destdir="${pz-core.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.pz-core}/javac">
+      <compilerarg line="${compiler.args.pz-core}"/>
+      <bootclasspath refid="pz-core.module.bootclasspath"/>
+      <classpath refid="pz-core.module.production.classpath"/>
+      <src refid="pz-core.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.pz-core"/>
+    </javac>
+    
+    <copy todir="${pz-core.output.dir}">
+      <fileset dir="${module.pz-core.basedir}/../../../pz-core/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.pz-core"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.pz-core.tests" depends="compile.module.pz-core.production" description="compile module pz-core; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.pz-core" description="cleanup module">
+    <delete dir="${pz-core.output.dir}"/>
+    <delete dir="${pz-core.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module pz-fraud-core -->
+  
+  <dirname property="module.pz-fraud-core.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.pz-fraud-core" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.pz-fraud-core" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.pz-fraud-core" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.pz-fraud-core" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="pz-fraud-core.output.dir" value="${module.pz-fraud-core.basedir}/../../../pz-fraud-core/target"/>
+  <property name="pz-fraud-core.testoutput.dir" value="${module.pz-fraud-core.basedir}/../../../pz-fraud-core/target"/>
+  
+  <path id="pz-fraud-core.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="pz-fraud-core.module.production.classpath">
+    <path refid="${module.jdk.classpath.pz-fraud-core}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+  </path>
+  
+  <path id="pz-fraud-core.runtime.production.module.classpath">
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="pz-fraud-core.module.classpath">
+    <path refid="${module.jdk.classpath.pz-fraud-core}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+  </path>
+  
+  <path id="pz-fraud-core.runtime.module.classpath">
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.pz-fraud-core">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.pz-fraud-core">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.pz-fraud-core"/>
+  </patternset>
+  
+  <path id="pz-fraud-core.module.sourcepath">
+    <dirset dir="${module.pz-fraud-core.basedir}/../../../pz-fraud-core">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.pz-fraud-core" depends="compile.module.pz-fraud-core.production,compile.module.pz-fraud-core.tests" description="Compile module pz-fraud-core"/>
+  
+  <target name="compile.module.pz-fraud-core.production" depends="compile.module.commons" description="Compile module pz-fraud-core; production classes">
+    <mkdir dir="${pz-fraud-core.output.dir}"/>
+    <javac destdir="${pz-fraud-core.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.pz-fraud-core}/javac">
+      <compilerarg line="${compiler.args.pz-fraud-core}"/>
+      <bootclasspath refid="pz-fraud-core.module.bootclasspath"/>
+      <classpath refid="pz-fraud-core.module.production.classpath"/>
+      <src refid="pz-fraud-core.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.pz-fraud-core"/>
+    </javac>
+    
+    <copy todir="${pz-fraud-core.output.dir}">
+      <fileset dir="${module.pz-fraud-core.basedir}/../../../pz-fraud-core/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.pz-fraud-core"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.pz-fraud-core.tests" depends="compile.module.pz-fraud-core.production" description="compile module pz-fraud-core; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.pz-fraud-core" description="cleanup module">
+    <delete dir="${pz-fraud-core.output.dir}"/>
+    <delete dir="${pz-fraud-core.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module support -->
+  
+  <dirname property="module.support.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.support" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.support" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.support" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.support" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="support.output.dir" value="${module.support.basedir}/../../../support/target"/>
+  <property name="support.testoutput.dir" value="${module.support.basedir}/../../../support/target"/>
+  
+  <path id="support.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="support.module.production.classpath">
+    <path refid="${module.jdk.classpath.support}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="support.runtime.production.module.classpath">
+    <pathelement location="${support.output.dir}"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="support.module.classpath">
+    <path refid="${module.jdk.classpath.support}"/>
+    <pathelement location="${support.output.dir}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="support.runtime.module.classpath">
+    <pathelement location="${support.output.dir}"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.support">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.support">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.support"/>
+  </patternset>
+  
+  <path id="support.module.sourcepath">
+    <dirset dir="${module.support.basedir}/../../../support">
+      <include name="src/servlets"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.support" depends="compile.module.support.production,compile.module.support.tests" description="Compile module support"/>
+  
+  <target name="compile.module.support.production" depends="compile.module.commons" description="Compile module support; production classes">
+    <mkdir dir="${support.output.dir}"/>
+    <javac destdir="${support.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.support}/javac">
+      <compilerarg line="${compiler.args.support}"/>
+      <bootclasspath refid="support.module.bootclasspath"/>
+      <classpath refid="support.module.production.classpath"/>
+      <src refid="support.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.support"/>
+    </javac>
+    
+    <copy todir="${support.output.dir}">
+      <fileset dir="${module.support.basedir}/../../../support/src/servlets">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.support"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.support.tests" depends="compile.module.support.production" description="compile module support; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.support" description="cleanup module">
+    <delete dir="${support.output.dir}"/>
+    <delete dir="${support.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module testmoto -->
+  
+  <dirname property="module.testmoto.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.testmoto" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.testmoto" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.testmoto" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.testmoto" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="testmoto.output.dir" value="${module.testmoto.basedir}/../../../testmoto/target"/>
+  <property name="testmoto.testoutput.dir" value="${module.testmoto.basedir}/../../../testmoto/target"/>
+  
+  <path id="testmoto.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="testmoto.module.production.classpath">
+    <path refid="${module.jdk.classpath.testmoto}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="testmoto.runtime.production.module.classpath">
+    <pathelement location="${testmoto.output.dir}"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="testmoto.module.classpath">
+    <path refid="${module.jdk.classpath.testmoto}"/>
+    <pathelement location="${testmoto.output.dir}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  <path id="testmoto.runtime.module.classpath">
+    <pathelement location="${testmoto.output.dir}"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.testmoto">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.testmoto">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.testmoto"/>
+  </patternset>
+  
+  <path id="testmoto.module.sourcepath">
+    <dirset dir="${module.testmoto.basedir}/../../../testmoto">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.testmoto" depends="compile.module.testmoto.production,compile.module.testmoto.tests" description="Compile module testmoto"/>
+  
+  <target name="compile.module.testmoto.production" depends="compile.module.commons" description="Compile module testmoto; production classes">
+    <mkdir dir="${testmoto.output.dir}"/>
+    <javac destdir="${testmoto.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.testmoto}/javac">
+      <compilerarg line="${compiler.args.testmoto}"/>
+      <bootclasspath refid="testmoto.module.bootclasspath"/>
+      <classpath refid="testmoto.module.production.classpath"/>
+      <src refid="testmoto.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.testmoto"/>
+    </javac>
+    
+    <copy todir="${testmoto.output.dir}">
+      <fileset dir="${module.testmoto.basedir}/../../../testmoto/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.testmoto"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.testmoto.tests" depends="compile.module.testmoto.production" description="compile module testmoto; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.testmoto" description="cleanup module">
+    <delete dir="${testmoto.output.dir}"/>
+    <delete dir="${testmoto.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module fraudServices -->
+  
+  <dirname property="module.fraudservices.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.fraudservices" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.fraudservices" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.fraudservices" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.fraudservices" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="fraudservices.output.dir" value="${module.fraudservices.basedir}/../../../fraudServices/target"/>
+  <property name="fraudservices.testoutput.dir" value="${module.fraudservices.basedir}/../../../fraudServices/target"/>
+  
+  <path id="fraudservices.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="fraudservices.module.production.classpath">
+    <path refid="${module.jdk.classpath.fraudservices}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+  </path>
+  
+  <path id="fraudservices.runtime.production.module.classpath">
+    <pathelement location="${fraudservices.output.dir}"/>
+    <path refid="pz-fraud-core.runtime.production.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="fraudservices.module.classpath">
+    <path refid="${module.jdk.classpath.fraudservices}"/>
+    <pathelement location="${fraudservices.output.dir}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+  </path>
+  
+  <path id="fraudservices.runtime.module.classpath">
+    <pathelement location="${fraudservices.output.dir}"/>
+    <path refid="pz-fraud-core.runtime.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.fraudservices">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.fraudservices">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.fraudservices"/>
+  </patternset>
+  
+  <path id="fraudservices.module.sourcepath">
+    <dirset dir="${module.fraudservices.basedir}/../../../fraudServices">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.fraudservices" depends="compile.module.fraudservices.production,compile.module.fraudservices.tests" description="Compile module fraudServices"/>
+  
+  <target name="compile.module.fraudservices.production" depends="compile.module.pz-fraud-core,compile.module.commons" description="Compile module fraudServices; production classes">
+    <mkdir dir="${fraudservices.output.dir}"/>
+    <javac destdir="${fraudservices.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.fraudservices}/javac">
+      <compilerarg line="${compiler.args.fraudservices}"/>
+      <bootclasspath refid="fraudservices.module.bootclasspath"/>
+      <classpath refid="fraudservices.module.production.classpath"/>
+      <src refid="fraudservices.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.fraudservices"/>
+    </javac>
+    
+    <copy todir="${fraudservices.output.dir}">
+      <fileset dir="${module.fraudservices.basedir}/../../../fraudServices/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.fraudservices"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.fraudservices.tests" depends="compile.module.fraudservices.production" description="compile module fraudServices; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.fraudservices" description="cleanup module">
+    <delete dir="${fraudservices.output.dir}"/>
+    <delete dir="${fraudservices.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module newfinance -->
+  
+  <dirname property="module.newfinance.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.newfinance" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.newfinance" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.newfinance" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.newfinance" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="newfinance.output.dir" value="${module.newfinance.basedir}/../../../newfinance/target"/>
+  <property name="newfinance.testoutput.dir" value="${module.newfinance.basedir}/../../../newfinance/target"/>
+  
+  <path id="newfinance.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="newfinance.module.production.classpath">
+    <path refid="${module.jdk.classpath.newfinance}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${pz-core.output.dir}"/>
+  </path>
+  
+  <path id="newfinance.runtime.production.module.classpath">
+    <pathelement location="${newfinance.output.dir}"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="pz-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="newfinance.module.classpath">
+    <path refid="${module.jdk.classpath.newfinance}"/>
+    <pathelement location="${newfinance.output.dir}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${pz-core.output.dir}"/>
+  </path>
+  
+  <path id="newfinance.runtime.module.classpath">
+    <pathelement location="${newfinance.output.dir}"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="pz-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.newfinance">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.newfinance">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.newfinance"/>
+  </patternset>
+  
+  <path id="newfinance.module.sourcepath">
+    <dirset dir="${module.newfinance.basedir}/../../../newfinance">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.newfinance" depends="compile.module.newfinance.production,compile.module.newfinance.tests" description="Compile module newfinance"/>
+  
+  <target name="compile.module.newfinance.production" depends="compile.module.commons,compile.module.pz-core" description="Compile module newfinance; production classes">
+    <mkdir dir="${newfinance.output.dir}"/>
+    <javac destdir="${newfinance.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.newfinance}/javac">
+      <compilerarg line="${compiler.args.newfinance}"/>
+      <bootclasspath refid="newfinance.module.bootclasspath"/>
+      <classpath refid="newfinance.module.production.classpath"/>
+      <src refid="newfinance.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.newfinance"/>
+    </javac>
+    
+    <copy todir="${newfinance.output.dir}">
+      <fileset dir="${module.newfinance.basedir}/../../../newfinance/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.newfinance"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.newfinance.tests" depends="compile.module.newfinance.production" description="compile module newfinance; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.newfinance" description="cleanup module">
+    <delete dir="${newfinance.output.dir}"/>
+    <delete dir="${newfinance.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module pz-agent-core -->
+  
+  <dirname property="module.pz-agent-core.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.pz-agent-core" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.pz-agent-core" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.pz-agent-core" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.pz-agent-core" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="pz-agent-core.output.dir" value="${module.pz-agent-core.basedir}/../../../pz-agent-core/target"/>
+  <property name="pz-agent-core.testoutput.dir" value="${module.pz-agent-core.basedir}/../../../pz-agent-core/target"/>
+  
+  <path id="pz-agent-core.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="pz-agent-core.module.production.classpath">
+    <path refid="${module.jdk.classpath.pz-agent-core}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+  </path>
+  
+  <path id="pz-agent-core.runtime.production.module.classpath">
+    <pathelement location="${pz-agent-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="pz-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="pz-agent-core.module.classpath">
+    <path refid="${module.jdk.classpath.pz-agent-core}"/>
+    <pathelement location="${pz-agent-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+  </path>
+  
+  <path id="pz-agent-core.runtime.module.classpath">
+    <pathelement location="${pz-agent-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="pz-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.pz-agent-core">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.pz-agent-core">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.pz-agent-core"/>
+  </patternset>
+  
+  <path id="pz-agent-core.module.sourcepath">
+    <dirset dir="${module.pz-agent-core.basedir}/../../../pz-agent-core">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.pz-agent-core" depends="compile.module.pz-agent-core.production,compile.module.pz-agent-core.tests" description="Compile module pz-agent-core"/>
+  
+  <target name="compile.module.pz-agent-core.production" depends="compile.module.commons,compile.module.pz-core" description="Compile module pz-agent-core; production classes">
+    <mkdir dir="${pz-agent-core.output.dir}"/>
+    <javac destdir="${pz-agent-core.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.pz-agent-core}/javac">
+      <compilerarg line="${compiler.args.pz-agent-core}"/>
+      <bootclasspath refid="pz-agent-core.module.bootclasspath"/>
+      <classpath refid="pz-agent-core.module.production.classpath"/>
+      <src refid="pz-agent-core.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.pz-agent-core"/>
+    </javac>
+    
+    <copy todir="${pz-agent-core.output.dir}">
+      <fileset dir="${module.pz-agent-core.basedir}/../../../pz-agent-core/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.pz-agent-core"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.pz-agent-core.tests" depends="compile.module.pz-agent-core.production" description="compile module pz-agent-core; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.pz-agent-core" description="cleanup module">
+    <delete dir="${pz-agent-core.output.dir}"/>
+    <delete dir="${pz-agent-core.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module pz-app-core -->
+  
+  <dirname property="module.pz-app-core.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.pz-app-core" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.pz-app-core" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.pz-app-core" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.pz-app-core" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="pz-app-core.output.dir" value="${module.pz-app-core.basedir}/../../../pz-app-core/target"/>
+  <property name="pz-app-core.testoutput.dir" value="${module.pz-app-core.basedir}/../../../pz-app-core/target"/>
+  
+  <path id="pz-app-core.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="pz-app-core.module.production.classpath">
+    <path refid="${module.jdk.classpath.pz-app-core}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+  </path>
+  
+  <path id="pz-app-core.runtime.production.module.classpath">
+    <pathelement location="${pz-app-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="pz-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="pz-app-core.module.classpath">
+    <path refid="${module.jdk.classpath.pz-app-core}"/>
+    <pathelement location="${pz-app-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+  </path>
+  
+  <path id="pz-app-core.runtime.module.classpath">
+    <pathelement location="${pz-app-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="pz-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.pz-app-core">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.pz-app-core">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.pz-app-core"/>
+  </patternset>
+  
+  <path id="pz-app-core.module.sourcepath">
+    <dirset dir="${module.pz-app-core.basedir}/../../../pz-app-core">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.pz-app-core" depends="compile.module.pz-app-core.production,compile.module.pz-app-core.tests" description="Compile module pz-app-core"/>
+  
+  <target name="compile.module.pz-app-core.production" depends="compile.module.commons,compile.module.pz-core" description="Compile module pz-app-core; production classes">
+    <mkdir dir="${pz-app-core.output.dir}"/>
+    <javac destdir="${pz-app-core.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.pz-app-core}/javac">
+      <compilerarg line="${compiler.args.pz-app-core}"/>
+      <bootclasspath refid="pz-app-core.module.bootclasspath"/>
+      <classpath refid="pz-app-core.module.production.classpath"/>
+      <src refid="pz-app-core.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.pz-app-core"/>
+    </javac>
+    
+    <copy todir="${pz-app-core.output.dir}">
+      <fileset dir="${module.pz-app-core.basedir}/../../../pz-app-core/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.pz-app-core"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.pz-app-core.tests" depends="compile.module.pz-app-core.production" description="compile module pz-app-core; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.pz-app-core" description="cleanup module">
+    <delete dir="${pz-app-core.output.dir}"/>
+    <delete dir="${pz-app-core.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module pz-merchant-core -->
+  
+  <dirname property="module.pz-merchant-core.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.pz-merchant-core" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.pz-merchant-core" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.pz-merchant-core" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.pz-merchant-core" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="pz-merchant-core.output.dir" value="${module.pz-merchant-core.basedir}/../../../pz-merchant-core/target"/>
+  <property name="pz-merchant-core.testoutput.dir" value="${module.pz-merchant-core.basedir}/../../../pz-merchant-core/target"/>
+  
+  <path id="pz-merchant-core.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="pz-merchant-core.module.production.classpath">
+    <path refid="${module.jdk.classpath.pz-merchant-core}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+  </path>
+  
+  <path id="pz-merchant-core.runtime.production.module.classpath">
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="pz-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="pz-merchant-core.module.classpath">
+    <path refid="${module.jdk.classpath.pz-merchant-core}"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+  </path>
+  
+  <path id="pz-merchant-core.runtime.module.classpath">
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="pz-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.pz-merchant-core">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.pz-merchant-core">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.pz-merchant-core"/>
+  </patternset>
+  
+  <path id="pz-merchant-core.module.sourcepath">
+    <dirset dir="${module.pz-merchant-core.basedir}/../../../pz-merchant-core">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.pz-merchant-core" depends="compile.module.pz-merchant-core.production,compile.module.pz-merchant-core.tests" description="Compile module pz-merchant-core"/>
+  
+  <target name="compile.module.pz-merchant-core.production" depends="compile.module.commons,compile.module.pz-core" description="Compile module pz-merchant-core; production classes">
+    <mkdir dir="${pz-merchant-core.output.dir}"/>
+    <javac destdir="${pz-merchant-core.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.pz-merchant-core}/javac">
+      <compilerarg line="${compiler.args.pz-merchant-core}"/>
+      <bootclasspath refid="pz-merchant-core.module.bootclasspath"/>
+      <classpath refid="pz-merchant-core.module.production.classpath"/>
+      <src refid="pz-merchant-core.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.pz-merchant-core"/>
+    </javac>
+    
+    <copy todir="${pz-merchant-core.output.dir}">
+      <fileset dir="${module.pz-merchant-core.basedir}/../../../pz-merchant-core/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.pz-merchant-core"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.pz-merchant-core.tests" depends="compile.module.pz-merchant-core.production" description="compile module pz-merchant-core; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.pz-merchant-core" description="cleanup module">
+    <delete dir="${pz-merchant-core.output.dir}"/>
+    <delete dir="${pz-merchant-core.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module pz-transaction-core -->
+  
+  <dirname property="module.pz-transaction-core.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.pz-transaction-core" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.pz-transaction-core" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.pz-transaction-core" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.pz-transaction-core" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="pz-transaction-core.output.dir" value="${module.pz-transaction-core.basedir}/../../../pz-transaction-core/target"/>
+  <property name="pz-transaction-core.testoutput.dir" value="${module.pz-transaction-core.basedir}/../../../pz-transaction-core/target"/>
+  
+  <path id="pz-transaction-core.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="pz-transaction-core.module.production.classpath">
+    <path refid="${module.jdk.classpath.pz-transaction-core}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+  </path>
+  
+  <path id="pz-transaction-core.runtime.production.module.classpath">
+    <pathelement location="${pz-transaction-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="pz-core.runtime.production.module.classpath"/>
+    <path refid="pz-fraud-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="pz-transaction-core.module.classpath">
+    <path refid="${module.jdk.classpath.pz-transaction-core}"/>
+    <pathelement location="${pz-transaction-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+  </path>
+  
+  <path id="pz-transaction-core.runtime.module.classpath">
+    <pathelement location="${pz-transaction-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="pz-core.runtime.module.classpath"/>
+    <path refid="pz-fraud-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.pz-transaction-core">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.pz-transaction-core">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.pz-transaction-core"/>
+  </patternset>
+  
+  <path id="pz-transaction-core.module.sourcepath">
+    <dirset dir="${module.pz-transaction-core.basedir}/../../../pz-transaction-core">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.pz-transaction-core" depends="compile.module.pz-transaction-core.production,compile.module.pz-transaction-core.tests" description="Compile module pz-transaction-core"/>
+  
+  <target name="compile.module.pz-transaction-core.production" depends="compile.module.commons,compile.module.pz-core,compile.module.pz-fraud-core" description="Compile module pz-transaction-core; production classes">
+    <mkdir dir="${pz-transaction-core.output.dir}"/>
+    <javac destdir="${pz-transaction-core.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.pz-transaction-core}/javac">
+      <compilerarg line="${compiler.args.pz-transaction-core}"/>
+      <bootclasspath refid="pz-transaction-core.module.bootclasspath"/>
+      <classpath refid="pz-transaction-core.module.production.classpath"/>
+      <src refid="pz-transaction-core.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.pz-transaction-core"/>
+    </javac>
+    
+    <copy todir="${pz-transaction-core.output.dir}">
+      <fileset dir="${module.pz-transaction-core.basedir}/../../../pz-transaction-core/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.pz-transaction-core"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.pz-transaction-core.tests" depends="compile.module.pz-transaction-core.production" description="compile module pz-transaction-core; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.pz-transaction-core" description="cleanup module">
+    <delete dir="${pz-transaction-core.output.dir}"/>
+    <delete dir="${pz-transaction-core.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module agent -->
+  
+  <dirname property="module.agent.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.agent" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.agent" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.agent" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.agent" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="agent.output.dir" value="${module.agent.basedir}/../../../agent/target"/>
+  <property name="agent.testoutput.dir" value="${module.agent.basedir}/../../../agent/target"/>
+  
+  <path id="agent.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="agent.module.production.classpath">
+    <path refid="${module.jdk.classpath.agent}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-agent-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+  </path>
+  
+  <path id="agent.runtime.production.module.classpath">
+    <pathelement location="${agent.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="pz-agent-core.runtime.production.module.classpath"/>
+    <path refid="pz-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="agent.module.classpath">
+    <path refid="${module.jdk.classpath.agent}"/>
+    <pathelement location="${agent.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-agent-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+  </path>
+  
+  <path id="agent.runtime.module.classpath">
+    <pathelement location="${agent.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="pz-agent-core.runtime.module.classpath"/>
+    <path refid="pz-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.agent">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.agent">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.agent"/>
+  </patternset>
+  
+  <path id="agent.module.sourcepath">
+    <dirset dir="${module.agent.basedir}/../../../agent">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.agent" depends="compile.module.agent.production,compile.module.agent.tests" description="Compile module agent"/>
+  
+  <target name="compile.module.agent.production" depends="compile.module.commons,compile.module.pz-agent-core,compile.module.pz-core" description="Compile module agent; production classes">
+    <mkdir dir="${agent.output.dir}"/>
+    <javac destdir="${agent.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.agent}/javac">
+      <compilerarg line="${compiler.args.agent}"/>
+      <bootclasspath refid="agent.module.bootclasspath"/>
+      <classpath refid="agent.module.production.classpath"/>
+      <src refid="agent.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.agent"/>
+    </javac>
+    
+    <copy todir="${agent.output.dir}">
+      <fileset dir="${module.agent.basedir}/../../../agent/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.agent"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.agent.tests" depends="compile.module.agent.production" description="compile module agent; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.agent" description="cleanup module">
+    <delete dir="${agent.output.dir}"/>
+    <delete dir="${agent.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module applicationServices -->
+  
+  <dirname property="module.applicationservices.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.applicationservices" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.applicationservices" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.applicationservices" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.applicationservices" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="applicationservices.output.dir" value="${module.applicationservices.basedir}/../../../applicationServices/target"/>
+  <property name="applicationservices.testoutput.dir" value="${module.applicationservices.basedir}/../../../applicationServices/target"/>
+  
+  <path id="applicationservices.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="applicationservices.module.production.classpath">
+    <path refid="${module.jdk.classpath.applicationservices}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-app-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+  </path>
+  
+  <path id="applicationservices.runtime.production.module.classpath">
+    <pathelement location="${applicationservices.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="pz-app-core.runtime.production.module.classpath"/>
+    <path refid="pz-merchant-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="applicationservices.module.classpath">
+    <path refid="${module.jdk.classpath.applicationservices}"/>
+    <pathelement location="${applicationservices.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-app-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+  </path>
+  
+  <path id="applicationservices.runtime.module.classpath">
+    <pathelement location="${applicationservices.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="pz-app-core.runtime.module.classpath"/>
+    <path refid="pz-merchant-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.applicationservices">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.applicationservices">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.applicationservices"/>
+  </patternset>
+  
+  <path id="applicationservices.module.sourcepath">
+    <dirset dir="${module.applicationservices.basedir}/../../../applicationServices">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.applicationservices" depends="compile.module.applicationservices.production,compile.module.applicationservices.tests" description="Compile module applicationServices"/>
+  
+  <target name="compile.module.applicationservices.production" depends="compile.module.commons,compile.module.pz-app-core,compile.module.pz-merchant-core" description="Compile module applicationServices; production classes">
+    <mkdir dir="${applicationservices.output.dir}"/>
+    <javac destdir="${applicationservices.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.applicationservices}/javac">
+      <compilerarg line="${compiler.args.applicationservices}"/>
+      <bootclasspath refid="applicationservices.module.bootclasspath"/>
+      <classpath refid="applicationservices.module.production.classpath"/>
+      <src refid="applicationservices.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.applicationservices"/>
+    </javac>
+    
+    <copy todir="${applicationservices.output.dir}">
+      <fileset dir="${module.applicationservices.basedir}/../../../applicationServices/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.applicationservices"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.applicationservices.tests" depends="compile.module.applicationservices.production" description="compile module applicationServices; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.applicationservices" description="cleanup module">
+    <delete dir="${applicationservices.output.dir}"/>
+    <delete dir="${applicationservices.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module icici -->
+  
+  <dirname property="module.icici.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.icici" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.icici" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.icici" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.icici" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="icici.output.dir" value="${module.icici.basedir}/../../../icici/target"/>
+  <property name="icici.testoutput.dir" value="${module.icici.basedir}/../../../icici/target"/>
+  
+  <path id="icici.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="icici.module.production.classpath">
+    <path refid="${module.jdk.classpath.icici}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-app-core.output.dir}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+  </path>
+  
+  <path id="icici.runtime.production.module.classpath">
+    <pathelement location="${icici.output.dir}"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="pz-merchant-core.runtime.production.module.classpath"/>
+    <path refid="pz-core.runtime.production.module.classpath"/>
+    <path refid="pz-app-core.runtime.production.module.classpath"/>
+    <path refid="pz-fraud-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="icici.module.classpath">
+    <path refid="${module.jdk.classpath.icici}"/>
+    <pathelement location="${icici.output.dir}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-app-core.output.dir}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+  </path>
+  
+  <path id="icici.runtime.module.classpath">
+    <pathelement location="${icici.output.dir}"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="pz-merchant-core.runtime.module.classpath"/>
+    <path refid="pz-core.runtime.module.classpath"/>
+    <path refid="pz-app-core.runtime.module.classpath"/>
+    <path refid="pz-fraud-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.icici">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.icici">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.icici"/>
+  </patternset>
+  
+  <path id="icici.module.sourcepath">
+    <dirset dir="${module.icici.basedir}/../../../icici">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.icici" depends="compile.module.icici.production,compile.module.icici.tests" description="Compile module icici"/>
+  
+  <target name="compile.module.icici.production" depends="compile.module.commons,compile.module.pz-merchant-core,compile.module.pz-core,compile.module.pz-app-core,compile.module.pz-fraud-core" description="Compile module icici; production classes">
+    <mkdir dir="${icici.output.dir}"/>
+    <javac destdir="${icici.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.icici}/javac">
+      <compilerarg line="${compiler.args.icici}"/>
+      <bootclasspath refid="icici.module.bootclasspath"/>
+      <classpath refid="icici.module.production.classpath"/>
+      <src refid="icici.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.icici"/>
+    </javac>
+    
+    <copy todir="${icici.output.dir}">
+      <fileset dir="${module.icici.basedir}/../../../icici/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.icici"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.icici.tests" depends="compile.module.icici.production" description="compile module icici; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.icici" description="cleanup module">
+    <delete dir="${icici.output.dir}"/>
+    <delete dir="${icici.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module invoiceServices -->
+  
+  <dirname property="module.invoiceservices.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.invoiceservices" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.invoiceservices" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.invoiceservices" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.invoiceservices" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="invoiceservices.output.dir" value="${module.invoiceservices.basedir}/../../../invoiceServices/target"/>
+  <property name="invoiceservices.testoutput.dir" value="${module.invoiceservices.basedir}/../../../invoiceServices/target"/>
+  
+  <path id="invoiceservices.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="invoiceservices.module.production.classpath">
+    <path refid="${module.jdk.classpath.invoiceservices}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+  </path>
+  
+  <path id="invoiceservices.runtime.production.module.classpath">
+    <pathelement location="${invoiceservices.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="pz-merchant-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="invoiceservices.module.classpath">
+    <path refid="${module.jdk.classpath.invoiceservices}"/>
+    <pathelement location="${invoiceservices.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+  </path>
+  
+  <path id="invoiceservices.runtime.module.classpath">
+    <pathelement location="${invoiceservices.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="pz-merchant-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.invoiceservices">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.invoiceservices">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.invoiceservices"/>
+  </patternset>
+  
+  <path id="invoiceservices.module.sourcepath">
+    <dirset dir="${module.invoiceservices.basedir}/../../../invoiceServices">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.invoiceservices" depends="compile.module.invoiceservices.production,compile.module.invoiceservices.tests" description="Compile module invoiceServices"/>
+  
+  <target name="compile.module.invoiceservices.production" depends="compile.module.commons,compile.module.pz-merchant-core" description="Compile module invoiceServices; production classes">
+    <mkdir dir="${invoiceservices.output.dir}"/>
+    <javac destdir="${invoiceservices.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.invoiceservices}/javac">
+      <compilerarg line="${compiler.args.invoiceservices}"/>
+      <bootclasspath refid="invoiceservices.module.bootclasspath"/>
+      <classpath refid="invoiceservices.module.production.classpath"/>
+      <src refid="invoiceservices.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.invoiceservices"/>
+    </javac>
+    
+    <copy todir="${invoiceservices.output.dir}">
+      <fileset dir="${module.invoiceservices.basedir}/../../../invoiceServices/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.invoiceservices"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.invoiceservices.tests" depends="compile.module.invoiceservices.production" description="compile module invoiceServices; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.invoiceservices" description="cleanup module">
+    <delete dir="${invoiceservices.output.dir}"/>
+    <delete dir="${invoiceservices.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module merchant -->
+  
+  <dirname property="module.merchant.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.merchant" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.merchant" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.merchant" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.merchant" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="merchant.output.dir" value="${module.merchant.basedir}/../../../merchant/target"/>
+  <property name="merchant.testoutput.dir" value="${module.merchant.basedir}/../../../merchant/target"/>
+  
+  <path id="merchant.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="merchant.module.production.classpath">
+    <path refid="${module.jdk.classpath.merchant}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-app-core.output.dir}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+    <pathelement location="${pz-transaction-core.output.dir}"/>
+  </path>
+  
+  <path id="merchant.runtime.production.module.classpath">
+    <pathelement location="${merchant.output.dir}"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="pz-merchant-core.runtime.production.module.classpath"/>
+    <path refid="pz-core.runtime.production.module.classpath"/>
+    <path refid="pz-app-core.runtime.production.module.classpath"/>
+    <path refid="pz-fraud-core.runtime.production.module.classpath"/>
+    <path refid="pz-transaction-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="merchant.module.classpath">
+    <path refid="${module.jdk.classpath.merchant}"/>
+    <pathelement location="${merchant.output.dir}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-app-core.output.dir}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+    <pathelement location="${pz-transaction-core.output.dir}"/>
+  </path>
+  
+  <path id="merchant.runtime.module.classpath">
+    <pathelement location="${merchant.output.dir}"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="pz-merchant-core.runtime.module.classpath"/>
+    <path refid="pz-core.runtime.module.classpath"/>
+    <path refid="pz-app-core.runtime.module.classpath"/>
+    <path refid="pz-fraud-core.runtime.module.classpath"/>
+    <path refid="pz-transaction-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.merchant">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.merchant">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.merchant"/>
+  </patternset>
+  
+  <path id="merchant.module.sourcepath">
+    <dirset dir="${module.merchant.basedir}/../../../merchant">
+      <include name="src/servlets"/>
+      <include name="src/api"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.merchant" depends="compile.module.merchant.production,compile.module.merchant.tests" description="Compile module merchant"/>
+  
+  <target name="compile.module.merchant.production" depends="compile.module.commons,compile.module.pz-merchant-core,compile.module.pz-core,compile.module.pz-app-core,compile.module.pz-fraud-core,compile.module.pz-transaction-core" description="Compile module merchant; production classes">
+    <mkdir dir="${merchant.output.dir}"/>
+    <javac destdir="${merchant.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.merchant}/javac">
+      <compilerarg line="${compiler.args.merchant}"/>
+      <bootclasspath refid="merchant.module.bootclasspath"/>
+      <classpath refid="merchant.module.production.classpath"/>
+      <src refid="merchant.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.merchant"/>
+    </javac>
+    
+    <copy todir="${merchant.output.dir}">
+      <fileset dir="${module.merchant.basedir}/../../../merchant/src/servlets">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.merchant"/>
+      </fileset>
+      <fileset dir="${module.merchant.basedir}/../../../merchant/src/api">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.merchant"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.merchant.tests" depends="compile.module.merchant.production" description="compile module merchant; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.merchant" description="cleanup module">
+    <delete dir="${merchant.output.dir}"/>
+    <delete dir="${merchant.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module merchantServices -->
+  
+  <dirname property="module.merchantservices.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.merchantservices" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.merchantservices" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.merchantservices" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.merchantservices" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="merchantservices.output.dir" value="${module.merchantservices.basedir}/../../../merchantServices/target"/>
+  <property name="merchantservices.testoutput.dir" value="${module.merchantservices.basedir}/../../../merchantServices/target"/>
+  
+  <path id="merchantservices.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="merchantservices.module.production.classpath">
+    <path refid="${module.jdk.classpath.merchantservices}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+  </path>
+  
+  <path id="merchantservices.runtime.production.module.classpath">
+    <pathelement location="${merchantservices.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="pz-merchant-core.runtime.production.module.classpath"/>
+    <path refid="pz-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="merchantservices.module.classpath">
+    <path refid="${module.jdk.classpath.merchantservices}"/>
+    <pathelement location="${merchantservices.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+  </path>
+  
+  <path id="merchantservices.runtime.module.classpath">
+    <pathelement location="${merchantservices.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="pz-merchant-core.runtime.module.classpath"/>
+    <path refid="pz-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.merchantservices">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.merchantservices">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.merchantservices"/>
+  </patternset>
+  
+  <path id="merchantservices.module.sourcepath">
+    <dirset dir="${module.merchantservices.basedir}/../../../merchantServices">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.merchantservices" depends="compile.module.merchantservices.production,compile.module.merchantservices.tests" description="Compile module merchantServices"/>
+  
+  <target name="compile.module.merchantservices.production" depends="compile.module.commons,compile.module.pz-merchant-core,compile.module.pz-core" description="Compile module merchantServices; production classes">
+    <mkdir dir="${merchantservices.output.dir}"/>
+    <javac destdir="${merchantservices.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.merchantservices}/javac">
+      <compilerarg line="${compiler.args.merchantservices}"/>
+      <bootclasspath refid="merchantservices.module.bootclasspath"/>
+      <classpath refid="merchantservices.module.production.classpath"/>
+      <src refid="merchantservices.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.merchantservices"/>
+    </javac>
+    
+    <copy todir="${merchantservices.output.dir}">
+      <fileset dir="${module.merchantservices.basedir}/../../../merchantServices/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.merchantservices"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.merchantservices.tests" depends="compile.module.merchantservices.production" description="compile module merchantServices; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.merchantservices" description="cleanup module">
+    <delete dir="${merchantservices.output.dir}"/>
+    <delete dir="${merchantservices.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module pz-partner-core -->
+  
+  <dirname property="module.pz-partner-core.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.pz-partner-core" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.pz-partner-core" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.pz-partner-core" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.pz-partner-core" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="pz-partner-core.output.dir" value="${module.pz-partner-core.basedir}/../../../pz-partner-core/target"/>
+  <property name="pz-partner-core.testoutput.dir" value="${module.pz-partner-core.basedir}/../../../pz-partner-core/target"/>
+  
+  <path id="pz-partner-core.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="pz-partner-core.module.production.classpath">
+    <path refid="${module.jdk.classpath.pz-partner-core}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-app-core.output.dir}"/>
+  </path>
+  
+  <path id="pz-partner-core.runtime.production.module.classpath">
+    <pathelement location="${pz-partner-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="pz-core.runtime.production.module.classpath"/>
+    <path refid="pz-app-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="pz-partner-core.module.classpath">
+    <path refid="${module.jdk.classpath.pz-partner-core}"/>
+    <pathelement location="${pz-partner-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${commons.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-app-core.output.dir}"/>
+  </path>
+  
+  <path id="pz-partner-core.runtime.module.classpath">
+    <pathelement location="${pz-partner-core.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="pz-core.runtime.module.classpath"/>
+    <path refid="pz-app-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.pz-partner-core">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.pz-partner-core">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.pz-partner-core"/>
+  </patternset>
+  
+  <path id="pz-partner-core.module.sourcepath">
+    <dirset dir="${module.pz-partner-core.basedir}/../../../pz-partner-core">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.pz-partner-core" depends="compile.module.pz-partner-core.production,compile.module.pz-partner-core.tests" description="Compile module pz-partner-core"/>
+  
+  <target name="compile.module.pz-partner-core.production" depends="compile.module.commons,compile.module.pz-core,compile.module.pz-app-core" description="Compile module pz-partner-core; production classes">
+    <mkdir dir="${pz-partner-core.output.dir}"/>
+    <javac destdir="${pz-partner-core.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.pz-partner-core}/javac">
+      <compilerarg line="${compiler.args.pz-partner-core}"/>
+      <bootclasspath refid="pz-partner-core.module.bootclasspath"/>
+      <classpath refid="pz-partner-core.module.production.classpath"/>
+      <src refid="pz-partner-core.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.pz-partner-core"/>
+    </javac>
+    
+    <copy todir="${pz-partner-core.output.dir}">
+      <fileset dir="${module.pz-partner-core.basedir}/../../../pz-partner-core/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.pz-partner-core"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.pz-partner-core.tests" depends="compile.module.pz-partner-core.production" description="compile module pz-partner-core; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.pz-partner-core" description="cleanup module">
+    <delete dir="${pz-partner-core.output.dir}"/>
+    <delete dir="${pz-partner-core.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module transaction -->
+  
+  <dirname property="module.transaction.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.transaction" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.transaction" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.transaction" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.transaction" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="transaction.output.dir" value="${module.transaction.basedir}/../../../transaction/target"/>
+  <property name="transaction.testoutput.dir" value="${module.transaction.basedir}/../../../transaction/target"/>
+  
+  <path id="transaction.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="transaction.module.production.classpath">
+    <path refid="${module.jdk.classpath.transaction}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-transaction-core.output.dir}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+  </path>
+  
+  <path id="transaction.runtime.production.module.classpath">
+    <pathelement location="${transaction.output.dir}"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="pz-merchant-core.runtime.production.module.classpath"/>
+    <path refid="pz-core.runtime.production.module.classpath"/>
+    <path refid="pz-transaction-core.runtime.production.module.classpath"/>
+    <path refid="pz-fraud-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="transaction.module.classpath">
+    <path refid="${module.jdk.classpath.transaction}"/>
+    <pathelement location="${transaction.output.dir}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-transaction-core.output.dir}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+  </path>
+  
+  <path id="transaction.runtime.module.classpath">
+    <pathelement location="${transaction.output.dir}"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="pz-merchant-core.runtime.module.classpath"/>
+    <path refid="pz-core.runtime.module.classpath"/>
+    <path refid="pz-transaction-core.runtime.module.classpath"/>
+    <path refid="pz-fraud-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.transaction">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.transaction">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.transaction"/>
+  </patternset>
+  
+  <path id="transaction.module.sourcepath">
+    <dirset dir="${module.transaction.basedir}/../../../transaction">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.transaction" depends="compile.module.transaction.production,compile.module.transaction.tests" description="Compile module transaction"/>
+  
+  <target name="compile.module.transaction.production" depends="compile.module.commons,compile.module.pz-merchant-core,compile.module.pz-core,compile.module.pz-transaction-core,compile.module.pz-fraud-core" description="Compile module transaction; production classes">
+    <mkdir dir="${transaction.output.dir}"/>
+    <javac destdir="${transaction.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.transaction}/javac">
+      <compilerarg line="${compiler.args.transaction}"/>
+      <bootclasspath refid="transaction.module.bootclasspath"/>
+      <classpath refid="transaction.module.production.classpath"/>
+      <src refid="transaction.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.transaction"/>
+    </javac>
+    
+    <copy todir="${transaction.output.dir}">
+      <fileset dir="${module.transaction.basedir}/../../../transaction/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.transaction"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.transaction.tests" depends="compile.module.transaction.production" description="compile module transaction; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.transaction" description="cleanup module">
+    <delete dir="${transaction.output.dir}"/>
+    <delete dir="${transaction.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module transactionServices -->
+  
+  <dirname property="module.transactionservices.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.transactionservices" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.transactionservices" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.transactionservices" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.transactionservices" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="transactionservices.output.dir" value="${module.transactionservices.basedir}/../../../transactionServices/target"/>
+  <property name="transactionservices.testoutput.dir" value="${module.transactionservices.basedir}/../../../transactionServices/target"/>
+  
+  <path id="transactionservices.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="transactionservices.module.production.classpath">
+    <path refid="${module.jdk.classpath.transactionservices}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${pz-transaction-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+  </path>
+  
+  <path id="transactionservices.runtime.production.module.classpath">
+    <pathelement location="${transactionservices.output.dir}"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="pz-transaction-core.runtime.production.module.classpath"/>
+    <path refid="pz-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="transactionservices.module.classpath">
+    <path refid="${module.jdk.classpath.transactionservices}"/>
+    <pathelement location="${transactionservices.output.dir}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${pz-transaction-core.output.dir}"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+  </path>
+  
+  <path id="transactionservices.runtime.module.classpath">
+    <pathelement location="${transactionservices.output.dir}"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <path refid="pz-transaction-core.runtime.module.classpath"/>
+    <path refid="pz-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.transactionservices">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.transactionservices">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.transactionservices"/>
+  </patternset>
+  
+  <path id="transactionservices.module.sourcepath">
+    <dirset dir="${module.transactionservices.basedir}/../../../transactionServices">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.transactionservices" depends="compile.module.transactionservices.production,compile.module.transactionservices.tests" description="Compile module transactionServices"/>
+  
+  <target name="compile.module.transactionservices.production" depends="compile.module.commons,compile.module.pz-transaction-core,compile.module.pz-core" description="Compile module transactionServices; production classes">
+    <mkdir dir="${transactionservices.output.dir}"/>
+    <javac destdir="${transactionservices.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.transactionservices}/javac">
+      <compilerarg line="${compiler.args.transactionservices}"/>
+      <bootclasspath refid="transactionservices.module.bootclasspath"/>
+      <classpath refid="transactionservices.module.production.classpath"/>
+      <src refid="transactionservices.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.transactionservices"/>
+    </javac>
+    
+    <copy todir="${transactionservices.output.dir}">
+      <fileset dir="${module.transactionservices.basedir}/../../../transactionServices/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.transactionservices"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.transactionservices.tests" depends="compile.module.transactionservices.production" description="compile module transactionServices; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.transactionservices" description="cleanup module">
+    <delete dir="${transactionservices.output.dir}"/>
+    <delete dir="${transactionservices.testoutput.dir}"/>
+  </target>
+  
+  
+  <!-- Module partner -->
+  
+  <dirname property="module.partner.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.partner" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.partner" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.partner" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.partner" value="-encoding UTF-8 -source 8 ${compiler.args}"/>
+  
+  <property name="partner.output.dir" value="${module.partner.basedir}/../../../partner/target"/>
+  <property name="partner.testoutput.dir" value="${module.partner.basedir}/../../../partner/target"/>
+  
+  <path id="partner.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="partner.module.production.classpath">
+    <path refid="${module.jdk.classpath.partner}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-partner-core.output.dir}"/>
+    <pathelement location="${pz-app-core.output.dir}"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+  </path>
+  
+  <path id="partner.runtime.production.module.classpath">
+    <pathelement location="${partner.output.dir}"/>
+    <path refid="commons.runtime.production.module.classpath"/>
+    <path refid="pz-core.runtime.production.module.classpath"/>
+    <path refid="pz-partner-core.runtime.production.module.classpath"/>
+    <path refid="pz-merchant-core.runtime.production.module.classpath"/>
+    <path refid="pz-app-core.runtime.production.module.classpath"/>
+    <path refid="pz-fraud-core.runtime.production.module.classpath"/>
+  </path>
+  
+  <path id="partner.module.classpath">
+    <path refid="${module.jdk.classpath.partner}"/>
+    <pathelement location="${partner.output.dir}"/>
+    <pathelement location="${commons.output.dir}"/>
+    <path refid="library.transecute_lib.classpath"/>
+    <pathelement location="${pz-core.output.dir}"/>
+    <pathelement location="${pz-partner-core.output.dir}"/>
+    <pathelement location="${pz-app-core.output.dir}"/>
+    <pathelement location="${pz-merchant-core.output.dir}"/>
+    <pathelement location="${pz-fraud-core.output.dir}"/>
+  </path>
+  
+  <path id="partner.runtime.module.classpath">
+    <pathelement location="${partner.output.dir}"/>
+    <path refid="commons.runtime.module.classpath"/>
+    <path refid="pz-core.runtime.module.classpath"/>
+    <path refid="pz-partner-core.runtime.module.classpath"/>
+    <path refid="pz-merchant-core.runtime.module.classpath"/>
+    <path refid="pz-app-core.runtime.module.classpath"/>
+    <path refid="pz-fraud-core.runtime.module.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.partner">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.partner">
+    <patternset refid="compiler.excluded"/>
+    <patternset refid="excluded.from.module.partner"/>
+  </patternset>
+  
+  <path id="partner.module.sourcepath">
+    <dirset dir="${module.partner.basedir}/../../../partner">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.partner" depends="compile.module.partner.production,compile.module.partner.tests" description="Compile module partner"/>
+  
+  <target name="compile.module.partner.production" depends="compile.module.commons,compile.module.pz-core,compile.module.pz-partner-core,compile.module.pz-merchant-core,compile.module.pz-app-core,compile.module.pz-fraud-core" description="Compile module partner; production classes">
+    <mkdir dir="${partner.output.dir}"/>
+    <javac destdir="${partner.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.partner}/javac">
+      <compilerarg line="${compiler.args.partner}"/>
+      <bootclasspath refid="partner.module.bootclasspath"/>
+      <classpath refid="partner.module.production.classpath"/>
+      <src refid="partner.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.partner"/>
+    </javac>
+    
+    <copy todir="${partner.output.dir}">
+      <fileset dir="${module.partner.basedir}/../../../partner/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+        <patternset refid="excluded.from.compilation.partner"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.partner.tests" depends="compile.module.partner.production" description="compile module partner; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.partner" description="cleanup module">
+    <delete dir="${partner.output.dir}"/>
+    <delete dir="${partner.testoutput.dir}"/>
+  </target>
+  
+  <target name="init" description="Build initialization">
+    <!-- Perform any build initialization in this target -->
+  </target>
+  
+  <target name="clean" depends="clean.module.commons, clean.module.newtemplates, clean.module.php, clean.module.order, clean.module.pz-core, clean.module.pz-fraud-core, clean.module.support, clean.module.testmoto, clean.module.fraudservices, clean.module.newfinance, clean.module.pz-agent-core, clean.module.pz-app-core, clean.module.pz-merchant-core, clean.module.pz-transaction-core, clean.module.agent, clean.module.applicationservices, clean.module.icici, clean.module.invoiceservices, clean.module.merchant, clean.module.merchantservices, clean.module.pz-partner-core, clean.module.transaction, clean.module.transactionservices, clean.module.partner, clean.artifact.commons, clean.artifact.pz-agent-core, clean.artifact.pz-app-core, clean.artifact.pz-core, clean.artifact.pz-fraud-core, clean.artifact.pz-merchant-core, clean.artifact.pz-partner-core, clean.artifact.pz-transaction-core" description="cleanup all"/>
+  
+  <target name="build.modules" depends="init, clean, compile.module.commons, compile.module.newtemplates, compile.module.php, compile.module.order, compile.module.pz-core, compile.module.pz-fraud-core, compile.module.support, compile.module.testmoto, compile.module.fraudservices, compile.module.newfinance, compile.module.pz-agent-core, compile.module.pz-app-core, compile.module.pz-merchant-core, compile.module.pz-transaction-core, compile.module.agent, compile.module.applicationservices, compile.module.icici, compile.module.invoiceservices, compile.module.merchant, compile.module.merchantservices, compile.module.pz-partner-core, compile.module.transaction, compile.module.transactionservices, compile.module.partner" description="build all modules"/>
+  
+  <target name="init.artifacts">
+    <property name="artifacts.temp.dir" value="${basedir}/__artifacts_temp"/>
+    <property name="artifact.output.agent" value="${basedir}/../../../commons/target/war"/>
+    <property name="artifact.output.applicationservices" value="${basedir}/../../../commons/target/war"/>
+    <property name="artifact.output.commons" value="${basedir}/../../../commons/target/lib"/>
+    <property name="artifact.output.fraudservices" value="${basedir}/../../../commons/target/war"/>
+    <property name="artifact.output.icici" value="${basedir}/../../../commons/target/war"/>
+    <property name="artifact.output.invoiceservices" value="${basedir}/../../../commons/target/war"/>
+    <property name="artifact.output.merchant" value="${basedir}/../../../commons/target/war"/>
+    <property name="artifact.output.merchantservices" value="${basedir}/../../../commons/target/war"/>
+    <property name="artifact.output.newfinance" value="${basedir}/../../../commons/target/war"/>
+    <property name="artifact.output.newtemplates" value="${basedir}/../../../commons/target/war"/>
+    <property name="artifact.output.order" value="${basedir}/../../../commons/target/war"/>
+    <property name="artifact.output.partner" value="${basedir}/../../../commons/target/war"/>
+    <property name="artifact.output.pz-agent-core" value="${basedir}/../../../commons/target/lib"/>
+    <property name="artifact.output.pz-app-core" value="${basedir}/../../../commons/target/lib"/>
+    <property name="artifact.output.pz-core" value="${basedir}/../../../commons/target/lib"/>
+    <property name="artifact.output.pz-fraud-core" value="${basedir}/../../../commons/target/lib"/>
+    <property name="artifact.output.pz-merchant-core" value="${basedir}/../../../commons/target/lib"/>
+    <property name="artifact.output.pz-partner-core" value="${basedir}/../../../commons/target/lib"/>
+    <property name="artifact.output.pz-transaction-core" value="${basedir}/../../../commons/target/lib"/>
+    <property name="artifact.output.support" value="${basedir}/../../../commons/target/war"/>
+    <property name="artifact.output.testmoto" value="${basedir}/../../../commons/target/war"/>
+    <property name="artifact.output.transaction" value="${basedir}/../../../commons/target/war"/>
+    <property name="artifact.output.transactionservices" value="${basedir}/../../../commons/target/war"/>
+    <mkdir dir="${artifacts.temp.dir}"/>
+    <property name="temp.jar.path.agent.war" value="${artifacts.temp.dir}/agent.war"/>
+    <property name="temp.jar.path.applicationServices.war" value="${artifacts.temp.dir}/applicationServices.war"/>
+    <property name="temp.jar.path.fraudServices.war" value="${artifacts.temp.dir}/fraudServices.war"/>
+    <property name="temp.jar.path.icici.war" value="${artifacts.temp.dir}/icici.war"/>
+    <property name="temp.jar.path.invoiceServices.war" value="${artifacts.temp.dir}/invoiceServices.war"/>
+    <property name="temp.jar.path.merchant.war" value="${artifacts.temp.dir}/merchant.war"/>
+    <property name="temp.jar.path.merchantServices.war" value="${artifacts.temp.dir}/merchantServices.war"/>
+    <property name="temp.jar.path.newfinance.war" value="${artifacts.temp.dir}/newfinance.war"/>
+    <property name="temp.jar.path.newtemplates.war" value="${artifacts.temp.dir}/newtemplates.war"/>
+    <property name="temp.jar.path.order.war" value="${artifacts.temp.dir}/order.war"/>
+    <property name="temp.jar.path.partner.war" value="${artifacts.temp.dir}/partner.war"/>
+    <property name="temp.jar.path.pz-agent-core.jar" value="${artifacts.temp.dir}/pz-agent-core.jar"/>
+    <property name="temp.jar.path.pz-app-core.jar" value="${artifacts.temp.dir}/pz-app-core.jar"/>
+    <property name="temp.jar.path.pz-core.jar" value="${artifacts.temp.dir}/pz-core.jar"/>
+    <property name="temp.jar.path.pz-fraud-core.jar" value="${artifacts.temp.dir}/pz-fraud-core.jar"/>
+    <property name="temp.jar.path.pz-merchant-core.jar" value="${artifacts.temp.dir}/pz-merchant-core.jar"/>
+    <property name="temp.jar.path.pz-partner-core.jar" value="${artifacts.temp.dir}/pz-partner-core.jar"/>
+    <property name="temp.jar.path.pz-transaction-core.jar" value="${artifacts.temp.dir}/pz-transaction-core.jar"/>
+    <property name="temp.jar.path.support.war" value="${artifacts.temp.dir}/support.war"/>
+    <property name="temp.jar.path.testmoto.war" value="${artifacts.temp.dir}/testmoto.war"/>
+    <property name="temp.jar.path.transaction.war" value="${artifacts.temp.dir}/transaction.war"/>
+    <property name="temp.jar.path.transactionServices.war" value="${artifacts.temp.dir}/transactionServices.war"/>
+  </target>
+  
+  <target name="clean.artifact.commons" description="clean commons artifact output">
+    <delete dir="${artifact.output.commons}"/>
+  </target>
+  
+  <target name="clean.artifact.pz-agent-core" description="clean pz-agent-core artifact output">
+    <delete dir="${artifact.output.pz-agent-core}"/>
+  </target>
+  
+  <target name="clean.artifact.pz-app-core" description="clean pz-app-core artifact output">
+    <delete dir="${artifact.output.pz-app-core}"/>
+  </target>
+  
+  <target name="clean.artifact.pz-core" description="clean pz-core artifact output">
+    <delete dir="${artifact.output.pz-core}"/>
+  </target>
+  
+  <target name="clean.artifact.pz-fraud-core" description="clean pz-fraud-core artifact output">
+    <delete dir="${artifact.output.pz-fraud-core}"/>
+  </target>
+  
+  <target name="clean.artifact.pz-merchant-core" description="clean pz-merchant-core artifact output">
+    <delete dir="${artifact.output.pz-merchant-core}"/>
+  </target>
+  
+  <target name="clean.artifact.pz-partner-core" description="clean pz-partner-core artifact output">
+    <delete dir="${artifact.output.pz-partner-core}"/>
+  </target>
+  
+  <target name="clean.artifact.pz-transaction-core" description="clean pz-transaction-core artifact output">
+    <delete dir="${artifact.output.pz-transaction-core}"/>
+  </target>
+  
+  <target name="artifact.agent" depends="init.artifacts, compile.module.agent" description="Build &#39;agent&#39; artifact">
+    <property name="artifact.temp.output.agent" value="${artifacts.temp.dir}/agent"/>
+    <mkdir dir="${artifact.temp.output.agent}"/>
+    <zip destfile="${temp.jar.path.agent.war}">
+      <zipfileset dir="${agent.output.dir}" prefix="WEB-INF/classes"/>
+      <zipfileset dir="${basedir}/../../../agent/web"/>
+      <zipfileset file="${basedir}/../../../agent/web/WEB-INF/web.xml" prefix="WEB-INF"/>
+    </zip>
+    <copy file="${temp.jar.path.agent.war}" tofile="${artifact.temp.output.agent}/agent.war"/>
+  </target>
+  
+  <target name="artifact.applicationservices" depends="init.artifacts, compile.module.applicationservices" description="Build &#39;applicationServices&#39; artifact">
+    <property name="artifact.temp.output.applicationservices" value="${artifacts.temp.dir}/applicationServices"/>
+    <mkdir dir="${artifact.temp.output.applicationservices}"/>
+    <zip destfile="${temp.jar.path.applicationServices.war}">
+      <zipfileset dir="${applicationservices.output.dir}" prefix="WEB-INF/classes"/>
+      <zipfileset dir="${basedir}/../../../applicationServices/web"/>
+      <zipfileset file="${basedir}/../../../applicationServices/web/WEB-INF/web.xml" prefix="WEB-INF"/>
+    </zip>
+    <copy file="${temp.jar.path.applicationServices.war}" tofile="${artifact.temp.output.applicationservices}/applicationServices.war"/>
+  </target>
+  
+  <target name="artifact.commons" depends="init.artifacts, compile.module.commons" description="Build &#39;commons&#39; artifact">
+    <mkdir dir="${artifact.output.commons}"/>
+    <copy todir="${artifact.output.commons}">
+      <fileset dir="${basedir}/../../Configuration/staging8/conf"/>
+    </copy>
+    <mkdir dir="${artifact.output.commons}/com"/>
+    <mkdir dir="${artifact.output.commons}/com/directi"/>
+    <mkdir dir="${artifact.output.commons}/com/directi/pg"/>
+    <copy todir="${artifact.output.commons}/com/directi/pg">
+      <fileset dir="${basedir}/../../Configuration/staging8/properties"/>
+    </copy>
+    <mkdir dir="${artifact.output.commons}/WEB-INF"/>
+    <copy file="${basedir}/../../../commons/web.xml" tofile="${artifact.output.commons}/WEB-INF/web.xml"/>
+    <copy todir="${artifact.output.commons}">
+      <fileset dir="${commons.output.dir}"/>
+    </copy>
+    <copy file="${basedir}/../../../commons/lib/aciplugins_latest_08122012.jar" tofile="${artifact.output.commons}/aciplugins_latest_08122012.jar"/>
+    <copy file="${basedir}/../../../commons/lib/activation.jar" tofile="${artifact.output.commons}/activation.jar"/>
+    <copy file="${basedir}/../../../commons/lib/annotations-api.jar" tofile="${artifact.output.commons}/annotations-api.jar"/>
+    <copy file="${basedir}/../../../commons/lib/apache-mime4j-core-0.7.jar" tofile="${artifact.output.commons}/apache-mime4j-core-0.7.jar"/>
+    <copy file="${basedir}/../../../commons/lib/apache-mime4j-dom-0.7.jar" tofile="${artifact.output.commons}/apache-mime4j-dom-0.7.jar"/>
+    <copy file="${basedir}/../../../commons/lib/asm-1.0.2.jar" tofile="${artifact.output.commons}/asm-1.0.2.jar"/>
+    <copy file="${basedir}/../../../commons/lib/asm-3.1.jar" tofile="${artifact.output.commons}/asm-3.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/asm-5.0.4.jar" tofile="${artifact.output.commons}/asm-5.0.4.jar"/>
+    <copy file="${basedir}/../../../commons/lib/axiom-api-1.2.14.jar" tofile="${artifact.output.commons}/axiom-api-1.2.14.jar"/>
+    <copy file="${basedir}/../../../commons/lib/axis-ant.jar" tofile="${artifact.output.commons}/axis-ant.jar"/>
+    <copy file="${basedir}/../../../commons/lib/axis.jar" tofile="${artifact.output.commons}/axis.jar"/>
+    <copy file="${basedir}/../../../commons/lib/axis2-1.6.2.jar" tofile="${artifact.output.commons}/axis2-1.6.2.jar"/>
+    <copy file="${basedir}/../../../commons/lib/boilerpipe-1.1.0.jar" tofile="${artifact.output.commons}/boilerpipe-1.1.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/catalina-ant.jar" tofile="${artifact.output.commons}/catalina-ant.jar"/>
+    <copy file="${basedir}/../../../commons/lib/catalina-ha.jar" tofile="${artifact.output.commons}/catalina-ha.jar"/>
+    <copy file="${basedir}/../../../commons/lib/catalina-storeconfig.jar" tofile="${artifact.output.commons}/catalina-storeconfig.jar"/>
+    <copy file="${basedir}/../../../commons/lib/catalina-tribes.jar" tofile="${artifact.output.commons}/catalina-tribes.jar"/>
+    <copy file="${basedir}/../../../commons/lib/catalina.jar" tofile="${artifact.output.commons}/catalina.jar"/>
+    <copy file="${basedir}/../../../commons/lib/cglib-nodep-2.2.jar" tofile="${artifact.output.commons}/cglib-nodep-2.2.jar"/>
+    <copy file="${basedir}/../../../commons/lib/client.jar" tofile="${artifact.output.commons}/client.jar"/>
+    <copy file="${basedir}/../../../commons/lib/commons-discovery-0.2.jar" tofile="${artifact.output.commons}/commons-discovery-0.2.jar"/>
+    <copy file="${basedir}/../../../commons/lib/commons-el.jar" tofile="${artifact.output.commons}/commons-el.jar"/>
+    <copy file="${basedir}/../../../commons/lib/commons-fileupload-1.2.jar" tofile="${artifact.output.commons}/commons-fileupload-1.2.jar"/>
+    <copy file="${basedir}/../../../commons/lib/commons-httpclient-3.0.jar" tofile="${artifact.output.commons}/commons-httpclient-3.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/commons-io-1.1.jar" tofile="${artifact.output.commons}/commons-io-1.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/commons-lang-2.0.jar" tofile="${artifact.output.commons}/commons-lang-2.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/commons-logging-1.0.4.jar" tofile="${artifact.output.commons}/commons-logging-1.0.4.jar"/>
+    <copy file="${basedir}/../../../commons/lib/commons-net-3.4.jar" tofile="${artifact.output.commons}/commons-net-3.4.jar"/>
+    <copy file="${basedir}/../../../commons/lib/crawler4j-3.4.1.jar" tofile="${artifact.output.commons}/crawler4j-3.4.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/cryptix32.jar" tofile="${artifact.output.commons}/cryptix32.jar"/>
+    <copy file="${basedir}/../../../commons/lib/dom4j-1.6.1.jar" tofile="${artifact.output.commons}/dom4j-1.6.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/ecj-4.2.2.jar" tofile="${artifact.output.commons}/ecj-4.2.2.jar"/>
+    <copy file="${basedir}/../../../commons/lib/ecj-4.4.1.jar" tofile="${artifact.output.commons}/ecj-4.4.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/ecj-4.4.jar" tofile="${artifact.output.commons}/ecj-4.4.jar"/>
+    <copy file="${basedir}/../../../commons/lib/ecj-4.5.jar" tofile="${artifact.output.commons}/ecj-4.5.jar"/>
+    <copy file="${basedir}/../../../commons/lib/eclipselink-2.5.0.jar" tofile="${artifact.output.commons}/eclipselink-2.5.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/el-api.jar" tofile="${artifact.output.commons}/el-api.jar"/>
+    <copy file="${basedir}/../../../commons/lib/esapi-2.0.1.jar" tofile="${artifact.output.commons}/esapi-2.0.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/geronimo-stax-api_1.0_spec-1.0.1.jar" tofile="${artifact.output.commons}/geronimo-stax-api_1.0_spec-1.0.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/imap.jar" tofile="${artifact.output.commons}/imap.jar"/>
+    <copy file="${basedir}/../../../commons/lib/itext-2.1.7.jar" tofile="${artifact.output.commons}/itext-2.1.7.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jakarta-oro-2.0.5.jar" tofile="${artifact.output.commons}/jakarta-oro-2.0.5.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jakarta-regexp-1.2.jar" tofile="${artifact.output.commons}/jakarta-regexp-1.2.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jasper-el.jar" tofile="${artifact.output.commons}/jasper-el.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jasper.jar" tofile="${artifact.output.commons}/jasper.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jaxb-api.jar" tofile="${artifact.output.commons}/jaxb-api.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jaxm.jar" tofile="${artifact.output.commons}/jaxm.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jaxp.jar" tofile="${artifact.output.commons}/jaxp.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jaxrpc.jar" tofile="${artifact.output.commons}/jaxrpc.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jaxws-rt.jar" tofile="${artifact.output.commons}/jaxws-rt.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jcert.jar" tofile="${artifact.output.commons}/jcert.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jdbc2_0-stdext.jar" tofile="${artifact.output.commons}/jdbc2_0-stdext.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jdom-1.1.jar" tofile="${artifact.output.commons}/jdom-1.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jdom.jar" tofile="${artifact.output.commons}/jdom.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jdring.jar" tofile="${artifact.output.commons}/jdring.jar"/>
+    <copy file="${basedir}/../../../commons/lib/je-4.0.92.jar" tofile="${artifact.output.commons}/je-4.0.92.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jersey-bundle-1.19.jar" tofile="${artifact.output.commons}/jersey-bundle-1.19.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jersey-multipart-1.19.jar" tofile="${artifact.output.commons}/jersey-multipart-1.19.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jettison-1.2.jar" tofile="${artifact.output.commons}/jettison-1.2.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jndi.jar" tofile="${artifact.output.commons}/jndi.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jnet.jar" tofile="${artifact.output.commons}/jnet.jar"/>
+    <copy file="${basedir}/../../../commons/lib/joda-time-1.6.jar" tofile="${artifact.output.commons}/joda-time-1.6.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jsch-0.1.44.jar" tofile="${artifact.output.commons}/jsch-0.1.44.jar"/>
+    <copy file="${basedir}/../../../commons/lib/json-20080701.jar" tofile="${artifact.output.commons}/json-20080701.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jsoup-1.6.3.jar" tofile="${artifact.output.commons}/jsoup-1.6.3.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jsp-api.jar" tofile="${artifact.output.commons}/jsp-api.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jsr250-api-1.0.jar" tofile="${artifact.output.commons}/jsr250-api-1.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jsse.jar" tofile="${artifact.output.commons}/jsse.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jta-spec1_0_1.jar" tofile="${artifact.output.commons}/jta-spec1_0_1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/junit-4.10.jar" tofile="${artifact.output.commons}/junit-4.10.jar"/>
+    <copy file="${basedir}/../../../commons/lib/kxml2-2.3.0.jar" tofile="${artifact.output.commons}/kxml2-2.3.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/kxml2-min-2.3.0.jar" tofile="${artifact.output.commons}/kxml2-min-2.3.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/ldap.jar" tofile="${artifact.output.commons}/ldap.jar"/>
+    <copy file="${basedir}/../../../commons/lib/log4j-1.2.4.jar" tofile="${artifact.output.commons}/log4j-1.2.4.jar"/>
+    <copy file="${basedir}/../../../commons/lib/mail.jar" tofile="${artifact.output.commons}/mail.jar"/>
+    <copy file="${basedir}/../../../commons/lib/mailapi.jar" tofile="${artifact.output.commons}/mailapi.jar"/>
+    <copy file="${basedir}/../../../commons/lib/metadata-extractor-2.4.0-beta-1.jar" tofile="${artifact.output.commons}/metadata-extractor-2.4.0-beta-1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/mimepull-1.6.jar" tofile="${artifact.output.commons}/mimepull-1.6.jar"/>
+    <copy file="${basedir}/../../../commons/lib/mysql-connector-java-5.1.6-bin.jar" tofile="${artifact.output.commons}/mysql-connector-java-5.1.6-bin.jar"/>
+    <copy file="${basedir}/../../../commons/lib/ob_lbutil.jar" tofile="${artifact.output.commons}/ob_lbutil.jar"/>
+    <copy file="${basedir}/../../../commons/lib/paydollar.jar" tofile="${artifact.output.commons}/paydollar.jar"/>
+    <copy file="${basedir}/../../../commons/lib/PaymentClient.jar" tofile="${artifact.output.commons}/PaymentClient.jar"/>
+    <copy file="${basedir}/../../../commons/lib/PMPTDES.jar" tofile="${artifact.output.commons}/PMPTDES.jar"/>
+    <copy file="${basedir}/../../../commons/lib/poi-2.5.1-final-20040804.jar" tofile="${artifact.output.commons}/poi-2.5.1-final-20040804.jar"/>
+    <copy file="${basedir}/../../../commons/lib/pop3.jar" tofile="${artifact.output.commons}/pop3.jar"/>
+    <copy file="${basedir}/../../../commons/lib/saaj.jar" tofile="${artifact.output.commons}/saaj.jar"/>
+    <copy file="${basedir}/../../../commons/lib/sbm-java-plugin-1.8-jar-with-dependencies.jar" tofile="${artifact.output.commons}/sbm-java-plugin-1.8-jar-with-dependencies.jar"/>
+    <copy file="${basedir}/../../../commons/lib/servlet-api.jar" tofile="${artifact.output.commons}/servlet-api.jar"/>
+    <copy file="${basedir}/../../../commons/lib/sfa.jar" tofile="${artifact.output.commons}/sfa.jar"/>
+    <copy file="${basedir}/../../../commons/lib/smtp.jar" tofile="${artifact.output.commons}/smtp.jar"/>
+    <copy file="${basedir}/../../../commons/lib/soap.jar" tofile="${artifact.output.commons}/soap.jar"/>
+    <copy file="${basedir}/../../../commons/lib/SofortLibJavaCore-1.0.2.jar" tofile="${artifact.output.commons}/SofortLibJavaCore-1.0.2.jar"/>
+    <copy file="${basedir}/../../../commons/lib/SofortLibJavaIdeal-1.0.2.jar" tofile="${artifact.output.commons}/SofortLibJavaIdeal-1.0.2.jar"/>
+    <copy file="${basedir}/../../../commons/lib/SofortLibJavaPayment-1.0.2.jar" tofile="${artifact.output.commons}/SofortLibJavaPayment-1.0.2.jar"/>
+    <copy file="${basedir}/../../../commons/lib/SofortLibJavaRefund-1.0.2.jar" tofile="${artifact.output.commons}/SofortLibJavaRefund-1.0.2.jar"/>
+    <copy file="${basedir}/../../../commons/lib/stax-1.2.0.jar" tofile="${artifact.output.commons}/stax-1.2.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/stax-api-1.0.1.jar" tofile="${artifact.output.commons}/stax-api-1.0.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/tagsoup-1.2.1.jar" tofile="${artifact.output.commons}/tagsoup-1.2.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/tika-core-1.0.jar" tofile="${artifact.output.commons}/tika-core-1.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/tika-parsers-1.0.jar" tofile="${artifact.output.commons}/tika-parsers-1.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/tomcat-api.jar" tofile="${artifact.output.commons}/tomcat-api.jar"/>
+    <copy file="${basedir}/../../../commons/lib/tomcat-coyote.jar" tofile="${artifact.output.commons}/tomcat-coyote.jar"/>
+    <copy file="${basedir}/../../../commons/lib/tomcat-dbcp.jar" tofile="${artifact.output.commons}/tomcat-dbcp.jar"/>
+    <copy file="${basedir}/../../../commons/lib/tomcat-jdbc.jar" tofile="${artifact.output.commons}/tomcat-jdbc.jar"/>
+    <copy file="${basedir}/../../../commons/lib/tomcat-jni.jar" tofile="${artifact.output.commons}/tomcat-jni.jar"/>
+    <copy file="${basedir}/../../../commons/lib/tomcat-spdy.jar" tofile="${artifact.output.commons}/tomcat-spdy.jar"/>
+    <copy file="${basedir}/../../../commons/lib/tomcat-util-scan.jar" tofile="${artifact.output.commons}/tomcat-util-scan.jar"/>
+    <copy file="${basedir}/../../../commons/lib/tomcat-util.jar" tofile="${artifact.output.commons}/tomcat-util.jar"/>
+    <copy file="${basedir}/../../../commons/lib/tomcat-websocket.jar" tofile="${artifact.output.commons}/tomcat-websocket.jar"/>
+    <copy file="${basedir}/../../../commons/lib/tomcat7-websocket.jar" tofile="${artifact.output.commons}/tomcat7-websocket.jar"/>
+    <copy file="${basedir}/../../../commons/lib/tyrex-0.9.7.0.jar" tofile="${artifact.output.commons}/tyrex-0.9.7.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/Universal_Java_Plugin_3.2.jar" tofile="${artifact.output.commons}/Universal_Java_Plugin_3.2.jar"/>
+    <copy file="${basedir}/../../../commons/lib/websocket-api.jar" tofile="${artifact.output.commons}/websocket-api.jar"/>
+    <copy file="${basedir}/../../../commons/lib/wsdl4j-1.5.1.jar" tofile="${artifact.output.commons}/wsdl4j-1.5.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/wstx-asl-3.2.7.jar" tofile="${artifact.output.commons}/wstx-asl-3.2.7.jar"/>
+    <copy file="${basedir}/../../../commons/lib/xercesImpl-2.9.1.jar" tofile="${artifact.output.commons}/xercesImpl-2.9.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/xmlbeans-5.3.0-rc1.jar" tofile="${artifact.output.commons}/xmlbeans-5.3.0-rc1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/xmlpull-1.1.3.1.jar" tofile="${artifact.output.commons}/xmlpull-1.1.3.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/xom-1.1.jar" tofile="${artifact.output.commons}/xom-1.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/xpp3_min-1.1.4c.jar" tofile="${artifact.output.commons}/xpp3_min-1.1.4c.jar"/>
+    <copy file="${basedir}/../../../commons/lib/xstream-1.4.3.jar" tofile="${artifact.output.commons}/xstream-1.4.3.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jackson-databind-2.8.4.jar" tofile="${artifact.output.commons}/jackson-databind-2.8.4.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jackson-core-2.8.4.jar" tofile="${artifact.output.commons}/jackson-core-2.8.4.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jackson-annotations-2.8.0.jar" tofile="${artifact.output.commons}/jackson-annotations-2.8.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/java-jwt-3.2.0.jar" tofile="${artifact.output.commons}/java-jwt-3.2.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/httpcore-4.4.6.jar" tofile="${artifact.output.commons}/httpcore-4.4.6.jar"/>
+    <copy file="${basedir}/../../../commons/lib/commons-codec-1.10.jar" tofile="${artifact.output.commons}/commons-codec-1.10.jar"/>
+    <copy file="${basedir}/../../../commons/lib/gson-2.8.1.jar" tofile="${artifact.output.commons}/gson-2.8.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/httpclient-4.5.3.jar" tofile="${artifact.output.commons}/httpclient-4.5.3.jar"/>
+    <copy file="${basedir}/../../../commons/lib/bcpkix-jdk15on-158.jar" tofile="${artifact.output.commons}/bcpkix-jdk15on-158.jar"/>
+    <copy file="${basedir}/../../../commons/lib/bcprov-jdk15on-158.jar" tofile="${artifact.output.commons}/bcprov-jdk15on-158.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jpos-2.1.0.jar" tofile="${artifact.output.commons}/jpos-2.1.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/commons-collections-3.1.jar" tofile="${artifact.output.commons}/commons-collections-3.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/bcpg-jdk15on-1.52.jar" tofile="${artifact.output.commons}/bcpg-jdk15on-1.52.jar"/>
+    <copy file="${basedir}/../../../commons/lib/bsh-2.0b5.jar" tofile="${artifact.output.commons}/bsh-2.0b5.jar"/>
+    <copy file="${basedir}/../../../commons/lib/commons-cli-1.3.1.jar" tofile="${artifact.output.commons}/commons-cli-1.3.1.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jdbm-1.0.jar" tofile="${artifact.output.commons}/jdbm-1.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/javatuples-1.2.jar" tofile="${artifact.output.commons}/javatuples-1.2.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jdom2-2.0.6.jar" tofile="${artifact.output.commons}/jdom2-2.0.6.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jline-1.0.jar" tofile="${artifact.output.commons}/jline-1.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/org.osgi.core-6.0.0.jar" tofile="${artifact.output.commons}/org.osgi.core-6.0.0.jar"/>
+    <copy file="${basedir}/../../../commons/lib/xml-apis-1.4.01.jar" tofile="${artifact.output.commons}/xml-apis-1.4.01.jar"/>
+    <copy file="${basedir}/../../../commons/lib/agAES.jar" tofile="${artifact.output.commons}/agAES.jar"/>
+    <copy file="${basedir}/../../../commons/lib/jbcrypt-0.4.jar" tofile="${artifact.output.commons}/jbcrypt-0.4.jar"/>
+  </target>
+  
+  <target name="artifact.fraudservices" depends="init.artifacts, compile.module.fraudservices" description="Build &#39;fraudServices&#39; artifact">
+    <property name="artifact.temp.output.fraudservices" value="${artifacts.temp.dir}/fraudServices"/>
+    <mkdir dir="${artifact.temp.output.fraudservices}"/>
+    <zip destfile="${temp.jar.path.fraudServices.war}">
+      <zipfileset dir="${fraudservices.output.dir}" prefix="WEB-INF/classes"/>
+      <zipfileset dir="${basedir}/../../../fraudServices/web"/>
+      <zipfileset file="${basedir}/../../../fraudServices/web/WEB-INF/web.xml" prefix="WEB-INF"/>
+    </zip>
+    <copy file="${temp.jar.path.fraudServices.war}" tofile="${artifact.temp.output.fraudservices}/fraudServices.war"/>
+  </target>
+  
+  <target name="artifact.icici" depends="init.artifacts, compile.module.icici" description="Build &#39;icici&#39; artifact">
+    <property name="artifact.temp.output.icici" value="${artifacts.temp.dir}/icici"/>
+    <mkdir dir="${artifact.temp.output.icici}"/>
+    <zip destfile="${temp.jar.path.icici.war}">
+      <zipfileset dir="${icici.output.dir}" prefix="WEB-INF/classes"/>
+      <zipfileset dir="${basedir}/../../../icici/web"/>
+      <zipfileset file="${basedir}/../../../icici/web/WEB-INF/web.xml" prefix="WEB-INF"/>
+    </zip>
+    <copy file="${temp.jar.path.icici.war}" tofile="${artifact.temp.output.icici}/icici.war"/>
+  </target>
+  
+  <target name="artifact.invoiceservices" depends="init.artifacts, compile.module.invoiceservices" description="Build &#39;invoiceServices&#39; artifact">
+    <property name="artifact.temp.output.invoiceservices" value="${artifacts.temp.dir}/invoiceServices"/>
+    <mkdir dir="${artifact.temp.output.invoiceservices}"/>
+    <zip destfile="${temp.jar.path.invoiceServices.war}">
+      <zipfileset dir="${basedir}/../../../invoiceServices/web"/>
+      <zipfileset file="${basedir}/../../../invoiceServices/web/WEB-INF/web.xml" prefix="WEB-INF"/>
+      <zipfileset dir="${invoiceservices.output.dir}" prefix="WEB-INF/classes"/>
+    </zip>
+    <copy file="${temp.jar.path.invoiceServices.war}" tofile="${artifact.temp.output.invoiceservices}/invoiceServices.war"/>
+  </target>
+  
+  <target name="artifact.merchant" depends="init.artifacts, compile.module.merchant" description="Build &#39;merchant&#39; artifact">
+    <property name="artifact.temp.output.merchant" value="${artifacts.temp.dir}/merchant"/>
+    <mkdir dir="${artifact.temp.output.merchant}"/>
+    <zip destfile="${temp.jar.path.merchant.war}">
+      <zipfileset dir="${merchant.output.dir}" prefix="WEB-INF/classes"/>
+      <zipfileset dir="${basedir}/../../../merchant/web"/>
+      <zipfileset file="${basedir}/../../../merchant/web/WEB-INF/web.xml" prefix="WEB-INF"/>
+    </zip>
+    <copy file="${temp.jar.path.merchant.war}" tofile="${artifact.temp.output.merchant}/merchant.war"/>
+  </target>
+  
+  <target name="artifact.merchantservices" depends="init.artifacts, compile.module.merchantservices" description="Build &#39;merchantServices&#39; artifact">
+    <property name="artifact.temp.output.merchantservices" value="${artifacts.temp.dir}/merchantServices"/>
+    <mkdir dir="${artifact.temp.output.merchantservices}"/>
+    <zip destfile="${temp.jar.path.merchantServices.war}">
+      <zipfileset dir="${basedir}/../../../merchantServices/web"/>
+      <zipfileset file="${basedir}/../../../merchantServices/web/WEB-INF/web.xml" prefix="WEB-INF"/>
+      <zipfileset dir="${merchantservices.output.dir}" prefix="WEB-INF/classes"/>
+    </zip>
+    <copy file="${temp.jar.path.merchantServices.war}" tofile="${artifact.temp.output.merchantservices}/merchantServices.war"/>
+  </target>
+  
+  <target name="artifact.newfinance" depends="init.artifacts, compile.module.newfinance" description="Build &#39;newfinance&#39; artifact">
+    <property name="artifact.temp.output.newfinance" value="${artifacts.temp.dir}/newfinance"/>
+    <mkdir dir="${artifact.temp.output.newfinance}"/>
+    <zip destfile="${temp.jar.path.newfinance.war}">
+      <zipfileset dir="${newfinance.output.dir}" prefix="WEB-INF/classes"/>
+      <zipfileset dir="${basedir}/../../../newfinance/web"/>
+      <zipfileset file="${basedir}/../../../newfinance/web/WEB-INF/web.xml" prefix="WEB-INF"/>
+    </zip>
+    <copy file="${temp.jar.path.newfinance.war}" tofile="${artifact.temp.output.newfinance}/newfinance.war"/>
+  </target>
+  
+  <target name="artifact.newtemplates" depends="init.artifacts, compile.module.newtemplates" description="Build &#39;newtemplates&#39; artifact">
+    <property name="artifact.temp.output.newtemplates" value="${artifacts.temp.dir}/newtemplates"/>
+    <mkdir dir="${artifact.temp.output.newtemplates}"/>
+    <zip destfile="${temp.jar.path.newtemplates.war}">
+      <zipfileset dir="${newtemplates.output.dir}" prefix="WEB-INF/classes"/>
+      <zipfileset dir="${basedir}/../../../newtemplates/WEB-INF" prefix="WEB-INF"/>
+      <zipfileset file="${basedir}/../../../newtemplates/WEB-INF/web.xml" prefix="WEB-INF"/>
+    </zip>
+    <copy file="${temp.jar.path.newtemplates.war}" tofile="${artifact.temp.output.newtemplates}/newtemplates.war"/>
+  </target>
+  
+  <target name="artifact.order" depends="init.artifacts, compile.module.order" description="Build &#39;order&#39; artifact">
+    <property name="artifact.temp.output.order" value="${artifacts.temp.dir}/order"/>
+    <mkdir dir="${artifact.temp.output.order}"/>
+    <zip destfile="${temp.jar.path.order.war}">
+      <zipfileset dir="${order.output.dir}" prefix="WEB-INF/classes"/>
+      <zipfileset dir="${basedir}/../../../order/web"/>
+      <zipfileset file="${basedir}/../../../order/web/WEB-INF/web.xml" prefix="WEB-INF"/>
+    </zip>
+    <copy file="${temp.jar.path.order.war}" tofile="${artifact.temp.output.order}/order.war"/>
+  </target>
+  
+  <target name="artifact.partner" depends="init.artifacts, compile.module.partner" description="Build &#39;partner&#39; artifact">
+    <property name="artifact.temp.output.partner" value="${artifacts.temp.dir}/partner"/>
+    <mkdir dir="${artifact.temp.output.partner}"/>
+    <zip destfile="${temp.jar.path.partner.war}">
+      <zipfileset dir="${partner.output.dir}" prefix="WEB-INF/classes"/>
+      <zipfileset dir="${basedir}/../../../partner/web"/>
+      <zipfileset file="${basedir}/../../../partner/web/WEB-INF/web.xml" prefix="WEB-INF"/>
+    </zip>
+    <copy file="${temp.jar.path.partner.war}" tofile="${artifact.temp.output.partner}/partner.war"/>
+  </target>
+  
+  <target name="artifact.pz-agent-core" depends="init.artifacts, compile.module.pz-agent-core" description="Build &#39;pz-agent-core&#39; artifact">
+    <mkdir dir="${artifact.output.pz-agent-core}"/>
+    <jar destfile="${temp.jar.path.pz-agent-core.jar}" duplicate="preserve" filesetmanifest="mergewithoutmain">
+      <zipfileset file="${basedir}/../../../pz-agent-core/src/META-INF/MANIFEST.MF" prefix="META-INF"/>
+      <zipfileset dir="${pz-agent-core.output.dir}"/>
+    </jar>
+    <copy file="${temp.jar.path.pz-agent-core.jar}" tofile="${artifact.output.pz-agent-core}/pz-agent-core.jar"/>
+  </target>
+  
+  <target name="artifact.pz-app-core" depends="init.artifacts, compile.module.pz-app-core" description="Build &#39;pz-app-core&#39; artifact">
+    <mkdir dir="${artifact.output.pz-app-core}"/>
+    <jar destfile="${temp.jar.path.pz-app-core.jar}" duplicate="preserve" filesetmanifest="mergewithoutmain">
+      <zipfileset file="${basedir}/../../../pz-app-core/src/META-INF/MANIFEST.MF" prefix="META-INF"/>
+      <zipfileset dir="${pz-app-core.output.dir}"/>
+    </jar>
+    <copy file="${temp.jar.path.pz-app-core.jar}" tofile="${artifact.output.pz-app-core}/pz-app-core.jar"/>
+  </target>
+  
+  <target name="artifact.pz-core" depends="init.artifacts, compile.module.pz-core" description="Build &#39;pz-core&#39; artifact">
+    <mkdir dir="${artifact.output.pz-core}"/>
+    <jar destfile="${temp.jar.path.pz-core.jar}" duplicate="preserve" filesetmanifest="mergewithoutmain">
+      <zipfileset file="${basedir}/../../../pz-core/src/META-INF/MANIFEST.MF" prefix="META-INF"/>
+      <zipfileset dir="${pz-core.output.dir}"/>
+    </jar>
+    <copy file="${temp.jar.path.pz-core.jar}" tofile="${artifact.output.pz-core}/pz-core.jar"/>
+  </target>
+  
+  <target name="artifact.pz-fraud-core" depends="init.artifacts, compile.module.pz-fraud-core" description="Build &#39;pz-fraud-core&#39; artifact">
+    <mkdir dir="${artifact.output.pz-fraud-core}"/>
+    <jar destfile="${temp.jar.path.pz-fraud-core.jar}" duplicate="preserve" filesetmanifest="mergewithoutmain">
+      <zipfileset dir="${pz-fraud-core.output.dir}"/>
+      <zipfileset file="${basedir}/../../../pz-fraud-core/src/META-INF/MANIFEST.MF" prefix="META-INF"/>
+    </jar>
+    <copy file="${temp.jar.path.pz-fraud-core.jar}" tofile="${artifact.output.pz-fraud-core}/pz-fraud-core.jar"/>
+  </target>
+  
+  <target name="artifact.pz-merchant-core" depends="init.artifacts, compile.module.pz-merchant-core" description="Build &#39;pz-merchant-core&#39; artifact">
+    <mkdir dir="${artifact.output.pz-merchant-core}"/>
+    <jar destfile="${temp.jar.path.pz-merchant-core.jar}" duplicate="preserve" filesetmanifest="mergewithoutmain">
+      <zipfileset file="${basedir}/../../../pz-merchant-core/src/META-INF/MANIFEST.MF" prefix="META-INF"/>
+      <zipfileset dir="${pz-merchant-core.output.dir}"/>
+    </jar>
+    <copy file="${temp.jar.path.pz-merchant-core.jar}" tofile="${artifact.output.pz-merchant-core}/pz-merchant-core.jar"/>
+  </target>
+  
+  <target name="artifact.pz-partner-core" depends="init.artifacts, compile.module.pz-partner-core" description="Build &#39;pz-partner-core&#39; artifact">
+    <mkdir dir="${artifact.output.pz-partner-core}"/>
+    <jar destfile="${temp.jar.path.pz-partner-core.jar}" duplicate="preserve" filesetmanifest="mergewithoutmain">
+      <zipfileset file="${basedir}/../../../pz-partner-core/src/META-INF/MANIFEST.MF" prefix="META-INF"/>
+      <zipfileset dir="${pz-partner-core.output.dir}"/>
+    </jar>
+    <copy file="${temp.jar.path.pz-partner-core.jar}" tofile="${artifact.output.pz-partner-core}/pz-partner-core.jar"/>
+  </target>
+  
+  <target name="artifact.pz-transaction-core" depends="init.artifacts, compile.module.pz-transaction-core" description="Build &#39;pz-transaction-core&#39; artifact">
+    <mkdir dir="${artifact.output.pz-transaction-core}"/>
+    <jar destfile="${temp.jar.path.pz-transaction-core.jar}" duplicate="preserve" filesetmanifest="mergewithoutmain">
+      <zipfileset file="${basedir}/../../../pz-transaction-core/src/META-INF/MANIFEST.MF" prefix="META-INF"/>
+      <zipfileset dir="${pz-transaction-core.output.dir}"/>
+    </jar>
+    <copy file="${temp.jar.path.pz-transaction-core.jar}" tofile="${artifact.output.pz-transaction-core}/pz-transaction-core.jar"/>
+  </target>
+  
+  <target name="artifact.support" depends="init.artifacts, compile.module.support" description="Build &#39;support&#39; artifact">
+    <property name="artifact.temp.output.support" value="${artifacts.temp.dir}/support"/>
+    <mkdir dir="${artifact.temp.output.support}"/>
+    <zip destfile="${temp.jar.path.support.war}">
+      <zipfileset dir="${support.output.dir}" prefix="WEB-INF/classes"/>
+      <zipfileset dir="${basedir}/../../../support/web"/>
+      <zipfileset file="${basedir}/../../../support/web/WEB-INF/web.xml" prefix="WEB-INF"/>
+    </zip>
+    <copy file="${temp.jar.path.support.war}" tofile="${artifact.temp.output.support}/support.war"/>
+  </target>
+  
+  <target name="artifact.testmoto" depends="init.artifacts, compile.module.testmoto" description="Build &#39;testmoto&#39; artifact">
+    <property name="artifact.temp.output.testmoto" value="${artifacts.temp.dir}/testmoto"/>
+    <mkdir dir="${artifact.temp.output.testmoto}"/>
+    <zip destfile="${temp.jar.path.testmoto.war}">
+      <zipfileset dir="${testmoto.output.dir}" prefix="WEB-INF/classes"/>
+      <zipfileset dir="${basedir}/../../../testmoto/web"/>
+      <zipfileset file="${basedir}/../../../testmoto/web/WEB-INF/web.xml" prefix="WEB-INF"/>
+    </zip>
+    <copy file="${temp.jar.path.testmoto.war}" tofile="${artifact.temp.output.testmoto}/testmoto.war"/>
+  </target>
+  
+  <target name="artifact.transaction" depends="init.artifacts, compile.module.transaction" description="Build &#39;transaction&#39; artifact">
+    <property name="artifact.temp.output.transaction" value="${artifacts.temp.dir}/transaction"/>
+    <mkdir dir="${artifact.temp.output.transaction}"/>
+    <zip destfile="${temp.jar.path.transaction.war}">
+      <zipfileset dir="${transaction.output.dir}" prefix="WEB-INF/classes"/>
+      <zipfileset dir="${basedir}/../../../transaction/web"/>
+      <zipfileset file="${basedir}/../../../transaction/web/WEB-INF/web.xml" prefix="WEB-INF"/>
+    </zip>
+    <copy file="${temp.jar.path.transaction.war}" tofile="${artifact.temp.output.transaction}/transaction.war"/>
+  </target>
+  
+  <target name="artifact.transactionservices" depends="init.artifacts, compile.module.transactionservices" description="Build &#39;transactionServices&#39; artifact">
+    <property name="artifact.temp.output.transactionservices" value="${artifacts.temp.dir}/transactionServices"/>
+    <mkdir dir="${artifact.temp.output.transactionservices}"/>
+    <zip destfile="${temp.jar.path.transactionServices.war}">
+      <zipfileset dir="${transactionservices.output.dir}" prefix="WEB-INF/classes"/>
+      <zipfileset dir="${basedir}/../../../transactionServices/web"/>
+      <zipfileset file="${basedir}/../../../transactionServices/web/WEB-INF/web.xml" prefix="WEB-INF"/>
+    </zip>
+    <copy file="${temp.jar.path.transactionServices.war}" tofile="${artifact.temp.output.transactionservices}/transactionServices.war"/>
+  </target>
+  
+  <target name="build.all.artifacts" depends="artifact.agent, artifact.applicationservices, artifact.commons, artifact.fraudservices, artifact.icici, artifact.invoiceservices, artifact.merchant, artifact.merchantservices, artifact.newfinance, artifact.newtemplates, artifact.order, artifact.partner, artifact.pz-agent-core, artifact.pz-app-core, artifact.pz-core, artifact.pz-fraud-core, artifact.pz-merchant-core, artifact.pz-partner-core, artifact.pz-transaction-core, artifact.support, artifact.testmoto, artifact.transaction, artifact.transactionservices" description="Build all artifacts">
+    <mkdir dir="${artifact.output.agent}"/>
+    <copy todir="${artifact.output.agent}">
+      <fileset dir="${artifact.temp.output.agent}"/>
+    </copy>
+    <mkdir dir="${artifact.output.applicationservices}"/>
+    <copy todir="${artifact.output.applicationservices}">
+      <fileset dir="${artifact.temp.output.applicationservices}"/>
+    </copy>
+    <mkdir dir="${artifact.output.fraudservices}"/>
+    <copy todir="${artifact.output.fraudservices}">
+      <fileset dir="${artifact.temp.output.fraudservices}"/>
+    </copy>
+    <mkdir dir="${artifact.output.icici}"/>
+    <copy todir="${artifact.output.icici}">
+      <fileset dir="${artifact.temp.output.icici}"/>
+    </copy>
+    <mkdir dir="${artifact.output.invoiceservices}"/>
+    <copy todir="${artifact.output.invoiceservices}">
+      <fileset dir="${artifact.temp.output.invoiceservices}"/>
+    </copy>
+    <mkdir dir="${artifact.output.merchant}"/>
+    <copy todir="${artifact.output.merchant}">
+      <fileset dir="${artifact.temp.output.merchant}"/>
+    </copy>
+    <mkdir dir="${artifact.output.merchantservices}"/>
+    <copy todir="${artifact.output.merchantservices}">
+      <fileset dir="${artifact.temp.output.merchantservices}"/>
+    </copy>
+    <mkdir dir="${artifact.output.newfinance}"/>
+    <copy todir="${artifact.output.newfinance}">
+      <fileset dir="${artifact.temp.output.newfinance}"/>
+    </copy>
+    <mkdir dir="${artifact.output.newtemplates}"/>
+    <copy todir="${artifact.output.newtemplates}">
+      <fileset dir="${artifact.temp.output.newtemplates}"/>
+    </copy>
+    <mkdir dir="${artifact.output.order}"/>
+    <copy todir="${artifact.output.order}">
+      <fileset dir="${artifact.temp.output.order}"/>
+    </copy>
+    <mkdir dir="${artifact.output.partner}"/>
+    <copy todir="${artifact.output.partner}">
+      <fileset dir="${artifact.temp.output.partner}"/>
+    </copy>
+    <mkdir dir="${artifact.output.support}"/>
+    <copy todir="${artifact.output.support}">
+      <fileset dir="${artifact.temp.output.support}"/>
+    </copy>
+    <mkdir dir="${artifact.output.testmoto}"/>
+    <copy todir="${artifact.output.testmoto}">
+      <fileset dir="${artifact.temp.output.testmoto}"/>
+    </copy>
+    <mkdir dir="${artifact.output.transaction}"/>
+    <copy todir="${artifact.output.transaction}">
+      <fileset dir="${artifact.temp.output.transaction}"/>
+    </copy>
+    <mkdir dir="${artifact.output.transactionservices}"/>
+    <copy todir="${artifact.output.transactionservices}">
+      <fileset dir="${artifact.temp.output.transactionservices}"/>
+    </copy>
+    
+    <!-- Delete temporary files -->
+    <delete dir="${artifacts.temp.dir}"/>
+  </target>
+  
+  <target name="all" depends="build.modules, build.all.artifacts" description="build all"/>
+</project>

@@ -1,0 +1,908 @@
+package com.transaction.vo.restVO.RequestVO;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
+/**
+ * Created by Sneha on 6/20/2016.
+ */
+@XmlRootElement(name="restPaymentRequestVO")
+@XmlAccessorType(XmlAccessType.FIELD)
+public class RestPaymentRequestVO
+{
+    @XmlElement(name="authentication")
+    AuthenticationVO authenticationVO;
+
+    @XmlElement(name="marketplace")
+    MarketPlace[] marketPlace;
+
+    @XmlElement(name="paymentId")
+    String id;
+
+    @XmlElement(name="amount")
+    String amount;
+
+    @XmlElement(name="currency")
+    String currency;
+
+    @XmlElement(name="actionType")
+    String actionType;
+
+    @XmlElement(name="paymentBrand")
+    String paymentBrand;
+
+    @XmlElement(name="paymentMode")
+    String paymentMode;
+
+    @XmlElement(name="paymentType")
+    String paymentType;
+
+    @XmlElement(name="orderDescriptor")
+    String orderDescriptor;
+
+    @XmlElement(name="merchantTransactionId")
+    String merchantTransactionId;
+
+    @XmlElement(name="createRegistration")
+    String createRegistration;
+
+    @XmlElement(name="recurringType")
+    String recurringType;
+
+    @XmlElement(name="merchantRedirectUrl")
+    String merchantRedirectUrl;
+
+    @XmlElement(name="notificationUrl")
+    String notificationUrl;
+
+    @XmlElement(name="responseType")
+    String responseType;
+
+    @XmlElement(name="cancelReason")
+    String cancelReason;
+
+    @XmlElement(name="customParameters")
+    String[] customParameters;
+
+    @XmlElement(name="card")
+    CardVO cardVO;
+
+    @XmlElement(name="virtualAccount")
+    VirtualAccountVO virtualAccountVO;
+
+    @XmlElement(name="bankAccount")
+    BankAccountVO bankAccountVO;
+
+    @XmlElement(name="customer")
+    CustomerVO customerVO;
+
+    @XmlElement(name="shipping")
+    ShippingAddressVO shippingAddressVO;
+
+    @XmlElement(name="billingAddress")
+    BillingAddressVO billingAddressVO;
+
+    @XmlElement(name="threeDSecure")
+    ThreeDSecureVO threeDSecureVO;
+
+    @XmlElement(name="date")
+    DateVO date;
+
+    @XmlElement(name="merchant")
+    MerchantVO merchant;
+
+    @XmlElement(name="partner.userName")
+    String partnerUserName;
+
+    @XmlElement(name="pagination")
+    PaginationVO paginationVO;
+
+    @XmlElement(name="custAccount")
+    String custAccount;
+
+    @XmlElement(name="idType")
+    String idType;
+
+    @XmlElement(name="paymentId")
+    String paymentId;
+
+    @XmlElement(name="authToken")
+    String authToken;
+
+    @XmlElement(name="expDateOffset")
+    String expDateOffset;
+
+    @XmlElement(name="tmpl_amount")
+    String tmpl_amount;
+
+    @XmlElement(name="tmpl_currency")
+    String tmpl_currency;
+
+    @XmlElement(name="attemptThreeD")
+    String attemptThreeD;
+
+    @XmlElement(name="payoutType")
+    String payoutType;
+
+    @XmlElement(name="status")
+    String status;
+
+    @XmlElement(name="installment")
+    String installment;
+
+    @XmlElement(name="redirectMethod")
+    String redirectMethod;
+
+    @XmlElement(name="memberId")
+    String memberId;
+
+    @XmlElement(name="memberGuid")
+    String memberGuid;
+
+    @XmlElement(name="trackingMemberCode")
+    String trackingMemberCode;
+
+    @XmlElement(name="referenceId")
+    String referenceId;
+
+    @XmlElement(name ="deviceType")
+    String deviceType;
+
+    @XmlElement(name="merchantAccountType")
+    String merchantAccountType;
+
+    @XmlElement(name="country")
+    String country;
+
+    @XmlElement(name="orderNumber")
+    String orderNumber;
+
+    @XmlElement(name="orderDesc")
+    String orderDesc;
+
+    @XmlElement(name="smsCode")
+    String smsCode;
+
+    @XmlElement(name="transactionReceipt")
+    String transactionReceipt;
+
+    @XmlElement(name="paymentProvider")
+    String paymentProvider;
+
+    @XmlElement(name="vpa_address")
+    String vpa_address;
+
+    @XmlElement(name="purchase_identifier")
+    String purchase_identifier;
+
+    @XmlElement(name="cardHolderAccountInfo")
+    CardHolderAccountInfoVO CardHolderAccountInfoVO;
+
+    @XmlElement(name="deviceDetails")
+    DeviceDetailsVO deviceDetailsVO;
+
+    @XmlElement(name="transactionDate")
+    String transactionDate;
+
+
+    @XmlElement(name="transactionType")
+    String transactionType;
+
+
+    @XmlElement(name="personalAccountNumber")
+    String personalAccountNumber;
+
+    @XmlElement(name="client_transaction_id")
+    String clientTransactionId;
+
+    @XmlElement(name="refund_amount")
+    String refundAmount;
+
+    @XmlElement(name="refund_currency")
+    String refundCurrency;
+
+    @XmlElement(name="merchant_id")
+    String merchant_id;
+
+    @XmlElement(name="authorization_code")
+    String authorization_code;
+
+    @XmlElement(name="rrn")
+    String rrn;
+
+    @XmlElement(name="arn")
+    String arn;
+
+    @XmlElement(name="stan")
+    String stan;
+
+    @XmlElement(name="call_type")
+    String call_type;
+
+    @XmlElement(name="cardVO")
+    CardVO[] card1;
+
+    public AuthenticationVO getAuthenticationVO()
+    {
+        return authenticationVO;
+    }
+
+    public void setAuthenticationVO(AuthenticationVO authenticationVO)
+    {
+        this.authenticationVO = authenticationVO;
+    }
+
+    public String getId()
+    {
+        return id;
+    }
+
+    public void setId(String id)
+    {
+        this.id = id;
+    }
+
+    public String getAmount()
+    {
+        return amount;
+    }
+
+    public void setAmount(String amount)
+    {
+        this.amount = amount;
+    }
+
+    public String getCurrency()
+    {
+        return currency;
+    }
+
+    public void setCurrency(String currency)
+    {
+        this.currency = currency;
+    }
+
+    public String getActionType()
+    {
+        return actionType;
+    }
+
+    public void setActionType(String actionType)
+    {
+        this.actionType = actionType;
+    }
+
+    public String getPaymentBrand()
+    {
+        return paymentBrand;
+    }
+
+    public void setPaymentBrand(String paymentBrand)
+    {
+        this.paymentBrand = paymentBrand;
+    }
+
+    public String getPaymentMode()
+    {
+        return paymentMode;
+    }
+
+    public void setPaymentMode(String paymentMode)
+    {
+        this.paymentMode = paymentMode;
+    }
+
+    public String getPaymentType()
+    {
+        return paymentType;
+    }
+
+    public void setPaymentType(String paymentType)
+    {
+        this.paymentType = paymentType;
+    }
+
+    public String getOrderDescriptor()
+    {
+        return orderDescriptor;
+    }
+
+    public void setOrderDescriptor(String orderDescriptor)
+    {
+        this.orderDescriptor = orderDescriptor;
+    }
+
+    public String getMerchantTransactionId()
+    {
+        return merchantTransactionId;
+    }
+
+    public void setMerchantTransactionId(String merchantTransactionId)
+    {
+        this.merchantTransactionId = merchantTransactionId;
+    }
+
+    public String getCreateRegistration()
+    {
+        return createRegistration;
+    }
+
+    public void setCreateRegistration(String createRegistration)
+    {
+        this.createRegistration = createRegistration;
+    }
+
+    public String getRecurringType()
+    {
+        return recurringType;
+    }
+
+    public void setRecurringType(String recurringType)
+    {
+        this.recurringType = recurringType;
+    }
+
+    public String getMerchantRedirectUrl()
+    {
+        return merchantRedirectUrl;
+    }
+
+    public void setMerchantRedirectUrl(String merchantRedirectUrl)
+    {
+        this.merchantRedirectUrl = merchantRedirectUrl;
+    }
+
+    public String getNotificationUrl()
+    {
+        return notificationUrl;
+    }
+
+    public void setNotificationUrl(String notificationUrl)
+    {
+        this.notificationUrl = notificationUrl;
+    }
+
+    public String getResponseType()
+    {
+        return responseType;
+    }
+
+    public void setResponseType(String responseType)
+    {
+        this.responseType = responseType;
+    }
+
+    public String getCancelReason()
+    {
+        return cancelReason;
+    }
+
+    public void setCancelReason(String cancelReason)
+    {
+        this.cancelReason = cancelReason;
+    }
+
+    public String[] getCustomParameters()
+    {
+        return customParameters;
+    }
+
+    public void setCustomParameters(String[] customParameters)
+    {
+        this.customParameters = customParameters;
+    }
+
+    public CardVO getCardVO()
+    {
+        return cardVO;
+    }
+
+    public void setCardVO(CardVO cardVO)
+    {
+        this.cardVO = cardVO;
+    }
+
+    public VirtualAccountVO getVirtualAccountVO()
+    {
+        return virtualAccountVO;
+    }
+
+    public void setVirtualAccountVO(VirtualAccountVO virtualAccountVO)
+    {
+        this.virtualAccountVO = virtualAccountVO;
+    }
+
+    public BankAccountVO getBankAccountVO()
+    {
+        return bankAccountVO;
+    }
+
+    public void setBankAccountVO(BankAccountVO bankAccountVO)
+    {
+        this.bankAccountVO = bankAccountVO;
+    }
+
+    public CustomerVO getCustomerVO()
+    {
+        return customerVO;
+    }
+
+    public void setCustomerVO(CustomerVO customerVO)
+    {
+        this.customerVO = customerVO;
+    }
+
+    public ShippingAddressVO getShippingAddressVO()
+    {
+        return shippingAddressVO;
+    }
+
+    public void setShippingAddressVO(ShippingAddressVO shippingAddressVO)
+    {
+        this.shippingAddressVO = shippingAddressVO;
+    }
+
+    public BillingAddressVO getBillingAddressVO()
+    {
+        return billingAddressVO;
+    }
+
+    public void setBillingAddressVO(BillingAddressVO billingAddressVO)
+    {
+        this.billingAddressVO = billingAddressVO;
+    }
+
+    public ThreeDSecureVO getThreeDSecureVO()
+    {
+        return threeDSecureVO;
+    }
+
+    public void setThreeDSecureVO(ThreeDSecureVO threeDSecureVO)
+    {
+        this.threeDSecureVO = threeDSecureVO;
+    }
+
+    public DateVO getDate()
+    {
+        return date;
+    }
+
+    public void setDate(DateVO date)
+    {
+        this.date = date;
+    }
+
+    public MerchantVO getMerchant()
+    {
+        return merchant;
+    }
+
+    public void setMerchant(MerchantVO merchant)
+    {
+        this.merchant = merchant;
+    }
+
+    public PaginationVO getPaginationVO()
+    {
+        return paginationVO;
+    }
+
+    public void setPaginationVO(PaginationVO paginationVO)
+    {
+        this.paginationVO = paginationVO;
+    }
+
+    public String getCustAccount()
+    {
+        return custAccount;
+    }
+
+    public void setCustAccount(String custAccount)
+    {
+        this.custAccount = custAccount;
+    }
+
+    public String getIdType()
+    {
+        return idType;
+    }
+
+    public void setIdType(String idType)
+    {
+        this.idType = idType;
+    }
+
+    public String getPaymentId()
+    {
+        return paymentId;
+    }
+
+    public void setPaymentId(String paymentId)
+    {
+        this.paymentId = paymentId;
+    }
+
+    public String getAuthToken()
+    {
+        return authToken;
+    }
+
+    public void setAuthToken(String authToken)
+    {
+        this.authToken = authToken;
+    }
+
+    public String getExpDateOffset()
+    {
+        return expDateOffset;
+    }
+
+    public void setExpDateOffset(String expDateOffset)
+    {
+        this.expDateOffset = expDateOffset;
+    }
+
+    public String getTmpl_amount()
+    {
+        return tmpl_amount;
+    }
+
+    public void setTmpl_amount(String tmpl_amount)
+    {
+        this.tmpl_amount = tmpl_amount;
+    }
+
+    public String getTmpl_currency()
+    {
+        return tmpl_currency;
+    }
+
+    public void setTmpl_currency(String tmpl_currency)
+    {
+        this.tmpl_currency = tmpl_currency;
+    }
+
+    public String getAttemptThreeD()
+    {
+        return attemptThreeD;
+    }
+
+    public String getStatus()
+    {
+        return status;
+    }
+
+    public void setStatus(String status)
+    {
+        this.status = status;
+    }
+
+    public void setAttemptThreeD(String attemptThreeD)
+    {
+        this.attemptThreeD = attemptThreeD;
+    }
+
+    public String getPayoutType()
+    {
+        return payoutType;
+    }
+
+    public void setPayoutType(String payoutType)
+    {
+        this.payoutType = payoutType;
+    }
+
+    public MarketPlace[] getMarketPlace()
+    {
+        return marketPlace;
+    }
+
+    public void setMarketPlace(MarketPlace[] marketPlace)
+    {
+        this.marketPlace = marketPlace;
+    }
+
+    public String getPartnerUserName()
+    {
+        return partnerUserName;
+    }
+
+    public void setPartnerUserName(String partnerUserName)
+    {
+        this.partnerUserName = partnerUserName;
+    }
+
+    public String getInstallment() {return installment;}
+
+    public void setInstallment(String installment) {this.installment = installment;}
+
+    public String getRedirectMethod() {return redirectMethod;}
+
+    public void setRedirectMethod(String redirectMethod) {this.redirectMethod = redirectMethod;}
+
+    public String getMemberId()
+    {
+        return memberId;
+    }
+
+    public void setMemberId(String memberId)
+    {
+        this.memberId = memberId;
+    }
+
+    public String getMemberGuid()
+    {
+        return memberGuid;
+    }
+
+    public void setMemberGuid(String memberGuid)
+    {
+        this.memberGuid = memberGuid;
+    }
+
+    public String getTrackingMemberCode()
+    {
+        return trackingMemberCode;
+    }
+
+    public void setTrackingMemberCode(String trackingMemberCode)
+    {
+        this.trackingMemberCode = trackingMemberCode;
+    }
+
+    public String getReferenceId()
+    {
+        return referenceId;
+    }
+
+    public void setReferenceId(String referenceId)
+    {
+        this.referenceId = referenceId;
+    }
+
+    public String getDeviceType()
+    {
+        return deviceType;
+    }
+
+    public void setDeviceType(String deviceType)
+    {
+        this.deviceType = deviceType;
+    }
+
+    public String getMerchantAccountType()
+    {
+        return merchantAccountType;
+    }
+
+    public void setMerchantAccountType(String merchantAccountType)
+    {
+        this.merchantAccountType = merchantAccountType;
+    }
+
+    public String getCountry()
+    {
+        return country;
+    }
+
+    public void setCountry(String country)
+    {
+        this.country = country;
+    }
+
+    public String getOrderNumber()
+    {
+        return orderNumber;
+    }
+
+    public void setOrderNumber(String orderNumber)
+    {
+        this.orderNumber = orderNumber;
+    }
+
+    public String getOrderDesc()
+    {
+        return orderDesc;
+    }
+
+    public void setOrderDesc(String orderDesc)
+    {
+        this.orderDesc = orderDesc;
+    }
+
+    public String getSmsCode() {return smsCode;}
+
+    public void setSmsCode(String smsCode) {this.smsCode = smsCode;}
+
+    public CardHolderAccountInfoVO getCardHolderAccountInfoVO()
+    {
+        return CardHolderAccountInfoVO;
+    }
+
+    public void setCardHolderAccountInfoVO(CardHolderAccountInfoVO cardHolderAccountInfoVO)
+    {
+        CardHolderAccountInfoVO = cardHolderAccountInfoVO;
+    }
+
+    public DeviceDetailsVO getDeviceDetailsVO()
+    {
+        return deviceDetailsVO;
+    }
+
+    public void setDeviceDetailsVO(DeviceDetailsVO deviceDetailsVO)
+    {
+        this.deviceDetailsVO = deviceDetailsVO;
+    }
+
+    public String getTransactionReceipt()
+    {
+        return transactionReceipt;
+    }
+
+    public void setTransactionReceipt(String transactionReceipt)
+    {
+        this.transactionReceipt = transactionReceipt;
+    }
+
+    public String getPaymentProvider()
+    {
+        return paymentProvider;
+    }
+
+    public void setPaymentProvider(String paymentProvider)
+    {
+        this.paymentProvider = paymentProvider;
+    }
+
+    public String getVpa_address()
+    {
+        return vpa_address;
+    }
+
+    public void setVpa_address(String vpa_address)
+    {
+        this.vpa_address = vpa_address;
+    }
+
+    public String getTransactionDate()
+    {
+        return transactionDate;
+    }
+
+    public void setTransactionDate(String transactionDate)
+    {
+        this.transactionDate = transactionDate;
+    }
+
+    public String getTransactionType()
+    {
+        return transactionType;
+    }
+
+    public void setTransactionType(String transactionType)
+    {
+        this.transactionType = transactionType;
+    }
+
+    public String getPersonalAccountNumber()
+    {
+        return personalAccountNumber;
+    }
+
+    public void setPersonalAccountNumber(String personalAccountNumber)
+    {
+        this.personalAccountNumber = personalAccountNumber;
+    }
+
+    public String getClientTransactionId()
+    {
+        return clientTransactionId;
+    }
+
+    public void setClientTransactionId(String clientTransactionId)
+    {
+        this.clientTransactionId = clientTransactionId;
+    }
+
+    public String getRefundAmount()
+    {
+        return refundAmount;
+    }
+
+    public void setRefundAmount(String refundAmount)
+    {
+        this.refundAmount = refundAmount;
+    }
+
+    public String getRefundCurrency()
+    {
+        return refundCurrency;
+    }
+
+    public void setRefundCurrency(String refundCurrency)
+    {
+        this.refundCurrency = refundCurrency;
+    }
+
+    public CardVO[] getCard1()
+    {
+        return card1;
+    }
+
+    public void setCard1(CardVO[] card1)
+    {
+        this.card1 = card1;
+    }
+
+    public String getPurchase_identifier()
+    {
+        return purchase_identifier;
+    }
+
+    public void setPurchase_identifier(String purchase_identifier)
+    {
+        this.purchase_identifier = purchase_identifier;
+    }
+
+    public String getMerchant_id()
+    {
+        return merchant_id;
+    }
+
+    public void setMerchant_id(String merchant_id)
+    {
+        this.merchant_id = merchant_id;
+    }
+
+    public String getAuthorization_code()
+    {
+        return authorization_code;
+    }
+
+    public void setAuthorization_code(String authorization_code)
+    {
+        this.authorization_code = authorization_code;
+    }
+
+    public String getRrn()
+    {
+        return rrn;
+    }
+
+    public void setRrn(String rrn)
+    {
+        this.rrn = rrn;
+    }
+
+    public String getArn()
+    {
+        return arn;
+    }
+
+    public void setArn(String arn)
+    {
+        this.arn = arn;
+    }
+
+    public String getStan()
+    {
+        return stan;
+    }
+
+    public void setStan(String stan)
+    {
+        this.stan = stan;
+    }
+
+    public String getCall_type()
+    {
+        return call_type;
+    }
+
+    public void setCall_type(String call_type)
+    {
+        this.call_type = call_type;
+    }
+}

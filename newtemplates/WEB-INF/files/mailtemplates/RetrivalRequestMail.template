@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <!-- utf-8 works for most cases -->
+    <meta name="viewport" content="width=device-width">
+    <!-- Forcing initial-scale shouldn't be necessary -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- Use the latest (edge) version of IE rendering engine -->
+    <meta name="x-apple-disable-message-reformatting">
+    <!-- Disable auto-scale in iOS 10 Mail entirely -->
+    <title>Retrieval Request Update Mail</title>
+    <!-- The title tag shows in email notifications, like Android 4.4. -->
+
+    <!-- Web Font / @font-face : BEGIN -->
+    <!-- NOTE: If web fonts are not required, lines 10 - 27 can be safely removed. -->
+
+    <!-- Desktop Outlook chokes on web font references and defaults to Times New Roman, so we force a safe fallback font. -->
+    <!--[if mso]>
+        <style>
+            * {
+                font-family: sans-serif !important;
+            }
+        </style>
+    <![endif]-->
+
+    <!-- All other clients get the webfont reference; some will render the font and others will silently fail to the fallbacks. More on that here: http://stylecampaign.com/blog/2015/02/webfont-support-in-email/ -->
+    <!--[if !mso]><!-->
+    <!-- insert web font reference, eg: <link href='https://fonts.googleapis.com/css?family=Roboto:400,700' rel='stylesheet' type='text/css'> -->
+    <!--<![endif]-->
+
+    <!-- Web Font / @font-face : END -->
+
+    <!-- CSS Reset -->
+    <style>
+        /* What it does: Remove spaces around the email design added by some email clients. */
+        /* Beware: It can remove the padding / margin and add a background color to the compose a reply window. */
+
+        html,
+        body {
+            margin: 0 auto !important;
+            padding: 0 !important;
+            height: 100% !important;
+            width: 100% !important;
+        }
+        /* What it does: Stops email clients resizing small text. */
+
+        * {
+            -ms-text-size-adjust: 100%;
+            -webkit-text-size-adjust: 100%;
+        }
+        /* What is does: Centers email on Android 4.4 */
+
+        div[style*="margin: 16px 0"] {
+            margin: 0 !important;
+        }
+        /* What it does: Stops Outlook from adding extra spacing to tables. */
+
+        table,
+        td {
+            mso-table-lspace: 0pt !important;
+            mso-table-rspace: 0pt !important;
+        }
+        /* What it does: Fixes webkit padding issue. Fix for Yahoo mail table alignment bug. Applies table-layout to the first 2 tables then removes for anything nested deeper. */
+
+        table {
+            border-spacing: 0 !important;
+            border-collapse: collapse !important;
+            /* table-layout: fixed !important;*/
+            margin: 0 auto !important;
+        }
+
+        table table table {
+            table-layout: auto;
+        }
+        /* What it does: Uses a better rendering method when resizing images in IE. */
+
+        img {
+            -ms-interpolation-mode: bicubic;
+        }
+        /* What it does: A work-around for iOS meddling in triggered links. */
+
+        *[x-apple-data-detectors] {
+            color: inherit !important;
+            text-decoration: none !important;
+        }
+        /* What it does: A work-around for Gmail meddling in triggered links. */
+
+        .x-gmail-data-detectors,
+        .x-gmail-data-detectors *,
+        .aBn {
+            border-bottom: 0 !important;
+            cursor: default !important;
+        }
+        /* What it does: Prevents Gmail from displaying an download button on large, non-linked images. */
+
+        .a6S {
+            display: none !important;
+            opacity: 0.01 !important;
+        }
+        /* If the above doesn't work, add a .g-img class to any image in question. */
+
+        img.g-img + div {
+            display: none !important;
+        }
+        /* What it does: Prevents underlining the button text in Windows 10 */
+
+        .button-link {
+            text-decoration: none !important;
+        }
+        /* What it does: Removes right gutter in Gmail iOS app: https://github.com/TedGoas/Cerberus/issues/89  */
+        /* Create one of these media queries for each additional viewport size you'd like to fix */
+        /* Thanks to Eric Lepetit @ericlepetitsf) for help troubleshooting */
+
+        @media only screen and (min-device-width: 375px) and (max-device-width: 413px) {
+            /* iPhone 6 and 6+ */
+            .email-container {
+                min-width: 375px !important;
+            }
+        }
+    </style>
+
+    <!-- Progressive Enhancements -->
+    <style>
+        /* What it does: Hover styles for buttons */
+
+        .button-td,
+        .button-a {
+            transition: all 100ms ease-in;
+        }
+
+        .button-td:hover,
+        .button-a:hover {
+            background: #555555 !important;
+            border-color: #555555 !important;
+        }
+        /* Media Queries */
+
+        @media screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+                margin: auto !important;
+            }
+            /* What it does: Forces elements to resize to the full width of their container. Useful for resizing images beyond their max-width. */
+            .fluid {
+                max-width: 100% !important;
+                height: auto !important;
+                margin-left: auto !important;
+                margin-right: auto !important;
+            }
+            /* What it does: Forces table cells into full-width rows. */
+            .stack-column,
+            .stack-column-center {
+                display: block !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                direction: ltr !important;
+            }
+            /* And center justify these ones. */
+            .stack-column-center {
+                text-align: center !important;
+            }
+            /* What it does: Generic utility class for centering. Useful for images, buttons, and nested tables. */
+            .center-on-narrow {
+                text-align: center !important;
+                display: block !important;
+                margin-left: auto !important;
+                margin-right: auto !important;
+                float: none !important;
+            }
+            table.center-on-narrow {
+                display: inline-block !important;
+            }
+        }
+
+        #bg-image_table {
+            background-image: url()!important;
+        }
+
+        .bg-info {
+            padding: 15px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: #31708f;
+            background-color: #d9edf7;
+            border-color: #bce8f1;
+            color: #474a54;
+            background-color: rgb(175, 245, 244);
+            border-left: 4px solid #0f8c93;
+            font-weight: 400;
+            font-size: 12px;
+        }
+
+        #supportmail_color a[href] {
+            color: #1e1e1e!important;
+        }
+
+        hr{
+            visibility: hidden!important;
+
+        }
+    </style>
+
+</head>
+
+<body width="100%" style="margin: 0; mso-line-height-rule: exactly;  background-repeat: no-repeat; background-position: left center;">
+    <center style="width: 100%; text-align: left;">
+
+        <!-- Visually Hidden Preheader Text : END -->
+
+        <div>
+
+            <!-- Email Body : BEGIN -->
+            <table role="presentation" id=" bg-image_table" aria-hidden="true" cellspacing="0" cellpadding="0" border="0" align="center" width="600" style="margin: auto; border: 4px solid <#FIRSTCOLOR#>;" class="email-container" background="">
+
+                <tr>
+                    <td style="padding: 0; text-align: center;" bgcolor="<#FIRSTCOLOR#>">
+                        <!-- <img width="" height="inherit" src=""> --><#LOGO#> </td>
+                </tr>
+
+                <tr>
+                    <td height="10" style="font-size: 0; line-height: 0; ">
+                    </td>
+                </tr>
+
+                <tr>
+                    <td bgcolor="" style="padding: 10px; text-align: center; color: <#FIRSTCOLOR#>; font-family: Georgia, serif; min-width: auto !important; font-size: 30px; margin-top: 10px; line-height: 26px;"> RETRIEVAL REQUEST MAIL
+                    </td>
+                </tr>
+
+                <tr>
+                    <td height="10" style="font-size: 0; line-height: 0; ">
+                    </td>
+                </tr>
+
+                <!-- 1 Column Text : BEGIN -->
+                <tr>
+                    <td bgcolor="" style="padding: 10px; color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important;    font-size: 18px; line-height: 26px; text-align: left;"> Dear <font style="font-size: 18px;"><#NAME#></font>,
+                    </td>
+                </tr>
+                <!-- 1 Column Text : BEGIN -->
+
+                <tr>
+                    <td bgcolor="" style="padding: 10px; color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important;    font-size: 15px; line-height: 26px; text-align: left;"><font style="color: #1e1e1e;">We have received a Retrieval Request from your Customer.</font>
+                    </td>
+                </tr>
+
+               
+                <tr>
+                    <td bgcolor="" style="padding: 10px;color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important;    font-size: 15px; line-height: 26px; text-align: left;"><font style="color: #1e1e1e;">To find information about the terms Retrieval Request, Chargeback and Chargeback Reversal, please click:<br>
+                    <i><a href="<#SUPPORTLINK#>" style="color: <#FIRSTCOLOR#>; text-decoration: none;">Click Here</a></i></font>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td bgcolor="" style="padding: 10px; color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important;    font-size: 15px; line-height: 26px; text-align: left;"><font style="color: #1e1e1e;">The details of this transaction are as below:</font>
+                    </td>
+                </tr>
+
+                <!-- 2 Even Columns : BEGIN -->
+                <tr>
+                    <td bgcolor="" align="center" valign="top" style="padding: 10px;">
+                        <table role="presentation" aria-hidden="true" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                                <!-- Column : BEGIN -->
+                                <td class="stack-column-center">
+                                    <table align="center" role="presentation" aria-hidden="true" cellspacing="0" cellpadding="0" border="0" style="width: 100%;">
+
+                                        <tr>
+
+                                            <td style="font-family: Georgia, serif; font-size: 14px; line-height: 16px; color: #ffffff; padding: 10px 10px; text-align: left; border-bottom: 1px solid #ffffff; width: 50%;" class="center-on-narrow" bgcolor="<#FIRSTCOLOR#>">Merchant ID :
+
+                                            </td>
+
+                                            <td style="padding: 10px 10px; padding: 2px 10px; text-align: left; border-bottom: 1px solid #ffffff; font-size: 14px; line-height: 16px; font-family: Georgia, serif; color: #797979; font-weight: 600; width: 50%;" class="center-on-narrow" bgcolor="#f5f5f5"><#MERCHANTID#>
+                                            </td>
+
+                                        </tr>
+
+
+                                        <tr>
+
+                                            <td style="font-family: Georgia, serif; font-size: 14px; line-height: 16px; color: #ffffff; padding: 10px 10px; text-align: left; border-bottom: 1px solid #ffffff; width: 50%;" class="center-on-narrow" bgcolor="<#FIRSTCOLOR#>">Company Name :
+
+                                            </td>
+
+                                            <td style="padding: 10px 10px; padding: 2px 10px; text-align: left; border-bottom: 1px solid #ffffff; font-size: 14px; line-height: 16px; font-family: Georgia, serif; color: #797979; font-weight: 600; width: 50%;" class="center-on-narrow" bgcolor="#f5f5f5">
+                                                <#COMPANY_NAME#>
+                                            </td>
+
+                                        </tr>
+
+                                        <tr>
+
+                                            <td style="font-family: Georgia, serif; font-size: 14px; line-height: 16px; color: #ffffff; padding: 10px 10px; text-align: left; border-bottom: 1px solid #ffffff; width: 50%;" class="center-on-narrow" bgcolor="<#FIRSTCOLOR#>">Description :
+
+                                            </td>
+
+                                            <td style="padding: 10px 10px; padding: 2px 10px; text-align: left; border-bottom: 1px solid #ffffff; font-size: 14px; line-height: 16px; font-family: Georgia, serif; color: #797979; font-weight: 600; width: 50%;" class="center-on-narrow" bgcolor="#f5f5f5">
+                                                <#ORDERID#>
+                                            </td>
+
+                                        </tr>
+
+                                        <tr>
+
+                                            <td style="font-family: Georgia, serif; font-size: 14px; line-height: 16px; color: #ffffff; padding: 10px 10px; text-align: left; border-bottom: 1px solid #ffffff; width: 50%;" class="center-on-narrow" bgcolor="<#FIRSTCOLOR#>">Order Description :
+
+                                            </td>
+
+                                            <td style="padding: 10px 10px; padding: 2px 10px; text-align: left; border-bottom: 1px solid #ffffff; font-size: 14px; line-height: 16px; font-family: Georgia, serif; color: #797979; font-weight: 600; width: 50%;" class="center-on-narrow" bgcolor="#f5f5f5">
+                                                <#ORDER_DESCRIPTION#>
+                                            </td>
+
+                                        </tr>
+
+                                        <tr>
+
+                                            <td style="font-family: Georgia, serif; font-size: 14px; line-height: 16px; color: #ffffff; padding: 10px 10px; text-align: left; border-bottom: 1px solid #ffffff; width: 50%;" class="center-on-narrow" bgcolor="<#FIRSTCOLOR#>">Transaction Amount :
+
+                                            </td>
+
+                                            <td style="padding: 10px 10px; padding: 2px 10px; text-align: left; border-bottom: 1px solid #ffffff; font-size: 14px; line-height: 16px; font-family: Georgia, serif; color: #797979; font-weight: 600; width: 50%;" class="center-on-narrow" bgcolor="#f5f5f5">
+                                                <#CURRENCY#> <#AMOUNT#>
+                                            </td>
+
+                                        </tr>
+
+                                        <tr>
+
+                                            <td style="font-family: Georgia, serif; font-size: 14px; line-height: 16px; color: #ffffff; padding: 10px 10px; text-align: left; border-bottom: 1px solid #ffffff; width: 50%;" class="center-on-narrow" bgcolor="<#FIRSTCOLOR#>">Capture Amount :
+
+                                            </td>
+
+                                            <td style="padding: 10px 10px; padding: 2px 10px; text-align: left; border-bottom: 1px solid #ffffff; font-size: 14px; line-height: 16px; font-family: Georgia, serif; color: #797979; font-weight: 600; width: 50%;" class="center-on-narrow" bgcolor="#f5f5f5">
+                                                <#CURRENCY#> <#CAPTURE_AMOUNT#>
+                                            </td>
+
+                                        </tr>
+
+                                        <tr>
+
+                                            <td style="font-family: Georgia, serif; font-size: 14px; line-height: 16px; color: #ffffff; padding: 10px 10px; text-align: left; border-bottom: 1px solid #ffffff; width: 50%;" class="center-on-narrow" bgcolor="<#FIRSTCOLOR#>">Refund Amount :
+
+                                            </td>
+
+                                            <td style="padding: 10px 10px; padding: 2px 10px; text-align: left; border-bottom: 1px solid #ffffff; font-size: 14px; line-height: 16px; font-family: Georgia, serif; color: #797979; font-weight: 600; width: 50%;" class="center-on-narrow" bgcolor="#f5f5f5">
+                                                <#CURRENCY#> <#REFUND_AMOUNT#>
+                                            </td>
+
+                                        </tr>
+
+                                        <tr>
+
+                                            <td style="font-family: Georgia, serif; font-size: 14px; line-height: 16px; color: #ffffff; padding: 10px 10px; text-align: left; border-bottom: 1px solid #ffffff; width: 50%;" class="center-on-narrow" bgcolor="<#FIRSTCOLOR#>">Chargeback Amount :
+
+                                            </td>
+
+                                            <td style="padding: 10px 10px; padding: 2px 10px; text-align: left; border-bottom: 1px solid #ffffff; font-size: 14px; line-height: 16px; font-family: Georgia, serif; color: #797979; font-weight: 600; width: 50%;" class="center-on-narrow" bgcolor="#f5f5f5">
+                                                <#CURRENCY#> <#CHARGEBACK_AMOUNT#>
+                                            </td>
+
+                                        </tr>
+                                        
+
+                                        <tr>
+
+                                            <td style="font-family: Georgia, serif; font-size: 14px; line-height: 16px; color: #ffffff; padding: 10px 10px; text-align: left; border-bottom: 1px solid #ffffff; width: 50%;" class="center-on-narrow" bgcolor="<#FIRSTCOLOR#>">Card Holder :
+
+                                            </td>
+
+                                            <td style="padding: 10px 10px; padding: 2px 10px; text-align: left; border-bottom: 1px solid #ffffff; font-size: 14px; line-height: 16px; font-family: Georgia, serif; color: #797979; font-weight: 600; width: 50%;" class="center-on-narrow" bgcolor="#f5f5f5">
+                                                <#CARD_HOLDER#>
+                                            </td>
+
+                                        </tr>
+
+                                        <tr>
+
+                                            <td style="font-family: Georgia, serif; font-size: 14px; line-height: 16px; color: #ffffff; padding: 10px 10px; text-align: left; border-bottom: 1px solid #ffffff; width: 50%;" class="center-on-narrow" bgcolor="<#FIRSTCOLOR#>">Tracking ID :
+
+                                            </td>
+
+                                            <td style="padding: 10px 10px; padding: 2px 10px; text-align: left; border-bottom: 1px solid #ffffff; font-size: 14px; line-height: 16px; font-family: Georgia, serif; color: #797979; font-weight: 600; width: 50%;" class="center-on-narrow" bgcolor="#f5f5f5">
+                                                <#TRACKING_ID#>
+                                            </td>
+
+                                        </tr>
+
+                                        <tr>
+
+                                            <td style="font-family: Georgia, serif; font-size: 14px; line-height: 16px; color: #ffffff; padding: 10px 10px; text-align: left; border-bottom: 1px solid #ffffff; width: 50%;" class="center-on-narrow" bgcolor="<#FIRSTCOLOR#>">Date Of Authorization :
+
+                                            </td>
+
+                                            <td style="padding: 10px 10px; padding: 2px 10px; text-align: left; border-bottom: 1px solid #ffffff; font-size: 14px; line-height: 16px; font-family: Georgia, serif; color: #797979; font-weight: 600; width: 50%;" class="center-on-narrow" bgcolor="#f5f5f5">
+                                                <#AUTH_DATE#>
+                                            </td>
+
+                                        </tr>
+
+                                        <tr>
+
+                                            <td style="font-family: Georgia, serif; font-size: 14px; line-height: 16px; color: #ffffff; padding: 10px 10px; text-align: left; border-bottom: 1px solid #ffffff; width: 50%;" class="center-on-narrow" bgcolor="<#FIRSTCOLOR#>">Date Of Capture :
+
+                                            </td>
+
+                                            <td style="padding: 10px 10px; padding: 2px 10px; text-align: left; border-bottom: 1px solid #ffffff; font-size: 14px; line-height: 16px; font-family: Georgia, serif; color: #797979; font-weight: 600; width: 50%;" class="center-on-narrow" bgcolor="#f5f5f5">
+                                                <#CAPTURE_DATE#>
+                                            </td>
+
+                                        </tr>
+
+                                        <tr>
+
+                                            <td style="font-family: Georgia, serif; font-size: 14px; line-height: 16px; color: #ffffff; padding: 10px 10px; text-align: left; border-bottom: 1px solid #ffffff; width: 50%;" class="center-on-narrow" bgcolor="<#FIRSTCOLOR#>">Customer Email Address :
+
+                                            </td>
+
+                                            <td style="padding: 10px 10px; padding: 2px 10px; text-align: left; border-bottom: 1px solid #ffffff; font-size: 14px; line-height: 16px; font-family: Georgia, serif; color: #797979; font-weight: 600; width: 50%;" class="center-on-narrow" bgcolor="#f5f5f5">
+                                                <#EMAIL_ADDR#>
+                                            </td>
+
+                                        </tr>
+
+                                        <tr>
+
+                                            <td style="font-family: Georgia, serif; font-size: 14px; line-height: 16px; color: #ffffff; padding: 10px 10px; text-align: left; border-bottom: 1px solid #ffffff; width: 50%;" class="center-on-narrow" bgcolor="<#FIRSTCOLOR#>">IP Address :
+
+                                            </td>
+
+                                            <td style="padding: 10px 10px; padding: 2px 10px; text-align: left; border-bottom: 1px solid #ffffff; font-size: 14px; line-height: 16px; font-family: Georgia, serif; color: #797979; font-weight: 600; width: 50%;" class="center-on-narrow" bgcolor="#f5f5f5">
+                                                <#IP_ADDRESS#>
+                                            </td>
+
+                                        </tr>
+
+
+                                    </table>
+                                </td>
+
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <!-- 2 Even Columns : END -->
+                               
+
+                <tr>
+                    <td bgcolor="" style="padding: 10px; color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important;    font-size: 15px; line-height: 26px; text-align: left;"><font style="color: #1e1e1e;">Please send us any Supporting Documents and Details (any Proof of Delivery of Goods, email correspondence with the Card Holder, etc.), that you have at the following address, by <#DATE#> </font>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td bgcolor="" style="padding: 10px; color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important;    font-size: 15px; line-height: 26px; text-align: left;"><font style="color: #1e1e1e;"><#ADDRESS#></font>
+                    </td>
+                </tr>
+
+                
+
+                <tr>
+                    <td bgcolor="" style="padding: 10px; color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important;    font-size: 14px; line-height: 16px; text-align: left;">Sincerely Yours, </td>
+                </tr>
+
+                <tr>
+                    <td bgcolor="" style="padding-bottom: 0!important; padding-top: 0!important; padding: 10px;color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important; font-size: 14px; line-height: 16px; text-align: left;">
+                        <#COMPANYNAME#> Team </td>
+                </tr>
+
+                <tr>
+                    <td bgcolor="" id=" supportmail_color" style="padding-top: 0!important; padding: 10px;color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important; font-size: 14px; line-height: 16px; text-align: left;">
+                        <#SUPPORTEMAIL#>
+                            <br> </td>
+                </tr>
+
+
+                <tr>
+                    <td height="10" style="font-size: 0; line-height: 0; ">
+                    </td>
+                </tr>
+
+
+                <tr>
+                    <td bgcolor="" style="padding: 10px; color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important;    font-size: 14px; line-height: 16px; text-align: left;">Support Desk: </td>
+                </tr>
+
+                <tr>
+                    <td bgcolor="" style="padding-bottom: 0!important; padding-top: 0!important; padding: 10px;color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important; font-size: 14px; line-height: 16px; text-align: left;">
+                        Landline: +91 (22) 4014 3344 <br></td>
+                </tr>
+
+                <tr>
+                    <td bgcolor="" style="padding-bottom: 0!important; padding-top: 0!important; padding: 10px;color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important; font-size: 14px; line-height: 16px; text-align: left;">
+                        FAX: +91 (22) 2872 1199  <br></td>
+                </tr>
+
+                <tr>
+                    <td bgcolor="" style="padding-bottom: 0!important; padding-top: 0!important; padding: 10px;color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important; font-size: 14px; line-height: 16px; text-align: left;">
+                        For Indian Merchants: +91 9920017003 <br></td>
+                </tr>
+
+                <tr>
+                    <td bgcolor="" style="padding-bottom: 0!important; padding-top: 0!important; padding: 10px;color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important; font-size: 14px; line-height: 16px; text-align: left;">
+                        For International Merchants : +91 9769997973 <br></td>
+                </tr>
+
+                <tr>
+                    <td height="10" style="font-size: 0; line-height: 0; ">
+                    </td>
+                </tr>
+
+                
+                 <!--<tr style="border-top: 1px solid #1e1e1e;">
+                    <td style="font-size: 0; line-height: 0;">
+                    </td>
+                </tr> -->
+
+                <tr>
+
+                    <!-- <td bgcolor="" style="padding: 10px;color: #1e1e1e; font-family: Georgia, serif; min-width: auto !important;    font-size: 12px; line-height: 26px; text-align: left;">
+                        <font style="color: #1e1e1e;">For any query click on the below link. We will forward your request to the concerned department immediately.<br>
+             <i><a href="" style="color: <#FIRSTCOLOR#>!important; text-decoration: none;">Click Here To Contact</a></i></font>
+                    </td> -->
+
+
+                    <td style="padding-top: 10px!important; padding: 0;width: 100%;font-size: 12px; font-family: sans-serif; line-height:18px; text-align: center; color: #ffffff;" class="x-gmail-data-detectors" bgcolor="<#FIRSTCOLOR#>">
+                         <font style="color: #ffffff; font-weight: bold; font-size:12px">For any query click on the below link. We will forward your request to the concerned department immediately.<br>
+             <i><a href="<#SUPPORTLINK#>" style="color: #ffffff; cursor: pointer!important; text-decoration: underline;">Click Here To Contact</a></i></font>.
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td style="padding-top: 10px!important; padding: 0;width: 100%;font-size: 12px; font-family: sans-serif; line-height:18px; text-align: center; color: #ffffff;" class="x-gmail-data-detectors" bgcolor="<#FIRSTCOLOR#>">
+                         <font style="color: #ffffff; font-weight: bold; font-size:12px">If you cannot click on the above link , copy and paste the below URL on your browser: <br>
+                        <i><font style="color: #ffffff;"><#SUPPORTLINK#></font></i></font>
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <td style="padding-top: 10px!important; padding: 10px 10px;width: 100%;font-size: 12px; font-family: sans-serif; line-height:18px; text-align: center; color: #ffffff;" class="x-gmail-data-detectors" bgcolor="<#FIRSTCOLOR#>">
+                         <font style="color: #ffffff; font-weight: bold; font-size:12px"><b>Important Notice:</b></font> <b>This email is an auto generated email, Please do not reply directly, and use the link provided.</b>
+                    </td>
+                </tr>
+
+
+            </table>
+            <!-- Email Body : END -->
+
+            <!-- Email Footer : BEGIN -->
+            <table role="presentation" aria-hidden="true" cellspacing="0" cellpadding="0" border="0" align="center" width="500" style="margin: auto;" class="email-container">
+                <tr>
+
+                    <td height="40" style="font-size: 0; line-height: 0;">
+                    </td>
+
+                </tr>
+            </table>
+            <!-- Email Footer : END -->
+
+    </center>
+</body>
+
+</html>

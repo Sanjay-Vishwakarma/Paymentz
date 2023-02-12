@@ -1,0 +1,30 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<body style="font-size: 10pt; font-family: verdana" >
+<HEAD>
+<TITLE> Proof Received </TITLE>
+</HEAD>
+<BODY>
+We have received appropriate authorisatoin for the below High Value
+Transaction.
+<br>You will have to MANUALLY CAPTURE  this transaction before <#LASTDATE#> from your
+Merchant interface in order to receive the funds <br><br>
+Merchant ID: <#TOID#><br>
+Company Name: <#COMPANY_NAME#><br>
+Description: <#DESCRIPTION#><br>
+Order Description: <#ORDER_DESCRIPTION#><br><br>
+Amount: <#CURRENCY#> <#AMOUNT#> <#TMPL_TRANSACTION#> <br>
+Card Holder : <#NAME#><br>
+Status: Pending Capture<br><br>
+Tracking ID: <#TRACKINGID#><br>
+Customer Email Address: <#CUST_EMAIL_ADDR#><br>
+IP Address: <#IP_ADDR#><br><br><br>
+***IMPORTANT*** <br>
+Note that this transaction will appear on their Credit Card Statement as <#DISPLAY_NAME#><br>
+<br>Incase of any doubts or clarifications feel free to drop us a line.<br>
+<br>
+<br>Support Team<br>Support KB & Help Desk <br><br>----------------------------------------<br>Support Desk (USA): +1 (415) 240 4172<br>Support Desk (India): +91 (22)
+6679 7509<br>Board Line (India): +91 (22) 6679 7500<br>FAX (USA): +1 (320) 210 5146<br>FAX (India): +91 (22)
+6679 7508 <br>----------------------------------------
+</BODY>
+</HTML>

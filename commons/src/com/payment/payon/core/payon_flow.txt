@@ -1,0 +1,29 @@
+
+
+
+Mapping
+
+Pauyon                      Meaning
+PreAuth  ==     Auth        Hold on CC or Credit Line DEBIT init
+Supplmnt
+Capture  ==    Capture      Completes an Hold ... can be of partial amount can there be multiple captures ??
+Debit    ==   Auth+Capture  It's SALE that deducts the shopper immediately .. it's not auth + capture its one transaction.
+
+Reversal ==   AuthCancel    Cancelling an Hold transaction.... can it be of partial amount ? can it be multiple
+Reversal ==                 Cancellation of Debit ?? Howw can debit transaction be reversed it can only be refunded ?.... can it be of partial amount ? can it be multiple ?
+
+Credit   ==                 Credits the shopper account without reference to debit ... Payout
+Refund   ==   Reversal      Credits shopper referencing previous debit(sale) or capture .. can it be of partial amount ?? can it be multiple ??
+
+
+
+Chargeback in pz is just related to the merchants virtual account with pz
+
+What's the settlement process ?
+
+
+
+
+
+
+

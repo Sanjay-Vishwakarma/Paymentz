@@ -1,0 +1,407 @@
+<%@ page import="org.owasp.esapi.ValidationErrorList" %>
+<%@ page import="org.owasp.esapi.errors.ValidationException" %>
+<%@ page import="com.directi.pg.Functions" %>
+<%@ page import="com.manager.dao.MerchantDAO" %>
+<%@ page import="com.manager.vo.MerchantDetailsVO" %>
+<%@ page import="com.manager.vo.userProfileVOs.MerchantVO" %>
+<%@ page import="com.manager.vo.PaginationVO" %>
+<%@ page import="org.owasp.esapi.ESAPI" %>
+<%@ page import="java.util.*" %>
+<%@ page import="com.directi.pg.LoadProperties" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: Pradeep
+  Date: 25/08/2015
+  Time: 21:01
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ include file="top.jsp"%>
+<%
+  String company = ESAPI.encoder().encodeForHTML((String)session.getAttribute("partnername"));
+%>
+<html>
+<head>
+  <title><%=company%> Rule Management> User Profile</title>
+
+  <style type="text/css">
+    @media(max-width: 1040px) {
+      .additional-btn {
+        float: left;
+        margin-left: 30px;
+        margin-top: 10px;
+        position: inherit!important;
+      }
+    }
+
+    @media(max-width: 640px) {
+      .additional-btn button:nth-of-type(2) {
+        margin-top: 10px;
+      }
+    }
+
+    @media (max-width: 767px){
+      #mainrow{
+        margin-top: 100px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+<%
+  session.setAttribute("submit","userProfile");
+
+  //String company = ESAPI.encoder().encodeForHTML((String)session.getAttribute("partnername"));
+  //session.setAttribute("submit","memberlist");
+  PartnerFunctions partner1=new PartnerFunctions();
+
+  ResourceBundle rb1 = null;
+  String language_property1 = (String)session.getAttribute("language_property");
+  rb1 = LoadProperties.getProperty(language_property1);
+
+  String userProfile_User__Profile= rb1.getString("userProfile_User__Profile");
+  String userProfile_Partner_ID= rb1.getString("userProfile_Partner_ID");
+  String userProfile_Deleted_Successfully= rb1.getString("userProfile_Deleted_Successfully");
+  String userProfile_Updated_Successfully= rb1.getString("userProfile_Updated_Successfully");
+  String userProfile_added_Successfully= rb1.getString("userProfile_added_Successfully");
+  String userProfile_Search= rb1.getString("userProfile_Search");
+  String userProfile_Report_Table= rb1.getString("userProfile_Report_Table");
+  String userProfile_Sr_No= rb1.getString("userProfile_Sr_No");
+  String userProfile_User_ID= rb1.getString("userProfile_User_ID");
+  String userProfile_Default_Mode= rb1.getString("userProfile_Default_Mode");
+  String userProfile_Action= rb1.getString("userProfile_Action");
+  String userProfile_Delete= rb1.getString("userProfile_Delete");
+  String userProfile_Showing_Page= rb1.getString("userProfile_Showing_Page");
+  String userProfile_of= rb1.getString("userProfile_of");
+  String userProfile_records= rb1.getString("userProfile_records");
+  String userProfile_Sorry= rb1.getString("userProfile_Sorry");
+  String userProfile_No_records_found= rb1.getString("userProfile_No_records_found");
+  String userProfile_Filter= rb1.getString("userProfile_Filter");
+  String userProfile_Note= rb1.getString("userProfile_Note");
+  String userProfile_Note1= rb1.getString("userProfile_Note1");
+  String userProfile_View= rb1.getString("userProfile_View");
+  String userProfile_Edit= rb1.getString("userProfile_Edit");
+  String userProfile_page_no= rb1.getString("userProfile_page_no");
+  String userProfile_total_no_of_records= rb1.getString("userProfile_total_no_of_records");
+
+%>
+<%!Functions functions = new Functions();
+  MerchantVO merchantVO = new MerchantVO();
+%>
+
+<div class="content-page">
+  <div class="content">
+    <!-- Page Heading Start -->
+    <div class="page-heading">
+
+      <div class="pull-right">
+        <div class="btn-group">
+          <form action="/partner/net/SingleUserProfile?ctoken=<%=ctoken%>" method="POST" name="myForm">
+            <button class="btn-xs" type="submit" value="1_Add" name="action" onclick="cancel('<%=ctoken%>')" style="background: transparent;border: 0;">
+              <img style="height: 45px;width: 200px;" src="/partner/images/downloadxml.png">
+            </button>
+            <button class="btn-xs" type="submit" value="1_Add" name="action" onclick="add('<%=ctoken%>')" style="background: transparent;border: 0;">
+              <img style="height: 45px;width: 200px;" src="/partner/images/addnewprofile.png">
+            </button>
+          </form>
+        </div>
+      </div>
+
+
+      <div class="row" id="mainrow">
+        <div class="col-sm-12 portlets ui-sortable">
+          <div class="widget">
+
+            <div class="widget-header transparent">
+              <h2><strong><i class="fa fa-th-large"></i>&nbsp;&nbsp;<%=userProfile_User__Profile%></strong></h2>
+              <div class="additional-btn">
+                <%--<form action="/partner/net/SingleUserProfile?ctoken=<%=ctoken%>" method="POST" name="myForm">
+                  <button type="submit" class="btn btn-default" name="action" value="1_Add" onclick="cancel('<%=ctoken%>')" style="/*width: 250px;*/ font-size:14px">
+                    <i class="fa fa-download"></i>
+                    &nbsp;&nbsp;Download XML
+                  </button>
+                  <button type="submit" class="btn btn-default" name="action" value="1_Add" onclick="add('<%=ctoken%>')" style="/*width: 250px;*/ font-size:14px">
+                    <i class="fa fa-sign-in"></i>
+                    &nbsp;&nbsp;Add New Profile
+                  </button>
+                </form>--%>
+                <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+              </div>
+            </div>
+
+
+
+            <form action="/partner/net/UserProfileList?ctoken=<%=ctoken%>" method="post" name="forms" class="form-horizontal">
+              <%
+                MerchantDAO merchantDAO = new MerchantDAO();
+                Map<String,MerchantDetailsVO> merchantDetailsVOList=merchantDAO.getALLMerchantForPartner((String)session.getAttribute("merchantid"));
+
+                int pageno = partner1.convertStringtoInt(ESAPI.encoder().encodeForHTML(request.getParameter("SPageno")),1);
+                int pagerecords=partner1.convertStringtoInt(ESAPI.encoder().encodeForHTML(request.getParameter("SRecords")), 15);
+
+              %>
+
+              <div class="widget-content padding">
+                <div id="horizontal-form">
+
+                  <%--<%
+                    if(request.getAttribute("error")!=null)
+                    {
+                      ValidationErrorList error = (ValidationErrorList) request.getAttribute("error");
+                      for (ValidationException errorList : error.errors())
+                      {
+                        out.println("<center><font class=\"form-control\" style=\"background-color: #d0f1e4;\">" + errorList.getMessage() + "</font></center>");
+                      }
+                    }
+                    if(request.getAttribute("catchError")!=null)
+                    {
+                      out.println("<center><font class=\"form-control\" style=\"background-color: #d0f1e4;\">" + request.getAttribute("catchError") + "</font></center>");
+                    }
+                    if(request.getAttribute("DELETED")!=null)
+                    {
+                      out.println("<center><font class=\"form-control\" style=\"background-color: #d0f1e4;\">Deleted Successfully</font></center>");
+                    }
+                    if(request.getAttribute("update")!=null)
+                    {
+                      out.println("<center><font class=\"form-control\" style=\"background-color: #d0f1e4;\">Updated Successfully</font></center>");
+                    }
+
+                  %>--%>
+
+                  <%
+                    String partnerId = (String) session.getAttribute("merchantid");
+                    if(request.getAttribute("error")!=null)
+                    {
+                      ValidationErrorList error = (ValidationErrorList) request.getAttribute("error");
+                      for (ValidationException errorList : error.errors())
+                      {
+                        //out.println("<center><font class=\"textb\">" + errorList.getMessage() + "</font></center>");
+                        out.println("<h5 class=\"bg-infoorange\" style=\"text-align: center;\"><i class=\"fa fa-exclamation-triangle\"></i>&nbsp;&nbsp;" + errorList.getMessage() + "</h5>");
+                      }
+                    }
+                    if(request.getAttribute("catchError")!=null)
+                    {
+                      //out.println("<center><font class=\"textb\">" + request.getAttribute("catchError") + "</font></center>");
+                      out.println("<h5 class=\"bg-infoorange\" style=\"text-align: center;\"><i class=\"fa fa-exclamation-triangle\"></i>&nbsp;&nbsp;" + request.getAttribute("catchError") + "</h5>");
+                    }
+                    if(request.getAttribute("DELETED")!=null)
+                    {
+                      //out.println("<center><font class=\"textb\">Deleted Successfully</font></center>");
+                      out.println("<h5 class=\"bg-info\" style=\"text-align: center;\"><i class=\"fa fa-info-circle\"></i>&nbsp;&nbsp;"+userProfile_Deleted_Successfully+"</h5>");
+                    }
+                    if(request.getAttribute("update")!=null && "true".equalsIgnoreCase(request.getAttribute("update").toString()))
+                    {
+                      //out.println("<tr><td colspan=2><center><font class=\"textb\">Updated successfully</font></center></tr></td>");
+                      out.println("<h5 class=\"bg-info\" style=\"text-align: center;\"><i class=\"fa fa-info-circle\"></i>&nbsp;&nbsp;"+userProfile_Updated_Successfully+"</h5>");
+                    }
+                    //Created new error message for inserted data
+                    if(request.getAttribute("insert")!=null && "true".equalsIgnoreCase(request.getAttribute("insert").toString()))
+                    {
+                      //out.println("<tr><td colspan=2><center><font class=\"textb\">Updated successfully</font></center></tr></td>");
+                      out.println("<h5 class=\"bg-info\" style=\"text-align: center;\"><i class=\"fa fa-info-circle\"></i>&nbsp;&nbsp;"+userProfile_added_Successfully+"</h5>");
+                    }
+                  %>
+
+                  <br>
+
+                  <%--<div class="form-group col-md-8">
+                    <label class="col-sm-3 control-label">Member ID</label>
+                    <div class="col-sm-6">
+                      <select name="toid" class="form-control">
+                        <option value="">Select Member ID</option>
+                        <%
+                          for(Map.Entry<String,MerchantDetailsVO> merchantDetailsVO : merchantDetailsVOList.entrySet())
+                          {
+                            out.println("<option value=\""+merchantDetailsVO.getKey()+"\""+(merchantDetailsVO.getKey().equals(request.getParameter("toid"))?"selected":"")+">"+merchantDetailsVO.getKey()+"</option>");
+                          }
+                        %>
+                      </select>
+                    </div>
+                  </div>--%>
+
+                  <div class="form-group col-md-8">
+                    <label class="col-sm-3 control-label"><%=userProfile_Partner_ID%></label>
+                    <div class="col-sm-6">
+                      <input type="text" name="partnerid" class="form-control"  value="<%=partnerId%>" disabled>
+                    </div>
+                  </div>
+
+
+                  <%--<div class="form-group col-md-3 has-feedback">&nbsp;</div>--%>
+                  <div class="form-group col-md-3">
+                    <div class="col-sm-offset-2 col-sm-3">
+                      <button type="submit" class="btn btn-default"><i class="fa fa-clock-o"></i>
+                        &nbsp;&nbsp;<%=userProfile_Search%></button>
+                    </div>
+                  </div>
+
+
+
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+
+
+      <div class="row reporttable">
+        <div class="col-md-12">
+          <div class="widget">
+            <div class="widget-header">
+              <h2><i class="fa fa-table"></i>&nbsp;&nbsp;<strong><%=userProfile_Report_Table%></strong></h2>
+              <div class="additional-btn">
+                <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+              </div>
+            </div>
+            <div class="widget-content padding" style="overflow-x: auto;">
+
+              <%
+                StringBuffer requestParameter = new StringBuffer();
+                Enumeration<String> stringEnumeration = request.getParameterNames();
+                while(stringEnumeration.hasMoreElements())
+                {
+                  String name=stringEnumeration.nextElement();
+                  if("SPageno".equals(name) || "SRecords".equals(name))
+                  {
+
+                  }
+                  else
+                    requestParameter.append("<input type='hidden' name='"+name+"' value=\""+request.getParameter(name)+"\"/>");
+                }
+                requestParameter.append("<input type='hidden' name='SPageno' value='"+pageno+"'/>");
+                requestParameter.append("<input type='hidden' name='SRecords' value='"+pagerecords+"'/>");
+
+                if(request.getAttribute("merchantVOMap")!=null)
+                {
+
+                  Map<String,MerchantVO> merchantVOMap= (Map<String,MerchantVO>) request.getAttribute("merchantVOMap");
+                  if(merchantVOMap!=null && !merchantVOMap.isEmpty())
+                  {
+                    PaginationVO paginationVO  = (PaginationVO) request.getAttribute("paginationVO");
+                    paginationVO.setInputs(paginationVO.getInputs() + "&ctoken=" + ctoken);
+              %>
+
+              <form action="/partner/net/SingleUserProfile?ctoken=<%=ctoken%>" method="POST">
+                <input type="hidden" name="toid" value="<%=request.getParameter("toid")%>">
+
+                <table align=center width="50%" class="display table table table-striped table-bordered table-hover dataTable" style="font-family:Open Sans;font-size: 13px;font-weight: 600;width: 100%;">
+
+                  <thead>
+                  <tr>
+                    <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b><%=userProfile_Sr_No%></b></td>
+                    <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b><%=userProfile_User_ID%></b></td>
+                    <%--<td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b>Member ID</b></td>--%>
+                    <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b><%=userProfile_Default_Mode%></b></td>
+                    <td  valign="middle" align="center" colspan="3" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b><%=userProfile_Action%></b></td>
+
+
+                  </tr>
+                  </thead>
+
+                  <%
+                    int srNo=1;
+
+                    for(Map.Entry<String,MerchantVO> merchantVO:merchantVOMap.entrySet())
+                    {
+                  %>
+
+
+                  <tr>
+                    <td valign="middle" align="center" data-label="Sr No" style="vertical-align: middle;"><%=srNo%></td>
+                    <td valign="middle" align="center" data-label="User ID" style="vertical-align: middle;"><%=merchantVO.getKey()%></td>
+                    <%--<td valign="middle" align="center" data-label="Member ID" style="vertical-align: middle;"><%=functions.isValueNull(merchantVO.getValue().getMemberId())?merchantVO.getValue().getMemberId():""%></td>--%>
+                    <td valign="middle" align="center" data-label="Default Mode"><%=functions.isValueNull(merchantVO.getValue().getDefaultMode())?merchantVO.getValue().getDefaultMode():""%></td>
+                    <td valign="middle" align="center" data-label="Action"><button type="submit" class="btn btn-default"  name="action" value="<%=merchantVO.getKey()%>_View" ><%=userProfile_View%></button></td>
+                    <td valign="middle" align="center" data-label="Action"><button type="submit" class="btn btn-default"  name="action" value="<%=merchantVO.getKey()%>_Edit"><%=userProfile_Edit%></button></td>
+                    <td valign="middle" align="center" data-label="Action"><button type="submit" class="btn btn-default"  name="action" value="<%=merchantVO.getKey()%>_Delete" onclick=" return Delete(this);"><%=userProfile_Delete%></button></td>
+
+                  </tr>
+                  <%
+                      srNo++;
+                    }
+                  %>
+
+
+                </table>
+
+
+
+              </form>
+
+              <%
+                int TotalPageNo;
+                if(paginationVO.getTotalRecords()%paginationVO.getRecordsPerPage()!=0)
+                {
+                  TotalPageNo=paginationVO.getTotalRecords()/paginationVO.getRecordsPerPage()+1;
+                }
+                else
+                {
+                  TotalPageNo=paginationVO.getTotalRecords()/paginationVO.getRecordsPerPage();
+                }
+              %>
+              <div id="showingid"><strong><%=userProfile_page_no%> <%=pageno%>  <%=userProfile_of%>  <%=TotalPageNo%></strong></div> &nbsp;&nbsp;
+              <div id="showingid"><strong><%=userProfile_total_no_of_records%>     <%=paginationVO.getTotalRecords()%> </strong></div>
+
+              <jsp:include page="page.jsp" flush="true">
+                <jsp:param name="numrecords" value="<%=paginationVO.getTotalRecords()%>"/>
+                <jsp:param name="numrows" value="<%=paginationVO.getRecordsPerPage()%>"/>
+                <jsp:param name="pageno" value="<%=paginationVO.getPageNo()%>"/>
+                <jsp:param name="str" value="<%=paginationVO.getInputs()%>"/>
+                <jsp:param name="page" value="<%=paginationVO.getPage()%>"/>
+                <jsp:param name="currentblock" value="<%=paginationVO.getCurrentBlock()%>"/>
+                <jsp:param name="orderby" value=""/>
+              </jsp:include>
+            </div>
+            <%
+                }
+                else
+                {
+                  out.println(Functions.NewShowConfirmation1(userProfile_Sorry,userProfile_No_records_found));
+                }
+              }
+              else
+              {
+                out.println(Functions.NewShowConfirmation1(userProfile_Filter,userProfile_Note));
+              }
+            %>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script language="javascript">
+  function Delete(ctoken)
+  {
+    if (confirm(<%=userProfile_Note1%>))
+    {
+      return true;
+    }
+    else
+      return false;
+  }
+</script>
+
+
+<script>
+  function cancel(ctoken) {
+    document.myForm.action="/partner/net/GenerateUserProfileXML?ctoken="+ctoken;
+  }
+  function add(ctoken) {
+    document.myForm.action="/partner/net/SingleUserProfile?ctoken="+ctoken;
+  }
+</script>
+
+</body>
+</html>

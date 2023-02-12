@@ -1,0 +1,684 @@
+package com.payment.Mail;
+
+import com.directi.pg.*;
+import org.apache.axis.transport.mail.MailServer;
+import org.owasp.esapi.ESAPI;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Nishant
+ * Date: 6/26/14
+ * Time: 3:07 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class SendTransactionEventMailUtil
+{
+    private static Logger logger = new Logger(TransactionEntry.class.getName());
+    private static TransactionLogger transactionLogger = new TransactionLogger(TransactionEntry.class.getName());
+
+    private Functions functions = new Functions();
+
+    public void sendTransactionEventMail(MailEventEnum mailEventEnum,String trackingId,String status,String remark,String billingDescriptor)
+    {
+        if(mailEventEnum!=null && trackingId!=null && status!=null)
+        {
+            MailService mailService=new MailService();
+            AsynchronousMailService asynchronousMailService = AsynchronousMailService.getInstance();
+            HashMap mailData=new HashMap();
+
+            switch (mailEventEnum)
+            {
+                /*case RECON_TRANSACTION:
+                    mailData = setReconTransactionData(trackingId, status);
+                    break;*/
+                case REFUND_TRANSACTION:
+                    mailData = setRefundMailData(trackingId, status, remark);
+                    break;
+
+                case PAYOUT_TRANSACTION:
+                    mailData = setPayoutMailData(trackingId, status, remark);
+                    break;
+
+                case CHARGEBACK_TRANSACTION:
+                    mailData = setChargeBackMailData(trackingId, status, remark);
+                    break;
+
+                case PARTNERS_MERCHANT_SALE_TRANSACTION:
+                    mailData = setSaleTransactionData(trackingId, status);
+                    break;
+
+                case PARTNERS_MERCHANT_FRAUD_FAILED_TRANSACTION:
+                    mailData = setFraudFailedTransactionData(trackingId, status, remark);
+                    break;
+
+                case ADMIN_FAILED_TRANSACTION_NOTIFICATION:
+                    mailData = setAdminFailedTransNotification(trackingId, status, remark);
+                    break;
+
+                case ADMIN_SETTLEMENT_REPORT:
+                    mailData = setAdminSettlementReport(status, remark);
+                    break;
+
+                case ADMIN_AUTHSTARTED_CRON_REPORT:
+                    mailData = setAdminAuthstartedCronReport(status, remark);
+                    break;
+
+                case ADMIN_MARKEDFORREVERSAL_CRON_REPORT:
+                    mailData = setAdminMarkedForReversalCronReport(status, remark);
+                    break;
+
+                case FRAUD_TRANSACTION_MARKED:
+                    mailData = setFraudMarkedMailData(trackingId, status);
+                    break;
+            }
+
+            if (functions.isValueNull(billingDescriptor))
+            {
+                mailData.put(MailPlaceHolder.DISPLAYNAME, billingDescriptor);
+            }
+
+            mailService.sendMail(mailEventEnum,mailData);
+           // asynchronousMailService.sendMerchantSignup(mailEventEnum, mailData);
+        }
+    }
+    public void sendReconTransactionEventMail(MailEventEnum mailEventEnum,String trackingId,String status,String remark,String billingDescriptor,String mailForEvent)
+    {
+        if(mailEventEnum!=null && trackingId!=null && status!=null)
+        {
+            AsynchronousMailService asynchronousMailService = AsynchronousMailService.getInstance();
+            HashMap mailData=new HashMap();
+
+            switch (mailEventEnum)
+            {
+                case RECON_TRANSACTION:
+                    mailData = setReconTransactionData(trackingId, status,mailForEvent);
+                    break;
+            }
+            if (functions.isValueNull(billingDescriptor))
+            {
+                mailData.put(MailPlaceHolder.DISPLAYNAME, billingDescriptor);
+            }
+            asynchronousMailService.sendMerchantSignup(mailEventEnum, mailData);
+        }
+    }
+
+    public void sendTransactionEventMailNew(MailEventEnum mailEventEnum, String trackingId, String status, String remark, String billingDescriptor)
+    {
+        if (mailEventEnum != null && trackingId != null && status != null)
+        {
+            MailService mailService = new MailService();
+            HashMap mailData = new HashMap();
+            switch (mailEventEnum)
+            {
+                case REFUND_TRANSACTION:
+                    mailData = setRefundMailData(trackingId, status, remark);
+                    break;
+
+                case PAYOUT_TRANSACTION:
+                    mailData = setPayoutMailData(trackingId, status, remark);
+                    break;
+
+                case CHARGEBACK_TRANSACTION:
+                    mailData = setChargeBackMailData(trackingId, status, remark);
+                    break;
+
+                case PARTNERS_MERCHANT_SALE_TRANSACTION:
+                    mailData = setSaleTransactionData(trackingId, status);
+                    break;
+
+                case PARTNERS_MERCHANT_FRAUD_FAILED_TRANSACTION:
+                    mailData = setFraudFailedTransactionData(trackingId, status, remark);
+                    break;
+
+                case ADMIN_FAILED_TRANSACTION_NOTIFICATION:
+                    mailData = setAdminFailedTransNotification(trackingId, status, remark);
+                    break;
+
+                case ADMIN_SETTLEMENT_REPORT:
+                    mailData = setAdminSettlementReport(status, remark);
+                    break;
+
+                case ADMIN_AUTHSTARTED_CRON_REPORT:
+                    mailData = setAdminAuthstartedCronReport(status, remark);
+                    break;
+
+                case ADMIN_MARKEDFORREVERSAL_CRON_REPORT:
+                    mailData = setAdminMarkedForReversalCronReport(status, remark);
+                    break;
+
+                case FRAUD_TRANSACTION_MARKED:
+                    mailData = setFraudMarkedMailData(trackingId, status);
+                    break;
+
+                case ADMIN_AUTHFAILED_CRON_REPORT:
+                    mailData = setAdminAuthstartedCronReport(status, remark);
+                    break;
+
+                case ADMIN_PAYOUTSTARTED_CRON_REPORT:
+                    mailData = setAdminPayoutStartedCronReport(status, remark);
+                    break;
+
+                case ADMIN_PAYOUTFAILED_CRON_REPORT:
+                    mailData = setAdminPayoutFailedCronReport(status, remark);
+                    break;
+
+            }
+            String display = "";
+            if(status.contains("Declined") || status.contains("fail")){
+                display ="style=\"display:none;\"";
+            }
+            if (functions.isValueNull(billingDescriptor))
+            {
+                mailData.put(MailPlaceHolder.DISPLAYNAME, billingDescriptor);
+                mailData.put(MailPlaceHolder.DISPLAYTR, display);
+            }
+            mailService.sendMail(mailEventEnum, mailData);
+        }
+    }
+
+    public HashMap setRefundMailData(String trackingid,String status,String remark)
+    {
+        HashMap rfMail=new HashMap();
+        MailService mailService=new MailService();
+        LinkedHashMap rfMailData=new LinkedHashMap();
+        HashMap transactionDetail=searchTransDetails(trackingid);
+        String refundinfo=(String) transactionDetail.get("refundinfo");
+        if(refundinfo==null || refundinfo=="")
+        {
+            refundinfo=remark;
+        }
+        HashMap partnerDetails=getPartnerIdBasedOnMerchant((String) transactionDetail.get("toid"));
+        rfMailData.put("TrackingId",transactionDetail.get("trackingid"));
+        rfMailData.put("MerchantId",transactionDetail.get("toid"));
+        rfMailData.put("Order ID",transactionDetail.get("description"));
+        rfMailData.put("Amount",transactionDetail.get("currency")+" "+transactionDetail.get("amount"));
+        rfMailData.put("Refund Amount",transactionDetail.get("currency")+" "+transactionDetail.get("refundamount"));
+        rfMailData.put("Status",status);
+        rfMailData.put("Refund Remark",refundinfo);
+        if(functions.isValueNull((String) transactionDetail.get("cName")))
+        {
+            rfMailData.put("Customer Name", ESAPI.encoder().encodeForHTML((String) transactionDetail.get("cName")));
+        }
+        else
+        {
+            rfMailData.put("Customer Name",transactionDetail.get("cName"));
+        }
+        // rfMailData.put("Customer Name",transactionDetail.get("cName"));
+        rfMailData.put("Customer Email",transactionDetail.get("cEmail"));
+        rfMail.put(MailPlaceHolder.TOID,transactionDetail.get("toid"));
+        rfMail.put(MailPlaceHolder.MULTIPALTRANSACTION,mailService.getDetailTableForSingleTrans(rfMailData));
+        if(functions.isValueNull((String) transactionDetail.get("cName")))
+        {
+            rfMail.put(MailPlaceHolder.NAME, ESAPI.encoder().encodeForHTML((String) transactionDetail.get("cName")));
+        }
+        else
+        {
+            rfMail.put(MailPlaceHolder.NAME,transactionDetail.get("cName"));
+        }
+        //rfMail.put(MailPlaceHolder.NAME,transactionDetail.get("cName"));
+        rfMail.put(MailPlaceHolder.CustomerEmail,transactionDetail.get("cEmail"));
+        rfMail.put(MailPlaceHolder.SUBJECT,"for OrderId: "+transactionDetail.get("description"));
+        rfMail.put(MailPlaceHolder.SUBJECT,"for OrderId: "+transactionDetail.get("description"));
+        rfMail.put(MailPlaceHolder.PARTNERID,partnerDetails.get("partnerId"));
+        rfMail.put(MailPlaceHolder.TRACKINGID,trackingid);
+
+        return rfMail;
+    }
+    public HashMap setPayoutMailData(String trackingid,String status,String remark)
+    {
+        HashMap rfMail=new HashMap();
+        MailService mailService=new MailService();
+        LinkedHashMap rfMailData=new LinkedHashMap();
+        HashMap transactionDetail=searchTransDetails(trackingid);
+
+        if(remark==null || remark==""){
+            remark=(String) transactionDetail.get("remark");
+        }
+        HashMap partnerDetails=getPartnerIdBasedOnMerchant((String) transactionDetail.get("toid"));
+        rfMailData.put("TrackingId",transactionDetail.get("trackingid"));
+        rfMailData.put("MerchantId",transactionDetail.get("toid"));
+        rfMailData.put("Order ID",transactionDetail.get("description"));
+        rfMailData.put("Amount",transactionDetail.get("currency")+" "+transactionDetail.get("amount"));
+        rfMailData.put("Payout Amount",transactionDetail.get("currency")+" "+transactionDetail.get("payoutamount"));
+        rfMailData.put("Status",status);
+        rfMailData.put("Payout Remark",remark);
+        if(functions.isValueNull((String) transactionDetail.get("cName")))
+        {
+            rfMailData.put("Customer Name", ESAPI.encoder().encodeForHTML((String) transactionDetail.get("cName")));
+        }
+        else
+        {
+            rfMailData.put("Customer Name",transactionDetail.get("cName"));
+        }
+        //rfMailData.put("Customer Name",transactionDetail.get("cName"));
+        rfMailData.put("Customer Email",transactionDetail.get("cEmail"));
+        rfMail.put(MailPlaceHolder.TOID,transactionDetail.get("toid"));
+        rfMail.put(MailPlaceHolder.MULTIPALTRANSACTION,mailService.getDetailTableForSingleTrans(rfMailData));
+        if(functions.isValueNull((String) transactionDetail.get("cName")))
+        {
+            rfMail.put(MailPlaceHolder.NAME, ESAPI.encoder().encodeForHTML((String) transactionDetail.get("cName")));
+        }
+        else
+        {
+            rfMail.put(MailPlaceHolder.NAME,transactionDetail.get("cName"));
+        }
+        //     rfMail.put(MailPlaceHolder.NAME,transactionDetail.get("cName"));
+        rfMail.put(MailPlaceHolder.CustomerEmail,transactionDetail.get("cEmail"));
+        rfMail.put(MailPlaceHolder.SUBJECT,"for OrderId: "+transactionDetail.get("description"));
+        rfMail.put(MailPlaceHolder.PARTNERID,partnerDetails.get("partnerId"));
+        rfMail.put(MailPlaceHolder.TRACKINGID,trackingid);
+
+        return rfMail;
+    }
+
+    public HashMap setChargeBackMailData(String trackingid,String status,String remark)
+    {
+        HashMap rfMail=new HashMap();
+        MailService mailService=new MailService();
+        HashMap transactionDetail=searchTransDetails(trackingid);
+        String cbInfo=(String) transactionDetail.get("chargebackinfo");
+        if(cbInfo==null)
+        {
+            cbInfo=remark;
+        }
+        HashMap partnerDetails=getPartnerIdBasedOnMerchant((String) transactionDetail.get("toid"));
+        LinkedHashMap mailValues=new LinkedHashMap();
+        mailValues.put("TrackingId",trackingid);
+        mailValues.put("MerchantId",transactionDetail.get("toid"));
+        mailValues.put("Order Description",transactionDetail.get("description"));
+        mailValues.put("Amount",transactionDetail.get("currency")+" "+transactionDetail.get("amount"));
+        mailValues.put("Chargeback Amount",transactionDetail.get("currency")+" "+transactionDetail.get("chargebackamount"));
+        mailValues.put("Status",status);
+        mailValues.put("Chargeback Remark",cbInfo);
+        if(functions.isValueNull((String) transactionDetail.get("cName")))
+        {
+            mailValues.put("Customer Name", ESAPI.encoder().encodeForHTML((String) transactionDetail.get("cName")));
+        }
+        else
+        {
+            mailValues.put("Customer Name",transactionDetail.get("cName"));
+        }
+
+        //mailValues.put("Customer Name",transactionDetail.get("cName"));
+        mailValues.put("Customer Email",transactionDetail.get("cEmail"));
+        rfMail.put(MailPlaceHolder.TOID,transactionDetail.get("toid"));
+        rfMail.put(MailPlaceHolder.MULTIPALTRANSACTION,mailService.getDetailTableForSingleTrans(mailValues));
+        if(functions.isValueNull((String) transactionDetail.get("cName")))
+        {
+            rfMail.put(MailPlaceHolder.NAME, ESAPI.encoder().encodeForHTML((String) transactionDetail.get("cName")));
+        }
+        else
+        {
+            rfMail.put(MailPlaceHolder.NAME,transactionDetail.get("cName"));
+        }
+        //rfMail.put(MailPlaceHolder.NAME,transactionDetail.get("cName"));
+        rfMail.put(MailPlaceHolder.CustomerEmail,transactionDetail.get("cEmail"));
+        rfMail.put(MailPlaceHolder.SUBJECT,"For TransactionID: "+transactionDetail.get("trackingid"));
+        rfMail.put(MailPlaceHolder.PARTNERID,partnerDetails.get("partnerId"));
+
+        return rfMail;
+    }
+
+    public HashMap setFraudMarkedMailData(String trackingid,String status)
+    {
+        HashMap rfMail=new HashMap();
+        MailService mailService=new MailService();
+        HashMap transactionDetail=searchTransDetails(trackingid);
+
+        LinkedHashMap mailValues=new LinkedHashMap();
+        HashMap partnerDetails=getPartnerIdBasedOnMerchant((String) transactionDetail.get("toid"));
+        mailValues.put("TrackingId",trackingid);
+        mailValues.put("MerchantId",transactionDetail.get("toid"));
+        mailValues.put("Order Description",transactionDetail.get("description"));
+        mailValues.put("Amount",transactionDetail.get("currency")+" "+transactionDetail.get("amount"));
+        mailValues.put("Status",status);
+        if(functions.isValueNull((String) transactionDetail.get("cName")))
+        {
+            mailValues.put("Customer Name", ESAPI.encoder().encodeForHTML((String) transactionDetail.get("cName")));
+        }
+        else
+        {
+            mailValues.put("Customer Name",transactionDetail.get("cName"));
+        }
+        //mailValues.put("Customer Name",transactionDetail.get("cName"));
+        mailValues.put("Customer Email",transactionDetail.get("cEmail"));
+        rfMail.put(MailPlaceHolder.TOID,transactionDetail.get("toid"));
+        rfMail.put(MailPlaceHolder.MULTIPALTRANSACTION,mailService.getDetailTableForSingleTrans(mailValues));
+        if(functions.isValueNull((String) transactionDetail.get("cName")))
+        {
+            rfMail.put(MailPlaceHolder.NAME, ESAPI.encoder().encodeForHTML((String) transactionDetail.get("cName")));
+        }
+        else
+        {
+            rfMail.put(MailPlaceHolder.NAME,transactionDetail.get("cName"));
+        }
+        // rfMail.put(MailPlaceHolder.NAME,transactionDetail.get("cName"));
+        rfMail.put(MailPlaceHolder.CustomerEmail,transactionDetail.get("cEmail"));
+        rfMail.put(MailPlaceHolder.SUBJECT,"For OrderId: "+transactionDetail.get("description"));
+        rfMail.put(MailPlaceHolder.PARTNERID,partnerDetails.get("partnerId"));
+
+        return rfMail;
+    }
+
+    public HashMap setSaleTransactionData(String trackingid,String status)
+    {
+        HashMap merchantMail=new HashMap();
+        String display = "";
+        if(status.contains("Declined") || status.contains("Failed")){
+            display ="style=\"display:none;\"";
+        }
+        HashMap transactionDetail=searchTransDetails(trackingid);
+        HashMap partnerDetails=getPartnerIdBasedOnMerchant((String) transactionDetail.get("toid"));
+        merchantMail.put(MailPlaceHolder.TOID,transactionDetail.get("toid"));
+        merchantMail.put(MailPlaceHolder.CustomerEmail,transactionDetail.get("emailaddr"));
+        merchantMail.put(MailPlaceHolder.TRACKINGID,trackingid);
+        merchantMail.put(MailPlaceHolder.IPADDRESS,transactionDetail.get("ipaddress"));
+        merchantMail.put(MailPlaceHolder.ORDERDESCRIPTION,transactionDetail.get("orderdescription"));
+        merchantMail.put(MailPlaceHolder.DESC,transactionDetail.get("description"));
+        merchantMail.put(MailPlaceHolder.AMOUNT,transactionDetail.get("amount"));
+        merchantMail.put(MailPlaceHolder.CURRENCY,transactionDetail.get("currency"));
+        //merchantMail.put(MailPlaceHolder.DISPLAYNAME, GatewayAccountService.getGatewayAccount((String)transactionDetail.get("accountid")).getDisplayName());
+        merchantMail.put(MailPlaceHolder.STATUS,status);
+        if(functions.isValueNull((String) transactionDetail.get("cName")))
+        {
+            merchantMail.put(MailPlaceHolder.NAME, ESAPI.encoder().encodeForHTML((String) transactionDetail.get("cName")));
+        }
+        else
+        {
+            merchantMail.put(MailPlaceHolder.NAME,transactionDetail.get("cName"));
+        }
+        merchantMail.put(MailPlaceHolder.PARTNERID,partnerDetails.get("partnerId"));
+        merchantMail.put(MailPlaceHolder.DISPLAYTR, display);
+
+
+        return merchantMail;
+    }
+    public HashMap setReconTransactionData(String trackingid,String status,String mailForEvent)
+    {
+        logger.error("inside setReconTransactionData");
+        HashMap merchantMail=new HashMap();
+        String display = "";
+        String amount="0.00";
+       /* if(status.contains("Declined") || status.contains("Failed")){
+            display ="style=\"display:none;\"";
+        }*/
+        HashMap transactionDetail=searchTransDetails(trackingid);
+        HashMap partnerDetails=getPartnerIdBasedOnMerchant((String) transactionDetail.get("toid"));
+        merchantMail.put(MailPlaceHolder.TOID,transactionDetail.get("toid"));
+        merchantMail.put(MailPlaceHolder.CustomerEmail,transactionDetail.get("emailaddr"));
+        merchantMail.put(MailPlaceHolder.TRACKINGID,trackingid);
+        merchantMail.put(MailPlaceHolder.IPADDRESS,transactionDetail.get("ipaddress"));
+        merchantMail.put(MailPlaceHolder.ORDERDESCRIPTION,transactionDetail.get("orderdescription"));
+        merchantMail.put(MailPlaceHolder.DESC,transactionDetail.get("description"));
+        if(functions.isValueNull(mailForEvent) && mailForEvent.equals("transactionMail")) {
+            amount = (String) transactionDetail.get("amount");
+        }else if(mailForEvent.equals("refundMail")) {
+            amount = (String) transactionDetail.get("refundamount");
+        }else if(mailForEvent.equals("chargebackMail")) {
+            amount = (String) transactionDetail.get("chargebackamount");
+        }else if(mailForEvent.equals("payoutMail")) {
+            amount = (String) transactionDetail.get("payoutamount");
+        }
+        merchantMail.put(MailPlaceHolder.AMOUNT,amount);
+        merchantMail.put(MailPlaceHolder.CURRENCY,transactionDetail.get("currency"));
+        merchantMail.put(MailPlaceHolder.STATUS,status);
+        if(functions.isValueNull((String) transactionDetail.get("cName")))
+        {
+            merchantMail.put(MailPlaceHolder.NAME, ESAPI.encoder().encodeForHTML((String) transactionDetail.get("cName")));
+        }
+        else
+        {
+            merchantMail.put(MailPlaceHolder.NAME,transactionDetail.get("cName"));
+        }
+        merchantMail.put(MailPlaceHolder.PARTNERID,partnerDetails.get("partnerId"));
+        merchantMail.put(MailPlaceHolder.DISPLAYTR, display);
+        merchantMail.put("mailForEvent",mailForEvent);
+        return merchantMail;
+    }
+    public HashMap setFraudFailedTransactionData(String trackingid,String status,String remark)
+    {
+        HashMap merchantMail=new HashMap();
+        HashMap transactionDetail=searchTransDetails(trackingid);
+        HashMap partnerDetails=getPartnerIdBasedOnMerchant((String) transactionDetail.get("toid"));
+        merchantMail.put(MailPlaceHolder.TOID,transactionDetail.get("toid"));
+        merchantMail.put(MailPlaceHolder.CustomerEmail,transactionDetail.get("emailaddr"));
+        merchantMail.put(MailPlaceHolder.TRACKINGID,trackingid);
+        merchantMail.put(MailPlaceHolder.IPADDRESS,transactionDetail.get("ipaddress"));
+        merchantMail.put(MailPlaceHolder.ORDERDESCRIPTION,transactionDetail.get("orderdescription"));
+        merchantMail.put(MailPlaceHolder.DESC,transactionDetail.get("description"));
+        merchantMail.put(MailPlaceHolder.AMOUNT,transactionDetail.get("amount"));
+        merchantMail.put(MailPlaceHolder.CURRENCY,transactionDetail.get("currency"));
+        //merchantMail.put(MailPlaceHolder.DISPLAYNAME, GatewayAccountService.getGatewayAccount((String)transactionDetail.get("accountid")).getDisplayName());
+        merchantMail.put(MailPlaceHolder.STATUS,status);
+        if(functions.isValueNull((String) transactionDetail.get("cName")))
+        {
+            merchantMail.put(MailPlaceHolder.NAME, ESAPI.encoder().encodeForHTML((String) transactionDetail.get("cName")));
+        }
+        else
+        {
+            merchantMail.put(MailPlaceHolder.NAME,transactionDetail.get("cName"));
+        }
+        // merchantMail.put(MailPlaceHolder.NAME,transactionDetail.get("cName"));
+        merchantMail.put(MailPlaceHolder.REMARK,remark);
+        merchantMail.put(MailPlaceHolder.PARTNERID,partnerDetails.get("partnerId"));
+
+        return merchantMail;
+    }
+    public HashMap setAdminFailedTransNotification(String trackingid,String status,String remark)
+    {
+        HashMap adminMail=new HashMap();
+        java.util.Date currentDate = new Date();
+        adminMail.put(MailPlaceHolder.DATE,currentDate.toString());
+        adminMail.put(MailPlaceHolder.TRACKINGID,trackingid);
+        adminMail.put(MailPlaceHolder.STATUS,status);
+        adminMail.put(MailPlaceHolder.REMARK,remark);
+
+        return adminMail;
+    }
+
+    public HashMap setAdminSettlementReport(String status,String remark)
+    {
+        HashMap adminMail=new HashMap();
+        java.util.Date currentDate = new Date();
+        adminMail.put(MailPlaceHolder.DISPLAYNAME,status);
+        adminMail.put(MailPlaceHolder.DATE,currentDate.toString());
+        adminMail.put(MailPlaceHolder.MULTIPALTRANSACTION,remark);
+        return adminMail;
+    }
+
+    public HashMap setAdminAuthstartedCronReport(String status,String remark)
+    {
+        HashMap adminMail=new HashMap();
+        java.util.Date currentDate = new Date();
+        adminMail.put(MailPlaceHolder.DISPLAYNAME,status);
+        adminMail.put(MailPlaceHolder.DATE,currentDate.toString());
+        adminMail.put(MailPlaceHolder.MULTIPALTRANSACTION,remark);
+        return adminMail;
+    }
+
+    public HashMap setAdminPayoutStartedCronReport(String status,String remark)
+    {
+
+        HashMap adminMail=new HashMap();
+        java.util.Date currentDate = new Date();
+        adminMail.put(MailPlaceHolder.DISPLAYNAME,status);
+        adminMail.put(MailPlaceHolder.DATE,currentDate.toString());
+        adminMail.put(MailPlaceHolder.MULTIPALTRANSACTION,remark);
+        return adminMail;
+    }
+
+    public HashMap setAdminPayoutFailedCronReport(String status,String remark)
+    {
+        HashMap adminMail=new HashMap();
+        java.util.Date currentDate = new Date();
+        adminMail.put(MailPlaceHolder.DISPLAYNAME,status);
+        adminMail.put(MailPlaceHolder.DATE,currentDate.toString());
+        adminMail.put(MailPlaceHolder.MULTIPALTRANSACTION,remark);
+        return adminMail;
+    }
+
+
+    public HashMap setAdminMarkedForReversalCronReport(String status,String remark)
+    {
+        HashMap adminMail=new HashMap();
+        java.util.Date currentDate = new Date();
+        adminMail.put(MailPlaceHolder.DISPLAYNAME,status);
+        adminMail.put(MailPlaceHolder.DATE,currentDate.toString());
+        adminMail.put(MailPlaceHolder.MULTIPALTRANSACTION,remark);
+        return adminMail;
+    }
+
+    public HashMap searchTransDetails(String trackingId)
+    {
+        HashMap transDetails = null;
+        Connection conn = null;
+        String tablename = "";
+        ResultSet rs =null;
+
+        try
+        {
+            conn = Database.getConnection();
+            String s="";
+            //tablename = transaction.getTableNameFromTrackingid(trackingId);
+            tablename = "transaction_common";
+            if(tablename.equalsIgnoreCase("transaction_common"))
+            {
+                s="select trackingid,accountid,toid,totype,paymodeid,cardtypeid,fromid,amount,orderdescription,description,captureamount,refundamount,payoutamount,transid,status,name,emailaddr,currency,chargebackamount,chargebackinfo,pod,podbatch,ipaddress,emailaddr,refundinfo,remark,notificationUrl from transaction_common where trackingid = ?";
+            }
+            else if(tablename.equalsIgnoreCase("transaction_qwipi"))
+            {
+                s="select trackingid,accountid,toid,paymodeid,cardtypeid,fromid,amount,orderdescription,description,captureamount,refundamount,payoutamount,transid,status,name,emailaddr,currency,chargebackamount,cbreason as chargebackinfo,pod,podbatch,emailaddr,ipaddress,refundinfo,remark,notificationUrl from transaction_qwipi where trackingid = ?";
+            }
+            else if(tablename.equalsIgnoreCase("transaction_ecore"))
+            {
+                s="select trackingid,accountid,toid,paymodeid,cardtypeid,fromid,amount,orderdescription,description,captureamount,refundamount,payoutamount,transid,status,name,emailaddr,currency,chargebackamount,cbreason as chargebackinfo,pod,podbatch,emailaddr,ipaddress,refundinfo,remark,notificationUrl from transaction_ecore where trackingid = ?";
+            }
+            else
+            {
+                s="select trackingid,accountid,toid,paymodeid,cardtypeid,fromid,amount,orderdescription,description,captureamount,refundamount,payoutamount,transid,status,name,emailaddr,currency,chargebackamount,chargebackinfo,pod,podbatch,ipaddress,emailaddr,refundinfo,remark,notificationUrl from transaction_common where trackingid = ?";
+            }
+            PreparedStatement p=conn.prepareStatement(s);
+            p.setString(1,trackingId);
+            rs = p.executeQuery();
+            if (rs.next())
+            {
+                transDetails = new HashMap();
+                transDetails.put("accountid", rs.getString("accountid"));
+                transDetails.put("toid", rs.getString("toid"));
+                transDetails.put("totype", rs.getString("totype"));
+                transDetails.put("paymodeid", rs.getString("paymodeid"));
+                transDetails.put("cardtypeid", rs.getString("cardtypeid"));
+                transDetails.put("fromid", rs.getString("fromid"));
+                transDetails.put("amount", rs.getString("amount"));
+                transDetails.put("description", rs.getString("description"));
+                transDetails.put("captureamount", rs.getString("captureamount"));
+                transDetails.put("refundamount", rs.getString("refundamount"));
+                transDetails.put("payoutamount", rs.getString("payoutamount"));
+                transDetails.put("transid", rs.getString("transid"));
+                transDetails.put("status", rs.getString("status"));
+                transDetails.put("cName",rs.getString("name"));
+                transDetails.put("cEmail",rs.getString("emailaddr"));
+                transDetails.put("trackingid",rs.getString("trackingid"));
+                transDetails.put("currency",rs.getString("currency"));
+                transDetails.put("chargebackamount",rs.getString("chargebackamount"));
+                transDetails.put("chargebackinfo",rs.getString("chargebackinfo"));
+                transDetails.put("pod",rs.getString("pod"));
+                transDetails.put("podbatch",rs.getString("podbatch"));
+                transDetails.put("ipaddress",rs.getString("ipaddress"));
+                transDetails.put("emailaddr",rs.getString("emailaddr"));
+                transDetails.put("orderdescription",rs.getString("orderdescription"));
+
+                if(functions.isValueNull(rs.getString("remark"))){
+                    transDetails.put("remark",rs.getString("remark"));
+                }else{
+                    transDetails.put("remark","");
+                }
+                if(rs.getString("refundinfo")!=null)
+                    transDetails.put("refundinfo",rs.getString("refundinfo"));
+                else
+                    transDetails.put("refundinfo","");
+
+                if(functions.isValueNull(rs.getString("notificationUrl"))){
+                    transDetails.put("notificationUrl",rs.getString("notificationUrl"));
+                }else{
+                    transDetails.put("notificationUrl","");
+                }
+
+
+            }
+            logger.debug("mail query---"+p);
+        }
+        catch (SystemError systemError)
+        {
+            logger.error("Error",systemError);
+            transactionLogger.error("Error",systemError);
+        }
+        catch (SQLException e)
+        {
+            logger.error("Error" ,e);
+            transactionLogger.error("Error" ,e);
+        }
+        catch (Exception ex)
+        {
+            logger.error("Error" ,ex);
+            transactionLogger.error("Error" ,ex);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+
+
+        return transDetails;
+    }
+    public HashMap getPartnerIdBasedOnMerchant(String toid)
+    {
+        HashMap transDetails = null;
+        Connection conn = null;
+        String tablename = "";
+        ResultSet rs =null;
+
+        try
+        {
+            conn = Database.getConnection();
+            String query="select partnerId from members where memberid=?";
+            PreparedStatement p=conn.prepareStatement(query);
+            p.setString(1,toid);
+            rs = p.executeQuery();
+            if (rs.next())
+            {
+                transDetails = new HashMap();
+                transDetails.put("partnerId", rs.getString("partnerId"));
+            }
+            logger.debug("mail query---"+p);
+        }
+        catch (SystemError systemError)
+        {
+            logger.error("Error",systemError);
+            transactionLogger.error("Error",systemError);
+        }
+        catch (SQLException e)
+        {
+            logger.error("Error" ,e);
+            transactionLogger.error("Error" ,e);
+        }
+        catch (Exception ex)
+        {
+            logger.error("Error" ,ex);
+            transactionLogger.error("Error" ,ex);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return transDetails;
+    }
+}

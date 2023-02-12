@@ -1,0 +1,698 @@
+package com.manager.dao;
+
+import com.directi.pg.Database;
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.SystemError;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.manager.vo.gatewayVOs.GatewayAccountVO;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.constraintType.PZDBExceptionEnum;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.codecs.Codec;
+import org.owasp.esapi.codecs.MySQLCodec;
+
+import javax.servlet.http.HttpServletRequest;
+import java.sql.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Administrator
+ * Date: 9/19/14
+ * Time: 6:47 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class GatewayAccountDAO
+{
+    //common declaration
+    Logger logger = new Logger(GatewayAccountDAO.class.getName());
+    Functions functions = new Functions();
+
+
+    //get single GatewayAccountVO as per pgtypeid and accountId
+    public GatewayAccountVO getGatewayAccountFromPgTypeIdAndAccountId(String accountId, String pgTypeId)
+    {
+        Connection con = null;
+        ResultSet rsGatewayAccount = null;
+        PreparedStatement psGatewayAccount=null;
+        GatewayAccountVO gatewayAccountVO = new GatewayAccountVO();
+        try
+        {
+            con = Database.getRDBConnection();
+            StringBuffer query = new StringBuffer("select * from `gateway_accounts` where accountid= ? and pgtypeid= ?");
+            psGatewayAccount = con.prepareStatement(query.toString());
+            psGatewayAccount.setString(1, accountId);
+            psGatewayAccount.setString(2, pgTypeId);
+            rsGatewayAccount = psGatewayAccount.executeQuery();
+            if (rsGatewayAccount.next())
+            {
+                gatewayAccountVO.setAccountId(rsGatewayAccount.getString("accountid"));
+                //loading gateWay AccountVo from resultSet
+                GatewayAccount gatewayAccount = new GatewayAccount(rsGatewayAccount);
+                gatewayAccountVO.setGatewayAccount(gatewayAccount);
+            }
+        }
+        catch (SystemError systemError)
+        {
+            logger.error(" getGatewayAccountFromPgTypeIdAndAccountId system exception ::", systemError);
+        }
+        catch (SQLException e)
+        {
+            logger.error("getGatewayAccountFromPgTypeIdAndAccountId SQL exception::", e);
+        }
+        finally
+        {
+            Database.closeResultSet(rsGatewayAccount);
+            Database.closePreparedStatement(psGatewayAccount);
+            Database.closeConnection(con);
+        }
+        return gatewayAccountVO;
+    }
+
+    public String getGatewayAccountFirstTrans(String accountId, String tableName)
+    {
+        String strQuery = null;
+        String accountFirstTransactionDate = null;
+        ResultSet rsPayout = null;
+        PreparedStatement preparedStatement=null;
+        Connection conn = null;
+        try
+        {
+            conn = Database.getRDBConnection();
+            strQuery = "SELECT FROM_UNIXTIME(dtstamp) AS 'FirstTransDate' FROM " + tableName + " WHERE trackingid IN(SELECT MIN(trackingid) FROM " + tableName + " WHERE accountid=?)";
+            preparedStatement = conn.prepareStatement(strQuery);
+            preparedStatement.setString(1, accountId);
+            rsPayout = preparedStatement.executeQuery();
+            if (rsPayout.next())
+            {
+                accountFirstTransactionDate = rsPayout.getString("FirstTransDate");
+            }
+
+        }
+        catch (SystemError systemError)
+        {
+            logger.error("System Error while collect ", systemError);
+        }
+        catch (SQLException e)
+        {
+            logger.error("SQL Exception while collect ", e);
+        }
+        finally
+        {
+            Database.closeResultSet(rsPayout);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(conn);
+        }
+
+        return accountFirstTransactionDate;
+    }
+
+    public Set<String> getGatewayAccounts(String gateway) throws SystemError
+    {
+        Functions functions = new Functions();
+        Set<String> accountIds = new HashSet<String>();
+        StringBuffer query = null;
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement pstmt = null;
+        if (functions.isValueNull(gateway))
+        {
+            try
+            {
+                conn = Database.getConnection();
+                //conn = Database.getRDBConnection();
+                query = new StringBuffer("select A.accountid from gateway_accounts A, gateway_type T where A.pgtypeid = T.pgtypeid and T.gateway=?");
+                pstmt = conn.prepareStatement(query.toString());
+                pstmt.setString(1, gateway);
+                rs = pstmt.executeQuery();
+                while (rs.next())
+                {
+                    accountIds.add(rs.getString("accountid"));
+                }
+            }
+            catch (SQLException se)
+            {
+                throw new SystemError(se.toString());
+            }
+            finally
+            {
+                Database.closeConnection(conn);
+            }
+        }
+        return accountIds;
+    }
+
+    /**
+     * @param merchantId
+     * @param pgtypeId
+     * @param aliasname
+     * @param displayname
+     * @param isMastercardSupported
+     * @param shortName
+     * @param site
+     * @param path
+     * @param username
+     * @param passwd
+     * @param charegebackPath
+     * @param monthlyCardLimit
+     * @param dailyAmountLimit
+     * @param monthlyAmountLimit
+     * @param dailyCardLimit
+     * @param weeklyCardLimit
+     * @param minTransactionAmount
+     * @param maxTransactionAmount
+     * @param dailyCardAmountLimit
+     * @param weeklyCardAmountLimit
+     * @param monthCardAmountLimit
+     * @param isTest
+     * @param partnerId
+     * @param agentId
+     * @param weeklyAmountLimit
+     * @param isRecurring
+     * @return
+     * @throws PZDBViolationException
+     */
+    public String createBankAccount(String merchantId, String pgtypeId, String isCVVrequired, String aliasname, String displayname, Integer isMastercardSupported, String shortName, String site, String path, String is3dSupportAccount, String username,
+                                    String passwd, String charegebackPath, int monthlyCardLimit, Double dailyAmountLimit, Double monthlyAmountLimit, int dailyCardLimit,
+                                    int weeklyCardLimit, Double minTransactionAmount, Double maxTransactionAmount, Double dailyCardAmountLimit, Double weeklyCardAmountLimit, Double monthCardAmountLimit,
+                                    String isTest, String isActiveAccount, String isMultipleRefund,String PartialRefund,String emiSupport,String partnerId, String agentId, Double weeklyAmountLimit, String isRecurring,String cardLimitCheck,String cardAmountLimitCheck,String amountLimitCheck,String addressValidation,String isDynamicDescriptor,String isForexMid,String actionExecutorId,String actionExecutorName,String fromAccountId,String fromMid,String threeDsVersion,
+                                    String tableName, String columnName,String daily_card_limit_check,String weekly_card_limit_check,String monthly_card_limit_check,String Daily_Account_Amount_Limit,String Weekly_Account_Amount_Limit,String Monthly_Account_Amount_Limit,String daily_card_amount_limit_check,String weekly_card_amount_limit_check,String monthly_card_amount_limit_check ,HttpServletRequest req) throws PZDBViolationException
+    {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        int i = 0;
+        String status = "fail";
+        try
+        {
+            con = Database.getConnection();
+            StringBuffer qry = new StringBuffer("insert into gateway_accounts(merchantid,pgtypeid,aliasname,displayname,ismastercardsupported,shortname,site,path,3dSupportAccount,isactive,username,passwd,chargeback_path,monthly_card_limit,daily_amount_limit,monthly_amount_limit," +
+                    "daily_card_limit,weekly_card_limit,min_transaction_amount,max_transaction_amount,daily_card_amount_limit,weekly_card_amount_limit,monthly_card_amount_limit,istest,partnerid,agentid,weekly_amount_limit,is_recurring,isCVVrequired,isMultipleRefund,PartialRefund,emiSupport,cardLimitCheck,cardAmountLimitCheckAcc,amountLimitCheckAcc,addressValidation,isDynamicDescriptor,isForexMid,actionExecutorId,actionExecutorName,fromAccountId,fromMid,threeDsVersion,daily_card_limit_check,weekly_card_limit_check,monthly_card_limit_check,Daily_Account_Amount_Limit,Weekly_Account_Amount_Limit,Monthly_Account_Amount_Limit,daily_card_amount_limit_check,weekly_card_amount_limit_check,monthly_card_amount_limit_check)" +
+                    "values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+
+            pstmt = con.prepareStatement(qry.toString(), Statement.RETURN_GENERATED_KEYS);
+            pstmt.setString(1, merchantId);
+            pstmt.setString(2, pgtypeId);
+            pstmt.setString(3, aliasname);
+            pstmt.setString(4, displayname);
+            pstmt.setInt(5, isMastercardSupported);
+            pstmt.setString(6, shortName);
+            pstmt.setString(7, site);
+            pstmt.setString(8, path);
+            pstmt.setString(9, is3dSupportAccount);
+            pstmt.setString(10, isActiveAccount);
+            pstmt.setString(11, username);
+            pstmt.setString(12, passwd);
+            pstmt.setString(13, charegebackPath);
+            pstmt.setInt(14, monthlyCardLimit);
+            pstmt.setDouble(15, dailyAmountLimit);
+            pstmt.setDouble(16, monthlyAmountLimit);
+            pstmt.setInt(17, dailyCardLimit);
+            pstmt.setInt(18, weeklyCardLimit);
+            pstmt.setDouble(19, minTransactionAmount);
+            pstmt.setDouble(20, maxTransactionAmount);
+            pstmt.setDouble(21, dailyCardAmountLimit);
+            pstmt.setDouble(22, weeklyCardAmountLimit);
+            pstmt.setDouble(23, monthCardAmountLimit);
+            pstmt.setString(24, isTest);
+            pstmt.setString(25, partnerId);
+            pstmt.setString(26, agentId);
+            pstmt.setDouble(27, weeklyAmountLimit);
+            pstmt.setString(28, isRecurring);
+            pstmt.setString(29, isCVVrequired);
+            pstmt.setString(30, isMultipleRefund);
+            pstmt.setString(31, PartialRefund);
+            pstmt.setString(32,emiSupport);
+            pstmt.setString(33,cardLimitCheck);
+            pstmt.setString(34,cardAmountLimitCheck);
+            pstmt.setString(35,amountLimitCheck);
+            pstmt.setString(36,addressValidation);
+            pstmt.setString(37,isDynamicDescriptor);
+            pstmt.setString(38,isForexMid);
+            pstmt.setString(39,actionExecutorId);
+            pstmt.setString(40,actionExecutorName);
+            pstmt.setString(41,fromAccountId);
+            pstmt.setString(42,fromMid);
+            pstmt.setString(43,threeDsVersion);
+            pstmt.setString(44,daily_card_limit_check);
+            pstmt.setString(45,weekly_card_limit_check);
+            pstmt.setString(46,monthly_card_limit_check);
+            pstmt.setString(47,Daily_Account_Amount_Limit);
+            pstmt.setString(48,Weekly_Account_Amount_Limit);
+            pstmt.setString(49,Monthly_Account_Amount_Limit);
+            pstmt.setString(50,daily_card_amount_limit_check);
+            pstmt.setString(51,weekly_card_amount_limit_check);
+            pstmt.setString(52,monthly_card_amount_limit_check);
+            logger.debug("pstmt is ::::::"+pstmt);
+            i = pstmt.executeUpdate();
+            if (i > 0)
+            {
+                status = "success";
+                ResultSet rs = pstmt.getGeneratedKeys();
+                rs.next();
+                int accountID = rs.getInt(1);
+                String query1 = "insert into gateway_account_partner_mapping(mappingid,accountid,partnerid,creation_date)VALUES (null,?,?,unix_timestamp(now()))";
+                pstmt = con.prepareStatement(query1);
+                pstmt.setInt(1, accountID);
+                pstmt.setString(2, partnerId);
+                int k = pstmt.executeUpdate();
+                if (k > 0)
+                {
+
+                    if (tableName != null && tableName.length() > 0 && !tableName.equalsIgnoreCase("null"))
+                    {
+                        if (columnName.length() > 0 && columnName != null)
+                        {
+                            Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+                            StringBuilder columnValuesSb = new StringBuilder();
+                            StringBuilder columnNamesSb = new StringBuilder();
+                            columnNamesSb.append("insert into " + tableName + " (accountid,");
+                            columnValuesSb.append(" values ('");
+                            columnValuesSb.append(accountID);
+                            columnValuesSb.append("',");
+                            String[] columnNameArray = columnName.split(",");
+                            for (int j = 0; j < columnNameArray.length; j++)
+                            {
+                                String tempColumn = "";
+                                String value = "";
+                                tempColumn = columnNameArray[j];
+                                if (req.getParameter(tempColumn) != null && req.getParameter(tempColumn).length() > 0)
+                                {
+                                    value = req.getParameter(tempColumn);
+                                    if (value.length() > 0)
+                                    {
+                                        if (value != null && !value.equalsIgnoreCase("null") && value != "")
+                                        {
+                                            columnNamesSb.append("`" + tempColumn + "`");
+                                            columnNamesSb.append(",");
+                                            columnValuesSb.append("'");
+                                            columnValuesSb.append(ESAPI.encoder().encodeForSQL(me,value));
+                                            columnValuesSb.append("',");
+                                        }
+                                    }
+                                }
+                            }
+                            String tempColumn = columnNamesSb.toString();
+                            String tempValues = columnValuesSb.toString();
+                            tempColumn = tempColumn.substring(0, tempColumn.length() - 1);
+                            tempValues = tempValues.substring(0, tempValues.length() - 1);
+                            String tempQuery = tempColumn + ")" + tempValues + ")";
+                            PreparedStatement ps = con.prepareStatement(tempQuery);
+                            int kl = ps.executeUpdate();
+                            if (kl > 0)
+                            {
+                                status = "success";
+                            }
+                            // status = "Gateway Account Successfully Added";
+                            logger.debug("status inside DAO::::" + status);
+                        }
+                    }
+                }
+
+            }
+        }
+        catch (SystemError systemError)
+        {
+            logger.error("SQL Exception while creating gateway account", systemError);
+            PZExceptionHandler.raiseDBViolationException(FraudRuleDAO.class.getName(), "addNewGatewayAccount()", null, "Common", "Sql exception while connecting to gateway_accounts table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, systemError.getMessage(), systemError.getCause());
+        }
+        catch (SQLException e)
+        {
+            logger.error("SQL Exception while creating gateway account", e);
+            PZExceptionHandler.raiseDBViolationException(FraudRuleDAO.class.getName(), "addNewGatewayAccount()", null, "Common", "Sql exception while connecting to gateway_accounts table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(pstmt);
+            Database.closeConnection(con);
+        }
+        return status;
+    }
+
+    /**
+     * @param mid
+     * @return
+     * @throws PZDBViolationException
+     */
+    public String isMIDUnique(String mid) throws PZDBViolationException
+    {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String ismidunique = "YES";
+        try
+        {
+            con = Database.getRDBConnection();
+            StringBuffer qry = new StringBuffer("select merchantid from gateway_accounts where merchantid=?");
+            pstmt = con.prepareStatement(qry.toString());
+            pstmt.setString(1, mid);
+            rs = pstmt.executeQuery();
+            if (rs.next())
+            {
+                ismidunique = "NO";
+            }
+        }
+        catch (SystemError systemError)
+        {
+            logger.error("SQL Exception while finding uniqueness of MID in gateway account", systemError);
+            PZExceptionHandler.raiseDBViolationException(FraudRuleDAO.class.getName(), "isMIDUnique()", null, "Common", "Sql exception while connecting to gateway_accounts table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, systemError.getMessage(), systemError.getCause());
+        }
+        catch (SQLException e)
+        {
+            logger.error("SQL Exception while finding uniqueness of MID gateway account", e);
+            PZExceptionHandler.raiseDBViolationException(FraudRuleDAO.class.getName(), "isMIDUnique()", null, "Common", "Sql exception while connecting to gateway_accounts table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(pstmt);
+            Database.closeConnection(con);
+        }
+        return ismidunique;
+    }
+
+    public boolean isMIDUnique(String mid, String gateway,String mcc) throws PZDBViolationException
+    {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        boolean isMidUnique = true;
+        try
+        {
+            con = Database.getConnection();
+            StringBuffer qry = new StringBuffer("select merchantid from gateway_accounts where merchantid=? AND pgtypeid=? AND aliasname=?");
+            pstmt = con.prepareStatement(qry.toString());
+            pstmt.setString(1, mid);
+            pstmt.setString(2, gateway);
+            pstmt.setString(3,mcc);
+            rs = pstmt.executeQuery();
+            if (rs.next())
+            {
+                isMidUnique = false;
+            }
+        }
+        catch (SystemError systemError)
+        {
+            logger.error("SQLException in gateway account", systemError);
+            PZExceptionHandler.raiseDBViolationException(FraudRuleDAO.class.getName(), "isMIDUnique()", null, "Common", "Sql exception while connecting to gateway_accounts table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, systemError.getMessage(), systemError.getCause());
+        }
+        catch (SQLException e)
+        {
+            logger.error("SQLException in gateway account", e);
+            PZExceptionHandler.raiseDBViolationException(FraudRuleDAO.class.getName(), "isMIDUnique()", null, "Common", "Sql exception while connecting to gateway_accounts table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(pstmt);
+            Database.closeConnection(con);
+        }
+        return isMidUnique;
+    }
+
+    public int getPartnerBankAccounts(String partnerId) throws SystemError, SQLException
+    {
+        Connection conn = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet rs = null;
+        int count = 0;
+        try
+        {
+            //conn = Database.getConnection();
+            conn = Database.getRDBConnection();
+            String query = "SELECT COUNT(*) as 'count' FROM gateway_account_partner_mapping WHERE partnerid=? and isactive='Y'";
+            preparedStatement = conn.prepareStatement(query);
+            preparedStatement.setString(1, partnerId);
+            rs = preparedStatement.executeQuery();
+            while (rs.next())
+            {
+                count = rs.getInt("count");
+            }
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(conn);
+        }
+        return count;
+    }
+
+    public HashMap getPaymentTypes() throws PZDBViolationException, SystemError, SQLException
+    {
+        Connection conn = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet rs = null;
+        HashMap paymentTpe = new HashMap();
+
+        try
+        {
+            conn = Database.getRDBConnection();
+            StringBuffer qry = new StringBuffer("SELECT paymode,paymentType FROM payment_type");
+            preparedStatement = conn.prepareStatement(qry.toString());
+            rs = preparedStatement.executeQuery();
+            while (rs.next())
+            {
+                paymentTpe.put(rs.getString("paymode"), rs.getString("paymentType"));
+            }
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(conn);
+        }
+        return paymentTpe;
+    }
+
+    public Set<String> getAccountIds(String gateway) throws PZDBViolationException, SQLException, SystemError
+    {
+        Functions functions = new Functions();
+        Set<String> accountIds = new HashSet<String>();
+        StringBuffer query = null;
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement pstmt=null;
+        if (functions.isValueNull(gateway))
+        {
+            try
+            {
+                conn = Database.getRDBConnection();
+                query = new StringBuffer("SELECT accountid FROM gateway_accounts ac JOIN gateway_type gt ON ac.pgtypeid =gt.pgtypeid WHERE  gt.gateway=?");
+                pstmt = conn.prepareStatement(query.toString());
+                pstmt.setString(1, gateway);
+                rs = pstmt.executeQuery();
+                while (rs.next())
+                {
+                    accountIds.add(rs.getString("accountid"));
+                }
+            }
+            finally
+            {
+                Database.closeResultSet(rs);
+                Database.closePreparedStatement(pstmt);
+                Database.closeConnection(conn);
+            }
+        }
+        return accountIds;
+    }
+
+   /* public boolean checkGatewayAccountAvailability(String merchantId, String pgTypeId, String aliasName) throws SystemError, SQLException
+    {
+        Connection conn = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet rs = null;
+        boolean isAvailable = false;
+        int count = 0;
+        try
+        {
+            conn = Database.getRDBConnection();
+            String query = "select merchantid,pgtypeid from gateway_accounts where merchantid= ? and pgtypeid=? and aliasname=?";
+            preparedStatement = conn.prepareStatement(query);
+            preparedStatement.setString(1, merchantId);
+            preparedStatement.setString(2, pgTypeId);
+            preparedStatement.setString(3, aliasName);
+            rs = preparedStatement.executeQuery();
+            if (rs.next())
+            {
+                isAvailable = true;
+            }
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return isAvailable;
+    }*/
+
+    public String addGatewayAccount(String merchantId, String pgtypeId, String aliasname, String displayname, Integer isMastercardSupported, String shortName, String site, String path, String username,
+                                    String passwd, String charegebackPath, String isCvvRequiried, Double monthlyCardLimit, Double dailyAmountLimit, Double monthlyAmountLimit, Double dailyCardLimit, Double weeklyCardLimit,
+                                    Double minTransactionAmount, Double maxTransactionAmount, Double dailyCardAmountLimit, Double weeklyCardAmountLimit, Double monthCardAmountLimit, String tableName, String columnName, HttpServletRequest req, String isTest, String isActive,String isMultipleRefund ,String PartialRefund,String emiSupport,String partnerId, String agentId, Double weeklyAmountLimit, String isRecurring, String isDynamicDescriptor, String is3dSupportAccount,String cardLimitCheck,String cardAmountLimitCheckAcc,String amountLimitCheckAcc,String actionExecutorId,String actionExecutorName,String fromAccountId,String fromMid,String threeDsVersion,String daily_card_limit_check,String weekly_card_limit_check,String monthly_card_limit_check,String Daily_Account_Amount_Limit,String Weekly_Account_Amount_Limit,String Monthly_Account_Amount_Limit,String daily_card_amount_limit_check,String weekly_card_amount_limit_check,String monthly_card_amount_limit_check) throws SystemError, SQLException
+    {
+        String result = "";
+        Connection conn = Database.getConnection();
+        try
+        {
+            logger.debug("Entering Into addGatewayAccount() method");
+            String selectQuery = "select merchantid,pgtypeid from gateway_accounts where merchantid= ? and pgtypeid=? and aliasname=? ";
+            PreparedStatement selectPstmt = conn.prepareStatement(selectQuery);
+            selectPstmt.setString(1, merchantId);
+            selectPstmt.setInt(2, Integer.parseInt(pgtypeId));
+            selectPstmt.setString(3, aliasname);
+            ResultSet rs = selectPstmt.executeQuery();
+
+            if (rs.next())
+            {
+                conn.close();
+                result = "Error : Gateway Accounts with same merchantId, pgtypeId, aliasName already exists";
+                logger.debug(result);
+                return result;
+            }
+            else
+            {
+
+                String query = "insert into gateway_accounts(merchantid,pgtypeid,aliasname,displayname,ismastercardsupported,shortname,site,path,username,passwd,chargeback_path,isCVVrequired,monthly_card_limit,daily_amount_limit,monthly_amount_limit,daily_card_limit,weekly_card_limit,min_transaction_amount,max_transaction_amount,daily_card_amount_limit,weekly_card_amount_limit,monthly_card_amount_limit,istest,isactive,partnerid,agentid,weekly_amount_limit,is_recurring,isDynamicDescriptor,3dSupportAccount,isMultipleRefund,emiSupport,PartialRefund,cardLimitCheck,cardAmountLimitCheckAcc,amountLimitCheckAcc,actionExecutorId,actionExecutorName,fromAccountId,fromMid,threeDsVersion,daily_card_limit_check,weekly_card_limit_check,monthly_card_limit_check,Daily_Account_Amount_Limit,Weekly_Account_Amount_Limit,Monthly_Account_Amount_Limit,daily_card_amount_limit_check,weekly_card_amount_limit_check,monthly_card_amount_limit_check) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ";
+                PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+                logger.debug("Add Gateway Accounts Query" + query);
+                pstmt.setString(1, merchantId);
+                pstmt.setInt(2, Integer.parseInt(pgtypeId));
+                pstmt.setString(3, aliasname);
+                pstmt.setString(4, displayname);
+                pstmt.setInt(5, isMastercardSupported);
+                pstmt.setString(6, shortName);
+                pstmt.setString(7, site);
+                pstmt.setString(8, path);
+                pstmt.setString(9, username);
+                pstmt.setString(10, passwd);
+                pstmt.setString(11, charegebackPath);
+                pstmt.setString(12, isCvvRequiried);
+                pstmt.setDouble(13, monthlyCardLimit);
+                pstmt.setDouble(14, dailyAmountLimit);
+                pstmt.setDouble(15, monthlyAmountLimit);
+                pstmt.setDouble(16, dailyCardLimit);
+                pstmt.setDouble(17, weeklyCardLimit);
+                pstmt.setDouble(18, minTransactionAmount);
+                pstmt.setDouble(19, maxTransactionAmount);
+                pstmt.setDouble(20, dailyCardAmountLimit);
+                pstmt.setDouble(21, weeklyCardAmountLimit);
+                pstmt.setDouble(22, monthCardAmountLimit);
+                pstmt.setString(23, isTest);
+                pstmt.setString(24, isActive);
+                pstmt.setString(25, partnerId);
+                pstmt.setString(26, agentId);
+                pstmt.setDouble(27, weeklyAmountLimit);
+                pstmt.setString(28, isRecurring);
+                pstmt.setString(29, isDynamicDescriptor);
+                pstmt.setString(30, is3dSupportAccount);
+                pstmt.setString(31, isMultipleRefund);
+                pstmt.setString(32, emiSupport);
+                pstmt.setString(33, PartialRefund);
+                pstmt.setString(34, cardLimitCheck);
+                pstmt.setString(35, cardAmountLimitCheckAcc);
+                pstmt.setString(36, amountLimitCheckAcc);
+                pstmt.setString(37, actionExecutorId);
+                pstmt.setString(38, actionExecutorName);
+                pstmt.setString(39, fromAccountId);
+                pstmt.setString(40, fromMid);
+                pstmt.setString(41, threeDsVersion);
+                pstmt.setString(42,daily_card_limit_check);
+                pstmt.setString(43,weekly_card_limit_check);
+                pstmt.setString(44,monthly_card_limit_check);
+                pstmt.setString(45,Daily_Account_Amount_Limit);
+                pstmt.setString(46,Weekly_Account_Amount_Limit);
+                pstmt.setString(47,Monthly_Account_Amount_Limit);
+                pstmt.setString(48,daily_card_amount_limit_check);
+                pstmt.setString(49,weekly_card_amount_limit_check);
+                pstmt.setString(50,monthly_card_amount_limit_check);
+                int inserted = pstmt.executeUpdate();
+                //String accountId = "";
+                logger.debug("pstmt is ::::::"+pstmt);
+                GatewayAccountService.loadGatewayAccounts();
+
+                if (inserted > 0)
+                {
+                    ResultSet rs1 = pstmt.getGeneratedKeys();
+                    rs1.next();
+                    int accountID = rs1.getInt(1);
+                    String query1 = "insert into gateway_account_partner_mapping(mappingid,accountid,partnerid,creation_date)VALUES (null,?,?,unix_timestamp(now()))";
+                    pstmt = conn.prepareStatement(query1);
+                    pstmt.setInt(1, accountID);
+                    pstmt.setString(2, partnerId);
+                    int k = pstmt.executeUpdate();
+                    if (k > 0)
+                    {
+                        logger.debug("bank account partner mapping added successfully");
+                    }
+
+
+                    result = "Gateway Account Successfully Added";
+                    if (tableName != null && tableName.length() > 0 && !tableName.equalsIgnoreCase("null"))
+                    {
+                        if (columnName.length() > 0 && columnName != null)
+                        {
+                            Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+                            StringBuilder columnValuesSb = new StringBuilder();
+                            StringBuilder columnNamesSb = new StringBuilder();
+
+                            columnNamesSb.append("insert into " + tableName + " (accountid,");
+                            columnValuesSb.append(" values ('");
+                            columnValuesSb.append(accountID);
+                            columnValuesSb.append("',");
+
+
+                            String[] columnNameArray = columnName.split(",");
+
+                            for (int i = 0; i < columnNameArray.length; i++)
+                            {
+                                String tempColumn = "";
+                                String value = "";
+                                tempColumn = columnNameArray[i];
+                                if (req.getParameter(tempColumn) != null && req.getParameter(tempColumn).length() > 0)
+                                {
+                                    value = req.getParameter(tempColumn);
+                                    if (value.length() > 0)
+                                    {
+                                        if (value != null && !value.equalsIgnoreCase("null") && value != "")
+                                        {
+                                            columnNamesSb.append("`" + tempColumn + "`");
+                                            columnNamesSb.append(",");
+                                            columnValuesSb.append("'");
+                                            columnValuesSb.append(ESAPI.encoder().encodeForSQL(me,value));
+                                            columnValuesSb.append("',");
+                                        }
+                                    }
+                                }
+                            }
+
+                            String tempColumn = columnNamesSb.toString();
+                            String tempValues = columnValuesSb.toString();
+                            tempColumn = tempColumn.substring(0, tempColumn.length() - 1);
+                            tempValues = tempValues.substring(0, tempValues.length() - 1);
+
+                            String tempQuery = tempColumn + ")" + tempValues + ")";
+
+                            PreparedStatement ps = conn.prepareStatement(tempQuery);
+                            int kl = ps.executeUpdate();
+                            result = "Gateway Account Successfully Added";
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            logger.debug(" Error " + e.getStackTrace());
+            result = "Error : Some error occured : " + e.getMessage();
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+        return result;
+    }
+
+}

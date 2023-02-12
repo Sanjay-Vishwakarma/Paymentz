@@ -1,0 +1,41 @@
+<%@ page import="org.owasp.esapi.ESAPI" %>
+
+
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+
+    <meta charset="utf-8">
+    <title> Test Integration</title>
+
+</head>
+
+<body>
+
+    <%--<%@ include file="functions.jsp" %>--%>
+
+
+    <%
+        request.setCharacterEncoding("UTF-8");
+        String firstname = request.getParameter("firstName");
+        out.println("===="+ request.getParameter("firstName"));
+        out.println("===="+ ESAPI.encoder().encodeForHTML(request.getParameter("firstName")));
+
+        for(Object key : request.getParameterMap().keySet())
+        {
+            System.out.println("----for loop RBBackendNotification-----"+key+"="+ESAPI.encoder().encodeForHTML(request.getParameter((String) key))+"--------------");
+            String key1 = request.getParameter((String) key);
+            out.println(key+"===="+ ESAPI.encoder().encodeForHTML(request.getParameter((String) key)));
+
+        }
+        //out.println("name---愛, ");
+
+    %>
+
+</body>
+</html>
+

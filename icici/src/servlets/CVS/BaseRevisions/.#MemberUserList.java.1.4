@@ -1,0 +1,103 @@
+package servlets;
+
+import com.directi.pg.Admin;
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.SystemAccessLogger;
+import com.payment.MultipleMemberUtill;
+
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.User;
+import org.owasp.esapi.ValidationErrorList;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.*;
+
+
+/**
+ * Created by Admin on 1/9/2016.
+ */
+public class MemberUserList extends HttpServlet
+{
+    static Logger log = new Logger(MemberUserList.class.getName());
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        log.debug("in side MemberUserList---");
+        HttpSession session = req.getSession();
+        User user = (User) session.getAttribute("ESAPIUserSessionKey");
+
+        if (!Admin.isLoggedIn(session))
+        {
+            log.debug("Admin is logout ");
+            res.sendRedirect("/icici/logout.jsp");
+            return;
+        }
+
+        res.setContentType("text/html");
+
+        String memberid = req.getParameter("merchantid");
+        String errormsg = "";
+        Hashtable detailHash = new Hashtable();
+        MultipleMemberUtill multipleMemberUtill = new MultipleMemberUtill();
+        detailHash = multipleMemberUtill.getDetailsForSubmerchant(memberid);
+
+        errormsg=errormsg+validateParameters(req);
+
+        if(errormsg!=null && !errormsg.equals(""))
+        {
+            req.setAttribute("error",errormsg);
+            RequestDispatcher rd = req.getRequestDispatcher("/memberChildList.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+
+        req.setAttribute("detailHash",detailHash);
+        req.setAttribute("memberid", memberid);
+        RequestDispatcher rd = req.getRequestDispatcher("/memberChildList.jsp?ctoken="+user.getCSRFToken());
+        rd.forward(req, res);
+        return;
+    }
+
+    private String validateParameters(HttpServletRequest req)
+    {
+        InputValidator inputValidator = new InputValidator();
+        String error = "";
+        String EOL = "<BR>";
+        List<InputFields> inputFieldsListOptional = new ArrayList<InputFields>();
+
+        inputFieldsListOptional.add(InputFields.MERCHANTID);
+
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.InputValidations(req,inputFieldsListOptional, errorList,false);
+
+        if(!errorList.isEmpty())
+        {
+            for(InputFields inputFields :inputFieldsListOptional)
+            {
+                if(errorList.getError(inputFields.toString())!=null)
+                {
+                    log.debug(errorList.getError(inputFields.toString()).getLogMessage());
+                    error = error+errorList.getError(inputFields.toString()).getMessage()+EOL;
+                }
+            }
+        }
+        return error;
+    }
+
+}

@@ -1,0 +1,720 @@
+package com.payment.zhixinfu;
+
+import com.directi.pg.Functions;
+import com.directi.pg.LoadProperties;
+import com.directi.pg.TransactionLogger;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.GenericRequestVO;
+import com.directi.pg.core.valueObjects.GenericResponseVO;
+import com.payment.common.core.*;
+import com.payment.exceptionHandler.PZConstraintViolationException;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.PZGenericConstraintViolationException;
+import com.payment.exceptionHandler.PZTechnicalViolationException;
+import com.payment.exceptionHandler.constraint.PZGenericConstraint;
+import com.payment.exceptionHandler.errorcode.ErrorCodeUtils;
+import com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorName;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeListVO;
+import com.payment.validators.vo.CommonValidatorVO;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Map;
+import java.util.ResourceBundle;
+import java.util.TreeMap;
+
+/**
+ * Created by Admin on 10/24/2020.
+ */
+public class ZhiXinfuPaymentGateway extends AbstractPaymentGateway
+{
+    public static final String GATEWAY_TYPE = "zhixinfu";
+    private TransactionLogger transactionLogger = new TransactionLogger(ZhiXinfuPaymentGateway.class.getName());
+    final static ResourceBundle RB = LoadProperties.getProperty("com.directi.pg.zhixinfu");
+
+    public ZhiXinfuPaymentGateway(String accountId)
+    {
+        this.accountId = accountId;
+    }
+
+    public GenericResponseVO processSale(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException
+    {
+        transactionLogger.error("Inside ZhiXinfuPaymentGateway processSale");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO commResponseVO = new Comm3DResponseVO();
+        Functions functions = new Functions();
+        CommTransactionDetailsVO transDetailsVO = commRequestVO.getTransDetailsVO();
+        CommCardDetailsVO cardDetailsVO = commRequestVO.getCardDetailsVO();
+        CommAddressDetailsVO addressDetailsVO = commRequestVO.getAddressDetailsVO();
+        CommMerchantVO commMerchantVO = commRequestVO.getCommMerchantVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String merId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId(); //38899130
+        String username = GatewayAccountService.getGatewayAccount(accountId).getFRAUD_FTP_USERNAME();
+        String password = "";
+        ZhiXinfuUtils zhiXinfuUtils = new ZhiXinfuUtils();
+        String merOrdId = trackingID;
+        String version = "v3";
+        String merOrdAmt= transDetailsVO.getAmount();
+        String userIp = addressDetailsVO.getCardHolderIpAddress();
+        String payType = "8001";
+        String reqremark ="TransactionDetails";
+        String cardType=GatewayAccountService.getCardType(transDetailsVO.getCardType());
+        String is3dSupported = gatewayAccount.get_3DSupportAccount();
+
+        String respType = "";
+        if("Zhixinfu".equals(cardType))
+        {
+            respType="02";
+        }
+        else
+        {
+         respType="01";
+        }
+        String signType = "MD5";//this is default
+        String ordCurrency = transDetailsVO.getCurrency();
+        String cardNo = cardDetailsVO.getCardNum();
+        String cardExpireMonth = cardDetailsVO.getExpMonth();
+        String cardExpireYear = cardDetailsVO.getExpYear();
+        String cardSecurityCode = cardDetailsVO.getcVV();
+        String firstName = addressDetailsVO.getFirstname();
+        String lastName = addressDetailsVO.getLastname();
+        String email = addressDetailsVO.getEmail();
+        String phone = addressDetailsVO.getPhone();
+        String country = addressDetailsVO.getCountry();
+        String city = addressDetailsVO.getCity();
+        String address = addressDetailsVO.getStreet();
+        String zip = addressDetailsVO.getZipCode();
+        String notifyUrl = RB.getString("NOTIFY_URL");
+        String termUrl = "";
+        String saleURL = "";
+        String encodedccDetails="";
+        String encodedccDetailslog="";
+        String secretkey=GatewayAccountService.getGatewayAccount(accountId).getFRAUD_FTP_PASSWORD();
+
+        boolean isTest = gatewayAccount.isTest();
+        try
+        {
+
+            if (functions.isValueNull(commMerchantVO.getHostUrl()))
+            {
+                termUrl = "https://" + commMerchantVO.getHostUrl() + RB.getString("HOST_URL") + trackingID;
+                transactionLogger.error("From HOST_URL----" + termUrl);
+            }
+            else
+            {
+                termUrl = RB.getString("TERM_URL") + trackingID;
+                transactionLogger.error("From RB TERM_URL ----" + termUrl);
+           }
+            if(!"Zhixinfu".equals(cardType))
+            {
+                if (isTest)
+                {
+                    saleURL = RB.getString("TEST_URL");
+                }
+                else
+                {
+                    saleURL = RB.getString("LIVE_URL");
+                }
+                //  String ccDetails = "{\"ordCurrency\":" + ordCurrency + ",\"cardNo\":" + cardNo + ",\"cardExpireMonth\":" + cardExpireMonth + ",\"cardExpireYear\":" + cardExpireYear + ",\"cardSecurityCode\":" + cardSecurityCode + ",\"firstName\":" + firstName + ",\"lastName\":" + lastName + ",\"email\":" + email + ",\"phone\":" + phone + ",\"country\":" + country + ",\"city\":" + city + ",\"address\":" + address + ",\"zip\":" + zip + "}";
+
+                String ccDetails = "{\"ordCurrency\":\"" + ordCurrency + "\",\"cardNo\":\"" + cardNo + "\",\"cardExpireMonth\":\"" + cardExpireMonth + "\",\"cardExpireYear\":\"" + cardExpireYear + "\",\"cardSecurityCode\":\"" + cardSecurityCode + "\",\"firstName\":\"" + firstName + "\",\"lastName\":\"" + lastName + "\",\"email\":\"" + email + "\",\"phone\":\"" + phone + "\",\"country\":\"" + country + "\",\"city\":\"" + city + "\",\"address\":\"" + address + "\",\"zip\":\"" + zip + "\"}";
+                String ccDetailslog = "{\"ordCurrency\":" + ordCurrency + ",\"cardNo\":" + functions.maskingPan(cardNo) + ",\"cardExpireMonth\":" + functions.maskingNumber(cardExpireMonth) + ",\"cardExpireYear\": " + functions.maskingNumber(cardExpireYear) + ",\"cardSecurityCode\":" + functions.maskingNumber(cardSecurityCode) + ",\"firstName\":" + firstName + ",\"lastName\":" + lastName + ",\"email\":" + email + ",\"phone\":" + phone + ",\"country\":" + country + ",\"city\":" + city + ",\"address\":" + address + ",\"zip\":" + zip + "}";
+                encodedccDetails = URLEncoder.encode(URLEncoder.encode(ccDetails.toString(), "UTF-8"), "UTF-8");
+                encodedccDetailslog = URLEncoder.encode(URLEncoder.encode(ccDetailslog.toString(), "UTF-8"), "UTF-8");
+                transactionLogger.error("encodedccDetails ---->" + encodedccDetailslog);
+                transactionLogger.error("ccDetails ---->" + ccDetailslog);
+            }
+            else
+            {
+                if (isTest)
+                {
+                    saleURL = RB.getString("TEST3D_URL");
+                }
+                else
+                {
+                    saleURL = RB.getString("LIVE3D_URL");
+                }
+                //  String ccDetails = "{\"ordCurrency\":" + ordCurrency + ",\"cardNo\":" + cardNo + ",\"cardExpireMonth\":" + cardExpireMonth + ",\"cardExpireYear\":" + cardExpireYear + ",\"cardSecurityCode\":" + cardSecurityCode + ",\"firstName\":" + firstName + ",\"lastName\":" + lastName + ",\"email\":" + email + ",\"phone\":" + phone + ",\"country\":" + country + ",\"city\":" + city + ",\"address\":" + address + ",\"zip\":" + zip + "}";
+                String ccDetails = "{\"ordCurrency\":\"" + ordCurrency + "\",\"firstName\":\"" + firstName + "\",\"lastName\":\"" + lastName + "\",\"email\":\"" + email + "\",\"phone\":\"" + phone + "\",\"country\":\"" + country + "\",\"city\":\"" + city + "\",\"address\":\"" + address + "\",\"zip\":\"" + zip + "\"}";
+                String ccDetailslog = "{\"ordCurrency\":" + ordCurrency +",\"firstName\":" + firstName + ",\"lastName\":" + lastName + ",\"email\":" + email + ",\"phone\":" + phone + ",\"country\":" + country + ",\"city\":" + city + ",\"address\":" + address + ",\"zip\":" + zip + "}";
+                encodedccDetails = URLEncoder.encode(URLEncoder.encode(ccDetails.toString(), "UTF-8"), "UTF-8");
+                transactionLogger.error("encodedccDetails ---->" + encodedccDetails);
+                transactionLogger.error("ccDetails ---->" + ccDetailslog);
+
+            }
+
+
+            TreeMap treeMapSign=new TreeMap();
+            if(functions.isValueNull(merId))
+                treeMapSign.put("merId",merId);
+            if(functions.isValueNull(String.valueOf(merOrdAmt)))
+                treeMapSign.put("merOrdAmt",merOrdAmt);
+            if(functions.isValueNull(merOrdId))
+                treeMapSign.put("merOrdId",merOrdId);
+            if(functions.isValueNull(notifyUrl))
+                treeMapSign.put("notifyUrl",notifyUrl);
+            if(functions.isValueNull(termUrl))
+                treeMapSign.put("returnUrl",termUrl);
+            if(functions.isValueNull(payType))
+                treeMapSign.put("payType",payType);
+            if(functions.isValueNull(respType))
+                treeMapSign.put("respType",respType);
+            if(functions.isValueNull(reqremark))
+                treeMapSign.put("remark",reqremark);
+            if(functions.isValueNull(signType))
+                treeMapSign.put("signType",signType);
+            if(functions.isValueNull(userIp))
+                treeMapSign.put("userIp",userIp);
+            if(functions.isValueNull(version))
+                treeMapSign.put("version",version);
+
+
+            String signMsg = ZhiXinfuUtils.convertmd5(treeMapSign,secretkey);
+
+            StringBuffer request = new StringBuffer();
+
+            request.append("merId=" + merId +
+                    "&merOrdId=" + merOrdId +
+                    "&version=" + version +
+                    "&merOrdAmt=" + merOrdAmt +
+                    "&userIp=" + userIp +
+                    "&payType=" + payType +
+                    "&ccDetails=" + encodedccDetails +
+                    "&remark=" + reqremark +
+                    "&respType=" + respType +
+                    "&returnUrl=" + termUrl +
+                    "&notifyUrl=" + notifyUrl +
+                    "&signType=" + signType +
+                    "&signMsg=" + signMsg);
+
+            StringBuffer requestlog = new StringBuffer();
+
+            requestlog.append("merId=" + merId +
+                    "&merOrdId=" + merOrdId +
+                    "&version=" + version +
+                    "&merOrdAmt=" + merOrdAmt +
+                    "&userIp=" + userIp +
+                    "&payType=" + payType +
+                    "&ccDetails=" + encodedccDetailslog +
+                    "&remark=" + reqremark +
+                    "&respType=" + respType +
+                    "&returnUrl=" + termUrl +
+                    "&notifyUrl=" + notifyUrl +
+                    "&signType=" + signType +
+                    "&signMsg=" + signMsg);
+
+            transactionLogger.error("ZhiXinfu Sale request---->" + trackingID + "---" + requestlog);
+
+            String response = ZhiXinfuUtils.doHttpPostConnection(saleURL, request.toString());
+
+            transactionLogger.error("ZhiXinfu Sale response---->" + trackingID + "---" + response);
+
+
+            if(functions.isValueNull(response)&& !functions.hasHTMLTags(response))
+            {
+                JSONObject responseJSON = new JSONObject(response);
+
+                String status="";
+                String remark1="";
+                String description="";
+                String code="";
+                String paymentId="";
+                String currency="";
+                if(responseJSON!=null)
+                {
+                    if(responseJSON.has("tradeStatus"))
+                    {
+                        status=responseJSON.getString("tradeStatus");
+                    }
+                    if(responseJSON.has("tradeStatus"))
+                    {
+                        remark1=responseJSON.getString("tradeStatus");
+                    }
+
+                    if(responseJSON.has("code"))
+                    {
+                        code=responseJSON.getString("code");
+                    }
+                    if(responseJSON.has("sysOrdId"))
+                    {
+                        paymentId=responseJSON.getString("sysOrdId");
+                    }
+                    if(responseJSON.has("currency"))
+                    {
+                        currency=responseJSON.getString("currency");
+                    }
+                    if ("completed".equalsIgnoreCase(status))
+                    {
+                        commResponseVO.setStatus("success");
+                        commResponseVO.setRemark(remark1);
+                        commResponseVO.setDescription(remark1);
+                        commResponseVO.setErrorCode(code);
+                        commResponseVO.setTransactionId(paymentId);
+                        commResponseVO.setCurrency(currency);
+                        commResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                    }
+                    else if("Processing".equalsIgnoreCase(status))
+                    {
+                        commResponseVO.setStatus("pending");
+                        commResponseVO.setRemark(remark1);
+                        commResponseVO.setDescription(remark1);
+                        commResponseVO.setErrorCode(code);
+                    }
+
+                    else if("failure".equalsIgnoreCase(status)||"unknown".equalsIgnoreCase(status))
+                    {
+                        commResponseVO.setStatus("failed");
+                        commResponseVO.setRemark(remark1);
+                        commResponseVO.setDescription(remark1);
+                        commResponseVO.setErrorCode(code);
+                    }
+                    else
+                    {
+                        commResponseVO.setStatus("failed");
+                        commResponseVO.setRemark(remark1);
+                        commResponseVO.setDescription(remark1);
+                        commResponseVO.setErrorCode(code);
+                    }
+
+                }
+
+            }
+            else if(functions.isValueNull(response)&&functions.hasHTMLTags(response))
+            {
+                commResponseVO.setStatus("pending3DConfirmation");
+                commResponseVO.setRemark("Transaction is Pending");
+                commResponseVO.setDescription("Transaction is Pending");
+                commResponseVO.setUrlFor3DRedirect(response);
+
+            }
+    }
+        catch (NoSuchAlgorithmException e)
+        {
+            transactionLogger.error("NoSuchAlgorithmException---->" + trackingID + "---", e);
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            transactionLogger.error("UnsupportedEncodingException---->" + trackingID + "---", e);
+        }
+        catch (JSONException e)
+        {
+            transactionLogger.error("JSONException---->" + trackingID + "---", e);
+        }
+        return commResponseVO;
+    }
+
+
+    public GenericResponseVO processRefund(String trackingID, GenericRequestVO requestVO)
+    {
+        transactionLogger.error("ZhiXinfuPaymentGateway :: Inside processRefund");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO comm3DResponseVO = new Comm3DResponseVO();
+        Functions functions = new Functions();
+        CommResponseVO commResponseVO = new CommResponseVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        CommCardDetailsVO cardDetailsVO = commRequestVO.getCardDetailsVO();
+        CommAddressDetailsVO addressDetailsVO = commRequestVO.getAddressDetailsVO();
+        CommMerchantVO commMerchantVO = commRequestVO.getCommMerchantVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String merId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId(); //38899130
+        //String merOrdId = commTransactionDetailsVO.getPreviousTransactionId();
+        String merOrdId = trackingID;
+        String merOrdAmt= commTransactionDetailsVO.getPreviousTransactionAmount();
+        String refundAmt = commTransactionDetailsVO.getAmount();
+        String refundType = "";
+        if(Double.parseDouble(refundAmt)==Double.parseDouble(merOrdAmt))
+        {
+            refundType="1";
+        }
+        else
+        {
+            refundType="2";
+        }
+        String refundRemark = "TestRemark";
+        String signType = "MD5";
+        String timeStamp = "";
+
+
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+            Date date = new Date();
+            timeStamp=formatter.format(date);
+
+
+
+        String refundUrl = "";
+        String notifyUrl = RB.getString("NOTIFY_URL");
+        String secretkey=GatewayAccountService.getGatewayAccount(accountId).getFRAUD_FTP_PASSWORD();
+        boolean isTest = gatewayAccount.isTest();
+        try
+        {
+            if (isTest)
+            {
+                refundUrl = RB.getString("Refund_URL");
+            }
+            else
+            {
+                refundUrl = RB.getString("Refund_URL");
+            }
+            TreeMap treeMapSign=new TreeMap();
+            if(functions.isValueNull(merId))
+                treeMapSign.put("merId",merId);
+            if(functions.isValueNull(merOrdId))
+                treeMapSign.put("merOrdId",merOrdId);
+            if(functions.isValueNull(refundType))
+                treeMapSign.put("refundType",refundType);
+            if(functions.isValueNull(refundRemark))
+                treeMapSign.put("refundRemark",refundRemark);
+            if(functions.isValueNull(String.valueOf(refundAmt)))
+                treeMapSign.put("refundAmt",refundAmt);
+            if(functions.isValueNull(signType))
+                treeMapSign.put("signType",signType);
+            if(functions.isValueNull(timeStamp))
+                treeMapSign.put("timeStamp",timeStamp);
+
+
+            transactionLogger.error("treeMap----->"+treeMapSign);
+
+            String signMsg = ZhiXinfuUtils.convertmd5(treeMapSign,secretkey);
+
+
+            StringBuffer request = new StringBuffer();
+            request.append("merId=" + merId +
+                    "&merOrdId=" + merOrdId +
+                    "&refundType=" + refundType +
+                    "&refundAmt=" + refundAmt +
+                    "&refundRemark=" + refundRemark +
+                    "&signType=" + signType +
+                    "&timeStamp=" + timeStamp +
+                    "&signMsg=" + signMsg);
+            transactionLogger.error("ZhiXinfu Refund Request---->" + trackingID + "---" + request);
+
+            String response = ZhiXinfuUtils.doHttpPostConnection(refundUrl, request.toString());
+
+            transactionLogger.error("ZhiXinfu Refund Response---->" + trackingID + "---" + response);
+
+
+        if(functions.isValueNull(response))
+        {
+            JSONObject responseJSON = new JSONObject(response);
+            String status = "";
+            String remark1 = "";
+            String description = "";
+            String code = "";
+            String paymentId = "";
+            String currency = "";
+            String refundMsg ="";
+            if (responseJSON != null)
+            {
+                if (responseJSON.has("refundStatus"))
+                {
+                    status = responseJSON.getString("refundStatus");
+                }
+                if (responseJSON.has("refundStatus"))
+                {
+                    remark1 = responseJSON.getString("refundStatus");
+                }
+                if (responseJSON.has("refundStatus"))
+                {
+                    description = responseJSON.getString("refundStatus");
+                }
+                if (responseJSON.has("code"))
+                {
+                    code = responseJSON.getString("code");
+                }
+                if (responseJSON.has("sysOrdId"))
+                {
+                    paymentId = responseJSON.getString("sysOrdId");
+                }
+                if (responseJSON.has("currency"))
+                {
+                    currency = responseJSON.getString("currency");
+                }
+                if(responseJSON.has("refundMsg"))
+                {
+
+                    refundMsg = responseJSON.getString("refundMsg");
+                }
+           //     transactionLogger.error("refundMsg----"+ trackingID +"------"+ new String(refundMsg.getBytes(),"UTF-8"));
+                if("completed".equalsIgnoreCase(status))
+                {
+                    commResponseVO.setStatus("success");
+                    commResponseVO.setRemark(remark1);
+                    commResponseVO.setDescription(description);
+                    commResponseVO.setErrorCode(code);
+                    commResponseVO.setTransactionId(paymentId);
+                    commResponseVO.setCurrency(currency);
+
+                }
+                else if("processing".equalsIgnoreCase(status))
+                {
+                    commResponseVO.setStatus("pending");
+                    commResponseVO.setRemark(remark1);
+                    commResponseVO.setDescription(description);
+                    commResponseVO.setErrorCode(code);
+                }
+
+                else if("failure".equalsIgnoreCase(status) || "unknown".equalsIgnoreCase(status))
+                {
+                    commResponseVO.setStatus("failed");
+                    commResponseVO.setRemark(remark1);
+                    commResponseVO.setDescription(description);
+                    commResponseVO.setErrorCode(code);
+                }
+                else
+                {
+                    commResponseVO.setStatus("failed");
+                    commResponseVO.setRemark(remark1);
+                    commResponseVO.setDescription(description);
+                    commResponseVO.setErrorCode(code);
+                }
+            }
+        }
+        }
+
+        catch (NoSuchAlgorithmException e)
+        {
+            transactionLogger.error("NoSuchAlgorithmException---->" + trackingID + "---", e);
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            transactionLogger.error("UnsupportedEncodingException---->" + trackingID + "---", e);
+        }
+        catch (JSONException e)
+        {
+            transactionLogger.error("JSONException---->" + trackingID + "---", e);
+        }
+        return commResponseVO;
+    }
+
+
+    public GenericResponseVO processQuery(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException, PZDBViolationException, PZConstraintViolationException
+    {
+        transactionLogger.error("ZhiXinfuPaymentGateway :: Inside processQuery ");
+        CommRequestVO commRequestVO = (CommRequestVO) requestVO;
+        Comm3DResponseVO comm3DResponseVO = new Comm3DResponseVO();
+        Functions functions = new Functions();
+        CommResponseVO commResponseVO = new CommResponseVO();
+        CommTransactionDetailsVO commTransactionDetailsVO = commRequestVO.getTransDetailsVO();
+        CommCardDetailsVO cardDetailsVO = commRequestVO.getCardDetailsVO();
+        CommAddressDetailsVO addressDetailsVO = commRequestVO.getAddressDetailsVO();
+        CommMerchantVO commMerchantVO = commRequestVO.getCommMerchantVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String merId = GatewayAccountService.getGatewayAccount(accountId).getMerchantId();
+        String merOrdId = trackingID;
+        String signType = "MD5";
+        String timeStamp = "";
+        String merOrdAmt=commTransactionDetailsVO.getAmount();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+        Date date = new Date();
+        timeStamp=formatter.format(date);
+        String inquiryUrl = "";
+        String currency = commTransactionDetailsVO.getCurrency();
+        String notifyUrl = RB.getString("NOTIFY_URL");
+        String secretkey=GatewayAccountService.getGatewayAccount(accountId).getFRAUD_FTP_PASSWORD();
+        boolean isTest = gatewayAccount.isTest();
+        try
+        {
+            if (isTest)
+            {
+                inquiryUrl = RB.getString("Retrieve_URL");
+            }
+            else
+            {
+                inquiryUrl = RB.getString("Retrieve_URL");
+            }
+
+            TreeMap treeMapSign=new TreeMap();
+            if(functions.isValueNull(merId))
+                treeMapSign.put("merId",merId);
+            if(functions.isValueNull(merOrdId))
+                treeMapSign.put("merOrdId",merOrdId);
+            if(functions.isValueNull(signType))
+                treeMapSign.put("signType",signType);
+            if(functions.isValueNull(timeStamp))
+                treeMapSign.put("timeStamp",timeStamp);
+
+
+            transactionLogger.error("treeMap----->" + treeMapSign);
+
+            String signMsg = ZhiXinfuUtils.convertmd5(treeMapSign,secretkey);
+            StringBuffer request = new StringBuffer();
+            request.append("merId=" + merId +
+                    "&merOrdId=" + merOrdId +
+                    "&signType=" + signType +
+                    "&timeStamp=" + timeStamp +
+                    "&signMsg=" + signMsg);
+            transactionLogger.error("ZhiXinfu inquiry Request---->" + trackingID + "---" + request);
+
+
+            String response = ZhiXinfuUtils.doHttpPostConnection(inquiryUrl, request.toString());
+
+            transactionLogger.error("ZhiXinfu inquiry response---->" + trackingID + "---" + response);
+            if (functions.isValueNull(response))
+            {
+                JSONObject responseJSON = new JSONObject(response);
+                String status = "";
+                String remark1 = "";
+                String description = "";
+                String code = "";
+                String paymentId = "";
+
+                if (responseJSON != null)
+                {
+                    if (responseJSON.has("tradeStatus"))
+                    {
+                        status = responseJSON.getString("tradeStatus");
+                    }
+                    if (responseJSON.has("tradeStatus"))
+                    {
+                        remark1 = responseJSON.getString("tradeStatus");
+                    }
+                    if (responseJSON.has("tradeStatus"))
+                    {
+                        description = responseJSON.getString("tradeStatus");
+                    }
+                    if (responseJSON.has("code"))
+                    {
+                        code = responseJSON.getString("code");
+                    }
+                    if (responseJSON.has("sysOrdId"))
+                    {
+                        paymentId = responseJSON.getString("sysOrdId");
+                    }
+                    if (responseJSON.has("currency"))
+                    {
+                        currency = responseJSON.getString("currency");
+                    }
+                    if ("completed".equalsIgnoreCase(status))
+                    {
+                        commResponseVO.setStatus("success");
+                        commResponseVO.setRemark(remark1);
+                        commResponseVO.setDescription(description);
+
+                        commResponseVO.setTransactionId(paymentId);
+                        commResponseVO.setCurrency(currency);
+                        commResponseVO.setMerchantId(merId);
+                        commResponseVO.setAmount(merOrdAmt);
+                        commResponseVO.setResponseTime(timeStamp);
+                        commResponseVO.setStatus("success");
+
+                        commResponseVO.setMerchantId(GatewayAccountService.getGatewayAccount(accountId).getMerchantId());
+                        commResponseVO.setAuthCode(code);
+                        commResponseVO.setBankTransactionDate(timeStamp);
+
+                        commResponseVO.setAmount(commTransactionDetailsVO.getAmount());
+
+                        commResponseVO.setTransactionStatus("success");
+
+
+
+
+
+
+
+                    }
+                    else if ("processing".equalsIgnoreCase(status)||"refund".equalsIgnoreCase(status)||"unknown".equalsIgnoreCase(status)||"chargeback".equalsIgnoreCase(status))
+                    {
+                        commResponseVO.setStatus("pending");
+                        commResponseVO.setRemark(remark1);
+                        commResponseVO.setDescription(description);
+                        commResponseVO.setErrorCode(code);
+                        commResponseVO.setTransactionId(paymentId);
+                        commResponseVO.setCurrency(currency);
+                        commResponseVO.setMerchantId(merId);
+                        commResponseVO.setAmount(merOrdAmt);
+                        commResponseVO.setResponseTime(timeStamp);
+                        commResponseVO.setStatus("success");
+                        commResponseVO.setAuthCode(code);
+                        commResponseVO.setBankTransactionDate(timeStamp);
+                        commResponseVO.setTransactionStatus("success");
+
+                    }
+
+                    else if ("failure".equalsIgnoreCase(status))
+                    {
+                        commResponseVO.setStatus("failed");
+                        commResponseVO.setRemark(remark1);
+                        commResponseVO.setDescription(description);
+                        commResponseVO.setErrorCode(code);
+                        commResponseVO.setTransactionId(paymentId);
+                        commResponseVO.setCurrency(currency);
+                        commResponseVO.setMerchantId(merId);
+                        commResponseVO.setAmount(merOrdAmt);
+                        commResponseVO.setResponseTime(timeStamp);
+                        commResponseVO.setAuthCode(code);
+                        commResponseVO.setBankTransactionDate(timeStamp);
+
+                    }
+                    else
+                    {
+                        commResponseVO.setStatus("failed");
+                        commResponseVO.setRemark(remark1);
+                        commResponseVO.setDescription(description);
+                        commResponseVO.setErrorCode(code);
+                        commResponseVO.setTransactionId(paymentId);
+                        commResponseVO.setCurrency(currency);
+                        commResponseVO.setMerchantId(merId);
+                        commResponseVO.setAmount(merOrdAmt);
+                        commResponseVO.setResponseTime(timeStamp);
+                        commResponseVO.setAuthCode(code);
+                        commResponseVO.setBankTransactionDate(timeStamp);
+                    }
+                }
+            }
+
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+
+            transactionLogger.error("NoSuchAlgorithmException---->" + trackingID + "---", e);
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            transactionLogger.error("UnsupportedEncodingException---->" + trackingID + "---", e);
+        }
+        catch (JSONException e)
+        {
+            transactionLogger.error("JSONException---->" + trackingID + "---", e);
+        }
+        return commResponseVO;
+    }
+    public String processAutoRedirect(CommonValidatorVO commonValidatorVO) throws PZTechnicalViolationException, PZDBViolationException
+    {
+
+        transactionLogger.error(":::::Entered into processAutoRedirect for Zhixinfu:::::");
+        CommRequestVO commRequestVO = null;
+        Functions functions = new Functions();
+        String form = "";
+        commRequestVO = ZhiXinfuUtils.getZhixinfuRequestVO(commonValidatorVO);
+        Comm3DResponseVO comm3DResponseVO = (Comm3DResponseVO) this.processSale(commonValidatorVO.getTrackingid(), commRequestVO);
+        if("pending3DConfirmation".equalsIgnoreCase(comm3DResponseVO.getStatus()))
+        {
+            form = comm3DResponseVO.getUrlFor3DRedirect();
+            transactionLogger.debug("form---->"+form);
+        }
+
+
+        return form;
+
+    }
+    public GenericResponseVO processAuthentication(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        errorCodeListVO.addListOfError(errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_FUNCTIONALITY_NOT_ALLOWED));
+        PZGenericConstraint genConstraint = new PZGenericConstraint("ZhiXinfuPaymentGateway", "processAuthentication", null, "common", "This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::", errorCodeListVO);
+        throw new PZGenericConstraintViolationException(genConstraint, "This Functionality is not supported by processing gateway. Please contact your Tech. support Team:::", null);
+    }
+        public String getMaxWaitDays()
+    {
+        return null;
+    }
+}

@@ -1,0 +1,263 @@
+package net.partner;
+
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.TransactionEntry;
+import com.directi.pg.core.paymentgateway.SBMPaymentGateway;
+import com.manager.PartnerManager;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.*;
+
+public class PartnerMerchantRefundList extends HttpServlet
+{
+    private static Logger logger = new Logger(PartnerMerchantRefundList.class.getName());
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        int pageno=1;
+        int records=15;
+        HttpSession session = req.getSession();
+        res.setContentType("text/html");
+        PartnerFunctions partner=new PartnerFunctions();
+        PartnerManager partnerManager = new PartnerManager();
+        if (!partner.isLoggedInPartner(session))
+        {
+            res.sendRedirect("/partner/Logout.jsp");
+            return;
+        }
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+
+
+        logger.debug("CSRF check successful ");
+        String error="";
+        String description=null;
+        String trakingid=null;
+        String accountid=null;
+        //String toid=null;
+        //String status=null;
+        String EOL = "<BR>";
+        Functions functions=new Functions();
+
+        try
+        {
+            //validateOptionalParameter(req);
+            InputValidator inputValidator = new InputValidator();
+            List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+            inputFieldsListMandatory.add(InputFields.PAGENO);
+            inputFieldsListMandatory.add(InputFields.RECORDS);
+
+            inputValidator.InputValidations(req,inputFieldsListMandatory,true);
+        }
+        catch (ValidationException e)
+        {
+            error += "<center><font class=\"text\" face=\"arial\"><b>"+ error + e.getMessage() + EOL + "</b></font></center>";
+            req.setAttribute("error",error);
+            RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantRefundList.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+        if(functions.isValueNull(req.getParameter("trakingid")) && !functions.isNumericVal(req.getParameter("trakingid")))
+        {
+            logger.error("Invalid TrackingID allowed only numeric value e.g.[0 to 9] .");
+            error="Invalid TrackingID allowed only numeric value e.g.[0 to 9].";
+            req.setAttribute("error",error);
+            RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantRefundList.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+        if (!ESAPI.validator().isValidInput("trakingid",req.getParameter("trakingid"),"Numbers",20,true))
+        {
+            logger.error("Invalid TrackingID.");
+            error="Invalid TrackingID.";
+            req.setAttribute("error",error);
+            RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantRefundList.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+        else
+        {
+            trakingid = req.getParameter("trakingid");
+        }
+        if (!ESAPI.validator().isValidInput("description",req.getParameter("description"),"Description",60,true))
+        {
+            logger.error("Invalid Description");
+            error="Invalid Order Id.";
+            req.setAttribute("error",error);
+            RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantRefundList.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+        else
+        {
+            description = req.getParameter("description");
+        }
+
+
+        try
+        {
+            pageno =Functions.convertStringtoInt(ESAPI.validator().getValidInput("SPageno",req.getParameter("SPageno"),"Numbers",5,true),1);
+            records = Functions.convertStringtoInt(ESAPI.validator().getValidInput("SRecords",req.getParameter("SRecords"),"Numbers",5,true),15);
+        }
+        catch(ValidationException e)
+        {
+            logger.error("Invalid page no or records",e);
+            pageno = 1;
+            records = 15;
+
+        }
+
+
+        String partnerId = (String) session.getAttribute("merchantid");
+        String memberId = "";
+
+        if (!ESAPI.validator().isValidInput("memberid",req.getParameter("memberid"),"Numbers",20,true))
+        {
+
+            error="Invalid Merchant Id.";
+            req.setAttribute("error",error);
+            RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantRefundList.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+        else
+        {
+            memberId = req.getParameter("memberid");
+        }
+        String pid="";
+        if (!ESAPI.validator().isValidInput("pid",req.getParameter("pid"),"Numbers",10,true))
+        {
+
+            error="Invalid Partner Id.";
+            req.setAttribute("error",error);
+            RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantRefundList.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+        else
+        {
+            pid = req.getParameter("pid");
+        }
+
+        TransactionEntry transactionentry = (TransactionEntry) session.getAttribute("transactionentry");
+
+        Set<String> gatewayTypeSet = new HashSet();
+        String partner_id="";
+        StringBuilder sb=new StringBuilder();
+        Hashtable hash = null;
+
+        if(functions.isValueNull(pid) && partner.isPartnerSuperpartnerMapped(pid,partnerId)){
+            hash=partner.getPartnerMemberDetails(pid);
+            partner_id =pid;
+        }else if(!functions.isValueNull(pid)){
+            hash=partner.getPartnerMemberDetailsNew(partnerId);
+            partner_id =partnerId;
+        }else{
+            error="Invalid Partner Mapping.";
+            req.setAttribute("error",error);
+            RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantRefundList.jsp?ctoken="+user.getCSRFToken());
+            rd.forward(req, res);
+            return;
+        }
+
+        if(!functions.isValueNull(memberId))
+        {
+            Enumeration enu3 = hash.keys();
+            String key3 = "";
+            while (enu3.hasMoreElements())
+            {
+                key3 = (String) enu3.nextElement();
+                memberId=(String) hash.get(key3);
+                sb.append((String) hash.get(key3)).append(",");
+                if (functions.isValueNull(memberId) && functions.isValueNull(accountid))
+                {
+                    gatewayTypeSet.addAll(transactionentry.getGatewayHash(memberId, accountid).keySet());
+                }
+            }
+            if (sb.length() > 0 && sb.charAt(sb.length()-1)==',')
+            {
+                memberId = sb.substring(0, sb.length()-1);
+            }
+        }
+        else
+        {
+            try
+            {
+                if (functions.isValueNull(pid) && !partner.isPartnerMemberMapped( memberId ,pid))
+                {
+                    error = "Invalid partner member configuration.";
+                    req.setAttribute("error",error);
+                    RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantRefundList.jsp?ctoken="+user.getCSRFToken());
+                    rd.forward(req, res);
+                    return;
+                }
+                else if (!functions.isValueNull(pid) && !partner.isPartnerSuperpartnerMembersMapped(memberId, partnerId))
+                {
+                    error = "Invalid partner member configuration.";
+                    req.setAttribute("error",error);
+                    RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantRefundList.jsp?ctoken="+user.getCSRFToken());
+                    rd.forward(req, res);
+                    return;
+                }
+                else
+                {
+                    gatewayTypeSet.addAll(transactionentry.getGatewayHash(memberId,accountid).keySet());
+                }
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+            if(functions.isValueNull(pid) && partner.isPartnerSuperpartnerMapped(pid,partnerId)){
+                partner_id =pid;
+            }else if(!functions.isValueNull(pid)){
+                partner_id =partnerId;
+            }
+        }
+        if(gatewayTypeSet.size()==0)
+        {
+            gatewayTypeSet.add(SBMPaymentGateway.GATEWAY_TYPE);
+        }
+
+        HashMap hash1 = null;
+
+        try
+        {
+            hash1 = partnerManager.getPartnerMerchantRefundList(description,accountid,trakingid,memberId, partner_id,records,pageno);
+        }
+        catch (Exception e)
+        {
+            logger.debug("SystemError::::"+e);
+        }
+        req.setAttribute("transdetails", hash1);
+        req.setAttribute("trakingid",trakingid);
+        req.setAttribute("description",description);
+        session.setAttribute("bank",accountid);
+        req.setAttribute("memberid", memberId);
+        RequestDispatcher rd = req.getRequestDispatcher("/partnerMerchantRefundList.jsp?ctoken="+user.getCSRFToken());
+        rd.forward(req, res);
+    }
+   /* private void validateOptionalParameter(HttpServletRequest req) throws ValidationException
+    {
+        InputValidator inputValidator = new InputValidator();
+        List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+        inputFieldsListMandatory.add(InputFields.PAGENO);
+        inputFieldsListMandatory.add(InputFields.RECORDS);
+
+        inputValidator.InputValidations(req,inputFieldsListMandatory,true);
+    }*/
+}

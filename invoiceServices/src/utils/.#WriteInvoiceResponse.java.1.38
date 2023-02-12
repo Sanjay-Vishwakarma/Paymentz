@@ -1,0 +1,836 @@
+package utils;
+
+import com.directi.pg.Functions;
+import com.invoice.vo.InvoiceVO;
+import com.manager.vo.DirectKitResponseVO;
+import com.merchant.vo.responseVOs.MerchantServiceResponseVO;
+import com.merchant.vo.responseVOs.Result;
+import com.payment.exceptionHandler.PZConstraintViolationException;
+import com.payment.exceptionHandler.errorcode.ErrorCodeUtils;
+import com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorName;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeListVO;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeVO;
+import com.payment.response.PZResponseStatus;
+import com.payment.validators.vo.CommonValidatorVO;
+import vo.restVO.resposnevo.*;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * Created by Sneha on 2/9/2017.
+ */
+public class WriteInvoiceResponse
+{
+    private static ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+    private static Functions functions = new Functions();
+
+    public ErrorCodeVO formSystemErrorCodeVO(ErrorName errorName,String reason)
+    {
+        ErrorCodeVO errorCodeVO = errorCodeUtils.getErrorCodeFromName(errorName);
+        if(errorCodeVO!=null)
+            errorCodeVO.setErrorReason(reason);
+
+        return errorCodeVO;
+    }
+
+    public void setGenerateInvoiceResponseForError(Response response, InvoiceVO invoiceVO, ErrorCodeListVO errorCodeListVO)
+    {
+        StatusInvoiceResult result = null;
+        if(response != null)
+        {
+            if(invoiceVO != null)
+            {
+                if(functions.isValueNull(invoiceVO.getInvoiceno()))
+                    response.setInvoiceId(invoiceVO.getInvoiceno());
+                if(functions.isValueNull(invoiceVO.getMemberid()))
+                    response.setMemberId(invoiceVO.getMemberid());
+            }
+            if(errorCodeListVO != null && errorCodeListVO.getListOfError() != null)
+            {
+                StringBuffer errorCode = new StringBuffer();
+                StringBuffer errorDesc = new StringBuffer();
+                for(ErrorCodeVO errorCodeVO : errorCodeListVO.getListOfError())
+                {
+                    result = new StatusInvoiceResult();
+                    if(errorCode.length() > 0)
+                    {
+                        errorCode.append(" | ");
+                        errorDesc.append(" | ");
+                    }
+                    errorCode.append(errorCodeVO.getApiCode());
+                    errorDesc.append(errorCodeVO.getApiDescription());
+
+                    result.setResultCode(errorCode.toString());
+                    result.setDescription(errorDesc.toString());
+                    response.setStatusInvoiceResult(result);
+                }
+            }
+        }
+    }
+
+    public void setGenerateInvoiceSuccessResponse(Response response,InvoiceVO invoiceVO)
+    {
+        StatusInvoiceResult result = null;
+        Invoice invoice = null;
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeVO errorCodeVO = null;
+        if(invoiceVO != null)
+        {
+            result = new StatusInvoiceResult();
+            invoice = new Invoice();
+            if("mailsent".equalsIgnoreCase(invoiceVO.getStatus()) || "generated".equalsIgnoreCase(invoiceVO.getStatus()) || "smssent".equalsIgnoreCase(invoiceVO.getStatus()))
+            {
+                errorCodeVO = errorCodeUtils.getSuccessErrorCode(ErrorName.SUCCESSFULL_INVOICE_GENERATION);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+            else
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.REJECTED_INVOICE_GENERATION);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+
+            if (invoiceVO.getCustomerDetailList() != null)
+            {
+                if (invoiceVO.getCustomerDetailList().size() > 0)
+                {
+                    invoice.setCustomerDetailList(invoiceVO.getCustomerDetailList());
+                }
+            }
+
+            if (invoiceVO.getProductList()!=null)
+            {
+                if (invoiceVO.getProductList().size()>0)
+                {
+                    invoice.setProductlist(invoiceVO.getProductList());
+                }
+            }
+
+            invoice.setAmount(invoiceVO.getAmount());
+            if (invoiceVO.getCustomerDetailList() == null)
+            invoice.setInvoiceId(invoiceVO.getInvoiceno());
+            invoice.setMerchantInvoiceId(invoiceVO.getDescription());
+           // invoice.setMerchantOrderDescription(invoiceVO.getOrderDescription());
+
+            if (!functions.isValueNull(invoiceVO.getOrderDescription()))
+            {
+                invoice.setOrderDescription(invoiceVO.getOrderDescription());
+            }
+            else
+            {
+                invoice.setOrderDescription("-");
+            }
+            invoice.setDate(invoiceVO.getDate());
+            invoice.setTime(invoiceVO.getTime());
+            invoice.setCurrency(invoiceVO.getCurrency());
+            invoice.setExpirationPeriod(invoiceVO.getExpirationPeriod());
+
+            if (invoiceVO.getIsSplitInvoice().equalsIgnoreCase("N") && invoiceVO.getCustomerDetailList() == null)
+            {
+                invoice.setTransactionUrl(invoiceVO.getTransactionUrl());
+                invoice.setEmailaddr(invoiceVO.getEmail());
+            }
+
+            response.setMemberId(invoiceVO.getMemberid());
+            response.setInvoice(invoice);
+            response.setStatusInvoiceResult(result);
+        }
+    }
+
+    public void setRegenerateInvoiceSuccessResponse(Response response,InvoiceVO invoiceVO)
+    {
+        StatusInvoiceResult result = null;
+        Invoice invoice = null;
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeVO errorCodeVO = null;
+
+        if(invoiceVO != null)
+        {
+            result = new StatusInvoiceResult();
+            invoice = new Invoice();
+            if("mailsent".equalsIgnoreCase(invoiceVO.getStatus()) || "generated".equalsIgnoreCase(invoiceVO.getStatus()) || "smssent".equalsIgnoreCase(invoiceVO.getStatus()))
+            {
+                errorCodeVO = errorCodeUtils.getSuccessErrorCode(ErrorName.SUCCESSFULL_INVOICE_REGENERATE);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+            else
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.REJECTED_INVOICE_REGENERATE);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+            invoice.setAmount(invoiceVO.getAmount());
+            invoice.setInvoiceId(invoiceVO.getInvoiceno());
+            System.out.println("getInvoiceno::::::::"+invoiceVO.getInvoiceno());
+            invoice.setEmailaddr(invoiceVO.getEmail());
+            invoice.setMerchantInvoiceId(invoiceVO.getDescription());
+            invoice.setMerchantOrderDescription(invoiceVO.getOrderDescription());
+            invoice.setDate(invoiceVO.getDate());
+            invoice.setTime(invoiceVO.getTime());
+            invoice.setCurrency(invoiceVO.getCurrency());
+            invoice.setExpirationPeriod(invoiceVO.getExpirationPeriod());
+            invoice.setTransactionUrl(invoiceVO.getTransactionUrl());
+
+            response.setMemberId(invoiceVO.getMemberid());
+            response.setInvoice(invoice);
+            response.setStatusInvoiceResult(result);
+        }
+    }
+
+    public void setRemindInvoiceSuccessResponse(Response response,InvoiceVO invoiceVO)
+    {
+        StatusInvoiceResult result = null;
+        Invoice invoice = null;
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeVO errorCodeVO = null;
+        if(invoiceVO != null)
+        {
+            result = new StatusInvoiceResult();
+            invoice = new Invoice();
+            if("mailsent".equalsIgnoreCase(invoiceVO.getStatus()))
+            {
+                errorCodeVO = errorCodeUtils.getSuccessErrorCode(ErrorName.SUCCESSFULL_INVOICE_REMINDER);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+
+                invoice.setAmount(invoiceVO.getAmount());
+                invoice.setInvoiceId(invoiceVO.getInvoiceno());
+                invoice.setEmailaddr(invoiceVO.getEmail());
+                invoice.setMerchantInvoiceId(invoiceVO.getDescription());
+                invoice.setMerchantOrderDescription(invoiceVO.getOrderDescription());
+                invoice.setDate(invoiceVO.getDate());
+                invoice.setTime(invoiceVO.getTime());
+                invoice.setCurrency(invoiceVO.getCurrency());
+                invoice.setTransactionUrl(invoiceVO.getTransactionUrl());
+
+                response.setInvoice(invoice);
+            }
+            else
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.REJECTED_INVOICE_REMINDER);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+
+            response.setMemberId(invoiceVO.getMemberid());
+            response.setStatusInvoiceResult(result);
+        }
+    }
+
+    public void setInquiryInvoiceSuccessResponse(Response response, InvoiceVO invoiceVO)
+    {
+        StatusInvoiceResult result = null;
+        Invoice invoice = null;
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeVO errorCodeVO = null;
+        if(invoiceVO != null)
+        {
+            result = new StatusInvoiceResult();
+            invoice = new Invoice();
+            if(functions.isValueNull(invoiceVO.getStatus()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SUCCESSFULL_INVOICE_FOUND);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+
+                //invoice.setMerchantInvoiceId(invoiceVO.getDescription());
+                invoice.setMerchantOrderId(invoiceVO.getDescription());
+                invoice.setInvoiceStatus(invoiceVO.getStatus());
+                invoice.setAmount(invoiceVO.getAmount());
+                invoice.setCurrency(invoiceVO.getCurrency());
+                invoice.setInvoiceId(invoiceVO.getInvoiceno());
+                if(functions.isValueNull(invoiceVO.getTrackingId()))
+                    invoice.setPaymentId(invoiceVO.getTrackingId());
+                response.setInvoice(invoice);
+            }
+            else
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_NO_RECORD_FOUND);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+            response.setMemberId(invoiceVO.getMemberid());
+            response.setStatusInvoiceResult(result);
+        }
+    }
+
+    public void setTransInquiryInvoiceSuccessResponse(Response response, InvoiceVO invoiceVO)
+    {
+        StatusInvoiceResult result = null;
+        Invoice invoice = null;
+        Transaction transaction = null;
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeVO errorCodeVO = null;
+        if(invoiceVO != null)
+        {
+            result = new StatusInvoiceResult();
+            invoice = new Invoice();
+            transaction = new Transaction();
+            if(functions.isValueNull(invoiceVO.getInvoiceno()))
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SUCCESSFULL_INVOICE_FOUND);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+
+                invoice.setMerchantOrderId(invoiceVO.getDescription());
+                invoice.setInvoiceStatus(invoiceVO.getStatus());
+                invoice.setAmount(invoiceVO.getAmount());
+                invoice.setCurrency(invoiceVO.getCurrency());
+                invoice.setInvoiceId(invoiceVO.getInvoiceno());
+                if(functions.isValueNull(invoiceVO.getTrackingId()))
+                    invoice.setPaymentId(invoiceVO.getTrackingId());
+
+                transaction.setTransactionStatus(invoiceVO.getTransactionStatus());
+                transaction.setDescriptor(invoiceVO.getOrderDescription());
+                transaction.setCurrency(invoiceVO.getCurrency());
+                transaction.setAmount(invoiceVO.getAmount());
+                transaction.setSystemPaymentId(invoiceVO.getTrackingId());
+                invoice.setTransaction(transaction);
+
+                response.setInvoice(invoice);
+            }
+            else
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.SYS_NO_RECORD_FOUND);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+            response.setMemberId(invoiceVO.getMemberid());
+            response.setStatusInvoiceResult(result);
+        }
+    }
+
+    public void setRestInvoiceResponseForError(Response response, InvoiceVO invoiceVO, ErrorCodeListVO errorCodeListVO)
+    {
+        StatusInvoiceResult result = new StatusInvoiceResult();
+        List<String> errorCodeList=new ArrayList<String>();
+        if(response != null)
+        {
+            /*if(invoiceVO != null)
+            {
+                response.setPaymentId("-");
+            }*/
+            if(errorCodeListVO != null && errorCodeListVO.getListOfError() != null)
+            {
+                StringBuffer errorCode = new StringBuffer();
+                StringBuffer errorDesc = new StringBuffer();
+                for(ErrorCodeVO errorCodeVO : errorCodeListVO.getListOfError())
+                {
+                    result = new StatusInvoiceResult();
+                    if (!errorCodeList.contains(errorCodeVO.getApiCode()))
+                    {
+                        if (errorCode.length() > 0)
+                        {
+                            errorCode.append(" | ");
+                            errorDesc.append(" | ");
+                        }
+                        errorCode.append(errorCodeVO.getApiCode());
+                        errorDesc.append(errorCodeVO.getApiDescription());
+
+                        errorCodeList.add(errorCodeVO.getApiCode());
+                    }
+
+                }
+                result.setResultCode(errorCode.toString());
+                result.setDescription(errorDesc.toString());
+                response.setStatusInvoiceResult(result);
+
+            }
+
+            /*if (functions.isValueNull(invoiceVO.getErrorMsg()))
+            {
+                result.setDescription(invoiceVO.getErrorMsg());
+                response.setStatusInvoiceResult(result);
+            }*/
+        }
+        else
+        {
+            //To Do - Make error response - 500
+        }
+    }
+
+    //Start Rest Error Response for Transaction
+    public void setLoginResponseForError(MerchantServiceResponseVO response, CommonValidatorVO commonValidatorVO, ErrorCodeListVO errorCodeListVO,PZResponseStatus status,String remark)
+    {
+        Result result = null;
+        if(response != null)
+        {
+            /*if(commonValidatorVO != null)
+            {
+                response.setPaymentId("-");
+            }*/
+            if(errorCodeListVO != null && errorCodeListVO.getListOfError() != null)
+            {
+                StringBuffer errorCode = new StringBuffer();
+                StringBuffer errorDesc = new StringBuffer();
+                for(ErrorCodeVO errorCodeVO : errorCodeListVO.getListOfError())
+                {
+                    result = new Result();
+                    if(errorCode.length() > 0)
+                    {
+                        errorCode.append(" | ");
+                        errorDesc.append(" | ");
+                    }
+                    errorCode.append(errorCodeVO.getApiCode());
+                    errorDesc.append(errorCodeVO.getApiDescription());
+
+                    result.setResultCode(errorCode.toString());
+                    result.setDescription(errorDesc.toString());
+                    response.setResult(result);
+
+                }
+            }
+        }
+    }
+
+    public void setSuccessAuthTokenResponse(MerchantServiceResponseVO response, DirectKitResponseVO directKitResponseVO, CommonValidatorVO commonValidatorVO)
+    {
+        Result result = null;
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        if(response != null)
+        {
+            result = new Result();
+            result.setDescription(directKitResponseVO.getStatusMsg());
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Date date = new Date();
+
+            if(directKitResponseVO.getStatus().equalsIgnoreCase("success"))
+            {
+                errorCodeVO = errorCodeUtils.getSuccessErrorCode(ErrorName.SUCCESSFUL_AUTH_TOKEN_GENERATED);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+            else
+            {
+                errorCodeVO = errorCodeUtils.getSuccessErrorCode(ErrorName.SYS_TOKEN_GENERATION_FAILED);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+
+            response.setPartnerId(commonValidatorVO.getMerchantDetailsVO().getPartnerId());
+            response.setLoginName(commonValidatorVO.getMerchantDetailsVO().getLogin());
+            response.setMemberId(directKitResponseVO.getMemberId());
+            response.setResult(result);
+            response.setTimestamp(String.valueOf(dateFormat.format(date)));
+            response.setAuthToken(directKitResponseVO.getAuthToken());
+        }
+    }
+
+    public void setSuccessCancelInvoiceresponse(Response response,InvoiceVO invoiceVO)
+    {
+        StatusInvoiceResult result = null;
+        Invoice invoice = null;
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        if (invoiceVO != null)
+        {
+            result = new StatusInvoiceResult();
+            invoice = new Invoice();
+            if(invoiceVO.getStatus().equalsIgnoreCase("cancelled"))
+            {
+                errorCodeVO = errorCodeUtils.getSuccessErrorCode(ErrorName.SUCCESSFULL_INVOICE_CANCEL);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+            else
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.REJECTED_INVOICE_CANCEL);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+            invoice.setInvoiceId(invoiceVO.getInvoiceno());
+            invoice.setDate(invoiceVO.getDate());
+            invoice.setTime(invoiceVO.getTime());
+
+            response.setInvoice(invoice);
+            response.setMemberId(invoiceVO.getMemberid());
+            response.setStatusInvoiceResult(result);
+//            response.setInvoiceId(invoiceVO.getInvoiceno());
+        }
+    }
+
+    //new
+    public void setInvoicelistresponse(Response response,InvoiceVO invoiceVO, List<InvoiceVO> list) throws PZConstraintViolationException
+    {
+        if (list != null)
+        {
+
+            CustomerDetails customer =null;
+            List<Invoice> invoiceList = new ArrayList<Invoice>();
+            for(InvoiceVO invoiceVO1 : list)
+            {
+                Invoice invoice = new Invoice();
+
+                customer = new CustomerDetails();
+                invoice.setInvoiceId(invoiceVO1.getInvoiceno());
+                invoice.setAmount(invoiceVO1.getAmount());
+                invoice.setCurrency(invoiceVO1.getCurrency());
+                invoice.setTransactionUrl(invoiceVO1.getTransactionUrl());
+               // invoiceVO.setTransactionStatus(invoiceVO1.getTransactionStatus());
+                if (functions.isValueNull(invoiceVO1.getTrackingId()))
+                {
+                    invoice.setTrackingid(invoiceVO1.getTrackingId());
+                }
+                else
+                {
+                    invoice.setTrackingid("-");
+                }
+
+                if (functions.isValueNull(invoiceVO1.getTransactionStatus()))
+                {
+                    invoice.setTransactionStatus(invoiceVO1.getTransactionStatus());
+                }
+                else
+                {
+                    invoice.setTransactionStatus("-");
+                }
+                invoice.setDate(invoiceVO1.getDate());
+                invoice.setOrderDescription(invoiceVO1.getOrderDescription());
+                invoice.setInvoiceStatus(invoiceVO1.getStatus());
+                invoice.setRaiseby(invoiceVO1.getRaisedby());
+                invoice.setOrderId(invoiceVO1.getDescription());
+                invoice.setExpirationPeriod(invoiceVO1.getExpirationPeriod());
+                invoice.setTransactionUrl(invoiceVO1.getTransactionUrl());
+                invoice.setDtstamp(invoiceVO1.getDtstamp());
+                invoice.setCancelreason(invoiceVO1.getCancelReason());
+                if (invoiceVO1.getProductList() != null)
+                invoice.setProductlist(invoiceVO1.getProductList());
+
+                customer.setCustomername(invoiceVO1.getCustName());
+                if (!functions.isValueNull(invoiceVO1.getStreet()))
+                    invoiceVO1.setStreet("");
+                if (!functions.isValueNull(invoiceVO1.getCity()))
+                    invoiceVO1.setCity("");
+                if (!functions.isValueNull(invoiceVO1.getState()))
+                    invoiceVO1.setState("");
+                if (!functions.isValueNull(invoiceVO1.getCountry()))
+                    invoiceVO1.setCountry("");
+                if (!functions.isValueNull(invoiceVO1.getZip()))
+                    invoiceVO1.setZip("");
+                customer.setCustomeraddress(invoiceVO1.getStreet() + ", " + invoiceVO1.getCity() + ", " + invoiceVO1.getState() + ", " + invoiceVO1.getCountry() + ", " + invoiceVO1.getZip());
+                customer.setCustomeremail(invoiceVO1.getEmail());
+                if (!functions.isValueNull(invoiceVO1.getTelCc()))
+                {
+                    customer.setCustomermobileno(invoiceVO1.getTelCc() + "-" + invoiceVO1.getTelno());
+                }
+                else
+                {
+                    customer.setCustomermobileno(invoiceVO1.getTelno());
+                }
+
+                invoice.setCustomerDetails(customer);
+                invoiceList.add(invoice);
+
+            }
+            response.setMemberId(invoiceVO.getMemberid());
+            response.setInvoiceList(invoiceList);
+        }
+    }
+    public void setInvoiceDetailsresponse(Response response,InvoiceVO invoiceVO, List<InvoiceVO> list) throws PZConstraintViolationException
+    {
+        if (list != null)
+        {
+
+
+            InvoiceDetails invoiceDetails =null;
+            List<Invoice> invoiceList = new ArrayList<Invoice>();
+            for(InvoiceVO invoiceVO1 : list)
+            {
+                Invoice invoice = new Invoice();
+                invoiceDetails = new InvoiceDetails();
+
+                if (functions.isValueNull(invoiceVO1.getTransactionStatus()))
+                {
+                    invoiceDetails.setTransactionstatus(invoiceVO1.getTransactionStatus());
+                }
+                else
+                {
+                    invoiceDetails.setTransactionstatus("-");
+                }
+
+                // invoiceDetails.setStatus(invoiceVO1.getTransactionStatus());
+                //invoiceDetails.setDate(invoiceVO1.getDate());
+                invoiceDetails.setAmount(invoiceVO1.getAmount());
+                invoiceDetails.setCount(invoiceVO1.getCount());
+                invoiceDetails.setCurrency(invoiceVO1.getCurrency());
+                //invoiceDetails.setDtstamp(invoiceVO1.getDtstamp());
+
+                invoice.setInvoiceDetails(invoiceDetails);
+                invoiceList.add(invoice);
+
+            }
+            response.setMemberId(invoiceVO.getMemberid());
+            response.setInvoiceList(invoiceList);
+        }
+    }
+
+    public void setSuccessInvoiceConfigDetailsResponse(Response response,InvoiceVO invoiceVO)
+    {
+        StatusInvoiceResult result = null;
+        Invoice invoice = null;
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        if (invoiceVO != null)
+        {
+            result = new StatusInvoiceResult();
+            invoice = new Invoice();
+            if(invoiceVO.getStatus().equalsIgnoreCase("success"))
+            {
+                errorCodeVO = errorCodeUtils.getSuccessErrorCode(ErrorName.SUCCESSFULL_INVOICE_DETAILS_SET);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+            else
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.REJECTED_INVOICE_DETAILS_SET);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+            invoice.setDate(invoiceVO.getDate());
+            invoice.setTime(invoiceVO.getTime());
+
+            //response.setInvoice(invoice);
+            response.setMemberId(invoiceVO.getMemberid());
+            response.setStatusInvoiceResult(result);
+//            response.setInvoiceId(invoiceVO.getInvoiceno());
+        }
+    }
+
+    public void getInvoiceConfigDetailsResponse(Response response,InvoiceVO invoiceVO)
+    {
+        StatusInvoiceResult result = null;
+        Invoice invoice = null;
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+
+        System.out.println("Redirect URL::::::::::::"+invoiceVO.getRedirecturl());
+        if (invoiceVO != null)
+        {
+            result = new StatusInvoiceResult();
+            invoice = new Invoice();
+            if(invoiceVO.getStatus().equalsIgnoreCase("success"))
+            {
+                errorCodeVO = errorCodeUtils.getSuccessErrorCode(ErrorName.SUCCESSFULL_GET_INVOICECONFIG);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+            else
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.REJECTED_GET_INVOICECONFIG);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+
+
+            if (functions.isValueNull(invoiceVO.getExpirationPeriod()))
+            {
+                invoice.setExpirationPeriod(invoiceVO.getExpirationPeriod());
+            }
+            else
+            {
+                invoice.setExpirationPeriod("0");
+            }
+            if (functions.isValueNull(invoiceVO.getGST()))
+            {
+                invoice.setGst(invoiceVO.getGST());
+            }
+            else
+            {
+                invoice.setGst("0");
+            }
+            if (functions.isValueNull(invoiceVO.getRedirecturl()))
+            {
+                invoice.setRedirectUrl(invoiceVO.getRedirecturl());
+            }
+            else
+            {
+                invoice.setRedirectUrl("-");
+            }
+            if (functions.isValueNull(invoiceVO.getInitial()))
+            {
+                invoice.setIntial(invoiceVO.getInitial());
+            }
+            else
+            {
+                invoice.setIntial("PZ");
+            }
+            if (functions.isValueNull(invoiceVO.getCurrency()))
+            {
+                invoice.setCurrency(invoiceVO.getCurrency());
+            }
+            else
+            {
+                invoice.setCurrency("-");
+            }
+            invoice.setIssms(invoiceVO.getIssms());
+            invoice.setIsemail(invoiceVO.getIsemail());
+
+            if (functions.isValueNull(invoiceVO.getIsduedate()))
+            {
+                invoice.setIsduedate(invoiceVO.getIsduedate());
+            }
+            else
+            {
+                invoice.setIsduedate("N");
+            }
+            if (functions.isValueNull(invoiceVO.getIslatefee()))
+            {
+                invoice.setIslatefee(invoiceVO.getIslatefee());
+            }
+            else
+            {
+                invoice.setIslatefee("N");
+            }
+            if (functions.isValueNull(invoiceVO.getPaymentterms()))
+            {
+                invoice.setPaymentterms(invoiceVO.getPaymentterms());
+            }
+            else
+            {
+                invoice.setPaymentterms("-");
+            }
+            invoice.setUnit(invoiceVO.getUnit());
+            invoice.setSmsactivation(invoiceVO.getSmsactivation());
+            if (functions.isValueNull(invoiceVO.getDuedate()))
+            {
+                invoice.setDuedate(invoiceVO.getDuedate());
+            }
+            else
+            {
+                invoice.setDuedate("0");
+            }
+            if (functions.isValueNull(invoiceVO.getLatefee()))
+            {
+                invoice.setLatefee(invoiceVO.getLatefee());
+            }
+            else
+            {
+                invoice.setLatefee("0");
+            }
+
+            if (invoiceVO.getDefaultunitList() != null)
+            {
+                response.setDefaultUnitList(invoiceVO.getDefaultunitList());
+            }
+
+            if (invoiceVO.getDefaultProductList() != null)
+            {
+                response.setDefaultProductList(invoiceVO.getDefaultProductList());
+            }
+
+            if (invoiceVO.getIsSplitInvoice() != null)
+            {
+                response.setIsSplitInvoice(invoiceVO.getIsSplitInvoice());
+            }
+
+
+          //  invoice.setExpirationPeriod(invoiceVO.getExpirationPeriod());
+            //invoice.setGst(invoiceVO.getGST());
+           // invoice.setIntial(invoiceVO.getInitial());
+          //  invoice.setCurrency(invoiceVO.getCurrency());
+
+            response.setMemberId(invoiceVO.getMemberid());
+            response.setStatusInvoiceResult(result);
+            response.setInvoice(invoice);
+
+
+        }
+    }
+
+
+    public void setOrderIDInResponse(Response response,InvoiceVO invoiceVO)
+    {
+        StatusInvoiceResult result = null;
+        Invoice invoice = null;
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        if (invoiceVO != null)
+        {
+            result = new StatusInvoiceResult();
+            invoice = new Invoice();
+            if(invoiceVO.getStatus().equalsIgnoreCase("success"))
+            {
+                errorCodeVO = errorCodeUtils.getSuccessErrorCode(ErrorName.SUCCESSFULL_ORDERID_SET);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+            else
+            {
+                errorCodeVO = errorCodeUtils.getErrorCodeFromName(ErrorName.REJECTED_ORDERID_SET);
+                result.setResultCode(errorCodeVO.getApiCode());
+                result.setDescription(errorCodeVO.getApiDescription());
+            }
+            invoice.setDate(invoiceVO.getDate());
+            invoice.setTime(invoiceVO.getTime());
+            invoice.setMerchantOrderId(invoiceVO.getDescription());
+
+            response.setInvoice(invoice);
+            response.setMemberId(invoiceVO.getMemberid());
+            response.setStatusInvoiceResult(result);
+//            response.setInvoiceId(invoiceVO.getInvoiceno());
+        }
+    }
+
+
+   /* public void setTransactionDetailsresponse(Response response,InvoiceVO invoiceVO, List<InvoiceVO> list) throws PZConstraintViolationException
+    {
+        if (list != null)
+        {
+
+
+            InvoiceDetails invoiceDetails =null;
+            List<Invoice> invoiceList = new ArrayList<Invoice>();
+            for(InvoiceVO invoiceVO1 : list)
+            {
+                Invoice invoice = new Invoice();
+                invoiceDetails = new InvoiceDetails();
+
+                if (functions.isValueNull(invoiceVO1.getTransactionStatus()))
+                {
+                    invoiceDetails.setTransactionstatus(invoiceVO1.getTransactionStatus());
+                }
+                else
+                {
+                    invoiceDetails.setTransactionstatus("-");
+                }
+
+                // invoiceDetails.setStatus(invoiceVO1.getTransactionStatus());
+                invoiceDetails.setAmount(invoiceVO1.getAmount());
+                invoiceDetails.setCount(invoiceVO1.getCount());
+                invoiceDetails.setCurrency(invoiceVO1.getCurrency());
+                invoiceDetails.setCaptureamount(invoiceVO1.getCamount());
+                invoiceDetails.setRefundamount(invoiceVO1.getRamount());
+                invoiceDetails.setChargebackamount(invoiceVO1.getCbamount());
+
+                invoice.setInvoiceDetails(invoiceDetails);
+                invoiceList.add(invoice);
+
+            }
+            response.setMemberId(invoiceVO.getMemberid());
+            response.setInvoiceList(invoiceList);
+        }
+    }*/
+
+    public void setFailAuthTokenResponse(Response response)
+    {
+        StatusInvoiceResult result = null;
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        if(response != null)
+        {
+            result = new StatusInvoiceResult();
+
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Date date = new Date();
+
+            errorCodeVO = errorCodeUtils.getSystemErrorCode(ErrorName.SYS_AUTHTOKEN_FAILED);
+            result.setResultCode(errorCodeVO.getApiCode());
+            result.setDescription(errorCodeVO.getApiDescription());
+            response.setStatusInvoiceResult(result);
+            response.setTimestamp(String.valueOf(dateFormat.format(date)));
+        }
+    }
+
+
+}

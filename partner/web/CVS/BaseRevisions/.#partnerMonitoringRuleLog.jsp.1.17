@@ -1,0 +1,513 @@
+<%@ page import="com.directi.pg.Functions,com.directi.pg.LoadProperties,com.directi.pg.Logger" %>
+<%@ page import="org.owasp.esapi.ESAPI" %>
+<%@ page import="org.owasp.esapi.errors.ValidationException" %>
+<%@ include file="top.jsp"%>
+<%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="java.util.*" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: Jitendra
+  Date: 05/01/2018
+  Time: 1:00 PM
+  To change this template use File | Settings | File Templates.
+--%>
+<%!
+  private static Logger logger = new Logger("partnerMonitoringRuleLog.jsp");
+%>
+<%
+  String company = ESAPI.encoder().encodeForHTML((String)session.getAttribute("partnername"));
+  session.setAttribute("submit","Monitoring Rule Logs");
+  String partnerId = (String) session.getAttribute("merchantid");
+  ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+  if (partner.isLoggedInPartner(session))
+  {
+    Functions functions = new Functions();
+    String fdate=null;
+    String tdate=null;
+    try
+    {
+      fdate = ESAPI.validator().getValidInput("fromdate",request.getParameter("fromdate"),"fromDate",10,true);
+      tdate = ESAPI.validator().getValidInput("todate",request.getParameter("todate"),"fromDate",10,true);
+    }
+    catch(ValidationException e)
+    {
+      logger.debug("ValidationException:::::"+e);
+    }
+    ResourceBundle rb1 = null;
+    String language_property1 = (String) session.getAttribute("language_property");
+    rb1 = LoadProperties.getProperty(language_property1);
+    String partnerMonitoringRuleLog_Merchant = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_Merchant")) ? rb1.getString("partnerMonitoringRuleLog_Merchant") : "Merchant";
+    String partnerMonitoringRuleLog_From = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_From")) ? rb1.getString("partnerMonitoringRuleLog_From") : "From";
+    String partnerMonitoringRuleLog_To = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_To")) ? rb1.getString("partnerMonitoringRuleLog_To") : "To";
+    String partnerMonitoringRuleLog_PartnerID = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_PartnerID")) ? rb1.getString("partnerMonitoringRuleLog_PartnerID") : "Partner ID";
+    String partnerMonitoringRuleLog_MerchantID = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_MerchantID")) ? rb1.getString("partnerMonitoringRuleLog_MerchantID") : "Merchant ID *";
+    String partnerMonitoringRuleLog_TerminalID = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_TerminalID")) ? rb1.getString("partnerMonitoringRuleLog_TerminalID") : "Terminal ID";
+    String partnerMonitoringRuleLog_Risk_Rule_Name = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_Risk_Rule_Name")) ? rb1.getString("partnerMonitoringRuleLog_Risk_Rule_Name") : "Risk Rule Name";
+    String partnerMonitoringRuleLog_rows = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_rows")) ? rb1.getString("partnerMonitoringRuleLog_rows") : "Rows/page";
+    String partnerMonitoringRuleLog_Path = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_Path")) ? rb1.getString("partnerMonitoringRuleLog_Path") : "Path";
+    String partnerMonitoringRuleLog_Search = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_Search")) ? rb1.getString("partnerMonitoringRuleLog_Search") : "Search";
+    String partnerMonitoringRuleLog_Report_Table = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_Report_Table")) ? rb1.getString("partnerMonitoringRuleLog_Report_Table") : "Report Table";
+    String partnerMonitoringRuleLog_AlertDate = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_AlertDate")) ? rb1.getString("partnerMonitoringRuleLog_AlertDate") : "AlertDate";
+    String partnerMonitoringRuleLog_AlertId = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_AlertId")) ? rb1.getString("partnerMonitoringRuleLog_AlertId") : "AlertId";
+    String partnerMonitoringRuleLog_RuleName = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_RuleName")) ? rb1.getString("partnerMonitoringRuleLog_RuleName") : "RuleName";
+    String partnerMonitoringRuleLog_Frequency = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_Frequency")) ? rb1.getString("partnerMonitoringRuleLog_Frequency") : "Frequency";
+    String partnerMonitoringRuleLog_Team = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_Team")) ? rb1.getString("partnerMonitoringRuleLog_Team") : "Team";
+    String partnerMonitoringRuleLog_MemberId = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_MemberId")) ? rb1.getString("partnerMonitoringRuleLog_MemberId") : "MemberId";
+    String partnerMonitoringRuleLog_TerminalId = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_TerminalId")) ? rb1.getString("partnerMonitoringRuleLog_TerminalId") : "TerminalId";
+    String partnerMonitoringRuleLog_Report = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_Report")) ? rb1.getString("partnerMonitoringRuleLog_Report") : "Report";
+    String partnerMonitoringRuleLog_Showing_Page = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_Showing_Page")) ? rb1.getString("partnerMonitoringRuleLog_Showing_Page") : "Showing Page";
+    String partnerMonitoringRuleLog_of = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_of")) ? rb1.getString("partnerMonitoringRuleLog_of") : "of";
+    String partnerMonitoringRuleLog_records = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_records")) ? rb1.getString("partnerMonitoringRuleLog_records") : "records";
+    String partnerMonitoringRuleLog_Sorry = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_Sorry")) ? rb1.getString("partnerMonitoringRuleLog_Sorry") : "Sorry";
+    String partnerMonitoringRuleLog_no = StringUtils.isNotEmpty(rb1.getString("partnerMonitoringRuleLog_no")) ? rb1.getString("partnerMonitoringRuleLog_no") : "No records found.";
+
+
+    String memberId = Functions.checkStringNull(request.getParameter("memberid"))==null?"":request.getParameter("memberid");
+    String pid = Functions.checkStringNull(request.getParameter("pid"))==null?"":request.getParameter("pid");
+    String terminalId = Functions.checkStringNull(request.getParameter("terminalid"))==null?"":request.getParameter("terminalid");
+    String ruleId = Functions.checkStringNull(request.getParameter("ruleid"))==null?"":request.getParameter("ruleid");
+   // partnerId= Functions.checkStringNull(request.getParameter("pid"))==null?partnerId:request.getParameter("pid");
+
+    Date date = new Date();
+    SimpleDateFormat originalFormat = new SimpleDateFormat("dd/MM/yyyy");
+
+    String Date = originalFormat.format(date);
+    date.setDate(1);
+    String fromDate = originalFormat.format(date);
+
+    fdate = Functions.checkStringNull(request.getParameter("fromdate")) == null ? fromDate : request.getParameter("fromdate");
+    tdate = Functions.checkStringNull(request.getParameter("todate")) == null ? Date : request.getParameter("todate");
+
+    Calendar rightNow = Calendar.getInstance();
+    String str = "";
+    if (fdate == null) fdate = "" + 1;
+    if (tdate == null) tdate = "" + rightNow.get(rightNow.DATE);
+    if (fdate != null) str = str + "fromdate=" + fdate;
+    if (tdate != null) str = str + "&todate=" + tdate;
+    if (memberId != null) str = str + "&memberid=" + memberId;
+    if (pid != null) str = str + "&pid=" + pid;
+
+    str= str + "&ctoken="+((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+    boolean archive = Boolean.valueOf(request.getParameter("archive")).booleanValue();
+    str = str + "&archive=" + archive;
+
+    String archivalString = "Archived";
+    String currentString = "Monitoring Logs";
+
+    int pageno=Functions.convertStringtoInt(ESAPI.encoder().encodeForHTML(request.getParameter("SPageno")),1);
+    int pagerecords=Functions.convertStringtoInt(ESAPI.encoder().encodeForHTML(request.getParameter("SRecords")),30);
+
+    str = str + "&SRecords=" + pagerecords;
+    String Roles = partner.getRoleofPartner(String.valueOf(session.getAttribute("merchantid")));
+    String Config =" ";
+    if(Roles.contains("superpartner")){
+      pid=nullToStr(request.getParameter("pid"));
+    }else{
+      Config = "disabled";
+      pid = String.valueOf(session.getAttribute("merchantid"));
+    }
+%>
+<html>
+<head>
+
+  <title><%=company%> | Monitoring Rule Log</title>
+  <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <link rel="stylesheet" href=" /merchant/transactionCSS/css/jquery.dataTables.min.css">
+
+  <%--<script type="text/javascript" src="/partner/javascript/jquery.min.js?ver=1"></script>
+  <script src="/partner/NewCss/js/jquery-ui.min.js"></script>--%>
+  <script src="/partner/javascript/autocomplete_partner_memberid.js"></script>
+
+  <script type="text/javascript" src="/merchant/transactionCSS/js/jquery.dataTables.min.js"></script>
+  <link href="/merchant/datepicker/datepicker/datepicker3.css" rel="stylesheet">
+  <script src="/merchant/datepicker/datepicker/bootstrap-datepicker.js"></script>
+  <script src="/partner/NewCss/libs/jquery-icheck/icheck.min.js"></script>
+ <%-- <script type="text/javascript">
+    function selectTerminals(data, ctoken)
+    {
+      document.form.action = "/partner/partnerMonitoringRuleLog.jsp?ctoken=" + ctoken;
+      document.form.submit();
+    }
+  </script>--%>
+  <script type="text/javascript">
+    $('#sandbox-container input').datepicker({
+    });
+  </script>
+  <script>
+    $(function() {
+      $( ".datepicker" ).datepicker({dateFormat: "yy-mm-dd"});
+    });
+  </script>
+</head>
+<body>
+<div class="content-page">
+  <div class="content">
+    <!-- Page Heading Start -->
+    <div class="page-heading">
+      <form name="form" method="post" action="/partner/net/PartnerMonitoringRuleLog?ctoken=<%=ctoken%>">
+        <div class="row">
+          <div class="col-sm-12 portlets ui-sortable">
+            <div class="widget">
+              <div class="widget-header transparent">
+                <h2><strong><i class="fa fa-th-large"></i>&nbsp;&nbsp;<%=company%> <%=partnerMonitoringRuleLog_Merchant%> <%=archive ? archivalString : currentString%></strong></h2>
+                <div class="additional-btn">
+                  <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                  <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                  <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+                </div>
+              </div>
+              <input type="hidden" value="<%=ctoken%>" name="ctoken" id="ctoken">
+              <input type="hidden" value="<%=partnerId%>" name="partnerid" id="partnerid">
+              <%
+                functions = new Functions();
+                String msg=(String ) request.getAttribute("msg");
+                String error=(String ) request.getAttribute("error");
+                if(functions.isValueNull(msg)){
+                  //out.println("<h5 class=\"bg-info\" style=\"text-align: center;\"><i class=\"fa fa-info-circle\"></i>&nbsp;&nbsp;"+msg+"</h5>");
+                  out.println("<h5 class=\"bg-infoorange\" style=\"text-align: center;\"><i class=\"fa fa-exclamation-triangle\"></i>&nbsp;&nbsp;" + msg + "</h5>");
+                }
+                if(functions.isValueNull(error)){
+                  out.println("<h5 class=\"bg-infoorange\" style=\"text-align: center;\"><i class=\"fa fa-exclamation-triangle\"></i>&nbsp;&nbsp;" + error + "</h5>");
+                }
+              %>
+              <div class="widget-content padding">
+                <div id="horizontal-form">
+
+                  <div class="form-group col-md-4 has-feedback">
+                    <label ><%=partnerMonitoringRuleLog_From%></label>
+                    <input type="text" size="16" name="fromdate" class="datepicker form-control" value="<%=ESAPI.encoder().encodeForHTMLAttribute(fdate)%>" readonly="readonly" style="cursor: auto;background-color: #ffffff;opacity: 1;width: 100%;">
+                  </div>
+
+                  <div class="form-group col-md-4 has-feedback">
+                    <label><%=partnerMonitoringRuleLog_To%></label>
+                    <input type="text" size="16" name="todate" class="datepicker form-control" value="<%=ESAPI.encoder().encodeForHTMLAttribute(tdate)%>" readonly="readonly" style="cursor: auto;background-color: #ffffff;opacity: 1;width: 100%;">
+                  </div>
+
+
+
+                  <div class="form-group col-md-4 has-feedback">
+
+                    <div class="ui-widget ">
+                      <label for="pid"><%=partnerMonitoringRuleLog_PartnerID%></label>
+                      <input name="pid" id="pid" value="<%=pid%>" class="form-control" autocomplete="on" <%=Config%>>
+                    </div>
+                    </div>
+
+                    <div class="form-group col-md-4 has-feedback">
+
+                    <div class="ui-widget">
+                      <label ><%=partnerMonitoringRuleLog_MerchantID%></label>
+                      <input name="memberid" id="member" value="<%=memberId%>" class="form-control" autocomplete="on">
+                    </div>
+                   <%-- <label>Merchant ID</label>
+                    <select name="memberid" class="form-control"
+                            onchange="selectTerminals(this,'<%=ctoken%>')">
+                      <option value="" selected>Select Merchant ID</option>
+                      <%
+                        Connection conn = null;
+                        PreparedStatement pstmt = null;
+                        ResultSet rs = null;
+                        try
+                        {
+                          conn = Database.getConnection();
+                          String query = "select memberid, company_name from members where activation='Y' AND partnerId = '" + partnerId + "' ORDER BY memberid ASC";
+                          pstmt = conn.prepareStatement(query);
+                          rs = pstmt.executeQuery();
+                          while (rs.next())
+                          {
+                            String selection = "";
+                            if (rs.getString("memberid").equals(memberId)){
+                              selection = "selected";
+                            }
+                      %>
+                      <option value="<%=rs.getInt("memberid")%>" <%=selection%>><%=rs.getInt("memberid") + "-" + rs.getString("company_name")%>
+                      </option>
+                      ;
+                      <%
+                          }
+                        }
+                        catch (SystemError se){
+                          logger.error("Exception:::::" + se);
+                        }
+                        finally {
+                          Database.closeConnection(conn);
+                        }
+                      %>
+                    </select>--%>
+                  </div>
+
+                  <div class="form-group col-md-4 has-feedback">
+
+                      <div class="ui-widget">
+                        <label><%=partnerMonitoringRuleLog_TerminalID%></label>
+                        <input name="terminalid" id="terminal" value="<%=terminalId%>" class="form-control" autocomplete="on">
+                      </div>
+                   <%-- <label>Terminal ID</label>
+                    <select name="terminalid" class="form-control"
+                            onchange="selectTerminals(this,'<%=ctoken%>')">
+                      <option value="" selected>Select Terminal ID</option>
+                      <%
+                        try
+                        {
+                          conn = Database.getConnection();
+                          String query = "SELECT terminalid,paymodeid,cardtypeid,memberid FROM member_account_mapping where memberid='" + memberId + "'";
+                          pstmt = conn.prepareStatement(query);
+                          rs = pstmt.executeQuery();
+                          while (rs.next())
+                          {
+                            String selection = "";
+                            if (rs.getString("terminalid").equals(terminalId)){
+                              selection = "selected";
+                            }
+                      %>
+                      <option value="<%=rs.getInt("terminalid")%>" <%=selection%>><%=rs.getString("memberid") + "-" + rs.getString("terminalid") + "-" + GatewayAccountService.getPaymentMode(rs.getString("paymodeid")) + "-" + GatewayAccountService.getCardType(rs.getString("cardtypeid"))%>
+                      </option>
+                      ;
+                      <%
+                          }
+                        }
+                        catch (SystemError se){
+                          logger.error("Exception:::::" + se);
+                        }
+                        finally{
+                          Database.closeConnection(conn);
+                        }
+                      %>
+                    </select>--%>
+                  </div>
+
+                  <div class="form-group col-md-4 has-feedback">
+                    <%--<label>Risk Rule Name</label>--%>
+
+                    <div class="ui-widget">
+                      <label for="rrn"><%=partnerMonitoringRuleLog_Risk_Rule_Name%></label>
+                      <input name="ruleid" id="rrn" value="<%=ruleId%>" class="form-control" autocomplete="on">
+                    </div>
+                    <%--<select name="ruleid" class="form-control">
+                      <option value="" selected>Select RuleName</option>
+                      <%
+                        Connection conn = null;
+                        try
+                        {
+                          PreparedStatement pstmt = null;
+                          ResultSet rs = null;
+                          conn = Database.getRDBConnection();
+                          String query = "SELECT mampm.monitoing_para_id,mpm.monitoing_para_name,terminalid FROM member_account_monitoringpara_mapping AS mampm JOIN monitoring_parameter_master AS mpm ON mampm.monitoing_para_id=mpm.monitoing_para_id WHERE memberid='" + request.getParameter("memberid") + "' AND terminalid='" + request.getParameter("terminalid") + "'";
+                          pstmt = conn.prepareStatement(query);
+                          rs = pstmt.executeQuery();
+                          while (rs.next())
+                          {
+                            String selection = "";
+                            if (rs.getString("monitoing_para_name").equals(ruleId)){
+                              selection = "selected";
+                            }
+                      %>
+                      <option value="<%=rs.getString("monitoing_para_name")%>" <%=selection%>><%=rs.getString("monitoing_para_name") + " - " + rs.getString("monitoing_para_id")%>
+                      </option>
+                      ;
+                      <%
+                          }
+                        }
+                        catch (Exception e){
+                        }
+                        finally{
+                          Database.closeConnection(conn);
+                        }
+                      %>
+                    </select>--%>
+                  </div>
+
+
+                  <div class="form-group col-md-4 has-feedback">
+                    <label ><%=partnerMonitoringRuleLog_rows%></label>
+                    <input type="text" maxlength="5" size="2" class="form-control" value="<%=ESAPI.encoder().encodeForHTMLAttribute(new Integer(pagerecords).toString())%>" name="SRecords"  >
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label style="color: transparent;"><%=partnerMonitoringRuleLog_Path%></label>
+                    <button type="submit" class="btn btn-default" name="B1" style="display:block;">
+                      <i class="fa fa-clock-o"></i>
+                      &nbsp;&nbsp;<%=partnerMonitoringRuleLog_Search%>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+      <%--Start Report Data--%>
+    </div>
+  </div>
+  <%-- <div class="row reporttable">--%>
+  <div class="col-sm-12 portlets ui-sortable">
+    <%--<div class="col-md-12">--%>
+    <div class="widget">
+      <div class="widget-header">
+        <h2><i class="fa fa-table"></i>&nbsp;&nbsp;<strong><%=partnerMonitoringRuleLog_Report_Table%></strong></h2>
+        <div class="additional-btn">
+          <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+          <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+          <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+        </div>
+      </div>
+      <div class="widget-content padding" style="overflow-x: auto;">
+        <%  String errormsg1 = (String)request.getAttribute("message");
+          if (errormsg1 == null){
+            errormsg1 = "";
+          }
+          else{
+            out.println("<table align=\"center\"><tr><td valign=\"middle\"><font class=\"textb\" >");
+            out.println(errormsg1);
+            out.println("</font></td></tr></table>");
+          }
+
+          Hashtable hash = (Hashtable) request.getAttribute("transactionsdetails");
+          Hashtable temphash = null;
+
+          int records = 0;
+          int totalrecords = 0;
+          int currentblock = 1;
+          try{
+            records = Integer.parseInt((String) hash.get("records"));
+            totalrecords = Integer.parseInt((String) hash.get("totalrecords"));
+            currentblock = Integer.parseInt(request.getParameter("currentblock"));
+          }
+          catch (Exception ex){
+
+          }
+
+          String style = "class=tr0";
+          String ext = "light";
+          String style1 = "class=\"textb\"";
+          if (records > 0)
+          {
+        %>
+        <table align=center width="50%" class="display table table table-striped table-bordered table-hover dataTable" style="font-family:Open Sans;font-size: 13px;font-weight: 600;width: 100%;">
+          <thead>
+          <tr>
+            <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b><%=partnerMonitoringRuleLog_AlertDate%></b></td>
+            <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b><%=partnerMonitoringRuleLog_AlertId%></b></td>
+            <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b><%=partnerMonitoringRuleLog_RuleName%></b></td>
+            <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b><%=partnerMonitoringRuleLog_Frequency%></b></td>
+            <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b><%=partnerMonitoringRuleLog_Team%></b></td>
+            <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b><%=partnerMonitoringRuleLog_MemberId%></b></td>
+            <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b><%=partnerMonitoringRuleLog_TerminalId%></b></td>
+            <td  valign="middle" align="center" style="background-color: #7eccad !important;color: white;padding-top: 13px;padding-bottom: 13px;"><b><%=partnerMonitoringRuleLog_Report%></b></td>
+          </tr>
+          </thead>
+          <input type="hidden" value="<%=ctoken%>" name="ctoken">
+          <%
+            StringBuffer requestParameter = new StringBuffer();
+            Enumeration<String> stringEnumeration = request.getParameterNames();
+            while(stringEnumeration.hasMoreElements())
+            {
+              String name=stringEnumeration.nextElement();
+              if("SPageno".equals(name) || "SRecords".equals(name)){
+              }
+              else
+                requestParameter.append("<input type='hidden' name='"+name+"' value=\""+request.getParameter(name)+"\"/>");
+            }
+            requestParameter.append("<input type='hidden' name='SPageno' value='"+pageno+"'/>");
+            requestParameter.append("<input type='hidden' name='SRecords' value='"+pagerecords+"'/>");
+
+            for (int pos = 1; pos <= records; pos++)
+            {
+              String id = Integer.toString(pos);
+
+              int srno = Integer.parseInt(id) + ((pageno - 1) * pagerecords);
+
+              style = "class=\"tr" + (pos + 1) % 2 + "\"";
+
+              temphash = (Hashtable) hash.get(id);
+
+              String date1 = Functions.convertDtstamptoDate((String)temphash.get("dtstamp"));
+              String alertId=(String) temphash.get("id");
+              String ruleName= (String) temphash.get("rule_name");
+              String alertType=(String) temphash.get("alert_type");
+              String alertTeam=(String) temphash.get("alert_team");
+              String memberId1 = (String) temphash.get("memberid");
+
+              String terminalId1 = "N/A";
+              String reportFile="N/A";
+
+              if(functions.isValueNull((String)temphash.get("report"))){
+                reportFile=(String)temphash.get("report");
+              }
+
+              if(functions.isValueNull((String)temphash.get("terminalid")) && !"0".equals((String)temphash.get("terminalid"))){
+                terminalId1=(String)temphash.get("terminalid");
+              }
+
+              ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+
+              out.println("<tr " + style + ">");
+              out.println("<td valign=\"middle\" data-label=\"AlertDate\" align=\"center\"" + style + ">" + ESAPI.encoder().encodeForHTML(date1) + "</td>");
+              out.println("<td valign=\"middle\" data-label=\"AlertId\" align=\"center\"\" + style + \"><form action=\"PartnerMerchantResendLog?ctoken=" + ctoken + "\" method=\"post\"><input type=\"hidden\" name=\"action\" value=\"alertAction\"><input type=\"hidden\" name=\"alertid\" value=\""+alertId+ "\"><input type=\"hidden\" name=\"fromdate\" value=\""+fdate+"\"><input type=\"hidden\" name=\"todate\" value=\""+tdate+"\"><input type=\"hidden\" name=\"memberid\" value=\""+memberId+"\"><input type=\"hidden\" name=\"ruleid\" value=\""+ruleId+"\"><input type=\"hidden\" name=\"terminalid\" value=\""+terminalId+"\"><input type=\"submit\" value=\"" + alertId + "\" class=\"button btn btn-default\"></form></td>");
+              out.println("<td valign=\"middle\" data-label=\"AlertTeam\" style=\"word-break:break-all\" align=\"center\"" + style + ">" + ESAPI.encoder().encodeForHTML(ruleName) + "</td>");
+              out.println("<td valign=\"middle\" data-label=\"AlertType\" align=\"center\"" + style + ">" + ESAPI.encoder().encodeForHTML(alertType) + "</td>");
+              out.println(requestParameter.toString());
+              out.print("</form></td>");
+              out.println("<td valign=\"middle\" data-label=\"AlertTeam\" style=\"word-break:break-all\" align=\"center\"" + style + ">" + ESAPI.encoder().encodeForHTML(alertTeam) + "</td>");
+              out.println("<td valign=\"middle\" data-label=\"MemberId\" align=\"center\"" + style + ">&nbsp;" +ESAPI.encoder().encodeForHTML( memberId1) + "</td>");
+              out.println("<td valign=\"middle\" data-label=\"TerminalId\" align=\"center\"" + style + ">&nbsp;" +ESAPI.encoder().encodeForHTML(terminalId1) + "</td>");
+              if(!"N/A".equals(reportFile)){
+                out.println("<td align=\"middle\" data-label=\"Report\"><form action=\"/partner/net/PartnerMerchantResendLog?ctoken="+ctoken+"\" method=\"post\"><input type=\"hidden\" value="+alertId+" name=\"alertid\"><input type=\"hidden\" value=\"sendfile\" name=\"action\"><button type=\"submit\" class=\"btn-xs\" name=\"file\" style=\"background: transparent;border: 0;\"> <img width=\"auto\" height=\"30\" src=\"/partner/images/excel_new.png\"></button></form></td>");
+              }else{
+                out.println("<td align=\"middle\" data-label=\"Report\">"+reportFile+"</td>");
+              }
+
+              out.println("</tr>");
+            }
+          %>
+        </table>
+      </div>
+      <div id="showingid"><strong><%=partnerMonitoringRuleLog_Showing_Page%> <%=pageno%> <%=partnerMonitoringRuleLog_of%> <%=totalrecords%> <%=partnerMonitoringRuleLog_records%></strong></div>
+      <jsp:include page="page.jsp" flush="true">
+        <jsp:param name="numrecords" value="<%=totalrecords%>"/>
+        <jsp:param name="numrows" value="<%=pagerecords%>"/>
+        <jsp:param name="pageno" value="<%=pageno%>"/>
+        <jsp:param name="str" value="<%=str%>"/>
+        <jsp:param name="page" value="PartnerMonitoringRuleLog"/>
+        <jsp:param name="currentblock" value="<%=currentblock%>"/>
+        <jsp:param name="orderby" value=""/>
+      </jsp:include>
+      <%
+        }
+        else{
+          out.println(Functions.NewShowConfirmation1(partnerMonitoringRuleLog_Sorry, partnerMonitoringRuleLog_no));
+        }
+      %>
+      <%!
+        public static String nullToStr(String str){
+          if(str == null)
+            return "";
+          return str;
+        }
+        public static String getStatus(String str){
+          if(str.equals("Y"))
+            return "Active";
+          else if(str.equals("N"))
+            return "Inactive";
+          else if(str.equals("T"))
+            return "Test";
+          return str;
+        }
+      %>
+    </div>
+    <%
+      }
+      else{
+        response.sendRedirect("/partner/logout.jsp");
+        return;
+      }
+    %>
+  </div>
+</div>
+<script type="text/javascript" src="/partner/cookies/jquery.ihavecookies.js"></script>
+<script type="text/javascript" src="/partner/cookies/cookies_popup.js"></script>
+<link href="/partner/cookies/quicksand_font.css" rel="stylesheet">
+<link href="/partner/cookies/cookies_popup.css" rel="stylesheet">
+</body>
+</html>

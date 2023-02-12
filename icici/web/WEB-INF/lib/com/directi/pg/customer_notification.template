@@ -1,0 +1,24 @@
+<html>
+<body style="font-size: 10pt; font-family: verdana" >
+Hello <#NAME#>,<br>
+<br>You had recently placed an Order Id : <#DESCRIPTION#> , that you successfully paid for, using your credit card. The details of this transaction are given below.<br>
+<br>
+<U>Transaction Details</U>
+<br>Tracking Id: <#TRACKINGID#>
+<br>Description: <#DESCRIPTION#>
+<br>Order Description: <#ORDERDESCRIPTION#>
+<br>Transaction Amount: <#CURRENCY#> <#TRANSAMOUNT#> <#TMPL_TRANSACTION#>
+<br>Captured Amount: <#CURRENCY#> <#CAPAMOUNT#>
+<br>Date of Transaction: <#DATE#>
+<br><br>
+<U>Credit Card Details</U>
+<br>Name on Card:<#NAME#>
+<br>Card Number: **** **** **** <#CCNUM#>
+<br>Expiry Date: <#EXPDATE#>
+<br>
+<br>We would like to take this opportunity to inform you, that this charge will be appearing on the above Credit Card's Statement as <b><font size=2><#DISPLAYNAME#></font></b>.
+<br><font size=2><#MESSAGE#></font>
+<br><br>Best Regards,<br>
+<#SIGNATURE#>
+</body>
+</html>

@@ -1,0 +1,21 @@
+package com.transaction.vo.restVO.RequestVO;
+
+import javax.ws.rs.FormParam;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+
+/**
+ * Created by Admin on 12/20/2019.
+ */
+@XmlRootElement(name="deviceDetails")
+@XmlAccessorType(XmlAccessType.FIELD)
+public class DeviceDetails
+{
+    @FormParam("deviceDetails.user_Agent")
+    String user_Agent;
+
+    public String getUser_Agent() {return user_Agent;}
+
+    public void setUser_Agent(String user_Agent) {this.user_Agent = user_Agent;}
+}

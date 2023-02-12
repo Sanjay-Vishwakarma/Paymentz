@@ -1,0 +1,708 @@
+<%--
+  Created by IntelliJ IDEA.
+  User: kiran
+  Date: 11/7/15
+  Time: 5:16 PM
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page import="java.util.*" %>
+<%@ page import="com.directi.pg.Functions" %>
+<%@ page import="com.directi.pg.Logger"%>
+<%@ page import="com.manager.vo.fraudruleconfVOs.*" %>
+<%@ page import="com.manager.vo.PaginationVO" %>
+<%@ page import="org.owasp.esapi.ESAPI" %>
+<%--<%@ include file="ietest.jsp" %>--%>
+<%
+  session.setAttribute("submit","Fraud Rule Configuration");
+  String company = ESAPI.encoder().encodeForHTML((String)session.getAttribute("company"));
+
+
+  ResourceBundle rb1 = null;
+  String language_property1 = (String)session.getAttribute("language_property");
+  rb1 = LoadProperties.getProperty(language_property1);
+  String manageMerchantFraudRule_internal_rule_configuration1 = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_internal_rule_configuration1"))?rb1.getString("manageMerchantFraudRule_internal_rule_configuration1"): "Internal Rule Configuration";
+  String manageMerchantFraudRule_rule_id = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_rule_id"))?rb1.getString("manageMerchantFraudRule_rule_id"): "Rule ID";
+  String manageMerchantFraudRule_rule_name = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_rule_name"))?rb1.getString("manageMerchantFraudRule_rule_name"): "Rule Name";
+  String manageMerchantFraudRule_rule_description = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_rule_description"))?rb1.getString("manageMerchantFraudRule_rule_description"): "Rule Description";
+  String manageMerchantFraudRule_score = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_score"))?rb1.getString("manageMerchantFraudRule_score"): "Score";
+  String manageMerchantFraudRule_limit = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_limit"))?rb1.getString("manageMerchantFraudRule_limit"): "Limit";
+  String manageMerchantFraudRule_status = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_status"))?rb1.getString("manageMerchantFraudRule_status"): "Status";
+  String manageMerchantFraudRule_online1 = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_online1"))?rb1.getString("manageMerchantFraudRule_online1"): "Online Common Rule Configuration";
+  String manageMerchantFraudRule_rule_id1 = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_rule_id1"))?rb1.getString("manageMerchantFraudRule_rule_id1"): "Rule ID";
+  String manageMerchantFraudRule_rule_name1 = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_rule_name1"))?rb1.getString("manageMerchantFraudRule_rule_name1"): "Rule Name";
+  String manageMerchantFraudRule_score1 = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_score1"))?rb1.getString("manageMerchantFraudRule_score1"): "Score";
+  String manageMerchantFraudRule_status1 = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_status1"))?rb1.getString("manageMerchantFraudRule_status1"): "Status";
+  String manageMerchantFraudRule_online_specific = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_online_specific"))?rb1.getString("manageMerchantFraudRule_online_specific"): "Online Specific Rule Configuration";
+  String manageMerchantFraudRule_rule_id2 = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_rule_id2"))?rb1.getString("manageMerchantFraudRule_rule_id2"): "Rule ID";
+  String manageMerchantFraudRule_rule_name2 = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_rule_name2"))?rb1.getString("manageMerchantFraudRule_rule_name2"): "Rule Name";
+  String manageMerchantFraudRule_status2 = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_status2"))?rb1.getString("manageMerchantFraudRule_status2"): "Status";
+  String manageMerchantFraudRule_score2 = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_score2"))?rb1.getString("manageMerchantFraudRule_score2"): "Score";
+  String manageMerchantFraudRule_update = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_update"))?rb1.getString("manageMerchantFraudRule_update"): "Update Selected";
+  String manageMerchantFraudRule_ShowingPage = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_ShowingPage"))?rb1.getString("manageMerchantFraudRule_ShowingPage"): "Showing Page";
+  String manageMerchantFraudRule_of = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_of"))?rb1.getString("manageMerchantFraudRule_of"): "of";
+  String manageMerchantFraudRule_records = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_records"))?rb1.getString("manageMerchantFraudRule_records"): "records";
+  String manageMerchantFraudRule_Online_Fraud_Rule = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_Online_Fraud_Rule"))?rb1.getString("manageMerchantFraudRule_Online_Fraud_Rule"): "Online Fraud Rule Status";
+  String manageMerchantFraudRule_Result = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_Result"))?rb1.getString("manageMerchantFraudRule_Result"): "Result";
+  String manageMerchantFraudRule_no = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_no"))?rb1.getString("manageMerchantFraudRule_no"): "No data found";
+  String manageMerchantFraudRule_Fraud_Rule_Status = !functions.isEmptyOrNull(rb1.getString("manageMerchantFraudRule_Fraud_Rule_Status"))?rb1.getString("manageMerchantFraudRule_Fraud_Rule_Status"): "Fraud Rule Status";
+%>
+
+<%!
+  protected static Logger log = new Logger("manageMerchantFraudRule.jsp");
+
+%>
+
+<%@ include file="Top.jsp" %>
+<html lang="en">
+<head>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <%--Start only for responsive table css--%>
+  <%--<link rel="stylesheet" href=" /merchant/transactionCSS/css/jquery.dataTables.min.css">
+  <script type="text/javascript" src="/merchant/transactionCSS/js/jquery.dataTables.min.js"></script>--%>
+  <%--  <script>
+      $(document).ready(function(){
+        $('#myTable').dataTable();
+      });
+    </script>--%>
+  <%--End only for responsive table css--%>
+  <script src="/merchant/NewCss/libs/jquery-icheck/icheck.min.js"></script>
+  <title><%=company%> | Merchant Fruad Rule Setting</title>
+  <script language="javascript">
+    function ToggleAll(checkbox)
+    {
+      flag = checkbox.checked;
+      var checkboxes = document.getElementsByName("ruleid");
+      var total_boxes = checkboxes.length;
+
+      for(i=0; i<total_boxes; i++ )
+      {
+        checkboxes[i].checked =flag;
+      }
+    }
+    function doChanges(data,ruleid)
+    {
+      if(data.checked){
+        document.getElementById('cbk_'+ruleid).value="Enable";
+      }
+      else{
+        document.getElementById('cbk_'+ruleid).value="Disable";
+      }
+      document.getElementById('status_'+ruleid).value=document.getElementById('cbk_'+ruleid).value;
+    }
+    function DoUpdate()
+    {
+      var checkboxes = document.getElementsByName("ruleid");
+
+      var total_boxes = checkboxes.length;
+      flag = false;
+
+      for(i=0; i<total_boxes; i++ )
+      {
+        if(checkboxes[i].checked)
+        {
+          flag= true;
+          break;
+        }
+      }
+
+      if(!flag)
+      {
+        alert("select at least one rule");
+        return false;
+      }
+
+      if (confirm("Do you really want to update all selected rule."))
+      {
+        document.updateSubAccountLevelFraudConfform.submit();
+      }
+    }
+
+  </script>
+  <style type="text/css">
+
+    <%--   #main{background-color: #ffffff}
+
+     :target:before {
+       content: "";
+       display: block;
+       height: 50px;
+       margin: -50px 0 0;
+     }
+
+     .table > thead > tr > th {font-weight: inherit;}
+
+     :target:before {
+       content: "";
+       display: block;
+       height: 90px;
+       margin: -50px 0 0;
+     }
+
+     footer{border-top:none;margin-top: 0;padding: 0;}
+
+     /********************Table Responsive Start**************************/
+
+     @media (max-width: 640px){
+
+       table {border: 0;}
+
+       /*table tr {
+           padding-top: 20px;
+           padding-bottom: 20px;
+           display: block;
+       }*/
+
+       table thead { display: none;}
+
+       tr:nth-child(odd), tr:nth-child(even) {background: #ffffff;}
+
+       table td {
+         display: block;
+         border-bottom: none;
+         padding-left: 0;
+         padding-right: 0;
+       }
+
+       table td:before {
+         content: attr(data-label);
+         float: left;
+         width: 100%;
+         font-weight: bold;
+       }
+
+     }
+
+     table {
+       width: 100%;
+       max-width: 100%;
+       border-collapse: collapse;
+       margin-bottom: 20px;
+       display: table;
+       border-collapse: separate;
+       border-color: grey;
+     }
+
+     thead {
+       display: table-header-group;
+       vertical-align: middle;
+       border-color: inherit;
+
+     }
+
+     tr:nth-child(odd) {background: #F9F9F9;}
+
+     tr {
+       display: table-row;
+       vertical-align: inherit;
+       border-color: inherit;
+     }
+
+     th {padding-right: 1em;text-align: left;font-weight: bold;}
+
+     td, th {display: table-cell;vertical-align: inherit;}
+
+     tbody {
+       display: table-row-group;
+       vertical-align: middle;
+       border-color: inherit;
+     }
+
+     td {
+       padding-top: 6px;
+       padding-bottom: 6px;
+       padding-left: 10px;
+       padding-right: 10px;
+       vertical-align: top;
+       border-bottom: none;
+     }
+
+     .table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td{border-top: 1px solid #ddd;}
+
+     /********************Table Responsive Ends**************************/--%>
+
+
+    input[type=radio], input[type=checkbox]{
+      transform: scale(2);
+      -ms-transform: scale(2);
+      -webkit-transform: scale(2);
+      padding: 10px;
+    }
+
+    #firstid {
+      margin-top: -15px;
+    }
+
+  </style>
+
+  <script type="">
+    $(document).ready(function() {
+      //alert("hi checkbox");
+      $('div.icheckbox_square-aero').remove();
+      $('ins.iCheck-helper').remove();
+
+      /* $('.icheckbox_square-aero').removeClass('icheckbox_square-aero');
+       $('.iCheck-helper').removeClass('iCheck-helper');*/
+    });
+  </script>
+
+</head>
+
+<body class="pace-done widescreen fixed-left-void">
+
+<%
+  ctoken = ((User)session.getAttribute("ESAPIUserSessionKey")).getCSRFToken();
+  if (merchants.isLoggedIn(session))
+  {
+    String merchantId=(String)session.getAttribute("merchantid");
+    String updateMsg = (String)request.getAttribute("updateMsg");
+    String statusMsg = (String) request.getAttribute("statusMsg");
+    Functions functions=new Functions();
+    FraudSystemSubAccountVO subAccountVO = (FraudSystemSubAccountVO) request.getAttribute("subAccountVO");
+    MerchantFraudAccountVO fraudAccountVO = (MerchantFraudAccountVO) request.getAttribute("fraudAccountVO");
+    List<RuleMasterVO> accountLevelRuleMapping = new ArrayList<>();
+    List<RuleMasterVO> subAccountLevelRuleMapping = new ArrayList<>();
+    List<RuleMasterVO> internalLevelRuleMapping = new ArrayList<>();
+
+    if (request.getAttribute("internalLevelRuleMapping")!=null)
+    {
+        internalLevelRuleMapping = (List<RuleMasterVO>) request.getAttribute("internalLevelRuleMapping");
+    }
+    if (request.getAttribute("accountLevelRuleMapping")!=null)
+    {
+      accountLevelRuleMapping = (List<RuleMasterVO>) request.getAttribute("accountLevelRuleMapping");
+    }
+    if (request.getAttribute("subAccountLevelRuleMapping")!=null)
+    {
+      subAccountLevelRuleMapping = (List<RuleMasterVO>) request.getAttribute("subAccountLevelRuleMapping");
+    }
+
+    if(internalLevelRuleMapping.size() >  0 || subAccountLevelRuleMapping.size() > 0)
+    {
+
+%>
+
+<div class="content-page">
+  <div class="content">
+    <!-- Page Heading Start -->
+    <div class="page-heading">
+      <%
+        PaginationVO paginationVO = (PaginationVO) request.getAttribute("paginationVO");
+        paginationVO.setInputs(paginationVO.getInputs()+"&ctoken="+ctoken);
+        int srno=((paginationVO.getPageNo()-1)*paginationVO.getRecordsPerPage())+1;
+
+        if(internalLevelRuleMapping.size() > 0 && internalLevelRuleMapping!=null)
+        {
+      %>
+      <div class="row">
+        <div class="col-sm-12 portlets ui-sortable">
+          <div class="widget">
+
+
+            <div class="widget-header transparent">
+              <h2><strong><i class="fa fa-th-large"></i>&nbsp;&nbsp;<%=manageMerchantFraudRule_internal_rule_configuration1%></strong></h2>
+              <div class="additional-btn">
+                <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+              </div>
+            </div>
+
+            <div class="widget-content padding">
+              <form action="" name="adminform" method="post" accept-charset="UTF-8">
+
+                <table id="myTable" class="display table table-striped table-bordered" width="100%" style="font-family:Open Sans;font-size: 13px;font-weight: 600;width: 100%;">
+
+                  <script type="">
+                    $(document).ready(function()
+                    {
+                      $(".thcheckboxnew").append("<input type=\"checkbox\" disabled>")
+                    });
+                  </script>
+
+                  <thead >
+                  <tr style="color: white;">
+                    <th style="text-align: center;"><%=manageMerchantFraudRule_rule_id%></th>
+                    <th style="text-align: center;"><%=manageMerchantFraudRule_rule_name%></th>
+                    <th style="text-align: center;"><%=manageMerchantFraudRule_rule_description%></th>
+                    <th style="text-align: center;"><%=manageMerchantFraudRule_score%></th>
+                    <th style="text-align: center;"><%=manageMerchantFraudRule_limit%></th>
+                    <th style="text-align: center;" ><%=manageMerchantFraudRule_status%></th>
+                  </tr>
+                  </thead>
+                  <tbody class="checkclassfirst1">
+
+                  <%
+                    for(RuleMasterVO ruleMasterVO:internalLevelRuleMapping)
+                    {
+                      String ext="";
+                      if("Enable".equals(ruleMasterVO.getDefaultStatus()))
+                      {
+                        ext="checked";
+                      }
+                  %>
+
+                  <script type="">
+                    $(function()
+                    {
+                      $(".checkclassfirst1").append("<tr>" +
+                      "<td  data-label=\"Rule ID\" style=\"text-align: center;\" ><%=ruleMasterVO.getRuleId()%></td>" +
+                      "<td  data-label=\"Rule Name\" style=\"text-align: center;\" ><%=ruleMasterVO.getRuleName()%></td>" +
+                      "<td  data-label=\"Rule Description\" style=\"text-align: center;\"><%=ruleMasterVO.getRuleDescription()%></td>" +
+                      "<td data-label=\"Score\" style=\"text-align: center;\" ><input type=\"text\"  style=\"text-align: center\" maxlength=\"2\" class=\"form-control\" disabled style=\"width:75px\" valign=\"middle\" name=\"score_<%=ruleMasterVO.getRuleId()%>\" value=\"<%=ruleMasterVO.getDefaultScore()%>\"></td>" +
+                      "<td data-label=\"Limit\" style=\"text-align: center;\" ><input type=\"text\"  style=\"text-align: center\" maxlength=\"2\" class=\"form-control\" disabled style=\"width:75px\" valign=\"middle\" name=\"score_<%=ruleMasterVO.getRuleId()%>\" value=\"<%=ruleMasterVO.getDefaultValue()==null?"-":ruleMasterVO.getDefaultValue()%>\"></td>" +
+                      "<td data-label=\"Status\" style=\"text-align: center;\"><input type=\"checkbox\" disabled valign=\"middle\" name=\"status\" <%=ext%>> </td>" +
+                      "</tr>");
+                    });
+                  </script>
+                  <%
+                    }
+                  %>
+                  </tbody>
+                </table>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <%
+        }
+        if(fraudAccountVO!=null && subAccountVO != null)
+        {
+          if (accountLevelRuleMapping.size() > 0 && accountLevelRuleMapping!=null)
+          {
+      %>
+
+
+      <div class="row">
+        <div class="col-sm-12 portlets ui-sortable">
+          <div class="widget">
+
+
+            <div class="widget-header transparent">
+              <h2><strong><i class="fa fa-th-large"></i>&nbsp;&nbsp;<%=manageMerchantFraudRule_online1%></strong></h2>
+              <div class="additional-btn">
+                <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+              </div>
+            </div>
+
+            <div class="widget-content padding">
+              <form action="" name="adminform" method="post" accept-charset="UTF-8">
+
+                <table id="myTable" class="display table table-striped table-bordered" width="100%" style="font-family:Open Sans;font-size: 13px;font-weight: 600;width: 100%;">
+
+                  <script type="">
+                    $(document).ready(function()
+                    {
+                      $(".thcheckboxnew").append("<input type=\"checkbox\" disabled>")
+                    });
+                  </script>
+
+                  <thead >
+                  <tr style="color: white;">
+                    <th style="text-align: center;"><%=manageMerchantFraudRule_rule_id1%></th>
+                    <th style="text-align: center;"><%=manageMerchantFraudRule_rule_name1%></th>
+                    <th style="text-align: center;"><%=manageMerchantFraudRule_score1%></th>
+                    <th style="text-align: center;" ><%=manageMerchantFraudRule_status1%></th>
+                  </tr>
+                  </thead>
+                  <tbody class="checkclassfirst">
+
+                  <%
+                    for(RuleMasterVO ruleMasterVO:accountLevelRuleMapping)
+                    {
+                      String ext="";
+                      if("Enable".equals(ruleMasterVO.getRuleDescription()))
+                      {
+                        ext="checked";
+                      }
+                  %>
+
+                  <script type="">
+                    $(function()
+                    {
+                      $(".checkclassfirst").append("<tr>" +
+                      "<td  data-label=\"Rule ID\" style=\"text-align: center;\" ><%=ruleMasterVO.getRuleId()%></td>" +
+                      "<td  data-label=\"Rule Name\" style=\"text-align: center;\" ><%=ruleMasterVO.getRuleName()%></td>" +
+                      "<td data-label=\"Score\" style=\"text-align: center;\" ><input type=\"text\"  style=\"text-align: center\" maxlength=\"2\" class=\"form-control\" disabled style=\"width:75px\" valign=\"middle\" name=\"score_<%=ruleMasterVO.getRuleId()%>\" value=\"<%=ruleMasterVO.getDefaultScore()%>\"></td>" +
+                      "<td data-label=\"Status\" style=\"text-align: center;\"><input type=\"checkbox\" disabled valign=\"middle\" name=\"status\" <%=ext%>> </td>" +
+                      "</tr>");
+                    });
+                  </script>
+                  <%
+                    }
+                  %>
+                  </tbody>
+                </table>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <%
+        }
+        if (subAccountLevelRuleMapping.size() > 0 && subAccountLevelRuleMapping!=null)
+        {
+      %>
+
+      <div class="row">
+        <div class="col-sm-12 portlets ui-sortable">
+          <div class="widget">
+            <div class="widget-header transparent">
+              <h2><strong><i class="fa fa-th-large"></i>&nbsp;&nbsp;<%=manageMerchantFraudRule_online_specific%></strong></h2>
+              <div class="additional-btn">
+                <a href="#" class="hidden reload"><i class="icon-ccw-1"></i></a>
+                <a href="#" class="widget-toggle"><i class="icon-down-open-2"></i></a>
+                <a href="#" class="widget-close"><i class="icon-cancel-3"></i></a>
+              </div>
+            </div>
+            <div class="widget-content padding">
+
+
+              <form name="updateSubAccountLevelFraudConfform" action="/merchant/servlet/ManageMerchantFraudRule?ctoken=<%=ctoken%>" method="post">
+                <input type="hidden" value="<%=ctoken%>" name="ctoken">
+                <input type="hidden" name="toid" value="<%=merchantId%>">
+                <input type="hidden" name="fssubaccountid" value="<%=subAccountVO.getFraudSystemSubAccountId()%>">
+                <input type="hidden" name="fsaccountid" value="<%=subAccountVO.getFraudSystemAccountId()%>">
+                <table id="myTable" class="display table table-striped table-bordered" width="100%" style="font-family:Open Sans;font-size: 13px;font-weight: 600;width: 100%;">
+
+                  <script type="">
+                    $(document).ready(function()
+                    {
+                      $(".thcheckbox").append("<input type=\"checkbox\" onClick=\"ToggleAll(this);\" name=\"alltrans\">")
+                    });
+                  </script>
+
+                  <thead >
+                  <tr style="color: white;">
+                    <th style="text-align: center;" class="thcheckbox"><%--<input type="checkbox" onClick="ToggleAll(this);" name="alltrans">--%></th>
+                    <th style="text-align: center;"><%=manageMerchantFraudRule_rule_id2%>/th>
+                    <th style="text-align: center;"><%=manageMerchantFraudRule_rule_name2%></th>
+                    <th style="text-align: center;" ><%=manageMerchantFraudRule_score2%></th>
+                    <th style="text-align: center;"><%=manageMerchantFraudRule_status2%></th>
+                  </tr>
+                  </thead>
+                  <tbody class="checkclass">
+
+                  <%
+                    for(RuleMasterVO ruleMasterVO:subAccountLevelRuleMapping)
+                    {
+                      String ext="";
+                      if("Enable".equals(ruleMasterVO.getRuleDescription()))
+                      {
+                        ext="checked";
+                      }
+                  %>
+
+
+                  <%--<script type="">
+                    $(function()
+                    {
+                      $(".tdcheckbox").append("<input  type=\"checkbox\" &lt;%&ndash;class="CheckBoxClass" &ndash;%&gt;name=\"ruleid\" value=\"<%=ruleMasterVO.getRuleId()%>\">");
+
+                      $(".tdcheckbox1").append("<%=ruleMasterVO.getRuleId()%>");
+
+                      $(".tdcheckbox2").append("<%=ruleMasterVO.getRuleName()%>");
+
+                      $(".tdcheckbox3").append("<input type=\"text\"  style=\"text-align: center\" maxlength=\"2\" class=\"form-control\" style=\"width:75px\" valign=\"middle\" name=\"score_<%=ruleMasterVO.getRuleId()%>\" value=\"<%=ruleMasterVO.getDefaultScore()%>\" class=\"txtbox\">");
+
+                      $(".tdcheckbox4").append("<input type=\"hidden\" name=\"status_<%=ruleMasterVO.getRuleId()%>\" id=\"status_<%=ruleMasterVO.getRuleId()%>\" value=\"<%=ruleMasterVO.getRuleDescription()%>\"> <input type=\"checkbox\" id=\"cbk_<%=ruleMasterVO.getRuleId()%>\" value=\"<%=ruleMasterVO.getRuleDescription()%>\" valign=\"middle\" <%=ext%> onclick=\"doChanges(this,<%=ruleMasterVO.getRuleId()%>)\">");
+
+
+
+                    });
+                  </script>--%>
+
+
+                  <script type="">
+                    $(function()
+                    {
+                      $(".checkclass").append("<tr>" +
+                      "<td style=\"text-align: center;\" > <input  type=\"checkbox\" class=\"CheckBoxClass\" name=\"ruleid\" value=\"<%=ruleMasterVO.getRuleId()%>\"></td>" +
+                      "<td  data-label=\"Rule ID\" style=\"text-align: center;\" ><%=ruleMasterVO.getRuleId()%></td>" +
+                      "<td  data-label=\"Rule Name\" style=\"text-align: center;\" ><%=ruleMasterVO.getRuleName()%></td>" +
+                      "<td data-label=\"Score\" style=\"text-align: center;\" ><input type=\"text\"  style=\"text-align: center\" maxlength=\"2\" class=\"form-control\" style=\"width:75px\" valign=\"middle\" name=\"score_<%=ruleMasterVO.getRuleId()%>\" value=\"<%=ruleMasterVO.getDefaultScore()%>\" class=\"txtbox\"></td>" +
+                      "<td data-label=\"Status\" style=\"text-align: center;\"><input type=\"hidden\" name=\"status_<%=ruleMasterVO.getRuleId()%>\" id=\"status_<%=ruleMasterVO.getRuleId()%>\" value=\"<%=ruleMasterVO.getRuleDescription()%>\"><input type=\"checkbox\" id=\"cbk_<%=ruleMasterVO.getRuleId()%>\" value=\"<%=ruleMasterVO.getRuleDescription()%>\" valign=\"middle\" <%=ext%> onclick=\"doChanges(this,<%=ruleMasterVO.getRuleId()%>)\"> </td>" +
+                      "</tr>");
+                    });
+                  </script>
+
+
+                  <%--<tr>
+                    <td style="text-align: center;" class="tdcheckbox">
+
+                    &lt;%&ndash;<input  type="checkbox" &lt;%&ndash;class="CheckBoxClass" &ndash;%&gt;name="ruleid" value="<%=ruleMasterVO.getRuleId()%>">&ndash;%&gt;</td>
+                    <td  data-label="Rule ID" style="text-align: center;" class="tdcheckbox1">&lt;%&ndash;<%=ruleMasterVO.getRuleId()%>&ndash;%&gt;</td>
+                    <td  data-label="Rule Name" style="text-align: center;" class="tdcheckbox2">&lt;%&ndash;<%=ruleMasterVO.getRuleName()%>&ndash;%&gt;</td>
+                    <td data-label="Score" style="text-align: center;" class="tdcheckbox3">
+                      &lt;%&ndash;<input type="text"  style="text-align: center" maxlength="2" class="form-control" style="width:75px" valign="middle" name="score_<%=ruleMasterVO.getRuleId()%>"
+                             value="<%=ruleMasterVO.getDefaultScore()%>" class="txtbox">&ndash;%&gt;
+                    </td>
+                    <td data-label="Status" style="text-align: center;" class="tdcheckbox4">
+                      &lt;%&ndash;<input type="hidden" name="status_<%=ruleMasterVO.getRuleId()%>" id="status_<%=ruleMasterVO.getRuleId()%>" value="<%=ruleMasterVO.getRuleDescription()%>">
+                      <input type="checkbox" id="cbk_<%=ruleMasterVO.getRuleId()%>" value="<%=ruleMasterVO.getRuleDescription()%>" valign="middle" <%=ext%> onclick="doChanges(this,<%=ruleMasterVO.getRuleId()%>)">&ndash;%&gt;
+                    </td>
+                  </tr>--%>
+
+                  <%
+                      srno++;
+                    }
+                  %>
+                  </tbody>
+                  <%--<thead >
+                  <tr>
+                    <td style="color: white;" >
+                      Total:<%=paginationVO.getTotalRecords()%>
+                    </td>
+                    <td valign="middle" align="center" &lt;%&ndash;style="color: white;"&ndash;%&gt; colspan="5">
+
+                    </td>
+                  </tr>
+                  </thead>--%>
+                </table>
+
+                <div id="showingid"><strong><%=manageMerchantFraudRule_ShowingPage%><%=paginationVO.getPageNo()%> <%=manageMerchantFraudRule_of%> <%=paginationVO.getTotalRecords()%> <%=manageMerchantFraudRule_records%></strong></div>
+
+                <div>
+                  <jsp:include page="page.jsp" flush="true">
+                    <jsp:param name="numrecords" value="<%=paginationVO.getTotalRecords()%>"/>
+                    <jsp:param name="numrows" value="<%=paginationVO.getRecordsPerPage()%>"/>
+                    <jsp:param name="pageno" value="<%=paginationVO.getPageNo()%>"/>
+                    <jsp:param name="str" value="<%=paginationVO.getInputs()%>"/>
+                    <jsp:param name="page" value="ListMerchantFraudRule"/>
+                    <jsp:param name="currentblock" value="<%=paginationVO.getCurrentBlock()%>"/>
+                    <jsp:param name="orderby" value=""/>
+                  </jsp:include>
+                </div>
+
+
+                <br><br>
+                <div align="center">
+                  <button type="button" value="Update" class="btn btn-default" onClick="return DoUpdate();" >
+                    <%=manageMerchantFraudRule_update%>
+                  </button>
+                </div>
+              </form>
+
+            </div>
+          </div>
+        </div>
+      </div>
+      <%
+        }
+      %>
+    </div>
+  </div>
+</div>
+
+
+<%
+    }
+    else
+    {
+      //out.println("<div class=\"content-page\">");
+      //out.println("<div class=\"content\">");
+      out.println("<div class=\"page-heading\">");
+      out.println("<div class=\"row\">");
+      out.println("<div class=\"col-sm-12 portlets ui-sortable\">");
+      out.println("<div class=\"widget\">");
+      out.println("<div class=\"widget-header transparent\">\n" +
+              "                                <h2><strong><i class=\"fa fa-th-large\"></i>&nbsp;&nbsp;"+manageMerchantFraudRule_Online_Fraud_Rule+"</strong></h2>\n" +
+              "                                <div class=\"additional-btn\">\n" +
+              "                                    <a href=\"#\" class=\"hidden reload\"><i class=\"icon-ccw-1\"></i></a>\n" +
+              "                                    <a href=\"#\" class=\"widget-toggle\"><i class=\"icon-down-open-2\"></i></a>\n" +
+              "                                    <a href=\"#\" class=\"widget-close\"><i class=\"icon-cancel-3\"></i></a>\n" +
+              "                                </div>\n" +
+              "                            </div>");
+      out.println("<div class=\"widget-content padding\">");
+         /*out.println("<div class=\"table-responsive\">");*/
+      out.println(Functions.NewShowConfirmation1(manageMerchantFraudRule_Result, manageMerchantFraudRule_no));
+            /*out.println("</div>");*/
+      out.println("</div>");
+      out.println("</div>");
+      out.println("</div>");
+      out.println("</div>");
+      out.println("</div>");
+      //out.println("</div>");
+      //out.println("</div>");
+
+    }
+  }
+  else if(functions.isValueNull(updateMsg))
+  {
+    out.println("<div class=\"content-page\">");
+    out.println("<div class=\"content\">");
+    out.println("<div class=\"page-heading\">");
+    out.println("<div class=\"row\">");
+    out.println("<div class=\"col-sm-12 portlets ui-sortable\">");
+    out.println("<div class=\"widget\">");
+    out.println("<div class=\"widget-header transparent\">\n" +
+            "                                <h2><strong><i class=\"fa fa-th-large\"></i>&nbsp;&nbsp;"+manageMerchantFraudRule_Fraud_Rule_Status+"</strong></h2>\n" +
+            "                                <div class=\"additional-btn\">\n" +
+            "                                    <a href=\"#\" class=\"hidden reload\"><i class=\"icon-ccw-1\"></i></a>\n" +
+            "                                    <a href=\"#\" class=\"widget-toggle\"><i class=\"icon-down-open-2\"></i></a>\n" +
+            "                                    <a href=\"#\" class=\"widget-close\"><i class=\"icon-cancel-3\"></i></a>\n" +
+            "                                </div>\n" +
+            "                            </div>");
+    out.println("<div class=\"widget-content padding\">");
+         /* out.println("<div class=\"table-responsive\">");*/
+    out.println(Functions.NewShowConfirmation1(manageMerchantFraudRule_Result,updateMsg));
+          /*out.println("</div>");*/
+    out.println("</div>");
+    out.println("</div>");
+    out.println("</div>");
+    out.println("</div>");
+    out.println("</div>");
+    out.println("</div>");
+    out.println("</div>");
+  }
+  else if(functions.isValueNull(statusMsg))
+  {
+    out.println("<div class=\"content-page\">");
+    out.println("<div class=\"content\">");
+    out.println("<div class=\"page-heading\">");
+    out.println("<div class=\"row\">");
+    out.println("<div class=\"col-sm-12 portlets ui-sortable\">");
+    out.println("<div class=\"widget\">");
+    out.println("<div class=\"widget-header transparent\">\n" +
+            "                                <h2><strong><i class=\"fa fa-th-large\"></i>&nbsp;&nbsp;Fraud Rule Status</strong></h2>\n" +
+            "                                <div class=\"additional-btn\">\n" +
+            "                                    <a href=\"#\" class=\"hidden reload\"><i class=\"icon-ccw-1\"></i></a>\n" +
+            "                                    <a href=\"#\" class=\"widget-toggle\"><i class=\"icon-down-open-2\"></i></a>\n" +
+            "                                    <a href=\"#\" class=\"widget-close\"><i class=\"icon-cancel-3\"></i></a>\n" +
+            "                                </div>\n" +
+            "                            </div>");
+    out.println("<div class=\"widget-content padding\">");
+          /*out.println("<div class=\"table-responsive\">");*/
+    out.println(Functions.NewShowConfirmation1("Result",statusMsg));
+         /* out.println("</div>");*/
+    out.println("</div>");
+    out.println("</div>");
+    out.println("</div>");
+    out.println("</div>");
+    out.println("</div>");
+    out.println("</div>");
+    out.println("</div>");
+  }
+  else
+  {
+          /*out.println("<div class=\"table-responsive\">");*/
+    out.println(Functions.NewShowConfirmation1("Result", "Merchant Not Mapped With Fraud Account"));
+          /*out.println("</div>");*/
+  }
+%>
+<%
+  }
+  else
+  {
+    response.sendRedirect("/merchant/Logout.jsp");
+    return;
+  }
+%>
+
+
+</body>
+</html>

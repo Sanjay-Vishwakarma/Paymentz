@@ -1,0 +1,254 @@
+package com.manager.utils;
+
+import com.directi.pg.*;
+import com.directi.pg.core.valueObjects.GenericAddressDetailsVO;
+import com.manager.BlacklistManager;
+import com.manager.dao.MerchantDAO;
+import com.manager.helper.TransactionHelper;
+import com.manager.vo.MerchantDetailsVO;
+import com.payment.Enum.CallTypeEnum;
+import com.payment.errors.ErrorMessages;
+import com.payment.exceptionHandler.PZConstraintViolationException;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.constraintType.PZConstraintExceptionEnum;
+import com.payment.exceptionHandler.errorcode.ErrorCodeUtils;
+import com.payment.exceptionHandler.errorcode.errorcodeEnum.ErrorName;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeListVO;
+import com.payment.exceptionHandler.errorcode.errorcodeVo.ErrorCodeVO;
+import com.payment.validators.vo.CommonValidatorVO;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Hashtable;
+
+/**
+ * Created by Vivek on 6/3/2020.
+ */
+public class FraudDefenderUtil
+{
+    private static FraudDefenderLogger fraudDefenderLogger = new FraudDefenderLogger(FraudDefenderUtil.class.getName());
+    public ErrorCodeListVO getReferencedFraudDefenderRefundTransDetails(CommonValidatorVO commonValidatorVO) throws PZConstraintViolationException
+    {
+        Hashtable transHash = null;
+        TransactionUtil transactionUtil = new TransactionUtil();
+        ErrorCodeListVO errorCodeListVO = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        Connection con = null;
+        Functions functions = new Functions();
+        MerchantDetailsVO merchantDetailsVO =new MerchantDetailsVO();
+        MerchantDAO merchantDAO =new MerchantDAO();
+        GenericAddressDetailsVO genericAddressDetailsVO=new GenericAddressDetailsVO();
+        String error="";
+        try
+        {
+            con = Database.getConnection();
+            StringBuffer qry = new StringBuffer("SELECT accountid,paymentid,firstname,lastname,status,toid,amount,captureamount,refundamount,currency,trackingid, FROM_UNIXTIME(dtstamp) as transactiondate,ccnum,NAME,emailaddr FROM transaction_common WHERE trackingid=? ");
+            ps = con.prepareStatement(qry.toString());
+            ps.setString(1, commonValidatorVO.getTransDetailsVO().getClientTransactionId());
+
+            rs = ps.executeQuery();
+
+            if (rs.next())
+            {
+                transHash = new Hashtable();
+                transHash.put("status", rs.getString("status"));
+                transHash.put("amount", rs.getString("amount"));
+                transHash.put("captureamount", rs.getString("captureamount"));
+                transHash.put("refundamount", rs.getString("refundamount"));
+                transHash.put("currency", rs.getString("currency"));
+                transHash.put("trackingid", rs.getString("trackingid"));
+                transHash.put("transactiondate", rs.getString("transactiondate"));
+                transHash.put("toid", rs.getString("toid"));
+                transHash.put("firstname", rs.getString("firstname"));
+                transHash.put("lastname", rs.getString("lastname"));
+                transHash.put("paymentid", rs.getString("paymentid"));
+                transHash.put("name", rs.getString("NAME"));
+                transHash.put("emailaddr", rs.getString("emailaddr"));
+                if(functions.isValueNull(rs.getString("ccnum")))
+                    transHash.put("ccnum", PzEncryptor.decryptPAN(rs.getString("ccnum")));
+                else
+                    transHash.put("ccnum","");
+                transHash.put("accountid",rs.getString("accountid"));
+                transHash.put("transactionstatus", rs.getString("status"));
+
+
+            }
+
+
+            if (transHash != null)
+            {
+                genericAddressDetailsVO.setFirstname((String) transHash.get("firstname"));
+                genericAddressDetailsVO.setLastname((String) transHash.get("lastname"));
+                commonValidatorVO.getTransDetailsVO().setPaymentid((String) transHash.get("paymentid"));
+                merchantDetailsVO=merchantDAO.getMemberDetails((String) transHash.get("toid"));
+                commonValidatorVO.setMerchantDetailsVO(merchantDetailsVO);
+                commonValidatorVO.setAddressDetailsVO(genericAddressDetailsVO);
+                commonValidatorVO.setTransHash(transHash);
+                if (functions.isValueNull(commonValidatorVO.getTransDetailsVO().getRefundCurrency()) && !commonValidatorVO.getTransDetailsVO().getRefundCurrency().equals(transHash.get("currency")))
+                {
+                    errorCodeListVO = new ErrorCodeListVO();
+                    errorCodeListVO.addListOfError(transactionUtil.formSystemErrorCodeVO(ErrorName.VALIDATION_REFERENCE_CURRENCY, ErrorMessages.INVALID_REFERENCE_CURRENCY));
+                }
+                if (functions.isValueNull(commonValidatorVO.getTransDetailsVO().getRefundAmount()))
+                {
+                    float requestAmt = Float.parseFloat(commonValidatorVO.getTransDetailsVO().getRefundAmount());
+                    float dbAmt = Float.parseFloat(String.valueOf(transHash.get("amount")));
+                    float dbRefundAmt= Float.parseFloat(String.valueOf(transHash.get("refundamount")));
+
+                    if (!(requestAmt <= dbAmt-dbRefundAmt))
+                    {
+                        errorCodeListVO = new ErrorCodeListVO();
+                        errorCodeListVO.addListOfError(transactionUtil.formSystemErrorCodeVO(ErrorName.VALIDATION_REFERENCE_AMOUNT, ErrorMessages.INVALID_REFERENCE_AMOUNT));
+                    }
+                }
+                if ( (!transHash.get("status").equals("capturesuccess")) && (!transHash.get("status").equals("settled")) && (!transHash.get("status").equals("reversed") || ((Float.parseFloat(transHash.get("captureamount").toString())<= Float.parseFloat(transHash.get("refundamount").toString())))))
+                {
+                    errorCodeListVO = new ErrorCodeListVO();
+                    errorCodeListVO.addListOfError(transactionUtil.formSystemErrorCodeVO(ErrorName.VALIDATION_TRANSACTION_NOT_FOUND, ErrorMessages.TRANSACTION_NOT_FOUND));
+                }
+                //call type
+                errorCodeListVO=commonCallTypeCheckRefundFlag(commonValidatorVO);
+                commonCallTypeCheckBlacklistFlag(commonValidatorVO);
+            }
+            else
+            {
+                errorCodeListVO = new ErrorCodeListVO();
+                errorCodeListVO.addListOfError(transactionUtil.formSystemErrorCodeVO(ErrorName.VALIDATION_TRACKINGID, ErrorMessages.INVALID_REFERENCE_TRACKINGID));
+            }
+
+        }
+        catch (SQLException e)
+        {
+            fraudDefenderLogger.error("SQLException---",e);
+        }
+        catch (SystemError e)
+        {
+            fraudDefenderLogger.error("Systemerror---",e);
+        }
+        catch (PZDBViolationException e)
+        {
+            fraudDefenderLogger.error("PZDBViolationException---", e);
+        }
+        finally
+        {
+            Database.closeConnection(con);
+        }
+        return errorCodeListVO;
+    }
+    public ErrorCodeListVO commonCallTypeCheckRefundFlag(CommonValidatorVO commonValidatorVO) throws PZDBViolationException, PZConstraintViolationException
+    {
+        TransactionUtil transactionUtil = new TransactionUtil();
+        MerchantDetailsVO merchantDetailsVO=commonValidatorVO.getMerchantDetailsVO();
+        Hashtable transHash=commonValidatorVO.getTransHash();
+        ErrorCodeListVO errorCodeListVO=null;
+        String error="";
+        //call type
+        fraudDefenderLogger.error("merchantDetailsVO.getIsfraud_determined_refund()-->"+merchantDetailsVO.getIsfraud_determined_refund());
+        fraudDefenderLogger.error("merchantDetailsVO.getIspurchase_inquiry_refund()-->"+merchantDetailsVO.getIspurchase_inquiry_refund());
+        fraudDefenderLogger.error("merchantDetailsVO.getIsdispute_initiated_refund()-->"+merchantDetailsVO.getIsdispute_initiated_refund());
+        if(CallTypeEnum.Purchase_Inquiry.getValue().equalsIgnoreCase(commonValidatorVO.getTransDetailsVO().getCall_type()) && "N".equalsIgnoreCase(merchantDetailsVO.getIspurchase_inquiry_refund()))
+        {
+            fraudDefenderLogger.error("Inside purchase_inquiry_refund N for ---"+commonValidatorVO.getTransDetailsVO().getClientTransactionId());
+            errorCodeListVO = new ErrorCodeListVO();
+            errorCodeListVO.addListOfError(transactionUtil.formSystemErrorCodeVO(ErrorName.VALIDATION_TRACKINGID, ErrorMessages.INVALID_REFERENCE_TRACKINGID));
+            return errorCodeListVO;
+        }else if(CallTypeEnum.Fraud_Determined.getValue().equalsIgnoreCase(commonValidatorVO.getTransDetailsVO().getCall_type()) && "N".equalsIgnoreCase(merchantDetailsVO.getIsfraud_determined_refund()))
+        {
+            fraudDefenderLogger.error("Inside fraud_determined_refund N for ---"+commonValidatorVO.getTransDetailsVO().getClientTransactionId());
+            errorCodeListVO = new ErrorCodeListVO();
+            errorCodeListVO.addListOfError(transactionUtil.formSystemErrorCodeVO(ErrorName.VALIDATION_TRACKINGID, ErrorMessages.INVALID_REFERENCE_TRACKINGID));
+            return errorCodeListVO;
+        }else if(CallTypeEnum.Dispute_Initiated.getValue().equalsIgnoreCase(commonValidatorVO.getTransDetailsVO().getCall_type()) && "N".equalsIgnoreCase(merchantDetailsVO.getIsdispute_initiated_refund()))
+        {
+            fraudDefenderLogger.error("Inside dispute_initiated_refund N for ---"+commonValidatorVO.getTransDetailsVO().getClientTransactionId());
+            errorCodeListVO = new ErrorCodeListVO();
+            errorCodeListVO.addListOfError(transactionUtil.formSystemErrorCodeVO(ErrorName.VALIDATION_TRACKINGID, ErrorMessages.INVALID_REFERENCE_TRACKINGID));
+            return errorCodeListVO;
+        }
+        return errorCodeListVO;
+    }
+    public void commonCallTypeCheckBlacklistFlag(CommonValidatorVO commonValidatorVO) throws PZDBViolationException, PZConstraintViolationException
+    {
+        TransactionUtil transactionUtil = new TransactionUtil();
+        MerchantDetailsVO merchantDetailsVO=commonValidatorVO.getMerchantDetailsVO();
+        Hashtable transHash=commonValidatorVO.getTransHash();
+        String error="";
+        //call type
+        fraudDefenderLogger.error("merchantDetailsVO.getIspurchase_inquiry_blacklist()-->"+merchantDetailsVO.getIspurchase_inquiry_blacklist());
+        fraudDefenderLogger.error("merchantDetailsVO.getIsfraud_determined_blacklist()-->"+merchantDetailsVO.getIsfraud_determined_blacklist());
+        fraudDefenderLogger.error("merchantDetailsVO.getIsdispute_initiated_blacklist()-->"+merchantDetailsVO.getIsdispute_initiated_blacklist());
+        fraudDefenderLogger.error("merchantDetailsVO.getIsexception_file_listing_blacklist()-->"+merchantDetailsVO.getIsexception_file_listing_blacklist());
+        fraudDefenderLogger.error("merchantDetailsVO.getIsstop_payment_blacklist()-->"+merchantDetailsVO.getIsstop_payment_blacklist());
+        fraudDefenderLogger.error("commonValidatorVO.getTransDetailsVO().getCall_type()-->"+commonValidatorVO.getTransDetailsVO().getCall_type());
+        if(CallTypeEnum.Purchase_Inquiry.getValue().equalsIgnoreCase(commonValidatorVO.getTransDetailsVO().getCall_type()) && "Y".equalsIgnoreCase(merchantDetailsVO.getIspurchase_inquiry_blacklist()))
+        {
+            fraudDefenderLogger.error("Inside purchase_inquiry_blacklist Y for ---");
+            blackListTransactionOfFraudDefenderRefund(transHash, commonValidatorVO);
+        }else if(CallTypeEnum.Fraud_Determined.getValue().equalsIgnoreCase(commonValidatorVO.getTransDetailsVO().getCall_type()) && "Y".equalsIgnoreCase(merchantDetailsVO.getIsfraud_determined_blacklist()))
+        {
+            fraudDefenderLogger.error("Inside fraud_determined_blacklist Y for ---");
+            blackListTransactionOfFraudDefenderRefund(transHash,commonValidatorVO);
+        }else if(CallTypeEnum.Dispute_Initiated.getValue().equalsIgnoreCase(commonValidatorVO.getTransDetailsVO().getCall_type()) && "Y".equalsIgnoreCase(merchantDetailsVO.getIsdispute_initiated_blacklist()))
+        {
+            fraudDefenderLogger.error("Inside dispute_initiated_blacklist Y for ---");
+            blackListTransactionOfFraudDefenderRefund(transHash,commonValidatorVO);
+        }else if(CallTypeEnum.Exception_file_listing.getValue().equalsIgnoreCase(commonValidatorVO.getTransDetailsVO().getCall_type()) && "Y".equalsIgnoreCase(merchantDetailsVO.getIsexception_file_listing_blacklist()))
+        {
+            fraudDefenderLogger.error("Inside exception_file_listing_blacklist Y for ---");
+            blackListTransactionOfFraudDefenderRefund(transHash,commonValidatorVO);
+        }else if(CallTypeEnum.Stop_payment.getValue().equalsIgnoreCase(commonValidatorVO.getTransDetailsVO().getCall_type()) && "Y".equalsIgnoreCase(merchantDetailsVO.getIsstop_payment_blacklist()))
+        {
+            fraudDefenderLogger.error("Inside stop_payment_blacklist Y for ---");
+            blackListTransactionOfFraudDefenderRefund(transHash,commonValidatorVO);
+        }
+    }
+    public void blackListTransactionOfFraudDefenderRefund(Hashtable transHash,CommonValidatorVO commonValidatorVO) throws PZDBViolationException
+    {
+        Functions functions=new Functions();
+        BlacklistManager blacklistManager=new BlacklistManager();
+        TransactionHelper transactionHelper=new TransactionHelper();
+        String actionExecutorId="-";
+        String actionExecutorName="fraudefender";
+        String firstSix="";
+        String lastFour="";
+        String ccnum=(String) transHash.get("ccnum");
+        String email=(String) transHash.get("emailaddr");
+        String name=(String) transHash.get("name");
+        if(functions.isValueNull(ccnum))
+        {
+            firstSix=functions.getFirstSix(ccnum);
+            lastFour=functions.getLastFour(ccnum);
+            boolean isCardNotBlocked=transactionHelper.isCardBlocked(firstSix, lastFour);
+            if(isCardNotBlocked)
+                blacklistManager.insertBlacklistedCards(firstSix,lastFour,actionExecutorId,actionExecutorName);
+        }
+        if(functions.isValueNull(name))
+        {
+            boolean isNameNotBlocked=transactionHelper.isNameBlocked(name);
+            if(isNameNotBlocked)
+                blacklistManager.insertBlockedName(name,actionExecutorId,actionExecutorName);
+        }
+        if(functions.isValueNull(email))
+        {
+            boolean isEmailNotBlocked=transactionHelper.isEmailAddressBlocked(email);
+            if(isEmailNotBlocked)
+                blacklistManager.insertBlockedEmailAddress(email,actionExecutorId,actionExecutorName);
+        }
+
+    }
+    private ErrorCodeListVO getErrorVO(ErrorName errorName)
+    {
+        ErrorCodeVO errorCodeVO = new ErrorCodeVO();
+        ErrorCodeUtils errorCodeUtils = new ErrorCodeUtils();
+        ErrorCodeListVO errorCodeListVO = new ErrorCodeListVO();
+        fraudDefenderLogger.error("error in helper---------->" + errorName.toString());
+        errorCodeVO = errorCodeUtils.getErrorCodeFromName(errorName);
+        errorCodeVO.setErrorName(errorName);
+        errorCodeListVO.addListOfError(errorCodeVO);
+        return errorCodeListVO;
+    }
+}

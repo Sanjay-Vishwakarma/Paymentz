@@ -1,0 +1,660 @@
+package net.partner;
+
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.directi.pg.SystemError;
+import com.directi.pg.TransactionEntry;
+import com.logicboxes.util.ApplicationProperties;
+import com.logicboxes.util.Util;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+/**
+ * Created by Nikita on 3/16/2017.
+ */
+public class ExportTransactionByPartner extends HttpServlet
+{
+    private static Logger log = new Logger(ExportTransactionByPartner.class.getName());
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        log.debug("inside ExportTransactionByPartner.java");
+        HttpSession session         = req.getSession();
+        PartnerFunctions partner    = new PartnerFunctions();
+        Functions functions         = new Functions();
+        if (!partner.isLoggedInPartner(session))
+        {
+            res.sendRedirect("/partner/Logout.jsp");
+            return;
+        }
+        String merchantid       = (String) session.getAttribute("merchantid");
+        String currency         = (String) session.getAttribute("currency");
+        String accountid        = Functions.checkStringNull(req.getParameter("bank"));
+        String desc             = Functions.checkStringNull(req.getParameter("desc"));
+        String trackingid       = Functions.checkStringNull(req.getParameter("trackingid"));
+        String status           = Functions.checkStringNull(req.getParameter("status"));
+        String toId             = Functions.checkStringNull(req.getParameter("memberid"));
+        String pid              = Functions.checkStringNull(req.getParameter("pid"));
+        String cardpresent      = Functions.checkStringNull(req.getParameter("cardpresent"));
+        //String fromdate = Functions.checkStringNull(req.getParameter("fromdate"));
+        //String todate = Functions.checkStringNull(req.getParameter("todate"));
+        boolean archive     = Boolean.valueOf(req.getParameter("archive")).booleanValue();
+        //String remark = Functions.checkStringNull(req.getParameter("remark"));
+        //String paymentId = Functions.checkStringNull(req.getParameter("paymentid"));
+        String dateType     = Functions.checkStringNull(req.getParameter("datetype"));
+        String firstName    = Functions.checkStringNull(req.getParameter("firstname"));
+        String lastName     = Functions.checkStringNull(req.getParameter("lastname"));
+        String emailaddr    = Functions.checkStringNull(req.getParameter("emailaddr"));
+        String customerId   = Functions.checkStringNull(req.getParameter("customerid"));
+        String startTime    = Functions.checkStringNull(req.getParameter("starttime"));
+        String endTime      = Functions.checkStringNull(req.getParameter("endtime"));
+       // String orderId      = Functions.checkStringNull(req.getParameter("desc"));
+        //String pgtypeid = Functions.checkStringNull(req.getParameter("pgtypeid"));
+        String accountid1   = Functions.checkStringNull(req.getParameter("accountid"));
+        String issuingbank  = Functions.checkStringNull(req.getParameter("issuingbank"));
+        String statusflag   = Functions.checkStringNull(req.getParameter("statusflag"));
+        String role         = Functions.checkStringNull(req.getParameter("role"));
+        String cardtype     = Functions.checkStringNull(req.getParameter("cardtype"));
+        String terminalid   = Functions.checkStringNull(req.getParameter("terminalid"));
+        String transactionMode   = req.getParameter("transactionMode");
+
+        StringBuffer trackingIds = new StringBuffer();
+
+        if (functions.isValueNull(trackingid))
+        {
+            List<String> trackingidList = null;
+            if (trackingid.contains(","))
+            {
+                trackingidList = Arrays.asList(trackingid.split(","));
+            }
+            else
+            {
+                trackingidList = Arrays.asList(trackingid.split(" "));
+            }
+
+            int i           = 0;
+            Iterator itr    = trackingidList.iterator();
+            while (itr.hasNext())
+            {
+                if (i != 0)
+                {
+                    trackingIds.append(",");
+                }
+                trackingIds.append("" + itr.next() + "");
+                i++;
+            }
+        }
+
+        String timezone = req.getParameter("timezone");
+        if (functions.isValueNull(timezone))
+        {
+            timezone = timezone.substring(0,timezone.indexOf("|"));
+        }
+
+        String currency1    = "";
+        String gateway_name = "";
+
+        if (req.getParameter("pgtypeid") != null && req.getParameter("pgtypeid").split("-").length == 3
+                && !req.getParameter("pgtypeid").equalsIgnoreCase(""))
+        {
+            //gateway = req.getParameter("pgtypeid").split("-")[2];
+            currency1       = req.getParameter("pgtypeid").split("-")[1];
+            gateway_name    = req.getParameter("pgtypeid").split("-")[0];
+        }
+
+        Calendar rightNow            = Calendar.getInstance();
+        SimpleDateFormat sdf         = new SimpleDateFormat("dd/MM/yyyy");
+        SimpleDateFormat sdftimezone = new SimpleDateFormat("yyyy-MM-dd");
+        Date date       = null;
+        String fyear    = "";
+        String fmonth   = "";
+        String fdate    = "";
+        String tyear    = "";
+        String tmonth   = "";
+        String tdate    = "";
+
+        int pageno  = 1;
+        int records = 10000;
+
+        try
+        {
+            /*//from Date
+            date=sdf.parse(fromdate);
+            rightNow.setTime(date);
+            String fdate=String.valueOf(rightNow.get(Calendar.DATE));
+            String fmonth=String.valueOf(rightNow.get(Calendar.MONTH));
+            String fyear=String.valueOf(rightNow.get(Calendar.YEAR));
+
+            //to Date
+            date=sdf.parse(todate);
+            rightNow.setTime(date);
+            String tdate=String.valueOf(rightNow.get(Calendar.DATE));
+            String tmonth=String.valueOf(rightNow.get(Calendar.MONTH));
+            String tyear=String.valueOf(rightNow.get(Calendar.YEAR));*/
+
+            if (functions.isValueNull(startTime)){
+                startTime   = startTime.trim();
+            }
+            else{
+                startTime   = "00:00:00";
+            }
+
+            if (functions.isValueNull(endTime)){
+                endTime = endTime.trim();
+            }else{
+                endTime = "23:59:59";
+            }
+
+            if (functions.isValueNull(timezone))
+            {
+                String fromdate = req.getParameter("fromdate");
+                String todate   = req.getParameter("todate");
+
+                //from date
+                Date frtzdate       = sdf.parse(fromdate);
+                String fdatetime    = sdftimezone.format(frtzdate)+ " " + startTime;
+                //to Date
+                Date totzdate       = sdf.parse(todate);
+                String tdatetime    = sdftimezone.format(totzdate) + " " + endTime;
+                String fdatetime1   = functions.convertDateTimeToTimeZone1(fdatetime, timezone);
+                String tdatetime1   = functions.convertDateTimeToTimeZone1(tdatetime, timezone);
+
+                String fdt[]    = fdatetime1.split(" ");
+                String tdt[]    = tdatetime1.split(" ");
+                date            = sdftimezone.parse(fdt[0]);
+                rightNow.setTime(date);
+                fdate   = String.valueOf(rightNow.get(Calendar.DATE));
+                fmonth  = String.valueOf(rightNow.get(Calendar.MONTH));
+                fyear   = String.valueOf(rightNow.get(Calendar.YEAR));
+                startTime   = fdt[1];
+                date        = sdftimezone.parse(tdt[0]);
+                rightNow.setTime(date);
+                tdate   = String.valueOf(rightNow.get(Calendar.DATE));
+                tmonth  = String.valueOf(rightNow.get(Calendar.MONTH));
+                tyear   = String.valueOf(rightNow.get(Calendar.YEAR));
+                endTime = tdt[1];
+            }
+            else
+            {
+
+                String fromdate = req.getParameter("fromdate");
+                String todate   = req.getParameter("todate");
+
+                date    = sdf.parse(fromdate);
+                rightNow.setTime(date);
+                fdate   = String.valueOf(rightNow.get(Calendar.DATE));
+                fmonth  = String.valueOf(rightNow.get(Calendar.MONTH));
+                fyear   = String.valueOf(rightNow.get(Calendar.YEAR));
+
+                //to Date
+                date    = sdf.parse(todate);
+                rightNow.setTime(date);
+                tdate   = String.valueOf(rightNow.get(Calendar.DATE));
+                tmonth  = String.valueOf(rightNow.get(Calendar.MONTH));
+                tyear   = String.valueOf(rightNow.get(Calendar.YEAR));
+            }
+
+            String startTimeArr[]   = startTime.split(":");
+            String endTimeArr[]     = endTime.split(":");
+
+            log.debug("From date dd::"+fdate+" MM;;"+fmonth+" YY::"+ fyear + " To date dd::" + tdate + " MM::" + tmonth+" YY::"+tyear);
+
+            String fdtstamp = Functions.converttomillisec(fmonth, fdate, fyear, startTimeArr[0], startTimeArr[1], startTimeArr[2]);
+            String tdtstamp = Functions.converttomillisec(tmonth, tdate, tyear, endTimeArr[0], endTimeArr[1], endTimeArr[2]);
+
+            String memberid     = "";
+            String partnerId    = "";
+            Hashtable hash1              = null;
+            if(functions.isValueNull(pid) && partner.isPartnerSuperpartnerMapped(pid,merchantid)){
+                memberid    = partner.getPartnerMemberRS(pid);
+                partnerId   = pid;
+                hash1       = partner.getPartnerNameFromPartnerId(pid, req.getParameter("memberid"));
+            }else if (!functions.isValueNull(pid)){
+                memberid    = partner.getSuperpartnersMemberRS(merchantid);
+                partnerId   = merchantid;
+                hash1       = partner.getPartnerNameFromPartnerIdAndSuperPartnerId(partnerId, req.getParameter("memberid"));
+            }
+            if(functions.isValueNull(toId) && memberid.contains(toId))
+            {
+                memberid = toId;
+            }
+            else if(functions.isValueNull(toId) && !memberid.contains(toId)){
+                memberid = "0";
+            }
+            String partnerName  = "";
+            StringBuffer sb     = new StringBuffer();
+            if(hash1.size()>0)
+            {
+
+                Enumeration enu3    = hash1.keys();
+                String key3         = "";
+                while (enu3.hasMoreElements())
+                {
+                    key3        = (String) enu3.nextElement();
+                    partnerName = (String) hash1.get(key3);
+                    sb.append("'"+partnerName+"'");
+                    sb.append(",");
+                }
+                if (sb.length() > 0 && sb.charAt(sb.length() - 1) == ',')
+                {
+                    partnerName = sb.substring(0, sb.length() - 1);
+                }
+            }
+            log.error("Export partnerName"+partnerName);
+
+
+            TransactionEntry transactionentry   = (TransactionEntry) session.getAttribute("transactionentry");
+            Set<String> gatewayTypeSet          = new HashSet();
+            if (functions.isValueNull(memberid) && functions.isValueNull(accountid))
+            {
+                gatewayTypeSet.addAll(transactionentry.getGatewayHashByPartnerMembers(memberid, accountid).keySet());
+            }
+
+            SortedMap statushash    = transactionentry.getSortedMap();
+            Hashtable hash          = null;
+            if(cardpresent.equals("Y")){
+                hash = transactionentry.listForPartnerCardPresentTransactions(tdtstamp, fdtstamp, status, desc, memberid, archive, trackingIds.toString(), currency, records, pageno, gatewayTypeSet, accountid, accountid1, gateway_name, currency1, dateType, firstName, lastName, emailaddr, customerId,  startTime, endTime, statusflag, issuingbank,cardtype, terminalid,partnerName);
+            }else
+            {
+                hash = transactionentry.listForPartnerTransactions(tdtstamp, fdtstamp, status, desc, memberid, archive, trackingIds.toString(), currency, records, pageno, gatewayTypeSet, accountid, accountid1, gateway_name, currency1,dateType,firstName,lastName,emailaddr,customerId,startTime,endTime, statusflag,issuingbank,cardtype,terminalid,partnerName,transactionMode);
+            }
+            int totalRecords            = Integer.parseInt((String) hash.get("records"));
+            Hashtable transactionHash   = null;
+            String firstSix             = "";
+            String lastFour             = "";
+            //Hashtable innerHash = (Hashtable) hash.get("1");
+            String exportPath   = ApplicationProperties.getProperty("EXPORT_FILE_LOCAL_PATH");
+            String fileName     = "Transactions-" + partnerId + "- from " + fdate + "-" + (Integer.parseInt(fmonth) + 1) + "-" + fyear + " to " + tdate + "-" + (Integer.parseInt(tmonth) + 1) + "-" + tyear + ".csv";
+            OutputStream os     = new FileOutputStream(exportPath + "/" + fileName);
+            os.write(239);//239 EF
+            os.write(187);//187 BB
+            os.write(191);//191 BF
+            PrintWriter writer = new PrintWriter(new OutputStreamWriter(os,"UTF-8"));
+            printCriteria(writer, fdtstamp, tdtstamp, partnerId,status,desc, archive ? "Archives" : "Current", trackingid,statushash,accountid,transactionMode);
+            printHeader(writer, currency, req);
+
+            for (int pos = 1; pos <= totalRecords; pos++)
+            {
+                transactionHash = (Hashtable) hash.get(pos + "");
+                printTransaction(writer, transactionHash, statushash, firstSix, lastFour, timezone,role);
+            }
+
+            writer.close();
+            sendFile(exportPath + "/" + fileName, fileName, res);
+            return;
+        }
+        catch (SystemError se)
+        {
+            log.error("Error",se);
+            Functions.NewShowConfirmation1("Error!", "Invalid Transaction");
+        }
+        catch (Exception e)
+        {
+            log.error("Error",e);
+            Functions.NewShowConfirmation1("Error!", "Invalid Transaction");
+        }
+    }
+
+    private void printCriteria(PrintWriter writer, String fromDate, String toDate, String partnerId, String status, String description, String dataSource, String trackingid,SortedMap statushash, String accountid,String transactionMode)
+    {
+        printLast(writer, "Report Criteria");
+        print(writer, "Start Date");
+        printLast(writer, Functions.convertDtstampToDBFormat(fromDate));
+        print(writer, "End Date");
+        printLast(writer, Functions.convertDtstampToDBFormat(toDate));
+        print(writer, "Partner ID");
+        printLast(writer, partnerId);
+        print(writer, "Status");
+        printLast(writer, Functions.checkStringNull(status) == null ? "All" : (String) statushash.get(status));
+        print(writer, "Description");
+        printLast(writer, "'"+(Functions.checkStringNull(description) == null ? "" : description));
+        print(writer, "Data Source");
+        printLast(writer, dataSource);
+        print(writer, "Tracking ID");
+        printLast(writer, "'"+(Functions.checkStringNull(trackingid) == null ? "" : trackingid));
+        print(writer, "Transaction Mode");
+        printLast(writer, transactionMode.equals("") ? "All" : transactionMode);
+        printLast(writer, "");
+        printLast(writer, "Transactions Report");
+    }
+
+    private void printHeader(PrintWriter writer, String currency, HttpServletRequest req)
+    {
+        Functions functions = new Functions();
+        String timezone = "";
+        if (functions.isValueNull(req.getParameter("timezone")))
+        {
+            timezone = req.getParameter("timezone");
+        }
+       /* print(writer, "Date");
+        print(writer, "Member ID");
+        print(writer, "Transaction ID");
+        print(writer, "Tracking ID");
+        print(writer, "Description");
+        print(writer, "Card Holder's Name");
+        print(writer, "PayMode");
+        print(writer, "CardType");
+        print(writer, "Currency");
+        print(writer, "Auth Amount (" + currency + ")");
+        print(writer, "Captured Amount (" + currency + ")");
+        print(writer, "Refunded Amount (" + currency + ")");
+        print(writer, "First Six");
+        print(writer, "Last Four");
+        print(writer, "Status");
+        printLast(writer, "Remark");*/
+        print(writer, " Transaction Date(MM/DD/YYYY)");
+        print(writer, "TimeZone("+timezone+")");
+        print(writer,"Partner ID");
+        print(writer,"Member ID");
+        print(writer,"Merchant Company Name");
+        print(writer, "Tracking ID");
+        print(writer, "Payment ID");
+        print(writer,"Order ID");
+        print(writer, "Order Description");
+        print(writer, "Customer ID");
+        //print(writer, "Issuing Bank");
+        print(writer, "Acquirer Bank");
+        print(writer, "Acquirer Account ID");
+        print(writer, "Terminal ID");
+        print(writer,"Payment Mode");
+        print(writer,"Payment Brand");
+        print(writer,"Transaction Mode");
+        print(writer,"Bin Card Category");
+        print(writer,"Bin Card Type");
+        print(writer,"Bin Sub Brand");
+        print(writer,"Sub Card Type");
+        print(writer,"Issuing Bank Name");
+        print(writer,"ISO Country");
+        print(writer,"Currency");
+        print(writer,"walletAmount");
+        print(writer,"walletCurrency");
+        print(writer,"Card Holder's Name");
+        print(writer,"Customer Email");
+        print(writer,"Transaction Country");
+        print(writer,"Auth Amount");
+        print(writer,"Captured Amount");
+        print(writer,"Refund Amount");
+        print(writer,"Chargeback Amount");
+        print(writer,"Payout Amount");
+        print(writer,"First Six");
+        print(writer,"Last four");
+        print(writer,"RRN");
+        print(writer,"ARN");
+        print(writer,"Authorization Code");
+        print(writer,"Status");
+        print(writer,"Reason");
+        print(writer,"Remark");
+        printLast(writer, "Last Update Date(MM/DD/YYYY)");
+    }
+
+    private void printTransaction(PrintWriter writer, Hashtable transactionHash, SortedMap statushash, String firstSix, String lastFour, String timezone,String Roles) throws Exception
+    {
+        Functions functions = new Functions();
+        String dt = Functions.convertDtstampToDateTimeforTimezone((String) transactionHash.get("dtstamp"));
+
+        String tz1 = "-";
+        if (functions.isValueNull(timezone))
+        {
+            if (timezone.indexOf("|")!= -1)
+            {
+                tz1 = functions.convertDateTimeToTimeZone(dt, timezone.substring(0,timezone.indexOf("|")));
+            }
+            else
+            {
+                tz1 = functions.convertDateTimeToTimeZone(dt, timezone);
+            }
+        }
+
+        String paymentid = "";
+        if (functions.isValueNull((String)transactionHash.get("paymentid")))
+        {
+            paymentid = "'"+(String)transactionHash.get("paymentid");
+        }
+        else
+        {
+            paymentid = "-";
+        }
+        String paymodeid = "";
+        if (!functions.isValueNull((String)transactionHash.get("paymodeid")) || "0".equals((String)transactionHash.get("paymodeid")))
+        {
+            paymodeid = "-";
+        }
+        else
+        {
+            paymodeid = (String) transactionHash.get("paymodeid");
+        }
+
+        String transid="";
+        if(functions.isValueNull((String) transactionHash.get("transid")))
+        {
+            transid="'"+(String)transactionHash.get("transid");
+        }
+        else
+        {
+            transid="-";
+        }
+
+        String description="";
+        if (functions.isValueNull((String)transactionHash.get("description")))
+        {
+            description= "'"+(String)transactionHash.get("description");
+        }
+        else
+        {
+            description="-";
+        }
+        String orderdescription="";
+        if (functions.isValueNull((String)transactionHash.get("orderdescription")))
+        {
+            orderdescription= "'"+(String)transactionHash.get("orderdescription");
+        }
+        else
+        {
+            orderdescription="-";
+        }
+
+        String customerId="";
+        if (functions.isValueNull((String)transactionHash.get("customerId")))
+        {
+            customerId= "'"+(String)transactionHash.get("customerId");
+        }
+        else
+        {
+            customerId="-";
+        }
+
+        String rrn="";
+        if (functions.isValueNull((String)transactionHash.get("rrn")))
+        {
+            rrn= "'"+(String)transactionHash.get("rrn");
+        }
+        else
+        {
+            rrn="-";
+        }
+
+        String arn="";
+        if (functions.isValueNull((String)transactionHash.get("arn")))
+        {
+            arn= "'"+(String)transactionHash.get("arn");
+        }
+        else
+        {
+            arn="-";
+        }
+
+        String authorization_code="";
+        if (functions.isValueNull((String)transactionHash.get("authorization_code")))
+        {
+            authorization_code="'"+(String)transactionHash.get("authorization_code");
+        }
+        else
+        {
+            authorization_code="-";
+        }
+        String customermail =(String) transactionHash.get("emailaddr");
+        String print_email = "";
+        if(Roles.contains("superpartner")){
+            print_email =customermail;
+        }else{
+
+            print_email=functions.getEmailMasking(customermail);
+        }
+        print(writer, Functions.convertDtstampToDBFormat((String) transactionHash.get("dtstamp")));
+        print(writer, tz1);
+        print(writer, (String) transactionHash.get("partnerId"));
+        print(writer, (String) transactionHash.get("memberid"));
+        print(writer, (String) transactionHash.get("company_name")==null ? "-":(String)transactionHash.get("company_name") );
+        print(writer, transid);
+        print(writer, paymentid);
+        print(writer, description);
+        print(writer, orderdescription);
+        print(writer, customerId);
+        //print(writer, (String) transactionHash.get("issuing_bank")==null ? "-":(String) transactionHash.get("issuing_bank"));
+        print(writer, (String) transactionHash.get("fromtype")==null ? "-":(String) transactionHash.get("fromtype"));
+        print(writer, (String) transactionHash.get("accountid")==null ? "-":(String) transactionHash.get("accountid"));
+        print(writer, (String) transactionHash.get("terminalid")==null ? "-":(String)transactionHash.get("terminalid") );
+        //print(writer, transactionHash.get("bin_card_type") == null ? "-" : (String) transactionHash.get("bin_card_type"));
+        print(writer, paymodeid);
+        print(writer, transactionHash.get("cardtype") == null ? "-" : (String) transactionHash.get("cardtype"));
+        print(writer, transactionHash.get("transaction_mode") == null ? "-" : (String) transactionHash.get("transaction_mode"));
+        print(writer, transactionHash.get("bin_card_category") == null ? "-" : (String) transactionHash.get("bin_card_category"));
+        print(writer, transactionHash.get("bin_card_type") == null ? "-" : (String) transactionHash.get("bin_card_type"));
+        print(writer, transactionHash.get("bin_sub_brand") == null ? "-" : (String) transactionHash.get("bin_sub_brand"));
+        print(writer, transactionHash.get("subcard_type") == null ? "-" : (String) transactionHash.get("subcard_type"));
+        print(writer, transactionHash.get("issuing_bank") == null ? "-" : (String) transactionHash.get("issuing_bank"));
+        print(writer, transactionHash.get("country_name") == null ? "-" : (String) transactionHash.get("country_name"));
+        //bd.issuing_bank,bd.bin_card_category,bd.bin_sub_brand,bd.subcard_type, bd.bin_card_type,bd.country_name as bin_country_name
+        print(writer, (String) transactionHash.get("currency"));
+        print(writer, (String) transactionHash.get("walletAmount")==null ? "-":(String) transactionHash.get("walletAmount"));
+        print(writer, (String) transactionHash.get("walletCurrency")==null ? "-":(String) transactionHash.get("walletCurrency"));
+        print(writer, transactionHash.get("name") == null ? "-" : (String) transactionHash.get("name"));
+        print(writer, print_email == null ? "-" : print_email);
+        print(writer, transactionHash.get("country") == null ? "-" : (String) transactionHash.get("country"));
+        print(writer, (String) transactionHash.get("amount"));
+        print(writer, (String) transactionHash.get("captureamount"));
+        print(writer, (String) transactionHash.get("refundamount"));
+        print(writer, (String) transactionHash.get("chargebackamount"));
+        print(writer, (String) transactionHash.get("payoutamount"));
+        String encCardNum = (String) transactionHash.get("ccnum");
+        if (functions.isValueNull(encCardNum))
+        {
+            firstSix = encCardNum.substring(0, 6);
+            lastFour = encCardNum.substring((encCardNum.length() - 4), encCardNum.length());
+        }/*else {
+            firstSix = "-";
+            lastFour = "-";
+        } */
+        String firstsixvar="";
+        if (functions.isValueNull(firstSix))
+        {
+           firstsixvar="'"+firstSix;
+        }
+        else
+        {
+            firstsixvar="-";
+        }
+
+        String lastfourvar="";
+        if (functions.isValueNull(lastFour))
+        {
+           lastfourvar= "'"+lastFour;
+        }
+        else
+        {
+            lastfourvar="-";
+        }
+        print(writer, firstsixvar);
+        print(writer, lastfourvar);
+        print(writer, rrn);
+        print(writer, arn);
+        print(writer, authorization_code);
+        print(writer, (String) statushash.get(transactionHash.get("status")));
+        print(writer,  transactionHash.get("chargebackinfo") == null? "-" : (String) transactionHash.get("chargebackinfo"));
+        print(writer, (String) transactionHash.get("remark") == null ? "-" : (String) transactionHash.get("remark"));
+        String initDateFormat = "yyyy-MM-dd HH:mm:ss";
+        String targetDateFormat = "MM/dd/yyyy HH:mm:ss";
+        String parsedDate ="" ;
+        try
+        {
+            parsedDate = formatDate((String) transactionHash.get("timestamp"), initDateFormat, targetDateFormat);
+        }
+        catch (ParseException e)
+        {
+            log.error("ParseException---",e);
+        }
+        printLast(writer,(parsedDate));
+    }
+
+    void print(PrintWriter writer, String str)
+    {
+        writer.print("\"" + Util.replaceData(str, "\"", "\"\"") + "\"");
+        writer.print(',');
+    }
+
+    void printLast(PrintWriter writer, String str)
+    {
+        writer.println("\"" + Util.replaceData(str, "\"", "\"\"") + "\"");
+    }
+
+    public static boolean sendFile(String filepath, String filename, javax.servlet.http.HttpServletResponse response)throws Exception
+    {
+
+        File f = new File(filepath);
+        int length = 0;
+
+        // Set browser download related headers (Browsers to download the file)
+        response.setContentType("application/octat-stream");
+        response.setContentLength((int) f.length());
+        response.addHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+
+        //For Sending binary data to the client. This object normally retrieved via the response
+        javax.servlet.ServletOutputStream op = response.getOutputStream();
+
+        byte[] bbuf = new byte[1024];
+        DataInputStream in = new DataInputStream(new FileInputStream(f));
+
+        while ((in != null) && ((length = in.read(bbuf)) != -1))
+        {
+            op.write(bbuf, 0, length);
+        }
+
+        in.close();
+        op.flush();
+        op.close();
+
+        File file = new File(filepath);
+        try
+        {
+            file.delete();
+        }
+        catch (Exception e)
+        {
+            log.debug("Exception:::::"+e);
+        }
+        log.info("Successful#######");
+        return true;
+
+    }
+    public String formatDate (String date, String initDateFormat, String endDateFormat) throws ParseException
+    {
+
+        Date initDate = new SimpleDateFormat(initDateFormat).parse(date);
+        SimpleDateFormat formatter = new SimpleDateFormat(endDateFormat);
+        String parsedDate = formatter.format(initDate);
+        return parsedDate;
+    }
+}

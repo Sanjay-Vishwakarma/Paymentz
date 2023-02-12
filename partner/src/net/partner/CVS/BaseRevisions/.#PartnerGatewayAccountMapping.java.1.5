@@ -1,0 +1,338 @@
+package net.partner;
+import com.directi.pg.Database;
+import com.directi.pg.Functions;
+import com.directi.pg.LoadProperties;
+import com.directi.pg.Logger;
+import org.apache.commons.lang.StringUtils;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.*;
+
+/**
+ * Created by Mahima on 1/6/2020.
+ */
+public class PartnerGatewayAccountMapping extends HttpServlet
+{
+    Logger logger=new Logger(PartnerGatewayAccountMapping.class.getName());
+    public void doGet(HttpServletRequest request,HttpServletResponse response)throws ServletException,IOException
+    {
+        doPost(request,response);
+    }
+    public void doPost(HttpServletRequest request,HttpServletResponse response) throws ServletException,IOException
+    {
+        logger.debug("Entering in PartnerGatewayAccountMapping");
+        HttpSession session = request.getSession();
+        Functions functions=new Functions();
+        PartnerFunctions partner=new PartnerFunctions();
+        if (!partner.isLoggedInPartner(session))
+        {
+            response.sendRedirect("/partner/Logout.jsp");
+            return;
+        }
+        ResourceBundle rb1 = null;
+        String language_property1 = (String) session.getAttribute("language_property");
+        rb1 = LoadProperties.getProperty(language_property1);
+        String PartnerGatewayAccountMapping_please_accountid = StringUtils.isNotEmpty(rb1.getString("PartnerGatewayAccountMapping_please_accountid")) ? rb1.getString("PartnerGatewayAccountMapping_please_accountid") : "Please provide Account Id<BR>";
+        String PartnerGatewayAccountMapping_please_partnerid = StringUtils.isNotEmpty(rb1.getString("PartnerGatewayAccountMapping_please_partnerid")) ? rb1.getString("PartnerGatewayAccountMapping_please_partnerid") : "Please provide PartnerID<BR>";
+        String PartnerGatewayAccountMapping_already_mapping = StringUtils.isNotEmpty(rb1.getString("PartnerGatewayAccountMapping_already_mapping")) ? rb1.getString("PartnerGatewayAccountMapping_already_mapping") : "Mapping Already Available";
+        String PartnerGatewayAccountMapping_deleted_mapping = StringUtils.isNotEmpty(rb1.getString("PartnerGatewayAccountMapping_deleted_mapping")) ? rb1.getString("PartnerGatewayAccountMapping_deleted_mapping") : "Mapping Deleted Successfully";
+        String PartnerGatewayAccountMapping_deleted_failed = StringUtils.isNotEmpty(rb1.getString("PartnerGatewayAccountMapping_deleted_failed")) ? rb1.getString("PartnerGatewayAccountMapping_deleted_failed") : "Mapping Deleted Failed";
+
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+        PartnerFunctions partnerFunctions=new PartnerFunctions();
+        StringBuffer sb=new StringBuffer();
+        String partnerid="";
+        partnerid=partnerFunctions.getSubpartner((String) session.getAttribute("merchantid"));
+        ServletContext application = getServletContext();
+        List<String> gatewayList = new ArrayList();
+        String[] elements_accountid=null;
+
+        String accountId1=request.getParameter("accountid");
+        String accountidNew = request.getParameter("bankid");
+        if (functions.isValueNull(accountidNew))
+        {
+             elements_accountid = accountidNew.split(",");
+            gatewayList = Arrays.asList(elements_accountid);
+        }
+
+        String partnerId=request.getParameter("partnerId");
+        String action=request.getParameter("action");
+        String isActive=request.getParameter("isactive");
+        String statusMsg="";
+        int counter = 1;
+        int records=15;
+        int pageno=1;
+        HashMap hash = null;
+        RequestDispatcher rd = request.getRequestDispatcher("/partnerGatewayAccountMapping.jsp?ctoken="+user.getCSRFToken());
+        logger.error("Action:::::" + action + "--AccountId---" + gatewayList + "---partnerId---" + partnerId);
+
+        int start = 0; // start index
+        int end = 0; // end index
+        try
+        {
+            pageno = Functions.convertStringtoInt(ESAPI.validator().getValidInput("Spageno", request.getParameter("SPageno"), "Numbers", 3, true), 1);
+            records = Functions.convertStringtoInt(ESAPI.validator().getValidInput("Srecord", request.getParameter("SRecords"), "Numbers", 3, true), Integer.parseInt((String) application.getAttribute("NOOFRECORDSPERPAGE")));
+        }
+        catch (ValidationException e)
+        {
+            logger.error("Invalid page no or records",e);
+            pageno =1;
+            records = 10;
+        }
+        start = (pageno - 1) * records;
+        end = records;
+
+        if(functions.isValueNull(action) )
+        {
+            if(action.equalsIgnoreCase("Save"))
+            {
+               /* if(!functions.isValueNull(accountId)){
+                    sb.append(PartnerGatewayAccountMapping_please_accountid);
+                }*/
+               /* if (!ESAPI.validator().isValidInput("accountid", accountId, "Numbers", 10, false))
+                {
+                    sb.append("Please provide Account Id<BR>");
+                }*/
+                if (!ESAPI.validator().isValidInput("partnerid", partnerId, "Numbers", 10, false))
+                {
+                    sb.append(PartnerGatewayAccountMapping_please_partnerid);
+                }
+                if (sb.length() > 0)
+                {
+                    request.setAttribute("statusMsg", sb.toString());
+                    rd.forward(request, response);
+                    return;
+                }
+            }
+        }
+        Connection conn=null;
+        try
+        {
+
+                if (functions.isValueNull(action) && action.equalsIgnoreCase("save"))
+                {
+
+                        for (String accountId : gatewayList)
+                        {
+                            if (isMappingUnique(accountId, partnerId))
+                            {
+                                statusMsg = addGatewayTypePartnerMapping(accountId, partnerId, isActive);
+
+                            }
+                            else
+                            {
+                                request.setAttribute("statusMsg", PartnerGatewayAccountMapping_already_mapping+" for"+accountId);
+                                rd.forward(request, response);
+                                return;
+                            }
+                        }
+                        request.setAttribute("statusMsg", statusMsg);
+                        rd.forward(request, response);
+                        return;
+
+                   /* else
+                    {
+                        request.setAttribute("statusMsg", PartnerGatewayAccountMapping_already_mapping);
+                        rd.forward(request, response);
+                        return;
+                    }*/
+                }
+                else if (functions.isValueNull(action) && action.equalsIgnoreCase("Delete"))
+                {
+                        boolean status = isMappingDelete(accountId1, partnerId);
+                        if (status)
+                        {
+                            request.setAttribute("statusMsg", PartnerGatewayAccountMapping_deleted_mapping);
+                            rd.forward(request, response);
+                            return;
+                        }
+                        else
+                        {
+                            request.setAttribute("statusMsg", PartnerGatewayAccountMapping_deleted_failed);
+                            rd.forward(request, response);
+                            return;
+                        }
+
+                }
+                else
+                {
+
+                    PreparedStatement pstmt = null;
+                    PreparedStatement pstmt1 = null;
+                    ResultSet rs = null;
+                    conn = Database.getRDBConnection();
+                    StringBuilder query = new StringBuilder("SELECT gt.pgtypeid,gt.gateway,gt.currency,gt.name,ga.accountid,ga.merchantid,gapm.partnerid FROM gateway_type AS gt JOIN gateway_accounts AS ga JOIN gateway_account_partner_mapping AS gapm WHERE gt.pgtypeid=ga.pgtypeid AND ga.accountid=gapm.accountid AND gapm.partnerid IN(" + partnerid + ")");
+                    StringBuilder countquery = new StringBuilder("SELECT count(*) FROM gateway_type AS gt JOIN gateway_accounts AS ga JOIN gateway_account_partner_mapping AS gapm WHERE gt.pgtypeid=ga.pgtypeid AND ga.accountid=gapm.accountid AND gapm.partnerid IN(" + partnerid + ")");
+                    if (functions.isValueNull(partnerId))
+                    {
+                        query.append(" AND gapm.partnerid= ?");
+                        countquery.append(" AND gapm.partnerid= ?");
+                    }
+                    if (functions.isValueNull(accountidNew))
+                    {
+                        query.append(" and ga.accountid IN ("+accountidNew+")");
+                        countquery.append(" and ga.accountid IN ("+accountidNew+") ");
+                    }
+                    query.append(" order by ga.accountid desc");
+                    query.append(" LIMIT ? , ? ");
+
+                    pstmt = conn.prepareStatement(query.toString());
+                    pstmt1 = conn.prepareStatement(countquery.toString());
+
+                    if (functions.isValueNull(partnerId))
+                    {
+                        pstmt.setString(counter, partnerId);
+                        pstmt1.setString(counter, partnerId);
+                        counter++;
+                    }
+                    /*if (functions.isValueNull(accountidNew))
+                    {
+                        pstmt.setString(counter, accountidNew);
+                        pstmt1.setString(counter, accountidNew);
+                        counter++;
+                    }*/
+                    pstmt.setInt(counter, start);
+                    counter++;
+                    pstmt.setInt(counter, end);
+                    counter++;
+
+                    logger.debug("query:::::" + pstmt);
+                    logger.debug("countquery:::::" + pstmt1);
+
+                    //hash = Database.getHashFromResultSetForTransactionEntry(rs1);
+                    hash = Database.getHashMapFromResultSetForTransactionEntry(pstmt.executeQuery());
+
+                    rs = pstmt1.executeQuery();
+                    rs.next();
+                    int totalrecords = rs.getInt(1);
+
+                    hash.put("totalrecords", "" + totalrecords);
+                    hash.put("records", "0");
+
+                    if (totalrecords > 0)
+                    {
+                        hash.put("records", "" + (hash.size() - 2));
+                    }
+                    request.setAttribute("transdetails", hash);
+                    rd.forward(request, response);
+                    logger.debug("forward to jsp" + hash);
+                    return;
+                }
+
+        }
+        catch (Exception e){
+            logger.error("Exception---" + e);
+        }
+        finally
+        {
+            Database.closeConnection(conn);
+        }
+    }
+    public boolean isMappingUnique(String accountId,String partnerId)throws Exception
+    {
+        Connection con=null;
+        PreparedStatement pstmt=null;
+        ResultSet rs=null;
+        boolean status=true;
+        try
+        {
+            con= Database.getRDBConnection();
+            StringBuffer sb=new StringBuffer("select mappingid from gateway_account_partner_mapping where accountid=? and partnerid=?");
+            pstmt=con.prepareStatement(sb.toString());
+            pstmt.setString(1,accountId);
+            pstmt.setString(2,partnerId);
+            rs=pstmt.executeQuery();
+            logger.error("Query::::"+pstmt);
+            if(rs.next())
+            {
+                status=false;
+            }
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(pstmt);
+            Database.closeConnection(con);
+        }
+        return status;
+    }
+
+    public String addGatewayTypePartnerMapping(String accountId,String partnerId,String isActive)
+    {
+        Connection conn=null;
+        PreparedStatement pstmt=null;
+        String statusMsg="";
+        try
+        {
+            conn= Database.getConnection();
+            String query="insert into gateway_account_partner_mapping(accountid,partnerid,isActive) values(?,?,?)";
+            pstmt = conn.prepareStatement(query);
+            pstmt.setString(1,accountId);
+            pstmt.setString(2,partnerId);
+            pstmt.setString(3,isActive);
+            int k=pstmt.executeUpdate();
+            if(k>0)
+            {
+                statusMsg ="Success : Partner Account Mapping Successfully Added";
+            }
+            else
+            {
+                statusMsg="Partner Account Mapping Failed.!!!";
+            }
+            logger.error("statusMsg:::"+statusMsg);
+        }
+        catch (Exception e)
+        {
+            statusMsg=e.getMessage();
+        }
+        finally
+        {
+            Database.closePreparedStatement(pstmt);
+            Database.closeConnection(conn);
+        }
+        return statusMsg;
+    }
+
+    public boolean isMappingDelete(String accountId,String partnerId)throws Exception
+    {
+        Connection con=null;
+        PreparedStatement pstmt=null;
+        ResultSet rs=null;
+        boolean status=false;
+        try
+        {
+            con= Database.getRDBConnection();
+            StringBuffer sb=new StringBuffer("Delete from gateway_account_partner_mapping where accountid=? and partnerid=?");
+            pstmt=con.prepareStatement(sb.toString());
+            pstmt.setString(1,accountId);
+            pstmt.setString(2,partnerId);
+            int k=pstmt.executeUpdate();
+            logger.error("Query::::"+pstmt);
+            logger.error("K::::"+k);
+            if(k>0)
+            {
+                status=true;
+            }
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(pstmt);
+            Database.closeConnection(con);
+        }
+        return status;
+    }
+}

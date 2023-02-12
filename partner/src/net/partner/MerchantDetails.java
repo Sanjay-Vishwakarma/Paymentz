@@ -1,0 +1,202 @@
+package net.partner;
+import com.directi.pg.*;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import org.owasp.esapi.codecs.Codec;
+import org.owasp.esapi.codecs.MySQLCodec;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Calendar;
+import java.util.Hashtable;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: admin
+ * Date: 10/1/13
+ * Time: 4:12 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class MerchantDetails extends HttpServlet
+{
+    static Logger Log = new Logger(MerchantDetails.class.getName());
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        response.setContentType("text/html");
+        HttpSession session = request.getSession();
+        User user =  (User)session.getAttribute("ESAPIUserSessionKey");
+        Log.debug("success");
+        PartnerFunctions partner=new PartnerFunctions();
+        if (!partner.isLoggedInPartner(session))
+        {   Log.debug("Partner is logout ");
+            response.sendRedirect("/Partner/Logout.jsp");
+            return;
+        }
+        Connection conn = null;
+        String partnerid=(String)session.getAttribute("merchantid");
+        String error="";
+        String memberid=null;
+        String fdate=null;
+        String tdate=null;
+        String fmonth=null;
+        String tmonth=null;
+        String fyear=null;
+        String tyear=null;
+        int records=15;
+        int pageno=1;
+
+        if (!ESAPI.validator().isValidInput("memberid ",request.getParameter("memberid"),"SafeString",10,true))
+        {   Log.debug("enter velid memberid");
+            error= error+"Enter valid memberid (allow only numeric values).<br>";
+        }
+        else
+        {
+            memberid= request.getParameter("memberid");
+            request.setAttribute("memberid",memberid);
+        }
+        try
+        {
+
+            fdate = ESAPI.validator().getValidInput("fdate",request.getParameter("fdate"),"Days",2,true);
+            tdate = ESAPI.validator().getValidInput("tdate",request.getParameter("tdate"),"Days",2,true);
+            fmonth = ESAPI.validator().getValidInput("fmonth",request.getParameter("fmonth"),"Months",2,true);
+            tmonth = ESAPI.validator().getValidInput("tmonth",request.getParameter("tmonth"),"Months",2,true);
+            fyear = ESAPI.validator().getValidInput("fyear",request.getParameter("fyear"),"Years",4,true);
+            tyear = ESAPI.validator().getValidInput("tyear",request.getParameter("tyear"),"Years",4,true);
+        }
+        catch (ValidationException e)
+        {
+            Log.error("Enter valid input",e);
+
+        }
+        Calendar rightNow = Calendar.getInstance();
+
+        if (fdate == null) fdate = "" + 1;
+        if (tdate == null) tdate = "" + rightNow.get(rightNow.DATE);
+
+        if (fmonth == null) fmonth = "" + (rightNow.get(rightNow.MONTH));
+        if (tmonth == null) tmonth = "" + (rightNow.get(rightNow.MONTH));
+
+        if (fyear == null) fyear = "" + rightNow.get(rightNow.YEAR);
+        if (tyear == null) tyear = "" + rightNow.get(rightNow.YEAR);
+        String fdtstamp = null;
+        String tdtstamp = null;
+        if (!"yes".equals(request.getParameter("ignoredates")))
+        {
+            fdtstamp = Functions.converttomillisec(fmonth, fdate, fyear, "0", "0", "0");
+            tdtstamp = Functions.converttomillisec(tmonth, tdate, tyear, "23", "59", "59");
+        }
+        request.setAttribute("fdtstamp", fdtstamp);
+        request.setAttribute("tdtstamp", tdtstamp);
+
+        int start = 0; // start index
+        int end = 0; // end index
+
+        try
+        {
+            pageno = Functions.convertStringtoInt(ESAPI.validator().getValidInput("pageno",request.getParameter("SPageno"),"Numbers",5,true), 1);
+            records = Functions.convertStringtoInt(ESAPI.validator().getValidInput("records",request.getParameter("SRecords"),"Numbers",5,true), 15);
+        }
+        catch(ValidationException e)
+        {
+            Log.error("Invalid page no or records",e);
+            pageno = 1;
+            records = 15;
+        }
+        start = (pageno - 1) * records;
+        end = records;
+
+        Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+
+        StringBuffer sb=null;
+        StringBuffer count=null;
+        Hashtable hash = null;
+        ResultSet rs = null;
+        try
+        {   conn=Database.getConnection();
+            sb=new StringBuffer("SELECT memberid,company_name,contact_persons,contact_emails,country FROM members where partnerId = " + ESAPI.encoder().encodeForSQL(me,partnerid));
+            count=new StringBuffer("SELECT count(*) FROM members where partnerId = " + ESAPI.encoder().encodeForSQL(me,partnerid));
+
+            if(memberid.equalsIgnoreCase("all"))
+            {
+                String allMemberid=partner.getPartnerMemberRS(partnerid);
+                sb.append(" and memberid IN ("+allMemberid+" )");
+                count.append(" and memberid IN ("+allMemberid+" )");
+
+                if (fdtstamp != null)
+                {
+                    sb.append(" and dtstamp >= " + ESAPI.encoder().encodeForSQL(me,fdtstamp));
+                    count.append(" and dtstamp >= " + ESAPI.encoder().encodeForSQL(me,fdtstamp));
+                }
+
+                if (tdtstamp != null)
+                {
+                    sb.append(" and dtstamp <= " +ESAPI.encoder().encodeForSQL(me, tdtstamp));
+                    count.append(" and dtstamp <= " + ESAPI.encoder().encodeForSQL(me, tdtstamp));
+                }
+            }
+            else
+            {
+                sb.append(" and memberid = " + ESAPI.encoder().encodeForSQL(me,memberid));
+                count.append(" and memberid = " + ESAPI.encoder().encodeForSQL(me,memberid));
+
+                if (fdtstamp != null)
+                {
+                    sb.append(" and dtstamp >= " + ESAPI.encoder().encodeForSQL(me,fdtstamp));
+                    count.append(" and dtstamp >= " + ESAPI.encoder().encodeForSQL(me,fdtstamp));
+                }
+
+                if (tdtstamp != null)
+                {
+                    sb.append(" and dtstamp <= " +ESAPI.encoder().encodeForSQL(me, tdtstamp));
+                    count.append(" and dtstamp <= " + ESAPI.encoder().encodeForSQL(me, tdtstamp));
+                }
+            }
+            sb.append(" order by memberid desc LIMIT " + start + "," + end);
+            Log.debug(sb.toString());
+            Log.debug(count.toString());
+            hash = Database.getHashFromResultSetForTransactionEntry(Database.executeQuery(sb.toString(), conn));
+            rs = Database.executeQuery(count.toString(), conn);
+            rs.next();
+            int totalrecords = rs.getInt(1);
+
+            hash.put("totalrecords", "" + totalrecords);
+            hash.put("records", "0");
+
+            if (totalrecords > 0)
+                hash.put("records", "" + (hash.size() - 2));
+            request.setAttribute("transdetails", hash);
+        }
+        catch (SQLException e)
+        {
+            Log.error("Exception---" + e);  //To change body of catch statement use File | Settings | File Templates.
+        }
+        catch (SystemError systemError)
+        {
+            Log.error("systemError---" + systemError);  //To change body of catch statement use File | Settings | File Templates.
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closeConnection(conn);
+        }
+        request.setAttribute("error",error);
+        RequestDispatcher rd = request.getRequestDispatcher("/merchantDetails.jsp?ctoken="+user.getCSRFToken());
+        rd.forward(request, response);
+    }
+}

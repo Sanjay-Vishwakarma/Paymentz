@@ -1,0 +1,1188 @@
+package com.payment.icard;
+
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccount;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.valueObjects.GenericRequestVO;
+import com.directi.pg.core.valueObjects.GenericResponseVO;
+import com.payment.common.core.*;
+import com.payment.endeavourmpi.*;
+import com.payment.exceptionHandler.PZConstraintViolationException;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.PZGenericConstraintViolationException;
+import com.payment.exceptionHandler.PZTechnicalViolationException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.ResourceBundle;
+
+
+/**
+ * Created by Admin on 3/26/2019.
+ */
+public class ICardPaymentGateway extends AbstractPaymentGateway
+{
+    private static Logger logger = new Logger(ICardPaymentGateway.class.getName());
+    private static ICardLogger transactionLogger = new ICardLogger(ICardPaymentGateway.class.getName());
+    public static final String GATEWAY_TYPE = "icard";
+    private static Functions functions = new Functions();
+    ICardUtils iCardUtils = new ICardUtils();
+
+    private  static ResourceBundle RB= LoadProperties.getProperty("com.directi.pg.icard");
+
+    public ICardPaymentGateway(String accountId)
+    {
+        this.accountId = accountId;
+    }
+
+    @Override
+    public String getMaxWaitDays()
+    {
+        return null;
+    }
+
+
+    @Override
+    public GenericResponseVO processSale(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        logger.error("Process Sale for ICard");
+        transactionLogger.error("Process Sale for ICard---"+trackingID);
+        Comm3DResponseVO comm3DResponseVO = new Comm3DResponseVO();
+        CommCardDetailsVO cardDetailsVO = ((CommRequestVO) requestVO).getCardDetailsVO();
+        CommTransactionDetailsVO transactionDetailsVO = ((CommRequestVO) requestVO).getTransDetailsVO();
+        CommAddressDetailsVO addressDetailsVO= ((CommRequestVO)requestVO).getAddressDetailsVO();
+        CommMerchantVO commMerchantVO = ((CommRequestVO)requestVO).getCommMerchantVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        String is3DSupported = gatewayAccount.get_3DSupportAccount();
+        boolean isTest = gatewayAccount.isTest();
+        String mpiMid=GatewayAccountService.getGatewayAccount(accountId).getCHARGEBACK_FTP_PATH();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = new Date();
+        String stan="";
+        String dttm=null;
+        String datetime = formatter.format(date);
+        boolean isInserted = false;
+        transactionLogger.error("Datetime-----"+datetime);
+
+        String currencyId = CurrencyCodeISO4217.getNumericCurrencyCode(transactionDetailsVO.getCurrency());
+        transactionLogger.error("currencyId-----"+currencyId);
+
+        String year=cardDetailsVO.getExpYear();
+        String expyear= year.substring(2,4);
+        transactionLogger.error("year-----"+expyear);
+
+        String termUrl ="";
+
+        if (functions.isValueNull(commMerchantVO.getHostUrl()))
+        {
+            termUrl = "https://" + commMerchantVO.getHostUrl() + RB.getString("HOST_URL");
+            transactionLogger.error("from host url----" + termUrl);
+        }
+        else
+        {
+            termUrl = RB.getString("TERM_URL");
+            transactionLogger.error("from RB----" + termUrl);
+        }
+
+        String ipaddress="";
+        int port = 0;
+        if (isTest)
+        {
+            transactionLogger.error("Inside TEST URL");
+            ipaddress=RB.getString("TEST_IP");
+            port =Integer.parseInt(RB.getString("TEST_PORT"));
+        }
+        else
+        {
+            transactionLogger.error("Inside LIVE URL");
+            ipaddress=RB.getString("LIVE_IP");
+            port =Integer.parseInt(RB.getString("LIVE_PORT"));
+        }
+
+        try
+        {
+            if("O".equals(is3DSupported))
+            {
+                transactionLogger.error("Inside Only 3DSale Supported----");
+                EndeavourMPIGateway endeavourMPIGateway = new EndeavourMPIGateway();
+                EnrollmentRequestVO enrollmentRequestVO = new EnrollmentRequestVO();
+                enrollmentRequestVO.setMid(mpiMid);
+                enrollmentRequestVO.setName(addressDetailsVO.getFirstname() + " " + addressDetailsVO.getLastname());
+                enrollmentRequestVO.setPan(cardDetailsVO.getCardNum());
+                enrollmentRequestVO.setExpiry(expyear + "" + cardDetailsVO.getExpMonth());
+                enrollmentRequestVO.setCurrency(currencyId);
+                enrollmentRequestVO.setAmount(iCardUtils.getCentAmount(transactionDetailsVO.getAmount()));
+                enrollmentRequestVO.setDesc(transactionDetailsVO.getOrderDesc());
+                enrollmentRequestVO.setUseragent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US)");
+                enrollmentRequestVO.setAccept("en-us");
+                enrollmentRequestVO.setTrackid(trackingID);
+
+                EnrollmentResponseVO enrollmentResponseVO = endeavourMPIGateway.processEnrollment(enrollmentRequestVO);
+
+                if (enrollmentResponseVO != null)
+                {
+                    transactionLogger.error("Inside 3DSale Enrollment ResponseVO-----");
+                    String result = enrollmentResponseVO.getResult();
+                    String avr = enrollmentResponseVO.getAvr();
+
+                    if ("Enrolled".equals(result) && "Y".equals(avr))
+                    {
+                        String PAReq = enrollmentResponseVO.getPAReq();
+                        String acsUrl = enrollmentResponseVO.getAcsUrl();
+                        String trackId = enrollmentResponseVO.getTrackId();
+                        acsUrl = java.net.URLDecoder.decode(acsUrl, "UTF-8");
+
+                        comm3DResponseVO.setStatus("pending3DConfirmation");
+                        comm3DResponseVO.setUrlFor3DRedirect(acsUrl);
+                        comm3DResponseVO.setPaReq(PAReq);
+                        comm3DResponseVO.setTerURL(termUrl+trackId);
+                        comm3DResponseVO.setTransactionId(trackId);
+                        comm3DResponseVO.setMd(PaymentzEncryptor.encryptCVV(cardDetailsVO.getcVV()));
+                        comm3DResponseVO.setTransactionType("Sale");
+                        comm3DResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                    }
+                    else
+                    {
+                        comm3DResponseVO.setStatus("failed");
+                        comm3DResponseVO.setDescription("Card Not Enrolled For 3D");
+                        comm3DResponseVO.setRemark(result);
+                        comm3DResponseVO.setResponseTime(datetime);
+                    }
+                }
+                else
+                {
+                    comm3DResponseVO.setStatus("fail");
+                    comm3DResponseVO.setRemark("Transaction Declined");
+                    comm3DResponseVO.setDescription("Transaction Declined");
+                }
+            }
+            else if ("Y".equals(is3DSupported))
+            {
+                transactionLogger.error("Inside Y 3DSale Supported ----");
+                EndeavourMPIGateway endeavourMPIGateway = new EndeavourMPIGateway();
+                EnrollmentRequestVO enrollmentRequestVO = new EnrollmentRequestVO();
+                enrollmentRequestVO.setMid(mpiMid);
+                enrollmentRequestVO.setName(addressDetailsVO.getFirstname() + " " + addressDetailsVO.getLastname());
+                enrollmentRequestVO.setPan(cardDetailsVO.getCardNum());
+                enrollmentRequestVO.setExpiry(expyear + "" + cardDetailsVO.getExpMonth());
+                enrollmentRequestVO.setCurrency(currencyId);
+                enrollmentRequestVO.setAmount(iCardUtils.getCentAmount(transactionDetailsVO.getAmount()));
+                enrollmentRequestVO.setDesc(transactionDetailsVO.getOrderDesc());
+                enrollmentRequestVO.setUseragent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US)");
+                enrollmentRequestVO.setAccept("en-us");
+                enrollmentRequestVO.setTrackid(trackingID);
+
+                EnrollmentResponseVO enrollmentResponseVO = endeavourMPIGateway.processEnrollment(enrollmentRequestVO);
+
+                if (enrollmentResponseVO != null)
+                {
+                    transactionLogger.error("Inside Enrollment ResponseVO-----");
+                    String result = enrollmentResponseVO.getResult();
+                    String avr = enrollmentResponseVO.getAvr();
+
+                    if ("Enrolled".equals(result) && "Y".equals(avr))
+                    {
+                        String PAReq = enrollmentResponseVO.getPAReq();
+                        String acsUrl = enrollmentResponseVO.getAcsUrl();
+                        String trackId = enrollmentResponseVO.getTrackId();
+                        acsUrl = java.net.URLDecoder.decode(acsUrl, "UTF-8");
+                        transactionLogger.error("trackId inside Enrolled ----" +trackId);
+
+                        comm3DResponseVO.setStatus("pending3DConfirmation");
+                        comm3DResponseVO.setUrlFor3DRedirect(acsUrl);
+                        comm3DResponseVO.setPaReq(PAReq);
+                        comm3DResponseVO.setTerURL(termUrl+trackId);
+                        comm3DResponseVO.setTransactionId(trackId);
+                        comm3DResponseVO.setMd(PaymentzEncryptor.encryptCVV(cardDetailsVO.getcVV()));
+                        comm3DResponseVO.setTransactionType("Sale");
+                        comm3DResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                    }
+                    else
+                    {
+                            /*comm3DResponseVO.setStatus("failed");
+                            comm3DResponseVO.setDescription("Card Not Enrolled For 3D");
+
+                            comm3DResponseVO.setRemark(result);
+                            comm3DResponseVO.setResponseTime(datetime);*/
+                        stan=iCardUtils.getNextSTAN();
+                        /*String connectionSocket = "<?xml version=\"1.0\" encoding=\"Windows-1251\"?><ipayin_request><command>5000</command>" +
+                                "</ipayin_request>";
+
+                        String connectionResponse = iCardUtils.doSocketConnection(connectionSocket, ipaddress, port);
+                        transactionLogger.error("connectionResponse ---"+connectionResponse);*/
+
+                        transactionLogger.error("Inside Non-3D Card Not enrolled-----");
+                        String request = "<?xml version=\"1.0\" encoding=\"Windows-1251\"?>" +
+                                "<ipayin_request><command>601</command><stan>" + stan +"</stan><dttm>" + datetime + "</dttm><pan>" + cardDetailsVO.getCardNum() + "</pan>" +
+                                "<expdt>" + expyear + "" + cardDetailsVO.getExpMonth() + "</expdt><cvc2>" + cardDetailsVO.getcVV() + "</cvc2>" +
+                                "<mid>" + GatewayAccountService.getGatewayAccount(accountId).getMerchantId() + "</mid>" +
+                                "<amount>" + transactionDetailsVO.getAmount() + "</amount><currency>" + currencyId + "</currency><payment_ref>" +trackingID + "</payment_ref>" +
+                                "<customer_ip>" + addressDetailsVO.getCardHolderIpAddress() + "</customer_ip><customer_credentials>" + addressDetailsVO.getEmail() + "</customer_credentials>" +
+                                "</ipayin_request>";
+                        transactionLogger.error("Request for Non3D icardSale-----" + request);
+
+                        String response = iCardUtils.doSocketConnection(request, ipaddress, port);
+
+                        transactionLogger.error("Response for Non3D icardSale-----" + response);
+
+                        if (functions.isValueNull(response))
+                        {
+                            comm3DResponseVO = iCardUtils.readICardXMLRespone(response);
+                            if(functions.isValueNull(comm3DResponseVO.getResponseTime()))
+                                dttm=comm3DResponseVO.getResponseTime();
+                            isInserted=iCardUtils.registerSTANSeqData(trackingID,stan,"SALE",dttm);
+                            transactionLogger.error("Stan inserted------->"+isInserted);
+
+                            if(comm3DResponseVO.getStatus().equalsIgnoreCase("success"))
+                            {
+                                //capture
+                                transactionDetailsVO.setResponseHashInfo(comm3DResponseVO.getResponseHashInfo());
+                                transactionDetailsVO.setPreviousTransactionId(comm3DResponseVO.getTransactionId());
+                                transactionLogger.error("TransactionID from transdetail vo----" + transactionDetailsVO.getPreviousTransactionId());
+                                transactionLogger.error("ResponseHashInfo from transdetail vo ----" + transactionDetailsVO.getResponseHashInfo());
+                                ((CommRequestVO) requestVO).setTransDetailsVO(transactionDetailsVO);
+
+                                comm3DResponseVO = (Comm3DResponseVO) processCapture(trackingID, requestVO);
+
+                                if (comm3DResponseVO!=null)
+                                {
+                                    if (comm3DResponseVO.getStatus().equalsIgnoreCase("success"))
+                                    {
+                                        comm3DResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                                    }
+                                }
+                                else
+                                {
+                                    comm3DResponseVO.setStatus("fail");
+                                    comm3DResponseVO.setRemark("Transaction Declined");
+                                }
+                            }
+                            else
+                            {
+                                comm3DResponseVO.setStatus("fail");
+                                comm3DResponseVO.setRemark("Transaction Declined");
+                            }
+                        }
+                        else
+                        {
+                            comm3DResponseVO.setStatus("fail");
+                            comm3DResponseVO.setRemark("Transaction Declined");
+                            comm3DResponseVO.setDescription("Transaction Declined");
+                        }
+                    }
+                }
+                else
+                {
+                    comm3DResponseVO.setStatus("fail");
+                    comm3DResponseVO.setRemark("Transaction Declined");
+                    comm3DResponseVO.setDescription("Transaction Declined");
+                }
+            }
+            else
+            {
+                transactionLogger.error("Inside Non-3D-----");
+                stan=iCardUtils.getNextSTAN();
+                String request = "<?xml version=\"1.0\" encoding=\"Windows-1251\"?>" +
+                        "<ipayin_request><command>601</command><stan>" + stan +"</stan><dttm>" + datetime + "</dttm><pan>" + cardDetailsVO.getCardNum() + "</pan>" +
+                        "<expdt>" + expyear + "" + cardDetailsVO.getExpMonth() + "</expdt><cvc2>" + cardDetailsVO.getcVV() + "</cvc2>" +
+                        "<mid>" + GatewayAccountService.getGatewayAccount(accountId).getMerchantId() + "</mid>" +
+                        "<amount>" + transactionDetailsVO.getAmount() + "</amount><currency>" + currencyId + "</currency><payment_ref>" + trackingID + "</payment_ref>" +
+                        "<customer_ip>" + addressDetailsVO.getCardHolderIpAddress() + "</customer_ip><customer_credentials>" + addressDetailsVO.getEmail() + "</customer_credentials>" +
+                        "</ipayin_request>";
+                transactionLogger.error("Request for Non3D icardSale-----" + request);
+
+                String response = iCardUtils.doSocketConnection(request, ipaddress, port);
+
+                transactionLogger.error("Response for Non3D icardSale-----" + response);
+
+                if (functions.isValueNull(response))
+                {
+                    comm3DResponseVO = iCardUtils.readICardXMLRespone(response);
+                    if(functions.isValueNull(comm3DResponseVO.getResponseTime()))
+                        dttm=comm3DResponseVO.getResponseTime();
+                    isInserted=iCardUtils.registerSTANSeqData(trackingID,stan,"SALE",dttm);
+                    transactionLogger.error("Stan inserted------->"+isInserted);
+
+                    if(comm3DResponseVO.getStatus().equalsIgnoreCase("success"))
+                    {
+                        //capture
+                        String approvalCode = comm3DResponseVO.getResponseHashInfo();
+                        transactionDetailsVO.setResponseHashInfo(comm3DResponseVO.getResponseHashInfo());
+                        transactionDetailsVO.setPreviousTransactionId(comm3DResponseVO.getTransactionId());
+                        transactionLogger.error("TransactionID from transdetail vo----" + transactionDetailsVO.getPreviousTransactionId());
+                        transactionLogger.error("ResponseHashInfo from transdetail vo ----" + transactionDetailsVO.getResponseHashInfo());
+                        ((CommRequestVO) requestVO).setTransDetailsVO(transactionDetailsVO);
+                        comm3DResponseVO = (Comm3DResponseVO) processCapture(trackingID, requestVO);
+
+                        if (comm3DResponseVO!=null)
+                        {
+                            if (comm3DResponseVO.getStatus().equalsIgnoreCase("success"))
+                            {
+                                comm3DResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                                comm3DResponseVO.setResponseHashInfo(approvalCode);
+                            }
+                        }
+                        else
+                        {
+                            comm3DResponseVO.setStatus("fail");
+                            comm3DResponseVO.setRemark("Transaction Declined");
+                        }
+                    }
+                    else
+                    {
+                        comm3DResponseVO.setStatus("fail");
+                        comm3DResponseVO.setRemark("Transaction Declined");
+                    }
+                }
+                else
+                {
+                    comm3DResponseVO.setStatus("fail");
+                    comm3DResponseVO.setRemark("Transaction Declined");
+                    comm3DResponseVO.setDescription("Transaction Declined");
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            transactionLogger.error("Exception", e);
+            comm3DResponseVO.setStatus("fail");
+            comm3DResponseVO.setRemark("Failed");
+            comm3DResponseVO.setDescription("Failed");
+        }
+        return comm3DResponseVO;
+    }
+
+    @Override
+    public GenericResponseVO processAuthentication(String trackingID, GenericRequestVO requestVO) throws PZGenericConstraintViolationException
+    {
+        logger.debug("Inside ICard Authentication");
+        transactionLogger.debug("Inside ICard Authentication");
+        Comm3DResponseVO comm3DResponseVO = new Comm3DResponseVO();
+        CommTransactionDetailsVO transactionDetailsVO = ((CommRequestVO)requestVO).getTransDetailsVO();
+        CommAddressDetailsVO addressDetailsVO = ((CommRequestVO)requestVO).getAddressDetailsVO();
+        CommCardDetailsVO cardDetailsVO = ((CommRequestVO)requestVO).getCardDetailsVO();
+        CommMerchantVO commMerchantVO = ((CommRequestVO)requestVO).getCommMerchantVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest =  gatewayAccount.isTest();
+        String is3DSupported = gatewayAccount.get_3DSupportAccount();
+        String mpiMid=GatewayAccountService.getGatewayAccount(accountId).getCHARGEBACK_FTP_PATH();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String stan="";
+        String dttm=null;
+        boolean isInserted=false;
+
+        Date date = new Date();
+        String datetime = formatter.format(date);
+        transactionLogger.error("Datetime-----"+datetime);
+
+        String currencyId =CurrencyCodeISO4217.getNumericCurrencyCode(transactionDetailsVO.getCurrency());
+        transactionLogger.error("currencyId-----"+currencyId);
+
+        String year=cardDetailsVO.getExpYear();
+        String expyear= year.substring(2, 4);
+        transactionLogger.error("year-----"+expyear);
+
+        String termUrl ="";
+
+        if (functions.isValueNull(commMerchantVO.getHostUrl()))
+        {
+            termUrl = "https://" + commMerchantVO.getHostUrl() + RB.getString("HOST_URL");
+            transactionLogger.error("from host url----" + termUrl);
+        }
+        else
+        {
+            termUrl = RB.getString("TERM_URL");
+            transactionLogger.error("from RB----" + termUrl);
+        }
+
+        String ipaddress="";
+        int port = 0 ;
+
+        if (isTest)
+        {
+            transactionLogger.error("Inside TEST URL");
+            ipaddress=RB.getString("TEST_IP");
+            port =Integer.parseInt(RB.getString("TEST_PORT"));
+        }
+        else
+        {
+            transactionLogger.error("Inside LIVE URL");
+            ipaddress=RB.getString("LIVE_IP");
+            port =Integer.parseInt(RB.getString("LIVE_PORT"));
+        }
+
+        try
+        {
+            if("O".equals(is3DSupported))
+            {
+                transactionLogger.error("Inside Auth 3D Supported----");
+                EndeavourMPIGateway endeavourMPIGateway = new EndeavourMPIGateway();
+                EnrollmentRequestVO enrollmentRequestVO = new EnrollmentRequestVO();
+                enrollmentRequestVO.setMid(mpiMid);
+                enrollmentRequestVO.setName(addressDetailsVO.getFirstname() + " " + addressDetailsVO.getLastname());
+                enrollmentRequestVO.setPan(cardDetailsVO.getCardNum());
+                enrollmentRequestVO.setExpiry(expyear + "" + cardDetailsVO.getExpMonth());
+                enrollmentRequestVO.setCurrency(currencyId);
+                enrollmentRequestVO.setAmount(iCardUtils.getCentAmount(transactionDetailsVO.getAmount()));
+                enrollmentRequestVO.setDesc(transactionDetailsVO.getOrderDesc());
+                enrollmentRequestVO.setUseragent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US)");
+                enrollmentRequestVO.setAccept("en-us");
+                enrollmentRequestVO.setTrackid(trackingID);
+
+                EnrollmentResponseVO enrollmentResponseVO = endeavourMPIGateway.processEnrollment(enrollmentRequestVO);
+
+                if (enrollmentResponseVO != null)
+                {
+                    transactionLogger.error("Inside Enrollment ResponseVO-----");
+                    String result = enrollmentResponseVO.getResult();
+                    String avr = enrollmentResponseVO.getAvr();
+
+                    if ("Enrolled".equals(result) && "Y".equals(avr))
+                    {
+                        String PAReq = enrollmentResponseVO.getPAReq();
+                        String acsUrl = enrollmentResponseVO.getAcsUrl();
+                        String trackId = enrollmentResponseVO.getTrackId();
+                        acsUrl = java.net.URLDecoder.decode(acsUrl, "UTF-8");
+
+                        comm3DResponseVO.setStatus("pending3DConfirmation");
+                        comm3DResponseVO.setUrlFor3DRedirect(acsUrl);
+                        comm3DResponseVO.setPaReq(PAReq);
+                        comm3DResponseVO.setTerURL(termUrl + trackId);
+                        comm3DResponseVO.setTransactionId(trackId);
+                        comm3DResponseVO.setMd(PaymentzEncryptor.encryptCVV(cardDetailsVO.getcVV()));
+                        comm3DResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                    }
+                    else
+                    {
+                        comm3DResponseVO.setStatus("failed");
+                        comm3DResponseVO.setDescription("Card Not Enrolled For 3D");
+                        comm3DResponseVO.setRemark(result);
+                        comm3DResponseVO.setResponseTime(datetime);
+                    }
+                }
+                else
+                {
+                    comm3DResponseVO.setStatus("fail");
+                    comm3DResponseVO.setRemark("Transaction Declined");
+                    comm3DResponseVO.setDescription("Transaction Declined");
+                }
+            }
+            else if ("Y".equals(is3DSupported))
+            {
+                transactionLogger.error("Inside 3-D Supported----");
+                EndeavourMPIGateway endeavourMPIGateway = new EndeavourMPIGateway();
+                EnrollmentRequestVO enrollmentRequestVO = new EnrollmentRequestVO();
+                enrollmentRequestVO.setMid(mpiMid);
+                enrollmentRequestVO.setName(addressDetailsVO.getFirstname() + " " + addressDetailsVO.getLastname());
+                enrollmentRequestVO.setPan(cardDetailsVO.getCardNum());
+                enrollmentRequestVO.setExpiry(expyear + "" + cardDetailsVO.getExpMonth());
+                enrollmentRequestVO.setCurrency(currencyId);
+                enrollmentRequestVO.setAmount(iCardUtils.getCentAmount(transactionDetailsVO.getAmount()));
+                enrollmentRequestVO.setDesc(transactionDetailsVO.getOrderDesc());
+                enrollmentRequestVO.setUseragent("Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US)");
+                enrollmentRequestVO.setAccept("en-us");
+                enrollmentRequestVO.setTrackid(trackingID);
+
+                EnrollmentResponseVO enrollmentResponseVO = endeavourMPIGateway.processEnrollment(enrollmentRequestVO);
+
+                if (enrollmentResponseVO != null)
+                {
+                    transactionLogger.error("Inside Enrollment ResponseVO-----");
+                    String result = enrollmentResponseVO.getResult();
+                    String avr = enrollmentResponseVO.getAvr();
+
+                    if ("Enrolled".equals(result) && "Y".equals(avr))
+                    {
+                        String PAReq = enrollmentResponseVO.getPAReq();
+                        String acsUrl = enrollmentResponseVO.getAcsUrl();
+                        String trackId = enrollmentResponseVO.getTrackId();
+                        acsUrl = java.net.URLDecoder.decode(acsUrl, "UTF-8");
+                        transactionLogger.error("acsUrl--------->"+acsUrl);
+                        comm3DResponseVO.setStatus("pending3DConfirmation");
+                        comm3DResponseVO.setUrlFor3DRedirect(acsUrl);
+                        comm3DResponseVO.setPaReq(PAReq);
+                        comm3DResponseVO.setTerURL(termUrl+trackId);
+                        comm3DResponseVO.setTransactionId(trackId);
+                        comm3DResponseVO.setMd(PaymentzEncryptor.encryptCVV(cardDetailsVO.getcVV()));
+                        comm3DResponseVO.setTransactionType("Auth");
+                        comm3DResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                    }
+                    else
+                    {
+                            /*comm3DResponseVO.setStatus("failed");
+                            comm3DResponseVO.setDescription("Card Not Enrolled For 3D");
+
+                            comm3DResponseVO.setRemark(result);
+                            comm3DResponseVO.setResponseTime(datetime);*/
+
+                        transactionLogger.error("Inside Non-3D Card Not enrolled-----");
+                        stan=iCardUtils.getNextSTAN();
+                        String request = "<?xml version=\"1.0\" encoding=\"Windows-1251\"?>" +
+                                "<ipayin_request><command>601</command><stan>" + stan +"</stan><dttm>" + datetime + "</dttm><pan>" + cardDetailsVO.getCardNum() + "</pan>" +
+                                "<expdt>" + expyear + "" + cardDetailsVO.getExpMonth() + "</expdt><cvc2>" + cardDetailsVO.getcVV() + "</cvc2>" +
+                                "<mid>" + GatewayAccountService.getGatewayAccount(accountId).getMerchantId() + "</mid>" +
+                                "<amount>" + transactionDetailsVO.getAmount() + "</amount><currency>" + currencyId + "</currency><payment_ref>" + trackingID + "</payment_ref>" +
+                                "<customer_ip>" + addressDetailsVO.getCardHolderIpAddress() + "</customer_ip><customer_credentials>" + addressDetailsVO.getEmail() + "</customer_credentials>" +
+                                "</ipayin_request>";
+                        transactionLogger.error("Request for Non3D icard Auth-----" + request);
+
+                        String response = iCardUtils.doSocketConnection(request, ipaddress, port);
+
+                        transactionLogger.error("Response for Non3D icard Auth-----" + response);
+
+                        if (functions.isValueNull(response))
+                        {
+                            comm3DResponseVO = iCardUtils.readICardXMLRespone(response);
+                            if(functions.isValueNull(comm3DResponseVO.getResponseTime()))
+                                dttm=comm3DResponseVO.getResponseTime();
+                            isInserted=iCardUtils.registerSTANSeqData(trackingID,stan,"AUTH",dttm);
+                            transactionLogger.error("Stan inserted------->"+isInserted);
+                            if ("success".equals(comm3DResponseVO.getStatus()))
+                            {
+                                comm3DResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                            }
+                        }
+                        else
+                        {
+                            comm3DResponseVO.setStatus("fail");
+                            comm3DResponseVO.setRemark("Transaction Declined");
+                            comm3DResponseVO.setDescription("Transaction Declined");
+                        }
+                    }
+                }
+                else
+                {
+                    comm3DResponseVO.setStatus("fail");
+                    comm3DResponseVO.setRemark("Transaction Declined");
+                    comm3DResponseVO.setDescription("Transaction Declined");
+                }
+            }
+            else
+            {
+                stan=iCardUtils.getNextSTAN();
+                String request = "<?xml version=\"1.0\" encoding=\"Windows-1251\"?>" +
+                        "<ipayin_request><command>601</command><stan>" + stan +"</stan><dttm>" + datetime + "</dttm><pan>" + cardDetailsVO.getCardNum() + "</pan>" +
+                        "<expdt>" + expyear + "" + cardDetailsVO.getExpMonth() + "</expdt><cvc2>" + cardDetailsVO.getcVV() + "</cvc2>" +
+                        "<mid>" + GatewayAccountService.getGatewayAccount(accountId).getMerchantId() + "</mid>" +
+                        "<amount>" + transactionDetailsVO.getAmount() + "</amount><currency>" + currencyId + "</currency><payment_ref>" + trackingID + "</payment_ref>" +
+                        "<customer_ip>" + addressDetailsVO.getCardHolderIpAddress() + "</customer_ip><customer_credentials>" + addressDetailsVO.getEmail() + "</customer_credentials>" +
+                        "</ipayin_request>";
+                transactionLogger.error("Request for Auth-----" + request);
+
+                String response = iCardUtils.doSocketConnection(request, ipaddress, port);
+
+                transactionLogger.error("Response for Auth-----" + response);
+
+                if (functions.isValueNull(response))
+                {
+                    comm3DResponseVO = iCardUtils.readICardXMLRespone(response);
+                    if(functions.isValueNull(comm3DResponseVO.getResponseTime()))
+                        dttm=comm3DResponseVO.getResponseTime();
+                    isInserted=iCardUtils.registerSTANSeqData(trackingID,stan,"AUTH",dttm);
+                    transactionLogger.error("Stan inserted------->"+isInserted);
+                    if ("success".equals(comm3DResponseVO.getStatus()))
+                    {
+                        comm3DResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                    }
+                }
+                else
+                {
+                    comm3DResponseVO.setStatus("fail");
+                    comm3DResponseVO.setRemark("Transaction is declined");
+                    comm3DResponseVO.setDescription("Transaction is declined");
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            transactionLogger.error("Exception" , e);
+            comm3DResponseVO.setStatus("fail");
+            comm3DResponseVO.setRemark("Failed");
+            comm3DResponseVO.setDescription("Failed");
+        }
+        return comm3DResponseVO;
+    }
+
+    @Override
+    public GenericResponseVO processCapture(String trackingID, GenericRequestVO requestVO) throws PZConstraintViolationException, PZTechnicalViolationException, PZDBViolationException
+    {
+        logger.debug("Inside ICard Capture");
+        transactionLogger.debug("Inside ICard Capture");
+        CommResponseVO comm3DResponseVO = new Comm3DResponseVO();
+        CommTransactionDetailsVO transactionDetailsVO = ((CommRequestVO)requestVO).getTransDetailsVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest = gatewayAccount.isTest();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = new Date();
+        String datetime = formatter.format(date);
+        transactionLogger.error("Datetime-----"+datetime);
+
+        String currencyId = CurrencyCodeISO4217.getNumericCurrencyCode(transactionDetailsVO.getCurrency());
+        transactionLogger.error("currencyId-----"+currencyId);
+
+       // String approval = comm3DResponseVO.getResponseHashInfo();
+        String approval = transactionDetailsVO.getResponseHashInfo();
+        transactionLogger.error("Approval or ResponseHashInfo from Previous Transaction-----"+approval);
+
+        String ipaddress="";
+        String dttm=null;
+        int port =0;
+        if (isTest)
+        {
+            transactionLogger.error("Inside TEST URL");
+            ipaddress=RB.getString("TEST_IP");
+            port =Integer.parseInt(RB.getString("TEST_PORT"));
+        }
+        else
+        {
+            transactionLogger.error("Inside LIVE URL");
+            ipaddress=RB.getString("LIVE_IP");
+            port =Integer.parseInt(RB.getString("LIVE_PORT"));
+        }
+
+        try
+        {
+            String stan=iCardUtils.getNextSTAN();
+            String request="<?xml version=\"1.0\" encoding=\"Windows-1251\"?> " +
+                    "<ipayin_request><command>607</command><stan>"+stan+"</stan><dttm>"+datetime+"</dttm><trn>"+transactionDetailsVO.getPreviousTransactionId()+"</trn>"+
+                    "<mid>"+GatewayAccountService.getGatewayAccount(accountId).getMerchantId()+"</mid><amount>"+transactionDetailsVO.getAmount()+"</amount>"+
+                    "<currency>"+currencyId+"</currency><approval>"+approval+"</approval> " +
+                    "</ipayin_request>";
+            transactionLogger.error("Request for Capture-----"+request);
+
+            String response = iCardUtils.doSocketConnection(request, ipaddress, port);
+
+            transactionLogger.error("Response for Capture-----"+response);
+
+            if (functions.isValueNull(response))
+            {
+                comm3DResponseVO = iCardUtils.readICardXMLResponeForCapture(response);
+                if(functions.isValueNull(comm3DResponseVO.getResponseTime()))
+                    dttm=comm3DResponseVO.getResponseTime();
+                boolean isInserted=iCardUtils.registerSTANSeqData(trackingID,stan,"CAPTURE",dttm);
+                transactionLogger.error("Stan inserted------->"+isInserted);
+
+                if(functions.isValueNull(comm3DResponseVO.getDescription()))
+                    comm3DResponseVO.setDescription("Transaction Successful");
+                comm3DResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                comm3DResponseVO.setResponseHashInfo(approval);
+            }
+            else
+            {
+                comm3DResponseVO.setStatus("Failed");
+                comm3DResponseVO.setRemark("Transaction Declined");
+                comm3DResponseVO.setDescription("Transaction Declined");
+            }
+        }
+        catch(Exception e)
+        {
+            transactionLogger.error("Exception ", e);
+            comm3DResponseVO.setStatus("fail");
+            comm3DResponseVO.setRemark("Failed");
+            comm3DResponseVO.setDescription("Failed");
+        }
+        return comm3DResponseVO;
+    }
+
+    @Override
+    public GenericResponseVO processVoid(String trackingID, GenericRequestVO requestVO) throws PZConstraintViolationException, PZTechnicalViolationException, PZDBViolationException
+    {
+        logger.debug("Inside ICard Cancel");
+        transactionLogger.debug("Inside ICard Cancel");
+        CommResponseVO comm3DResponseVO = new Comm3DResponseVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest = gatewayAccount.isTest();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = new Date();
+        String datetime = formatter.format(date);
+        transactionLogger.error("Datetime-----"+datetime);
+
+        CommAddressDetailsVO addressDetailsVO = ((CommRequestVO)requestVO).getAddressDetailsVO();
+        CommTransactionDetailsVO transactionDetailsVO = ((CommRequestVO)requestVO).getTransDetailsVO();
+
+        String mid = GatewayAccountService.getGatewayAccount(accountId).getMerchantId();
+        String time="";
+        transactionLogger.error("time------>"+time);
+        String ipaddress="";
+        String dttm=null;
+        int port =0;
+        if (isTest)
+        {
+            transactionLogger.error("Inside TEST URL");
+            ipaddress=RB.getString("TEST_IP");
+            port =Integer.parseInt(RB.getString("TEST_PORT"));
+        }
+        else
+        {
+            transactionLogger.error("Inside LIVE URL");
+            ipaddress=RB.getString("LIVE_IP");
+            port =Integer.parseInt(RB.getString("LIVE_PORT"));
+        }
+        try
+        {
+            String stan=iCardUtils.getNextSTAN();
+            time=iCardUtils.getTimeUsingTrackingid(trackingID);
+            if(time.contains(".") && functions.isValueNull(time))
+                time=time.split("\\.")[0];
+            String request="<?xml version=\"1.0\" encoding=\"Windows-1251\"?><ipayin_request><command>602</command>" +
+                    "<stan>"+stan+"</stan><dttm>"+datetime+"</dttm><original_stan>"+transactionDetailsVO.getResponseHashInfo()+"</original_stan>" +
+                    "<original_dttm>"+time+"</original_dttm><mid>"+mid+"</mid></ipayin_request>";
+            transactionLogger.error("Request for Cancel-----"+request);
+
+            String response = iCardUtils.doSocketConnection(request, ipaddress, port);
+
+            transactionLogger.error("Response for Cancel-----"+response);
+
+            if (functions.isValueNull(response))
+            {
+                comm3DResponseVO = iCardUtils.readICardXMLRespone(response);
+                if(functions.isValueNull(comm3DResponseVO.getResponseTime()))
+                    dttm=comm3DResponseVO.getResponseTime();
+                boolean isInserted=iCardUtils.registerSTANSeqData(trackingID,stan,"CANCEL",dttm);
+                transactionLogger.error("Stan inserted------->"+isInserted);
+
+                comm3DResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+            }
+            else
+            {
+                comm3DResponseVO.setStatus("Failed");
+                comm3DResponseVO.setRemark("Transaction Declined");
+                comm3DResponseVO.setDescription("Transaction Declined");
+            }
+        }
+        catch(Exception e)
+        {
+            transactionLogger.error("Exception ", e);
+            comm3DResponseVO.setStatus("fail");
+            comm3DResponseVO.setRemark("Failed");
+            comm3DResponseVO.setDescription("Failed");
+        }
+        return comm3DResponseVO;
+    }
+
+
+    @Override
+    public GenericResponseVO processRefund(String trackingID, GenericRequestVO requestVO) throws PZTechnicalViolationException, PZConstraintViolationException, PZDBViolationException
+    {
+        logger.debug("Inside ICard Refund");
+        transactionLogger.debug("Inside ICard Refund");
+        CommResponseVO comm3DResponseVO = new Comm3DResponseVO();
+        CommTransactionDetailsVO transactionDetailsVO = ((CommRequestVO)requestVO).getTransDetailsVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest = gatewayAccount.isTest();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = new Date();
+        String datetime = formatter.format(date);
+        transactionLogger.error("Datetime-----"+datetime);
+
+        String currencyId =CurrencyCodeISO4217.getNumericCurrencyCode(transactionDetailsVO.getCurrency());
+        transactionLogger.error("currencyId-----"+currencyId);
+
+       // String approval = comm3DResponseVO.getResponseHashInfo();
+        String approval = transactionDetailsVO.getResponseHashInfo();
+        transactionLogger.error("Approval of Previous Transaction-----"+approval);
+
+        String ipaddress="";
+        String dttm=null;
+        int port =0;
+        if (isTest)
+        {
+            transactionLogger.error("Inside TEST URL");
+            ipaddress=RB.getString("TEST_IP");
+            port =Integer.parseInt(RB.getString("TEST_PORT"));
+        }
+        else
+        {
+            transactionLogger.error("Inside LIVE URL");
+            ipaddress=RB.getString("LIVE_IP");
+            port =Integer.parseInt(RB.getString("LIVE_PORT"));
+        }
+
+        try
+        {
+            String stan=iCardUtils.getNextSTAN();
+            String request="<?xml version=\"1.0\" encoding=\"Windows-1251\"?> " +
+                    "<ipayin_request><command>609</command><stan>"+stan+"</stan><dttm>"+datetime+"</dttm><trn>"+transactionDetailsVO.getPreviousTransactionId()+"</trn>"+
+                    "<mid>"+GatewayAccountService.getGatewayAccount(accountId).getMerchantId()+"</mid><amount>"+transactionDetailsVO.getAmount()+"</amount>"+
+                    "<currency>"+currencyId+"</currency><approval>"+approval+"</approval>"+
+                    "</ipayin_request>";
+            transactionLogger.error("Request for Refund-----"+request);
+
+            String response= iCardUtils.doSocketConnection(request, ipaddress, port);
+
+            transactionLogger.error("Response for Refund-----"+response);
+
+            if (functions.isValueNull(response))
+            {
+                comm3DResponseVO = iCardUtils.readICardXMLRespone(response);
+                if(functions.isValueNull(comm3DResponseVO.getResponseTime()))
+                    dttm=comm3DResponseVO.getResponseTime();
+                boolean isInserted=iCardUtils.registerSTANSeqData(trackingID,stan,"REFUND",dttm);
+                transactionLogger.error("Stan inserted------->"+isInserted);
+                if ("success".equals(comm3DResponseVO.getStatus()))
+                {
+                     comm3DResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                }
+            }
+            else
+            {
+                comm3DResponseVO.setStatus("fail");
+                comm3DResponseVO.setRemark("Transaction Declined");
+                comm3DResponseVO.setDescription("Transaction Declined");
+            }
+        }
+        catch (Exception e)
+        {
+            transactionLogger.error("Exception" , e);
+            comm3DResponseVO.setStatus("fail");
+            comm3DResponseVO.setRemark("Failed");
+            comm3DResponseVO.setDescription("Failed");
+        }
+        return comm3DResponseVO;
+    }
+
+    @Override
+    public GenericResponseVO processPayout(String trackingId, GenericRequestVO requestVO) throws PZConstraintViolationException, PZTechnicalViolationException, PZGenericConstraintViolationException
+    {
+        logger.debug("Inside ICard Payout");
+        transactionLogger.debug("Inside ICard Payout");
+        CommResponseVO comm3DResponseVO=new Comm3DResponseVO();
+        CommTransactionDetailsVO transactionDetailsVO=((CommRequestVO)requestVO).getTransDetailsVO();
+        CommAddressDetailsVO addressDetailsVO=((CommRequestVO)requestVO).getAddressDetailsVO();
+        CommCardDetailsVO cardDetailsVO= ((CommRequestVO)requestVO).getCardDetailsVO();
+        GatewayAccount gatewayAccount=GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest=gatewayAccount.isTest();
+        String is3DSupported=gatewayAccount.get_3DSupportAccount();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = new Date();
+        String datetime = formatter.format(date);
+        transactionLogger.error("Datetime-----"+datetime);
+
+        String currencyId = CurrencyCodeISO4217.getNumericCurrencyCode(transactionDetailsVO.getCurrency());
+        transactionLogger.error("currencyId-----"+currencyId);
+
+        String year=cardDetailsVO.getExpYear();
+        String expyear= year.substring(2,4);
+        transactionLogger.error("year-----"+expyear);
+
+        String ipaddress="";
+        String dttm=null;
+        int port =0;
+        if (isTest)
+        {
+            transactionLogger.error("Inside TEST URL");
+            ipaddress=RB.getString("TEST_IP");
+            port =Integer.parseInt(RB.getString("TEST_PORT"));
+        }
+        else
+        {
+            transactionLogger.error("Inside LIVE URL");
+            ipaddress=RB.getString("LIVE_IP");
+            port =Integer.parseInt(RB.getString("LIVE_PORT"));
+        }
+
+        try
+        {
+            String stan=iCardUtils.getNextSTAN();
+            String request="<?xml version=\"1.0\" encoding=\"Windows-1251\"?>"+
+                    "<ipayin_request><command>603</command><stan>"+stan+"</stan><dttm>"+datetime+"</dttm><pan>"+cardDetailsVO.getCardNum() +"</pan>"+
+                    "<expdt>"+expyear +""+cardDetailsVO.getExpMonth()+"</expdt><mid>"+GatewayAccountService.getGatewayAccount(accountId).getMerchantId()+"</mid>"+
+                    "<amount>"+transactionDetailsVO.getAmount()+"</amount><currency>"+currencyId+"</currency><payment_ref>"+trackingId+"</payment_ref>"+
+                    "<customer_credentials>"+addressDetailsVO.getEmail()+"</customer_credentials><business_application>BB</business_application>"+
+                    "</ipayin_request>";
+            transactionLogger.error("Request for Payout-----"+request);
+
+            String response=iCardUtils.doSocketConnection(request, ipaddress, port);
+
+            transactionLogger.error("Response for Payout-----"+response);
+
+            if (functions.isValueNull(response))
+            {
+                comm3DResponseVO = iCardUtils.readICardXMLRespone(response);
+                if(functions.isValueNull(comm3DResponseVO.getResponseTime()))
+                    dttm=comm3DResponseVO.getResponseTime();
+                boolean isInserted=iCardUtils.registerSTANSeqData(trackingId,stan,"PAYOUT",dttm);
+                transactionLogger.error("Stan inserted------->"+isInserted);
+                comm3DResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+            }
+            else
+            {
+                comm3DResponseVO.setStatus("fail");
+                comm3DResponseVO.setRemark("Transaction Declined");
+                comm3DResponseVO.setDescription("Transaction Declined");
+            }
+        }
+        catch (Exception e)
+        {
+            transactionLogger.error("Exception-----" , e);
+            comm3DResponseVO.setStatus("fail");
+            comm3DResponseVO.setRemark("Failed");
+            comm3DResponseVO.setDescription("Failed");
+        }
+
+        return comm3DResponseVO;
+    }
+
+    public GenericResponseVO processCommon3DSaleConfirmation(String trackingID, GenericRequestVO requestVO, String PaRes) throws PZTechnicalViolationException
+    {
+        logger.error("Process Common 3D Sale for ICard");
+        transactionLogger.error("Process Common 3D Sale for ICard");
+        CommResponseVO comm3DResponseVO = new CommResponseVO();
+        CommCardDetailsVO cardDetailsVO = ((CommRequestVO) requestVO).getCardDetailsVO();
+        CommTransactionDetailsVO transactionDetailsVO = ((CommRequestVO) requestVO).getTransDetailsVO();
+        CommAddressDetailsVO addressDetailsVO= ((CommRequestVO)requestVO).getAddressDetailsVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest = gatewayAccount.isTest();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = new Date();
+        String datetime = formatter.format(date);
+        transactionLogger.error("Datetime-----"+datetime);
+
+        String currencyId = CurrencyCodeISO4217.getNumericCurrencyCode(transactionDetailsVO.getCurrency());
+        transactionLogger.error("currencyId-----"+currencyId);
+
+        String year=cardDetailsVO.getExpYear();
+        String expyear= year.substring(2,4);
+        transactionLogger.error("year-----"+expyear);
+
+        String ipaddress="";
+        int port =0;
+        if (isTest)
+        {
+            transactionLogger.error("Inside TEST URL");
+            ipaddress=RB.getString("TEST_IP");
+            port =Integer.parseInt(RB.getString("TEST_PORT"));
+        }
+        else
+        {
+            transactionLogger.error("Inside LIVE URL");
+            ipaddress=RB.getString("LIVE_IP");
+            port =Integer.parseInt(RB.getString("LIVE_PORT"));
+        }
+
+        ParesDecodeRequestVO paresDecodeRequestVO=new ParesDecodeRequestVO();
+        paresDecodeRequestVO.setMassageID(trackingID);
+        paresDecodeRequestVO.setPares(PaRes);
+        paresDecodeRequestVO.setTrackid(trackingID);
+
+        EndeavourMPIGateway endeavourMPIGateway=new EndeavourMPIGateway();
+        ParesDecodeResponseVO paresDecodeResponseVO=endeavourMPIGateway.processParesDecode(paresDecodeRequestVO);
+
+        String XID="";
+        String CAVV="";
+        String ECI="";
+        String dttm=null;
+
+        if(functions.isValueNull(paresDecodeResponseVO.getXid())){
+            XID=paresDecodeResponseVO.getXid();
+        }
+        if(functions.isValueNull(paresDecodeResponseVO.getCavv())){
+            CAVV=paresDecodeResponseVO.getCavv();
+        }
+        if(functions.isValueNull(paresDecodeResponseVO.getEci())){
+            ECI=paresDecodeResponseVO.getEci();
+        }
+
+        transactionLogger.error("XID Encoded-----"+com.directi.pg.Base64.encode(XID.getBytes()));
+        transactionLogger.error("CAVV Encoded-----"+com.directi.pg.Base64.encode(CAVV.getBytes()));
+
+        transactionLogger.error("ECI-----"+ECI);
+        transactionLogger.error("CAVV-----"+CAVV);
+        transactionLogger.error("XID-----"+XID);
+
+        try
+        {
+            transactionLogger.error("Inside Common 3D Sale request----");
+            String stan=iCardUtils.getNextSTAN();
+            String request = "<?xml version=\"1.0\" encoding=\"Windows-1251\"?>" +
+                    "<ipayin_request><command>601</command><stan>" + stan +"</stan><dttm>" + datetime + "</dttm><pan>" + cardDetailsVO.getCardNum() + "</pan>" +
+                    "<expdt>" + expyear + "" + cardDetailsVO.getExpMonth() + "</expdt><cvc2>" + cardDetailsVO.getcVV() + "</cvc2>" +
+                    "<mid>" + GatewayAccountService.getGatewayAccount(accountId).getMerchantId() + "</mid>" +
+                    "<amount>" + transactionDetailsVO.getAmount() + "</amount><currency>" + currencyId + "</currency><payment_ref>" + trackingID + "</payment_ref>" +
+                    "<customer_ip>" + addressDetailsVO.getCardHolderIpAddress() + "</customer_ip><customer_credentials>" + addressDetailsVO.getEmail() + "</customer_credentials>" +
+                    "<eci>" + ECI + "</eci><avv>" + CAVV + "</avv><xid>" + XID + "</xid>" +
+                    "</ipayin_request>";
+            transactionLogger.error("Request for Common 3D Sale-----" + request);
+
+            String response = iCardUtils.doSocketConnection(request, ipaddress, port);
+
+            transactionLogger.error("Response for Common 3D Sale-----" + response);
+
+            if (functions.isValueNull(response))
+            {
+                comm3DResponseVO = iCardUtils.readICardXMLRespone(response);
+                if(functions.isValueNull(comm3DResponseVO.getResponseTime()))
+                    dttm=comm3DResponseVO.getResponseTime();
+                boolean isInserted=iCardUtils.registerSTANSeqData(trackingID,stan,"SALE",dttm);
+                transactionLogger.error("Stan inserted------->"+isInserted);
+                transactionDetailsVO.setResponseHashInfo(comm3DResponseVO.getResponseHashInfo());
+                transactionDetailsVO.setPreviousTransactionId(comm3DResponseVO.getTransactionId());
+                transactionLogger.error("TransactionID from transdetail vo----" + transactionDetailsVO.getPreviousTransactionId());
+                ((CommRequestVO) requestVO).setTransDetailsVO(transactionDetailsVO);
+
+                //String approval = comm3DResponseVO.getResponseHashInfo();
+
+                if (comm3DResponseVO.getStatus().equalsIgnoreCase("success"))
+                {
+                    comm3DResponseVO = (Comm3DResponseVO) processCapture(trackingID,requestVO);
+
+                    if (comm3DResponseVO!=null)
+                    {
+                        if (comm3DResponseVO.getStatus().equalsIgnoreCase("success"))
+                        {
+                            comm3DResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                        }
+                    }
+                    else
+                    {
+                        comm3DResponseVO.setStatus("fail");
+                        comm3DResponseVO.setRemark("Transaction Declined");
+                    }
+                }
+                else
+                {
+                    comm3DResponseVO.setStatus("fail");
+                    comm3DResponseVO.setRemark("Transaction Declined");
+                }
+            }
+            else
+            {
+                comm3DResponseVO.setStatus("fail");
+                comm3DResponseVO.setRemark("Transaction Declined");
+                comm3DResponseVO.setDescription("Transaction Declined");
+            }
+        }
+        catch (Exception e)
+        {
+            transactionLogger.error("Exception", e);
+            comm3DResponseVO.setStatus("fail");
+            comm3DResponseVO.setRemark("Failed");
+            comm3DResponseVO.setDescription("Failed");
+        }
+        return comm3DResponseVO;
+    }
+
+    public GenericResponseVO processCommon3DAuthConfirmation(String trackingID, GenericRequestVO requestVO, String PaRes) throws PZTechnicalViolationException
+    {
+
+        logger.error("Process Common 3D Auth for ICard");
+        transactionLogger.error("Process Common 3D Auth for ICard");
+        CommResponseVO comm3DResponseVO = new Comm3DResponseVO();
+        CommCardDetailsVO cardDetailsVO = ((CommRequestVO) requestVO).getCardDetailsVO();
+        CommTransactionDetailsVO transactionDetailsVO = ((CommRequestVO) requestVO).getTransDetailsVO();
+        CommAddressDetailsVO addressDetailsVO= ((CommRequestVO)requestVO).getAddressDetailsVO();
+        GatewayAccount gatewayAccount = GatewayAccountService.getGatewayAccount(accountId);
+        boolean isTest = gatewayAccount.isTest();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = new Date();
+        String datetime = formatter.format(date);
+        transactionLogger.error("Datetime-----"+datetime);
+
+        String currencyId = CurrencyCodeISO4217.getNumericCurrencyCode(transactionDetailsVO.getCurrency());
+        transactionLogger.error("currencyId-----"+currencyId);
+
+        String year=cardDetailsVO.getExpYear();
+        String expyear= year.substring(2,4);
+        transactionLogger.error("year-----"+expyear);
+
+        String ipaddress="";
+        int port =0;
+        if (isTest)
+        {
+            transactionLogger.error("Inside TEST URL");
+            ipaddress=RB.getString("TEST_IP");
+            port =Integer.parseInt(RB.getString("TEST_PORT"));
+        }
+        else
+        {
+            transactionLogger.error("Inside LIVE URL");
+            ipaddress=RB.getString("LIVE_IP");
+            port =Integer.parseInt(RB.getString("LIVE_PORT"));
+        }
+
+        ParesDecodeRequestVO paresDecodeRequestVO=new ParesDecodeRequestVO();
+        paresDecodeRequestVO.setMassageID(trackingID);
+        paresDecodeRequestVO.setPares(PaRes);
+        paresDecodeRequestVO.setTrackid(trackingID);
+
+        EndeavourMPIGateway endeavourMPIGateway=new EndeavourMPIGateway();
+        ParesDecodeResponseVO paresDecodeResponseVO=endeavourMPIGateway.processParesDecode(paresDecodeRequestVO);
+
+        String XID="";
+        String CAVV="";
+        String ECI="";
+        String dttm=null;
+
+        if(functions.isValueNull(paresDecodeResponseVO.getXid())){
+            XID=paresDecodeResponseVO.getXid();
+        }
+        if(functions.isValueNull(paresDecodeResponseVO.getCavv())){
+            CAVV=paresDecodeResponseVO.getCavv();
+        }
+        if(functions.isValueNull(paresDecodeResponseVO.getEci())){
+            ECI=paresDecodeResponseVO.getEci();
+        }
+
+        transactionLogger.error("XID Encoded-----"+com.directi.pg.Base64.encode(XID.getBytes()));
+        transactionLogger.error("CAVV Encoded-----"+com.directi.pg.Base64.encode(CAVV.getBytes()));
+
+        transactionLogger.error("ECI-----"+ECI);
+        transactionLogger.error("CAVV-----"+CAVV);
+        transactionLogger.error("XID-----"+XID);
+
+        try
+        {
+            transactionLogger.error("Inside Common 3D Auth request----");
+            String stan=iCardUtils.getNextSTAN();
+            String request = "<?xml version=\"1.0\" encoding=\"Windows-1251\"?>" +
+                    "<ipayin_request><command>601</command><stan>" + stan +"</stan><dttm>" + datetime + "</dttm><pan>" + cardDetailsVO.getCardNum() + "</pan>" +
+                    "<expdt>" + expyear + "" + cardDetailsVO.getExpMonth() + "</expdt><cvc2>" + cardDetailsVO.getcVV() + "</cvc2>" +
+                    "<mid>" + GatewayAccountService.getGatewayAccount(accountId).getMerchantId() + "</mid>" +
+                    "<amount>" + transactionDetailsVO.getAmount() + "</amount><currency>" + currencyId + "</currency><payment_ref>" + trackingID + "</payment_ref>" +
+                    "<customer_ip>" + addressDetailsVO.getCardHolderIpAddress() + "</customer_ip><customer_credentials>" + addressDetailsVO.getEmail() + "</customer_credentials>" +
+                    "<eci>" + ECI + "</eci><aav>" + com.directi.pg.Base64.encode(CAVV.getBytes()) + "</aav><xid>" + com.directi.pg.Base64.encode(XID.getBytes()) + "</xid>" +
+                    "</ipayin_request>";
+            transactionLogger.error("Request for Common 3D Auth-----" + request);
+
+            String response = iCardUtils.doSocketConnection(request,ipaddress,port);
+
+            transactionLogger.error("Response for Common 3D Auth-----" + response);
+
+            if (functions.isValueNull("response"))
+            {
+                comm3DResponseVO = iCardUtils.readICardXMLRespone(response);
+                if(functions.isValueNull(comm3DResponseVO.getResponseTime()))
+                    dttm=comm3DResponseVO.getResponseTime();
+                boolean isInserted=iCardUtils.registerSTANSeqData(trackingID,stan,"AUTH",dttm);
+                transactionLogger.error("Stan inserted------->"+isInserted);
+                if("success".equals(comm3DResponseVO.getStatus()))
+                {
+                    comm3DResponseVO.setDescriptor(gatewayAccount.getDisplayName());
+                }
+            }
+            else
+            {
+                comm3DResponseVO.setStatus("fail");
+                comm3DResponseVO.setRemark("Transaction Declined");
+                comm3DResponseVO.setDescription("Transaction Declined");
+            }
+
+        }
+        catch (Exception e)
+        {
+            transactionLogger.error("Exception", e);
+            comm3DResponseVO.setStatus("fail");
+            comm3DResponseVO.setRemark("Failed");
+            comm3DResponseVO.setDescription("Failed");
+        }
+        return comm3DResponseVO;
+    }
+
+    /*public static void main(String[] args)
+    {
+        String trackingID="2812166";
+        System.out.println("tiddd----"+trackingID.substring(trackingID.length()-6));
+    }*/
+
+}
+

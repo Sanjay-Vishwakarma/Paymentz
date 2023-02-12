@@ -1,0 +1,150 @@
+import com.directi.pg.Admin;
+import com.directi.pg.Functions;
+import com.directi.pg.Logger;
+import com.manager.ChargeManager;
+import com.manager.TerminalManager;
+import com.manager.dao.AgentDAO;
+import com.manager.utils.CommonFunctionUtil;
+import com.manager.vo.AgentCommissionVO;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+/**
+ * Created by Admin on 10/10/2015.
+ */
+public class ManageAgentCommission extends HttpServlet
+{
+    Logger logger = new Logger(ManageAgentCommission.class.getName());
+    public void doGet(HttpServletRequest request,HttpServletResponse response) throws ServletException,IOException
+    {
+        doProcess(request,response);
+    }
+    public void doPost(HttpServletRequest request,HttpServletResponse response) throws ServletException,IOException
+    {
+        doProcess(request,response);
+    }
+    public void doProcess(HttpServletRequest request,HttpServletResponse response) throws ServletException,IOException
+    {
+        HttpSession session = request.getSession();
+        User user = (User)session.getAttribute("ESAPIUserSessionKey");
+
+        if(!Admin.isLoggedIn(session))
+        {
+            response.sendRedirect("/icici/logout.jsp");
+            return;
+        }
+
+        String EOL = "<BR>";
+        StringBuilder sberror = new StringBuilder();
+        RequestDispatcher rd=request.getRequestDispatcher("/manageAgentCommission.jsp?ctoken="+user.getCSRFToken());
+
+        if(!ESAPI.validator().isValidInput("agentid",request.getParameter("agentid"),"Numbers",10,false))
+        {
+            sberror.append("Invalid Agent Id"+EOL);
+        }
+        if (!ESAPI.validator().isValidInput("memberid", request.getParameter("memberid"),"Numbers",10,false))
+        {
+            sberror.append("Invalid Member ID"+EOL);
+        }
+        if (!ESAPI.validator().isValidInput("terminalid", request.getParameter("terminalid"),"Numbers", 10, false))
+        {
+            sberror.append("Invalid Terminal ID"+EOL);
+        }
+        if (!ESAPI.validator().isValidInput("commissionon", request.getParameter("commissionon"),"Numbers", 10, false))
+        {
+            sberror.append("Invalid Commission Name"+EOL);
+        }
+        if (!ESAPI.validator().isValidInput("commissionvalue", request.getParameter("commissionvalue"),"AmountStr", 10, false))
+        {
+            sberror.append("Invalid Commission Value"+EOL);
+        }
+        if (!ESAPI.validator().isValidInput("startDate", request.getParameter("startDate"),"SafeString", 100, false))
+        {
+            sberror.append("Invalid StartDate"+EOL);
+        }
+        if (!ESAPI.validator().isValidInput("endDate", request.getParameter("endDate"),"SafeString", 100, false))
+        {
+            sberror.append("Invalid EndDate"+EOL);
+        }
+        if (!ESAPI.validator().isValidInput("sequencenum", request.getParameter("sequencenum"), "Numbers", 10, false))
+        {
+            sberror.append("Invalid Sequence Number"+EOL);
+        }
+
+        if (sberror.length() > 0)
+        {
+            request.setAttribute("statusMsg", sberror.toString());
+            rd.forward(request, response);
+            return;
+        }
+
+        String agentId = request.getParameter("agentid");
+        String memberId = request.getParameter("memberid");
+        String terminalId = request.getParameter("terminalid");
+        String commissionOn = request.getParameter("commissionon");
+        String commissionValue = request.getParameter("commissionvalue");
+        String sequenceNo = request.getParameter("sequencenum");
+
+        CommonFunctionUtil commonFunctionUtil=new CommonFunctionUtil();
+        Functions functions=new Functions();
+
+        String msg=commonFunctionUtil.newValidateDate(request.getParameter("startDate"),request.getParameter("endDate"),null,null);
+        if(functions.isValueNull(msg))
+        {
+            request.setAttribute("statusMsg", msg);
+            rd.forward(request, response);
+            return;
+        }
+        String effectiveStartDate=commonFunctionUtil.convertDatepickerToTimestamp(request.getParameter("startDate"), "00:00:00");
+        String effectiveEndDate=commonFunctionUtil.convertDatepickerToTimestamp(request.getParameter("endDate"),"23:59:59");
+
+        try
+        {
+            AgentCommissionVO agentCommissionVO=new AgentCommissionVO();
+
+            agentCommissionVO.setAgentId(agentId);
+            agentCommissionVO.setMemberId(memberId);
+            agentCommissionVO.setTerminalId(terminalId);
+            agentCommissionVO.setChargeId(commissionOn);
+            agentCommissionVO.setCommissionValue(Double.parseDouble(commissionValue));
+            agentCommissionVO.setStartDate(effectiveStartDate);
+            agentCommissionVO.setEndDate(effectiveEndDate);
+            agentCommissionVO.setSequenceNo(sequenceNo);
+
+            ChargeManager chargeManager = new ChargeManager();
+            AgentDAO agentDAO=new AgentDAO();
+            TerminalManager terminalManager=new TerminalManager();
+            String status="";
+            boolean b=agentDAO.isMemberMappedWithAgent(memberId,agentId);
+            if(b)
+            {
+                boolean b1=terminalManager.isMemberMappedWithTerminal(memberId, terminalId);
+                if(b1)
+                {
+                    status = chargeManager.addNewAgentCommission(agentCommissionVO);
+                }
+                else
+                {
+                    status="Invalid member-terminal configuration";
+                }
+            }
+            else
+            {
+                status="Invalid member-agent configuration";
+            }
+            request.setAttribute("statusMsg", status);
+        }
+        catch (Exception e)
+        {
+            logger.error(e);
+            request.setAttribute("statusMsg", e.getMessage());
+        }
+        rd.forward(request,response);
+    }
+}

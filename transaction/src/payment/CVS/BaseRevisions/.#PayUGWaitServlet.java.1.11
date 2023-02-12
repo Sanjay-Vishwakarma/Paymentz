@@ -1,0 +1,1295 @@
+package payment;
+
+import com.directi.pg.*;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.paymentgateway.AbstractPaymentGateway;
+import com.directi.pg.core.paymentgateway.UGSPaymentGateway;
+import com.directi.pg.core.valueObjects.UGSPayRequestVO;
+import com.directi.pg.core.valueObjects.UGSPayResponseVO;
+import com.invoice.dao.InvoiceEntry;
+import com.logicboxes.util.ApplicationProperties;
+import com.payment.checkers.RiskCheckers;
+import com.payment.common.core.CommAddressDetailsVO;
+import com.payment.common.core.CommCardDetailsVO;
+import com.payment.common.core.CommTransactionDetailsVO;
+import com.payment.errors.TransactionError;
+import com.payment.validators.InputFields;
+import com.payment.validators.InputValidator;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.ValidationErrorList;
+import org.owasp.esapi.codecs.Codec;
+import org.owasp.esapi.codecs.MySQLCodec;
+import org.owasp.esapi.errors.ValidationException;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+public class PayUGWaitServlet extends TransecuteServlet
+{
+    private static Logger logger = new Logger(PayUGWaitServlet.class.getName());
+    private static TransactionLogger transactionLogger = new TransactionLogger(PayUGWaitServlet.class.getName());
+
+    final static ResourceBundle RB = LoadProperties.getProperty("com.directi.pg.UGServlet");
+    final static ResourceBundle RB1 = LoadProperties.getProperty("com.directi.pg.CommServlet");
+    final static String POSTURL = RB.getString("POSTURL");
+    final static String ERRORSERVLET = RB1.getString("ERRORSERVLET");
+    //final static String ICICIEMAIL = RB.getString("NOPROOFREQUIRED_EMAIL");
+    final static String MANAGEMENT_NOTIFY_EMAIL = RB.getString("MANAGEMENT_NOTIFY_EMAIL");
+
+    final static String PROXYHOST = RB.getString("PROXYHOST");
+    final static String PROXYPORT = RB.getString("PROXYPORT");
+    final static String PROXYSCHEME=RB.getString("PROXYSCHEME");
+    //static Vector unboilchar = new Vector();
+    static Vector blockedemail, blockeddomain, blockedcountry;
+    static String defaultchargepercent = "500";
+    static String INR_defaulttaxpercent = "1224";
+    static String USD_defaulttaxpercent = "1224";
+
+    public PayUGWaitServlet()
+    {
+        super();
+    }
+
+    public void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        doService(req, res);
+    }
+
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        doService(req, res);
+    }
+
+    public void doService(HttpServletRequest request, HttpServletResponse res) throws ServletException, IOException
+    {
+        logger.debug("Entering doService of WaitServlet");
+        transactionLogger.debug("Entering doService of WaitServlet");
+        AuditTrailVO auditTrailVO=new AuditTrailVO();
+        ServletContext application = getServletContext();
+        ServletContext sc = getServletContext();
+        PrintWriter pWriter = res.getWriter();
+        res.setContentType("text/html");
+        pWriter.println("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">");
+
+        //HttpSession session = request.getSession();
+        Hashtable error = new Hashtable();
+        Hashtable paramHash = new Hashtable();           //Hashtable
+        Hashtable otherdetails = new Hashtable();
+
+        TransactionUtility transactionUtility = new TransactionUtility();
+        TransactionError transactionError = new TransactionError();
+        RiskCheckers riskCheckers = new RiskCheckers();
+        ActionEntry entry = new ActionEntry();
+        Transaction transaction = new Transaction();
+        Merchants merchants = new Merchants();
+
+        if (request.getParameter("TOID") == null)
+        {
+            res.sendRedirect("/merchant/index.jsp");
+            return;
+        }
+        //validating CSRF token
+        logger.debug("CSRF token from request "+request.getParameter("ctoken"));
+        transactionLogger.debug("CSRF token from request "+request.getParameter("ctoken"));
+        String ctoken = transactionUtility.validateCtoken(request,pWriter);
+
+        String fromAddress = ApplicationProperties.getProperty("COMPANY_FROM_ADDRESS");
+
+        blockedemail = (Vector) application.getAttribute("BLOCKEDEMAIL");
+        blockeddomain = (Vector) application.getAttribute("BLOCKEDDOMAIN");
+        blockedcountry = (Vector) application.getAttribute("BLOCKEDCOUNTRY");
+
+        Enumeration enumeration = request.getParameterNames();
+
+        while (enumeration.hasMoreElements())
+        {
+            String name = (String) enumeration.nextElement();
+            String value = ESAPI.encoder().encodeForHTML(request.getParameter(name));
+            if (value == null)
+                value = "";
+
+            paramHash.put(name, value);
+
+            if (name.startsWith("TMPL_"))
+                otherdetails.put(name, request.getParameter(name));
+        }
+
+        otherdetails.put("TEMPLATE", request.getParameter("TEMPLATE"));
+
+        // MemberId
+        int memberId = -9999;
+        String merchantId = null;
+        String displayName = null;
+        String chargepercent = null;
+        String dbTaxPercent = null;
+        String fixamount = null;
+        BigDecimal charge = null;
+        BigDecimal chargeamount = null;
+        BigDecimal taxPercentage = null;
+        String templateCurrency = null;
+        String templateAmount = null;
+        String checksumVal = request.getParameter("checksum");
+        String HRCode = "";
+        //String countryinrec = "";
+
+        //validating parameters
+        String encoded_TRACKING_ID = ESAPI.encoder().encodeForHTML(request.getParameter("TRACKING_ID"));
+        String encoded_DESCRIPTION = ESAPI.encoder().encodeForHTML(request.getParameter("DESCRIPTION"));
+        String encoded_ORDER_DESCRIPTION = ESAPI.encoder().encodeForHTML(request.getParameter("ORDER_DESCRIPTION"));
+
+        // Start: Validation
+        //validation for mandatory parameter
+        error = validateMandatoryParameters(request);
+        if(error.size()>0)
+        {
+            transactionError.displayErrors(error,otherdetails,res,request.getParameter("TOID"),encoded_TRACKING_ID,encoded_DESCRIPTION,encoded_ORDER_DESCRIPTION,pWriter);
+            return;
+        }
+
+        try
+        {
+            validateMandatoryParameter(request);
+        }
+        catch(ValidationException e)
+        {
+            logger.error("Validation Exception",e);
+            transactionLogger.error("Validation Exception",e);
+            String errorMsg = "Internal Error";
+            transactionError.displayErrorPage(otherdetails,errorMsg,res,request.getParameter("TOID"),encoded_TRACKING_ID,encoded_DESCRIPTION,encoded_ORDER_DESCRIPTION,pWriter);
+            return;
+        }
+
+        //validating optional parameters
+        try
+        {
+            validateOptionalParameter(request);
+        }
+        catch(ValidationException e)
+        {
+            logger.error("Validation Exception",e);
+            transactionLogger.error("Validation Exception",e);
+            String errorMsg = "Internal Error";
+            transactionError.displayErrorPage(otherdetails,errorMsg,res,request.getParameter("TOID"),encoded_TRACKING_ID,encoded_DESCRIPTION,encoded_ORDER_DESCRIPTION,pWriter);
+            return;
+        }
+
+        String toid = request.getParameter("TOID");
+        String country = request.getParameter("country");
+        String firstname = request.getParameter("name");
+        String emailaddr = request.getParameter("emailaddr");
+        String ccpan = request.getParameter("PAN");
+        String ccid = request.getParameter("ccid");
+        String street = request.getParameter("street");
+        String city = request.getParameter("city");
+        String state = request.getParameter("state");
+        String zip = request.getParameter("zip");
+        String telno = request.getParameter("telno");
+        String telnocc = request.getParameter("telnocc");
+        String month = request.getParameter("EXPIRE_MONTH");
+        String year = request.getParameter("EXPIRE_YEAR");
+        //parameter which show whether card number and name was copy pasted
+        String namecp = request.getParameter("NAMECP");
+        String cccp = request.getParameter("CCCP");
+        String addrcp = request.getParameter("ADDRCP");
+        String cardtype = request.getParameter("CARDTYPE");
+
+        if (namecp != null && cccp != null && addrcp != null)
+        {
+            if (cccp.equalsIgnoreCase("Y") && namecp.equalsIgnoreCase("Y") && addrcp.equalsIgnoreCase("Y"))
+                HRCode = HRCode + "-HRCP";
+        }
+        // Check for Card Type
+        if(!cardtype.equals("ANY") && !Functions.getCardType(ccpan).equals(cardtype))
+        {
+            logger.debug("Invalid CARDTYPE");
+            transactionLogger.debug("Invalid CARDTYPE");
+            error.put("CARDTYPE", "Invalid Paymode or Card Type Selected");
+        }
+
+        String INVOICE_NO=request.getParameter("INVOICE_NO");
+        String boiledname =transactionUtility.getBoiledName(firstname);
+        String firstSix="";
+        String lastfour="";
+        int len=ccpan.length();
+        if(len==16)
+        {
+            firstSix = ccpan.substring(ccpan.length() - 16, ccpan.length() - 10);
+            lastfour = ccpan.substring(ccpan.length() - 4);
+        }
+        else if(len==15)
+        {
+            firstSix = ccpan.substring(ccpan.length() - 15, ccpan.length() - 9);
+            lastfour = ccpan.substring(ccpan.length() - 4);
+        }
+        if(INVOICE_NO!=null && !INVOICE_NO.equals("") && EmailChecker.isEmailValidationRequired(toid))
+        {
+            if(!EmailChecker.isEmailValid(emailaddr,firstSix,lastfour,boiledname))
+            {
+                logger.debug("Invalid Email ID : Email verification failed for the Invoice");
+                transactionLogger.debug("Invalid Email ID : Email verification failed for the Invoice");
+                error.put("emailaddr", "Email verification failed for the Invoice");
+            }
+        }
+
+        if(error.size()>0)
+        {
+            transactionError.displayErrors(error,otherdetails,res,toid,encoded_TRACKING_ID,encoded_DESCRIPTION,encoded_ORDER_DESCRIPTION,pWriter);
+
+            String partnerLogo = "";
+            try
+            {
+                partnerLogo = merchants.getPartnerLogo(toid);
+            }
+            catch(Exception e)
+            {
+            }
+            String isPoweredBy = merchants.isPoweredBy(merchantId);
+            if(isPoweredBy.equalsIgnoreCase("Y"))
+            {
+                otherdetails.put("LOGO","<p align=\"left\"><a href=\"http://www.Paymentz.com\"><IMG border=0 height=40 src=\"/icici/images/logo2.jpg\" width=105></a></p>");
+            }
+            else
+            {
+                otherdetails.put("LOGO","<p align=\"left\"></p>");
+            }
+            if(partnerLogo!=null && !partnerLogo.equals(""))
+            {
+                otherdetails.put("PARTNERLOGO", "<img border=\"0\" height=40 width=105 src=\"/icici/images/"+partnerLogo+"\" >");
+                logger.debug("add partnerlogo");
+                transactionLogger.debug("add partnerlogo");
+            }
+            return;
+        }
+
+        int aptprompt = 0;
+        int memberaptprompt = 0;
+
+        int count = -9999;
+        PrintWriter pw = null;
+        String query = null;
+
+        UGSPayResponseVO transRespDetails=new UGSPayResponseVO();
+
+        String type = "";
+
+        StringWriter sw = new StringWriter();
+        boolean authexception = false;
+        boolean captureexception = false;
+        boolean proofrequired = false;
+        //String proofsubject = "";
+        //String authid = "";
+        //String authCode = "";
+        //String authResult = "";
+        String authMessage="";
+
+        //for proofrequired
+        String brandname = "";
+        String sitename = "";
+
+        //boolean repeatIP = false;
+        boolean repeatEmail = false;
+        boolean repeatmachine = false;
+        boolean diffCountry = false;
+        boolean transactionfailed = true;
+        //int ipcode = -9999;
+        long tempcode = -9999;
+        String machineid = null;
+        //int ipfraudcount = 0;
+        //int emailfraudcount = 0;
+        //int machinefraudcount = 0;
+        //boolean proofNotRequiredAgain = false;
+        UGSPayRequestVO RequestDetail=new UGSPayRequestVO();
+
+        String txnamount = request.getParameter("TXN_AMT");
+        BigDecimal amount = new BigDecimal(txnamount);
+        amount = amount.setScale(2, BigDecimal.ROUND_DOWN); //as amount value in database was round down by mysql while inserting in php page
+        txnamount = amount.toString();
+        String amountInDb = "";
+
+        int txnPaise = 00;
+
+        logger.debug("Checking for mastercard supported");
+        transactionLogger.debug("Checking for mastercard supported");
+        /*if ("MC".equals(cardtype) && !LimitChecker.isMasterCardSupported(toid))
+        {
+            String errorMsg = "ERROR!!! Master card is not supported.";
+            transactionError.displayErrorPage(otherdetails,errorMsg,res,toid,encoded_TRACKING_ID,encoded_DESCRIPTION,encoded_ORDER_DESCRIPTION,pWriter);
+            return;
+        }*/
+        String trackingId = request.getParameter("TRACKING_ID");
+        String version = request.getParameter("TMPL_VERSION");
+
+        String strPath = request.getRequestURI();
+        strPath = strPath.substring(0, (strPath.lastIndexOf('/') + 1));
+
+        String transactionDescription = "";
+        String transactionOrderDescription = "";
+        String transactionMessage = "Connection Failure";
+        String transactionStatus = "N";
+        String mailtransactionStatus = "Failed";
+        //String captureStatus = null;
+        String clkey = "";
+        String checksumAlgo = null;
+
+        if (version == null)
+            version = "";
+        String notifyEmails = "";
+        String hrAlertProof = "";
+        String datamismatchproof = "";
+        String dtstamp = "";
+        //String sql = "";
+        String company_name = null;
+        String currency = null;
+        boolean vbv = false;
+        boolean custremindermail = false;
+        boolean hrParameterised = false;
+
+        StringBuffer merchantsubject = new StringBuffer();
+        StringBuffer transecutesubject = new StringBuffer();
+        StringBuffer body = new StringBuffer();
+        StringBuffer transecutebody = new StringBuffer();
+        StringBuffer merchantbody = new StringBuffer();
+        StringBuffer servicemerchantbody = new StringBuffer();
+        String tredtime=null;
+        String ipaddress = "N/A";
+        String boilname = "";
+
+        AbstractPaymentGateway pg = null;
+
+        String accountId = "";
+        String fromid=null;
+
+        try
+        {
+            try
+            {
+                count = Integer.parseInt((String) sc.getAttribute("noOfClients"));
+            }
+            catch(Exception e)
+            {
+
+            }
+            count++;
+            sc.setAttribute("noOfClients", String.valueOf(count));
+            logger.debug("Execute select query for gateway Account Service");
+            transactionLogger.debug("Execute select query for gateway Account Service");
+
+            Hashtable transactionDetails = transaction.getTransactionDetailsForCommon(trackingId);
+            if (!transactionDetails.isEmpty())
+            {
+                memberId = Integer.parseInt((String)transactionDetails.get("toid"));
+                amountInDb = (String) transactionDetails.get("amount");
+                accountId = (String) transactionDetails.get("accountid");
+                fromid = (String) transactionDetails.get("fromid");
+
+                transactionDescription = (String) transactionDetails.get("description");
+                transactionOrderDescription = (String) transactionDetails.get("orderdescription");
+
+                if (transactionOrderDescription == null)
+                    transactionOrderDescription = "";
+
+                dtstamp = (String) transactionDetails.get("dtstamp");
+                ipaddress = (String) transactionDetails.get("httpheader");
+                templateCurrency = (String) transactionDetails.get("currency");
+                templateAmount = (String) transactionDetails.get("amount");
+
+                try
+                {
+                    aptprompt = GatewayAccountService.getGatewayAccount(accountId).getHighRiskAmount(); // get default HR amount for this gateway
+                    pg = (UGSPaymentGateway) AbstractPaymentGateway.getGateway(accountId);
+                }
+                catch (SystemError systemError)
+                {
+                    logger.error("System Error:::::::::",systemError);
+                    transactionLogger.error("System Error:::::::::",systemError);
+
+                    String message = "System Error";
+                    transactionError.displayErrorPage(otherdetails,message,res,toid,encoded_TRACKING_ID,encoded_DESCRIPTION,encoded_ORDER_DESCRIPTION,pWriter);
+
+                    String isPoweredBy = merchants.isPoweredBy(merchantId);
+                    if(isPoweredBy.equalsIgnoreCase("Y"))
+                    {
+                        otherdetails.put("LOGO","<p align=\"left\"><a href=\"http://www.Paymentz.com\"><IMG border=0 height=40 src=\"/icici/images/logo2.jpg\" width=105></a></p>");
+                    }
+                    else
+                    {
+                        otherdetails.put("LOGO","<p align=\"left\"></p>");
+                    }
+
+                    String partnerLogo ="";
+                    try
+                    {
+                        partnerLogo = merchants.getPartnerLogo(toid);
+                    }
+                    catch(Exception e)
+                    {
+                    }
+
+                    if(partnerLogo!=null && !partnerLogo.equals(""))
+                    {
+                        otherdetails.put("PARTNERLOGO", "<img border=\"0\" height=40 width=105 src=\"/icici/images/"+partnerLogo+"\" >");
+                        logger.debug("add partnerlogo");
+                        transactionLogger.debug("add partnerlogo");
+                    }
+                    return;
+                }
+
+                if (!((String)transactionDetails.get("status")).equals("begun"))/*(!rs.getString("status").equals("begun"))*/
+                {
+                    logger.debug("inside if for status!=begun");
+                    transactionLogger.debug("inside if for status!=begun");
+
+                    String table = "ERROR!!! Your Transaction is already being processed. This can occur if you clicked on the back button and tried to submit this Transaction again. The transaction may succeed or fail, however the status of the Transaction will have to be set manually. Please contact the Merchant to verify the status of the transaction with the following reference numbers and inform him of this message. PLEASE DO NOT TRY to execute this transaction once more from the beginning, or you may end up charging your card twice.<br><br> Please visit at "+ApplicationProperties.getProperty("COMPANY_SUPPORT_URL")+" to know more about the reason for this error.";
+                    transactionError.displayErrorPage(otherdetails,table,res,toid,encoded_TRACKING_ID,encoded_DESCRIPTION,encoded_ORDER_DESCRIPTION,pWriter);
+
+                    String isPoweredBy = merchants.isPoweredBy(merchantId);
+                    if(isPoweredBy.equalsIgnoreCase("Y"))
+                    {
+                        otherdetails.put("LOGO","<p align=\"left\"><a href=\"http://www.Paymentz.com\"><IMG border=0 height=40 src=\"/icici/images/logo2.jpg\" width=105></a></p>");
+                    }
+                    else
+                    {
+                        otherdetails.put("LOGO","<p align=\"left\"></p>");
+                    }
+
+                    String partnerLogo ="";
+                    try
+                    {
+                        partnerLogo = merchants.getPartnerLogo(toid);
+                    }
+                    catch(Exception e)
+                    {
+
+                    }
+
+                    if(partnerLogo!=null && !partnerLogo.equals(""))
+                    {
+                        otherdetails.put("PARTNERLOGO", "<img border=\"0\" height=40 width=105 src=\"/icici/images/"+partnerLogo+"\" >");
+                        logger.debug("add partnerlogo");
+                        transactionLogger.debug("add partnerlogo");
+                    }
+                    return;
+                }
+                else
+                {
+                    String expdate= request.getParameter("EXPIRE_MONTH") + "/" + request.getParameter("EXPIRE_YEAR");
+                    Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+                    StringBuffer sb = new StringBuffer("update transaction_common set");
+
+                    sb.append(" ccnum='" + PaymentzEncryptor.encryptPAN(ccpan) + "'");
+                    sb.append(" , orderdescription='" + ESAPI.encoder().encodeForSQL(me,encoded_ORDER_DESCRIPTION) + "'");
+                    //sb.append(" , lastname='" + ESAPI.encoder().encodeForSQL(me,lastname) + "'");
+                    sb.append(", name='" +ESAPI.encoder().encodeForSQL(me, firstname)+ "'");
+                    sb.append(" , street='" + ESAPI.encoder().encodeForSQL(me,street) + "'");
+                    sb.append(" , country ='" + ESAPI.encoder().encodeForSQL(me,country) + "'");
+                    sb.append(" , city ='" + ESAPI.encoder().encodeForSQL(me,city) + "'");
+                    sb.append(" , state ='" + ESAPI.encoder().encodeForSQL(me,state) + "'");
+                    sb.append(" , zip ='" + ESAPI.encoder().encodeForSQL(me,zip) + "'");
+                    sb.append(" , telno ='" + ESAPI.encoder().encodeForSQL(me,telno) + "'");
+                    sb.append(" , cccp ='" + ESAPI.encoder().encodeForSQL(me,cccp) + "'");
+                    sb.append(" , namecp ='" + ESAPI.encoder().encodeForSQL(me,namecp) + "'");
+                    sb.append(" , addrcp ='" + ESAPI.encoder().encodeForSQL(me,addrcp) + "'");
+                    //sb.append(" , currency ='" + ESAPI.encoder().encodeForSQL(me,currency) + "'");
+                    sb.append(" , telnocc ='" + ESAPI.encoder().encodeForSQL(me,telnocc) + "'");
+                    sb.append(" , boiledname ='" + ESAPI.encoder().encodeForSQL(me,boiledname) + "'");
+                    sb.append(" , expdate='" + PaymentzEncryptor.encryptExpiryDate(expdate) + "'");
+                    sb.append(" ,cardtype='" + ESAPI.encoder().encodeForSQL(me,Functions.getCardType(ccpan)) + "'");
+                    if (emailaddr != null)
+                        sb.append(" , emailaddr='" + ESAPI.encoder().encodeForSQL(me,emailaddr) + "'");
+                    merchantId = pg.getMerchantId();
+                    displayName = pg.getDisplayName();
+                    sb.append(", status='authstarted'  where trackingid=" + ESAPI.encoder().encodeForSQL(me,trackingId));
+                    //Database.executeUpdate(sb.toString(), con);
+                    transaction.updateBinDetails(trackingId,ccpan,accountId,emailaddr,boiledname);
+                    auditTrailVO.setActionExecutorId(merchantId);
+                    auditTrailVO.setActionExecutorName("Customer");
+                    // Start : Added for Action and Status Entry in Action History table
+                    int actionEntry = entry.actionEntryForUGSPay(trackingId,amount.toString(),ActionEntry.ACTION_AUTHORISTION_STARTED,ActionEntry.STATUS_AUTHORISTION_STARTED,null,auditTrailVO);
+                    logger.debug("calling Action Entry end ");
+                    transactionLogger.debug("calling Action Entry end ");
+                    // End : Added for Action and Status Entry in Action History table
+                    INVOICE_NO =request.getParameter("INVOICE_NO");
+                    InvoiceEntry invoiceEntry=new InvoiceEntry();
+                    if(INVOICE_NO!=null && !INVOICE_NO.equals(""))
+                    {
+                        invoiceEntry.processInvoice(INVOICE_NO,Integer.parseInt(trackingId),accountId);
+                    }
+
+                    tempcode = riskCheckers.getIPCode(ipaddress);
+
+                    //checking for high risk transaction
+                    //check whether this is blocked email
+                    riskCheckers.checkBlockedEmail(proofrequired,emailaddr,HRCode);
+
+                    //check whether this is blocked Domain
+                    riskCheckers.checkBlockedDomain(proofrequired,emailaddr,HRCode);
+
+                    //check whether this is blocked IP
+                    riskCheckers.checkBlockedIP(proofrequired,ipaddress,tempcode,HRCode);
+
+                    //country ckeck start
+                    riskCheckers.checkDifferentCountry(proofrequired,country,HRCode,tempcode,diffCountry);
+                    //Email check ends
+                    //Machine check starts
+
+                    //machineid = getCookie(request, res);
+                    machineid = transactionUtility.getCookie(request, res);
+                    if (machineid != null)
+                    {
+                        riskCheckers.checkMachine(proofrequired,machineid,HRCode,ccpan,boilname,repeatmachine,"transaction_common");
+
+                    }
+                    else
+                    {
+                        //if cookie is still not set for this machine
+                        //generate random number and assign it to machine id
+                        Random rand = new Random();
+                        rand.setSeed((new Date()).getTime());//set seed to current time.
+                        Integer i = new Integer(rand.nextInt());
+                        machineid = i.toString();
+
+                        Cookie c = new Cookie("mid", machineid);
+                        c.setMaxAge(2678400);
+                        res.addCookie(c);
+                    }
+                    //Machine check ends
+                    //////*******************  risk checking is done *********************************************//
+                }
+            }
+            else
+            {
+                String message = "ERROR!!! We have encountered an internal error while processing your request. Please visit at "+ApplicationProperties.getProperty("COMPANY_SUPPORT_URL")+" and create Support Request to know the status of this transaction.<BR><BR>";
+                transactionError.displayErrorPage(otherdetails,message,res,toid,encoded_TRACKING_ID,encoded_DESCRIPTION,encoded_ORDER_DESCRIPTION,pWriter);
+
+                String isPoweredBy = merchants.isPoweredBy(machineid);
+                if(isPoweredBy.equalsIgnoreCase("Y"))
+                {
+                    otherdetails.put("LOGO","<p align=\"left\"><a href=\"http://www.Paymentz.com\"><IMG border=0 height=40 src=\"/icici/images/logo2.jpg\" width=105></a></p>");
+                }
+                else
+                {
+                    otherdetails.put("LOGO","<p align=\"left\"></p>");
+                }
+                String partnerLogo ="";
+                try
+                {
+                    partnerLogo = merchants.getPartnerLogo(toid);
+                }
+                catch(Exception e)
+                {
+                }
+                logger.debug("partnerlogo---"+partnerLogo);
+                transactionLogger.debug("partnerlogo---"+partnerLogo);
+                if(partnerLogo!=null && !partnerLogo.equals(""))
+                {
+                    otherdetails.put("PARTNERLOGO", "<img border=\"0\" height=40 width=105 src=\"/icici/images/"+partnerLogo+"\" >");
+                    logger.debug("add partnerlogo");
+                    transactionLogger.debug("add partnerlogo");
+                }
+                return;
+            }
+        }
+        /*catch (SQLException sqle)
+        {
+            logger.error("SQLException",sqle);
+            transactionLogger.error("SQLException",sqle);
+            sqle.printStackTrace();
+
+        }*/
+        catch (SystemError s)
+        {
+            logger.error("System Error::::::::::::",s);
+            transactionLogger.error("System Error::::::::::::",s);
+            s.printStackTrace();
+
+        }//try catch ends
+
+        //wait page
+        transactionUtility.getWaitPage(pWriter, request,ctoken,trackingId,memberId,version,otherdetails,PROXYSCHEME,PROXYHOST,PROXYPORT,POSTURL);
+        res.flushBuffer();
+
+        String isPoweredBy = merchants.isPoweredBy(merchantId);
+        if(isPoweredBy.equalsIgnoreCase("Y"))
+        {
+            otherdetails.put("LOGO","<p align=\"left\"><a href=\"http://www.Paymentz.com\"><IMG border=0 height=40 src=\"/icici/images/logo2.jpg\" width=105></a></p>");
+        }
+        else
+        {
+            otherdetails.put("LOGO","<p align=\"left\"></p>");
+        }
+        String partnerLogo ="";
+        try
+        {
+            partnerLogo = merchants.getPartnerLogo(toid);
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+        if(partnerLogo!=null && !partnerLogo.equals(""))
+        {
+            otherdetails.put("PARTNERLOGO", "<img border=\"0\" height=40 width=105 src=\"/icici/images/"+partnerLogo+"\" >");
+
+        }
+
+        try
+        {
+            String isService = "";
+            Hashtable memberDetails = merchants.getMemberDetailsForTransaction(toid);
+
+            if (memberDetails != null && !memberDetails.isEmpty())
+            {
+                memberaptprompt = Integer.parseInt((String) memberDetails.get("aptprompt"));
+                notifyEmails = (String) memberDetails.get("notifyemail");
+                company_name = (String) memberDetails.get("company_name");
+                isService = (String) memberDetails.get("isservice");
+                hrAlertProof = (String) memberDetails.get("hralertproof");
+                datamismatchproof = (String) memberDetails.get("datamismatchproof");
+                brandname = (String) memberDetails.get("brandname");
+                sitename = (String) memberDetails.get("sitename");
+                chargepercent = (String) memberDetails.get("chargeper");
+                dbTaxPercent = (String) memberDetails.get("taxper");
+                fixamount = (String) memberDetails.get("fixamount");
+                clkey = (String) memberDetails.get("clkey");
+
+                // version = rs.getString("version");
+                vbv =  (Boolean)memberDetails.get("vbv");
+                custremindermail = (Boolean)memberDetails.get("custremindermail");
+                hrParameterised = (Boolean)memberDetails.get("hrparameterised");
+                checksumAlgo = (String) memberDetails.get("checksumalgo");
+                currency = pg.getCurrency();
+
+                if (clkey == null || clkey.trim().equals(""))
+                    throw new SystemError("Could not load Key");
+
+                //autoredirect=rs.getString("autoredirect");
+
+                if (brandname.trim().equals(""))
+                    brandname = company_name;
+
+                if (sitename.trim().equals(""))
+                    sitename = company_name;
+
+                if (chargepercent == null)
+                    charge = new BigDecimal(defaultchargepercent);
+                else
+                    charge = new BigDecimal(chargepercent);
+
+                if (dbTaxPercent == null)
+                    if ("USD".equals(currency))
+                        taxPercentage = new BigDecimal(USD_defaulttaxpercent);
+                    else
+                        taxPercentage = new BigDecimal(INR_defaulttaxpercent);
+                else
+                    taxPercentage = new BigDecimal(dbTaxPercent);
+
+                application.log("Tax Percentage: " + taxPercentage.toString());
+            }
+            else
+            {
+                throw new SystemError("Query : " + query);
+            }
+
+            logger.debug("verify"+Checksum.verifyChecksumV2(memberId + "", transactionDescription, new BigDecimal(amountInDb).doubleValue() + "", clkey, checksumVal, checksumAlgo));
+            logger.debug("verify+Checksum.verifyChecksumV2"+memberId + "=="+ transactionDescription+"======="+ new BigDecimal(amountInDb).doubleValue() + "========" + clkey+"=====" +checksumVal       + checksumAlgo);
+
+            transactionLogger.debug("verify"+Checksum.verifyChecksumV2(memberId + "", transactionDescription, new BigDecimal(amountInDb).doubleValue() + "", clkey, checksumVal, checksumAlgo));
+            transactionLogger.debug("verify+Checksum.verifyChecksumV2"+memberId + "=="+ transactionDescription+"======="+ new BigDecimal(amountInDb).doubleValue() + "========" + clkey+"=====" +checksumVal       + checksumAlgo);
+            if (!Checksum.verifyChecksumV2(memberId + "", transactionDescription,new BigDecimal(amountInDb).doubleValue()+"", clkey, checksumVal, checksumAlgo))
+            {
+                String message = "ERROR!!! checksum mismatched. Please visit at "+ApplicationProperties.getProperty("COMPANY_SUPPORT_URL")+" and create Support Request to know the status of this transaction.<BR><BR>";
+                transactionError.displayErrorPage(otherdetails,message,res,toid,encoded_TRACKING_ID,encoded_DESCRIPTION,encoded_ORDER_DESCRIPTION,pWriter);
+                isPoweredBy = merchants.isPoweredBy(merchantId);
+                if(isPoweredBy.equalsIgnoreCase("Y"))
+                {
+                    otherdetails.put("LOGO","<p align=\"left\"><a href=\"http://www.Paymentz.com\"><IMG border=0 height=40 src=\"/icici/images/logo2.jpg\" width=105></a></p>");
+                }
+                else
+                {
+                    otherdetails.put("LOGO","<p align=\"left\"></p>");
+                }
+
+                partnerLogo ="";
+                try
+                {
+                    partnerLogo = merchants.getPartnerLogo(toid);
+                }
+                catch(Exception e)
+                {
+                }
+
+                if(partnerLogo!=null && !partnerLogo.equals(""))
+                {
+                    otherdetails.put("PARTNERLOGO", "<img border=\"0\" height=40 width=105 src=\"/icici/images/"+partnerLogo+"\" >");
+                    logger.debug("add partnerlogo");
+                    transactionLogger.debug("add partnerlogo");
+                }
+                try
+                {
+                    transaction.executeUpdate("update transaction_ugspay set status='failed' where trackingid="+trackingId);
+                    //Database.executeUpdate("update transaction_ugspay set status='failed' where trackingid="+trackingId, con);
+                    pWriter.flush();
+                    pWriter.println(Template.getErrorPage("" + memberId, otherdetails));
+                    pWriter.flush();
+                }
+                catch (Exception e)
+                {
+                    logger.error("Exception  ",e);
+                    transactionLogger.error("Exception  ",e);
+                }
+                return;
+            }
+
+            txnamount = amountInDb;
+            txnPaise = (new BigDecimal(txnamount)).multiply(new BigDecimal(100.0)).intValue();
+
+            if (isService.equals("Y"))
+                type = "sale";
+            else
+                type = "auth";
+            //Start : Setting VO objects
+
+            CommCardDetailsVO cardDetail= new CommCardDetailsVO();
+            CommAddressDetailsVO AddressDetail= new CommAddressDetailsVO();
+            CommTransactionDetailsVO TransDetail = new CommTransactionDetailsVO();
+
+            DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+            Calendar calendar = Calendar.getInstance();
+            tredtime=dateFormat.format(calendar.getTime()) ;
+            try
+            {
+                //set mail body before doing auth
+                body.append("Member ID: " + memberId + "\r\n");
+                body.append("Company Name: " + company_name + "\r\n\r\n");
+                body.append("Description: " + transactionDescription + "\r\n");
+                body.append("Order Description: " + transactionOrderDescription + "\r\n");
+                if (templateCurrency != null && !currency.equals(templateCurrency))
+                    body.append("Amount: " + currency + " " + txnamount + " ( approximately " + templateCurrency + " " + templateAmount + " )" + "\r\n");
+                else
+                    body.append("Amount: " + currency + " " + txnamount + "\r\n");
+
+                // Process a auth transaction.....for both service based and
+                // non-service based merchants.
+                cardDetail.setCardNum(ccpan);
+                cardDetail.setcVV(ccid);
+                cardDetail.setExpMonth(month);
+                cardDetail.setExpYear(year);
+                //cardDetail.setCardHolderName(firstname);
+
+                AddressDetail.setCity(city);
+                AddressDetail.setCountry(country);
+                AddressDetail.setProducts(transactionOrderDescription);
+                AddressDetail.setState(state);
+                AddressDetail.setZipCode(zip);
+                AddressDetail.setStreet(street);
+                AddressDetail.setPhone(telno);
+                AddressDetail.setEmail(emailaddr);
+                AddressDetail.setFirstname(firstname);
+                AddressDetail.setLastname(" ");
+
+                TransDetail.setAmount(txnamount);
+                TransDetail.setCurrency(currency);
+                TransDetail.setOrderId(trackingId);
+                TransDetail.setOrderDesc(transactionDescription);
+
+                try
+                {
+                    RequestDetail.setAmount(txnamount);
+                    RequestDetail.setCardDetailsVO(cardDetail);
+                    RequestDetail.setAddressDetailsVO(AddressDetail);
+                    RequestDetail.setTransDetailsVO(TransDetail);
+                    RequestDetail.setUGSTransId(Integer.parseInt(trackingId));
+                    if(type!=null && type.equalsIgnoreCase("sale"))
+                    {
+                        transRespDetails = (UGSPayResponseVO) pg.processSale(trackingId, RequestDetail);
+                        logger.debug("process sale"+transRespDetails.getErrorCode());
+                        transactionLogger.debug("process sale"+transRespDetails.getErrorCode());
+                    }
+                    else
+                    {
+                        transRespDetails = (UGSPayResponseVO) pg.processAuthentication(trackingId,RequestDetail);
+                        logger.debug("process auth"+transRespDetails.getErrorCode());
+                        transactionLogger.debug("process auth"+transRespDetails.getErrorCode());
+                    }
+                    /*transRespDetails = (UGSPayResponseVO) pg.processSale(trackingId, RequestDetail);
+                    logger.debug("process sale"+transRespDetails.getErrorcode());*/
+
+                }
+                catch(Exception e)
+                {
+
+                    String message = "ERROR!!! We have encountered an internal error while processing your request. Please visit at "+ApplicationProperties.getProperty("COMPANY_SUPPORT_URL")+" and create Support Request to know the status of this transaction.<BR><BR>";
+                    transactionError.displayErrorPage(otherdetails,message,res,toid,encoded_TRACKING_ID,encoded_DESCRIPTION,encoded_ORDER_DESCRIPTION,pWriter);
+
+                    isPoweredBy = merchants.isPoweredBy(merchantId);
+                    if(isPoweredBy.equalsIgnoreCase("Y"))
+                    {
+                        otherdetails.put("LOGO","<p align=\"left\"><a href=\"http://www.Paymentz.com\"><IMG border=0 height=40 src=\"/icici/images/logo2.jpg\" width=105></a></p>");
+                    }
+                    else
+                    {
+                        otherdetails.put("LOGO","<p align=\"left\"></p>");
+                    }
+
+                    partnerLogo ="";
+                    try
+                    {
+                        partnerLogo = merchants.getPartnerLogo(toid);
+                    }
+                    catch(Exception excep)
+                    {
+
+                    }
+                    if(partnerLogo!=null && !partnerLogo.equals(""))
+                    {
+                        otherdetails.put("PARTNERLOGO", "<img border=\"0\" height=40 width=105 src=\"/icici/images/"+partnerLogo+"\" >");
+                        transactionLogger.debug("add partnerlogo");
+                        logger.debug("add partnerlogo");
+                    }
+
+                    logger.error("1",e);
+                    transactionLogger.error("1",e);
+                }
+
+                StringBuffer sb = new StringBuffer();
+                Codec me = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+                sb.append("update transaction_common set ");
+
+                if ((transRespDetails.getErrorCode()).equals("000"))
+                {
+                    if(type.equals("sale"))
+                    {
+                        sb.append(" status = 'capturesuccess',captureamount=" +txnamount);
+                        transactionStatus = "Y";
+                        authMessage = "Approved";
+                    }
+                    else
+                    {
+                        sb.append(" status = 'authsuccessful' ");
+                        transactionStatus = "Y";
+                        authMessage = "Approved";
+                    }
+                }
+                else
+                {
+                    sb.append(" status = 'authfailed' ");
+                    transactionStatus = "N";
+                    authMessage = "Failed";
+                }
+                transactionMessage = authMessage;
+                auditTrailVO.setActionExecutorId(merchantId);
+                auditTrailVO.setActionExecutorName("Customer");
+                if (transactionStatus.equals("Y"))
+                {
+                    // Start : Added for Action and Status Entry in Action History table
+                    int actionEntry = entry.actionEntryForUGSPay(trackingId,amount.toString(),ActionEntry.ACTION_CAPTURE_SUCCESSFUL,ActionEntry.STATUS_CAPTURE_SUCCESSFUL,transRespDetails,auditTrailVO);
+                    // End : Added for Action and Status Entry in Action History table
+                }
+                else
+                {
+                    // Start : Added for Action and Status Entry in Action History table
+                    int actionEntry = entry.actionEntryForUGSPay(trackingId,amount.toString(),ActionEntry.ACTION_AUTHORISTION_FAILED,ActionEntry.STATUS_AUTHORISTION_FAILED,transRespDetails,auditTrailVO);
+                    // End : Added for Action and Status Entry in Action History table
+                }
+
+                //Sending mail to inform that this is a reseller transaction who got format error or unauthorised usage error
+                sendFailMails(transactionStatus,transactionMessage,transRespDetails,trackingId,application,transactionDescription);
+
+                sb.append(",ipcode=" + tempcode + ",ipaddress='" +ipaddress + "',machineid=" + machineid +",currency='"+currency+"',boiledname='"+boiledname);
+
+                if (!HRCode.equals(""))
+                    HRCode = HRCode.substring(1);
+
+                //also update charge value as we decided to charge merchant with the percentage that existed at the time of authorisation
+                //not at the time of settlement.
+                sb.append("',hrcode='" + HRCode + "',paymentid='"+transRespDetails.getTransactionId()+"'");
+                sb.append(" where trackingid = " + trackingId);
+                logger.debug(sb.toString());
+                transactionLogger.debug(sb.toString());
+                int result = transaction.executeUpdate(sb.toString());/*Database.executeUpdate(sb.toString(), con);*/
+
+                if (result != 1)
+                {
+                    logger.debug("Leaving do service with error in result, result is " + result + " and not 1");
+                    transactionLogger.debug("Leaving do service with error in result, result is " + result + " and not 1");
+                    Mail.sendAdminMail("Exception while Updating status", "\r\n\r\nException has occured while updating status for tracking id=" + trackingId + "\r\nAuth code=" + transRespDetails.getDescription() + "\r\nAuth message=" + transactionMessage+"("+transRespDetails.getDescription()+")");
+                    throw new SystemError("Error in Query, result not 1 result is " + result + "  Query : " + sb.toString());
+                }
+
+                //mail body to Merchant	and paymentz
+
+                if (transactionStatus.equals("Y"))
+                {
+                    transactionfailed = false;
+                    mailtransactionStatus = "Successful";
+                }
+                else
+                {
+                    mailtransactionStatus = "failed";
+                    transactionfailed = true;
+                }
+            }
+            catch (Exception nex)
+            {
+                pw = new PrintWriter(sw);
+                nex.printStackTrace(pw);
+
+                authexception = true;
+                transecutesubject.append("Exception Occured while Auth ");
+                transecutebody.append("Exception Occured while Auth " + sw.toString() + "\r\n\r\n");
+
+                String exp = nex.getMessage();
+
+                int ind = -1;
+
+                if (exp != null)
+                    ind = exp.indexOf("#1234#");
+
+                if (exp != null && ind != -1)
+                {
+                    exp = exp.substring(ind + 5);
+                    transaction.updateTransactionStatusCommon("authfailed",trackingId);
+
+                    int actionEntry = entry.actionEntryForUGSPay(trackingId,amount.toString(),ActionEntry.ACTION_AUTHORISTION_FAILED,ActionEntry.STATUS_AUTHORISTION_FAILED,transRespDetails,auditTrailVO);
+                    // End : Added for Action and Status Entry in Action History table
+                }
+
+                logger.debug("Error while communicating to ICICI for trackingId = " + trackingId + ", error is :" + nex.toString());
+                logger.error("error",nex);
+
+                transactionLogger.debug("Error while communicating to ICICI for trackingId = " + trackingId + ", error is :" + nex.toString());
+                transactionLogger.error("error",nex);
+
+            }//try catch ends
+
+            //set mail body before doing auth
+            body.append("Tracking ID: " + trackingId + "\r\n\r\n");
+            body.append("Status: " + mailtransactionStatus + "\r\n");
+            body.append("Auth Message: " + transactionMessage +"("+transRespDetails.getDescription()+") \r\n");
+            merchantsubject.append(mailtransactionStatus + " - Order: " + transactionDescription + " Amount " + txnamount + " Card Holder: " );
+
+            transecutebody.append(body.toString());
+
+            merchantbody.append(body.toString());
+            merchantbody.append("Customer Email Address: " + emailaddr + "\r\n");
+            merchantbody.append("IP	Address: " + ipaddress + "\r\n");
+            //merchantbody.append("ResponseCode : " + (String) transRespDetails.getResultCode() + "\r\n\r\n");
+
+            if (!HRCode.equals("") && !transactionfailed)
+                merchantbody.append("High Risk Code: " + HRCode + "\r\n");
+
+            merchantbody.append("Please inform your customer about the transaction status\r\n\r\n");
+            merchantbody.append("***IMPORTANT***\r\n");
+            merchantbody.append("Note that this transaction will appear on their Credit Card Statement as \r\n " + displayName + " .\r\n\r\n");
+
+            servicemerchantbody.append("The following transaction has just taken place on your website.\r\n\r\n");
+            servicemerchantbody.append(body.toString());
+            servicemerchantbody.append("Customer Email Address: " + emailaddr + "\r\n");
+            servicemerchantbody.append("IP Address: " + ipaddress + "\r\n");
+
+            if (!HRCode.equals(""))
+                servicemerchantbody.append("High Risk Code: " + HRCode + "\r\n");
+
+            //servicemerchantbody.append("AuthQsiResponseCode : " + (String) transRespDetails.getResultCode() + "\r\n\r\n");
+            servicemerchantbody.append("This transaction has NOT BEEN CAPTURED, and you will have to MANUALLY CAPTURE this Transaction.\r\n\r\n");
+            servicemerchantbody.append("Though this transaction is successfully authorized by bank, "+ApplicationProperties.getProperty("COMPANY")+" has found that this transaction is a High Risk Transaction. This could be because of reasons such as the Customer having used multiple different Cards in the past, or having a Chargeback history, or billing address mismatches etc.\r\n\r\n");
+            servicemerchantbody.append("It is advised that you check this transaction before delivering the goods since this could possibly be fraudulent transaction.\r\n\r\n");
+            servicemerchantbody.append(ApplicationProperties.getProperty("COMPANY")+ " Support.\r\n");
+
+            //mail body to ICICI
+
+            logger.debug("calling SendMAil for Merchant with status");
+            transactionLogger.debug("calling SendMAil for Merchant with status");
+            Mail.sendmail(notifyEmails, fromAddress, merchantsubject.toString(), merchantbody.toString());
+            logger.debug("called SendMAil for Merchant with status");
+            transactionLogger.debug("called SendMAil for Merchant with status");
+
+            chargeamount = amount.multiply(charge.multiply(new BigDecimal(1 / 10000.00)));
+            chargeamount = chargeamount.add(new BigDecimal(fixamount));
+            chargeamount = chargeamount.setScale(2, BigDecimal.ROUND_HALF_UP);
+            String chargeamt = chargeamount.toString();
+
+            if (transRespDetails.getErrorCode() != null && !(transRespDetails.getErrorCode()).equals("000"))
+                transactionMessage = "Failed";
+
+            String checksum;
+            if (version.equals("2"))
+                checksum = Checksum.generateChecksumV3(String.valueOf(memberId), transactionStatus, transactionMessage, transactionDescription, "" + txnamount, chargeamt, clkey, checksumAlgo);
+            else
+                checksum = Checksum.generateChecksumV1(String.valueOf(memberId), transactionStatus, transactionMessage, transactionDescription, "" + txnamount, clkey, checksumAlgo);
+
+            logger.debug("checksum          "+checksum);
+            transactionLogger.debug("checksum          "+checksum);
+            String message="";
+
+                message= transactionMessage+" ( "+transRespDetails.getDescription()+" ) ";
+
+            //redirect to Post
+            transactionUtility.redirectToPost(pWriter,request,ctoken,POSTURL,message,checksum,transactionStatus,txnamount,chargeamt);
+
+            if (authexception || captureexception)
+            {
+                transecutebody.append(body.toString());
+                logger.debug("calling SendMAil for transecute");
+                transactionLogger.debug("calling SendMAil for transecute");
+                Mail.sendAdminMail(transecutesubject.toString(), transecutebody.toString());
+                logger.debug("called SendMAil for transecute");
+                transactionLogger.debug("called SendMAil for transecute");
+            }
+
+            if (authexception)
+            {
+                logger.debug("calling SendMAil for Merchant");
+                transactionLogger.debug("calling SendMAil for Merchant");
+                Mail.sendmail(notifyEmails, fromAddress, "No Response From Bank.", "It seems that the Transaction Authorization has failed due to some error.\r\n\r\n" + merchantbody.toString());
+                logger.debug("called SendMAil for Merchant");
+                transactionLogger.debug("called SendMAil for Merchant");
+            }
+
+            String CUSTOMERNOTIFICATION = "";
+
+            Hashtable taghash = new Hashtable();
+            taghash.put("TOID", memberId + "");
+            // taghash.put("NAME", cardholder);
+            taghash.put("CCNUM", ccpan.substring(ccpan.length() - 4, ccpan.length()));
+            taghash.put("EXPDATE", request.getParameter("EXPIRE_MONTH") + "/" + request.getParameter("EXPIRE_YEAR"));
+            taghash.put("COMPANYNAME", company_name);
+            taghash.put("BRANDNAME", brandname);
+            taghash.put("SITENAME", sitename);
+            taghash.put("AMOUNT", txnamount);
+            taghash.put("TRANSAMOUNT", txnamount);
+
+            if (type.equals("sale") && !proofrequired && !transactionfailed)
+                taghash.put("CAPAMOUNT", txnamount);
+            else
+                taghash.put("CAPAMOUNT", "0.00");
+
+
+            taghash.put("DESCRIPTION", transactionDescription);
+            taghash.put("ORDERDESCRIPTION", transactionOrderDescription);
+            taghash.put("ORDER_DESCRIPTION", transactionOrderDescription);
+            //taghash.put("CARDHOLDER", cardholder);
+            taghash.put("TRACKINGID", trackingId);
+            taghash.put("EMAILADDRESS", emailaddr);
+            taghash.put("IPADDRESS", ipaddress);
+            taghash.put("HRCODE", HRCode);
+            taghash.put("DATE", (new Date()).toString());
+            taghash.put("CURRENCY", currency);
+            taghash.put("DISPLAYNAME", displayName);
+            double temp=Double.parseDouble(txnamount);
+            temp+=temp*0.03;
+
+            taghash.put("MESSAGE","Kindly Note that You Will be charged approximately <b>"+temp+"  "+currency  +"</b> due to Foreign Exchange Conversion");
+            if (templateCurrency != null && !currency.equals(templateCurrency))
+                taghash.put("TMPL_TRANSACTION", "(approximately " + templateCurrency + " " + templateAmount + " )");
+
+            ccpan=null;
+            month=null;
+            year=null;
+
+            if (!transactionfailed && custremindermail)
+            {
+                taghash.put("SIGNATURE",Functions.generateSignature(memberId+""));
+                CUSTOMERNOTIFICATION = Functions.replaceTag((String) application.getAttribute("CUSTOMERNOTIFICATION"), taghash);
+                logger.debug("calling SendMail for Customer for ");
+                transactionLogger.debug("calling SendMail for Customer for ");
+                Mail.sendHtmlMail(emailaddr, fromAddress, null, null, "Your transaction at " + sitename, CUSTOMERNOTIFICATION);
+
+            }
+        }
+        catch (SystemError sye)
+        {
+            if (count >= 0)
+            {
+                count = Integer.parseInt((String) sc.getAttribute("noOfClients"));
+                count--;
+                sc.setAttribute("noOfClients", String.valueOf(count));
+            }
+            sye.printStackTrace();
+            logger.error("System Error:::::",sye);
+            transactionLogger.error("System Error:::::",sye);
+            throw new ServletException(sye.toString());
+        }
+        catch (Exception nex)
+        {
+            logger.error("Internal System Error:",nex);
+            transactionLogger.error("Internal System Error:",nex);
+            pw = new PrintWriter(sw);
+            nex.printStackTrace(pw);
+
+            transecutesubject.append(" / Exception in Wait Servlet");
+            transecutebody.append("\r\nFollowing Exception Occured " + sw.toString() + "\r\n\r\n");
+            transecutebody.append(body.toString());
+            try
+            {
+                logger.debug("calling SendMAil for transecute");
+                transactionLogger.debug("calling SendMAil for transecute");
+                Mail.sendAdminMail(transecutesubject.toString(), transecutebody.toString());
+
+            }
+            catch (SystemError sye)
+            {
+                logger.error("System Error",sye);
+                transactionLogger.error("System Error",sye);
+                if (count >= 0)
+                {
+                    count = Integer.parseInt((String) sc.getAttribute("noOfClients"));
+                    count--;
+                    sc.setAttribute("noOfClients", String.valueOf(count));
+                }
+
+                sye.printStackTrace();
+                logger.error("SystemError Occur::",sye);
+                throw new ServletException(sye.toString());
+            }
+            finally
+            {
+                String message = "";
+
+                if (!authexception)
+                    message = "<b>ERROR!!!</b> We have encountered an internal error while processing your request. Please visit at "+ApplicationProperties.getProperty("COMPANY_SUPPORT_URL")+" and create Support Request to know the status of this transaction.<BR>";
+                else
+                    message = "<b>ERROR!!!</b> We have encountered an internal error while processing your request. This happened because of a connectivity issue with the Credit Card Processor. Please retry this transaction afresh. If this continues to happen, Please visit at "+ApplicationProperties.getProperty("COMPANY_SUPPORT_URL")+" and create Support Request.<BR>";
+
+                transactionError.displayErrorPage(otherdetails,message,res,toid,encoded_TRACKING_ID,encoded_DESCRIPTION,encoded_ORDER_DESCRIPTION,pWriter);
+                try
+                {
+                    pWriter.flush();
+                    //RequestDispatcher rd=request.getRequestDispatcher("/icici/servlet/Error.jsp");
+                    //rd.forward(request,res);
+                    //pWriter.println("<form name=\"error\" action=\"/icici/servlet/ErrorServlet\" method=\"post\" >");
+                    pWriter.println("<form name=\"error\" action=\""+ ERRORSERVLET +"?ctoken="+ ctoken +"\" method=\"post\" >");
+                    pWriter.println("<input type=\"hidden\" name=\"ERROR\" value=\"" + URLEncoder.encode(Template.getErrorPage("" + memberId, otherdetails)) + "\">");
+                    pWriter.println("</form>");
+                    pWriter.println("<script language=\"javascript\">");
+                    pWriter.println("document.error.submit();");
+                    pWriter.println("</script>");
+                    pWriter.println("</body>");
+                    pWriter.println("</html>");
+                }
+                catch (Exception e)
+                {
+                    logger.error("Exception occur",e);
+                    transactionLogger.error("Exception occur",e);
+
+                }
+            }
+        }
+        finally
+        {
+            if (count >= 0)
+            {
+                count = Integer.parseInt((String) sc.getAttribute("noOfClients"));
+                count--;
+                sc.setAttribute("noOfClients", String.valueOf(count));
+            }
+        }
+    }
+
+    private void sendFailMails(String transactionStatus, String transactionMessage, UGSPayResponseVO transRespDetails, String trackingId,ServletContext application,String transactionDescription) throws SystemError
+    {
+        String fromAddress = ApplicationProperties.getProperty("COMPANY_FROM_ADDRESS");
+
+        String ids = TimeZone.getTimeZone("GMT+5:30").getID();
+        SimpleTimeZone tz = new SimpleTimeZone(+0 * 00 * 60 * 1000, ids);
+        java.util.GregorianCalendar cal = new java.util.GregorianCalendar(tz);
+        cal.setTime(new java.util.Date());
+
+        if (transactionStatus.equals("Y"))
+        {
+            Mail.sendNotificationMail("Reseller got error while Transacting", "\r\n\r\nProblem occured while authentication for tracking id=" + trackingId + "\r\nDescription:" + transactionDescription + "\r\nResult code=" + transRespDetails.getErrorCode() + "\r\nAuth message=" + transactionMessage +"("+transRespDetails.getDescription()+")");
+        }
+        int mailCount = 0;
+        if (Functions.parseData((String) application.getAttribute("MAILCOUNT")) != null)
+            mailCount = Integer.parseInt((String) application.getAttribute("MAILCOUNT"));
+        if (mailCount <= 5 && (transactionMessage.equals("Failed") || !transactionMessage.equals("Processing")) && (transRespDetails.getErrorCode()).equals("0"))
+        {
+            //problem has started so send mail
+            // mailCount++;
+            application.setAttribute("MAILCOUNT", mailCount + "");
+            Mail.sendAdminMail("Exception while Authentication", "\r\n\r\nException has occured while authentication for tracking id=" + trackingId + "\r\nTime:" + cal.getTime() + "\r\nAuth code=" + transRespDetails.getErrorCode() + "\r\nAuth message=" + transactionMessage);
+            logger.debug("Sending mail to System Admin");
+            transactionLogger.debug("Sending mail to System Admin");
+        }
+        if (transactionMessage.indexOf("connection timed out") != -1 && (transRespDetails.getErrorCode()).equals("000"))
+        {
+            //connection timeout problem has started so send mail
+            logger.debug("Sending mail to System Admin");
+            transactionLogger.debug("Sending mail to System Admin");
+            Mail.sendmail(MANAGEMENT_NOTIFY_EMAIL, fromAddress, "Connection Timed out while Authentication", "\r\n\r\nConnection Timed out while authentication \r\n\r\n Tracking id=" + trackingId + "\r\nTime= " + cal.getTime() + "\r\nAuth code=" + transRespDetails.getErrorCode() + "\r\nAuth message=" + transactionMessage+"("+transRespDetails.getDescription()+")");
+            logger.debug("Mail sent to System Admin");
+            transactionLogger.debug("Mail sent to System Admin");
+        }
+    }
+
+    private void validateOptionalParameter(HttpServletRequest req) throws ValidationException
+    {
+        InputValidator inputValidator = new InputValidator();
+
+        List<InputFields> inputFieldsListOptional = new ArrayList<InputFields>();
+        inputFieldsListOptional.add(InputFields.TMPL_VERSION);
+        inputValidator.InputValidations(req, inputFieldsListOptional, true);
+    }
+
+    private void validateMandatoryParameter(HttpServletRequest req) throws ValidationException
+    {
+        InputValidator inputValidator = new InputValidator();
+        List<InputFields> inputFieldsListMandatory = new ArrayList<InputFields>();
+        inputFieldsListMandatory.add(InputFields.TRACKINGID_CAPS);
+        inputValidator.InputValidations(req,inputFieldsListMandatory,false);
+    }
+
+    private Hashtable validateMandatoryParameters(HttpServletRequest req)
+    {
+        InputValidator inputValidator = new InputValidator();
+        Hashtable error = new Hashtable();
+        List<InputFields>  inputFieldsListMandatory = new ArrayList<InputFields>();
+
+        inputFieldsListMandatory.add(InputFields.TOID_CAPS);
+        inputFieldsListMandatory.add(InputFields.COUNTRY);
+        inputFieldsListMandatory.add(InputFields.EMAILADDR);
+        inputFieldsListMandatory.add(InputFields.NAME_SMALL);
+        inputFieldsListMandatory.add(InputFields.PAN);
+        inputFieldsListMandatory.add(InputFields.CVV); //ccid
+        inputFieldsListMandatory.add(InputFields.STREET);
+        inputFieldsListMandatory.add(InputFields.CITY);
+        inputFieldsListMandatory.add(InputFields.STATE);
+        inputFieldsListMandatory.add(InputFields.ZIP);
+        inputFieldsListMandatory.add(InputFields.TELNO);
+        inputFieldsListMandatory.add(InputFields.TELCC);
+        inputFieldsListMandatory.add(InputFields.EXPIRE_MONTH);
+        inputFieldsListMandatory.add(InputFields.EXPIRE_YEAR);
+        inputFieldsListMandatory.add(InputFields.CCCP);
+        inputFieldsListMandatory.add(InputFields.ADDRCP);
+        inputFieldsListMandatory.add(InputFields.CARDTYPE_CAPS);
+        inputFieldsListMandatory.add(InputFields.NAME);
+
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.InputValidations(req,inputFieldsListMandatory, errorList,false);
+
+        if(!errorList.isEmpty())
+        {
+            for(InputFields inputFields :inputFieldsListMandatory)
+            {
+                if(errorList.getError(inputFields.toString())!=null)
+                {
+                    logger.debug(errorList.getError("Invalid "+inputFields.toString()).getLogMessage());
+                    transactionLogger.debug(errorList.getError("Invalid "+inputFields.toString()).getLogMessage());
+                    error.put(inputFields.toString(),"Invalid "+errorList.getError(inputFields.toString()).getMessage());
+                }
+            }
+        }
+        return error;
+    }
+}

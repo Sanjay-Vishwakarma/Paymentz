@@ -1,0 +1,490 @@
+package com.payment.PayMitco.core;
+
+import com.directi.pg.Logger;
+import com.directi.pg.TransactionLogger;
+import com.payment.exceptionHandler.PZConstraintViolationException;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.PZTechnicalViolationException;
+import com.payment.exceptionHandler.constraintType.PZTechnicalExceptionEnum;
+import com.payment.utils.SSLUtils;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+import javax.net.ssl.SSLHandshakeException;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.*;
+import java.net.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.ListIterator;
+import java.util.Map;
+
+/**
+ * Created by Nikita on 12/16/2015.
+ */
+public class PayMitcoUtills
+{
+
+        private final static String charset = "UTF-8";
+        private static Logger log= new Logger(PayMitcoUtills.class.getName());
+        private static TransactionLogger transactionLogger=new TransactionLogger(PayMitcoUtills.class.getName());
+
+        public static String PostWebRequest(String postData, String myUrl)
+        {
+            StringBuilder response = new StringBuilder();
+            try
+            {
+                URL obj = new URL(myUrl);
+                HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+                con.setRequestMethod("POST");
+                con.setRequestProperty("content-type", "text/xml");
+                con.setConnectTimeout(60000);
+
+                // Send post request
+                con.setDoOutput(true);
+                OutputStreamWriter wr = new OutputStreamWriter(con.getOutputStream());
+                wr.write(postData);
+                wr.flush();
+                wr.close();
+
+                BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+                String inputLine;
+                while ((inputLine = in.readLine()) != null)
+                {
+                    response.append(inputLine);
+                }
+                in.close();
+
+            }
+            /*catch (MalformedURLException e)
+            {
+                log.error("MalformedURLException in PayMitcoUtils---",e);
+                //response.append("Exception: [" + myUrl + "] " + e.getLocalizedMessage());
+
+            }*/
+            /*catch (IOException e)
+            {
+                log.error("IOException in PayMitcoUtils---",e);
+                //response.append("Exception: [" + myUrl + "] " + e.getLocalizedMessage());
+
+            }*/
+
+            catch (Exception e)
+            {
+                log.error("IOException in PayMitcoUtils---",e);
+                response.append("Exception: [" + myUrl + "] " + e.getLocalizedMessage());
+
+            }
+
+            return response.toString();
+        }
+
+        public static String doPostHTTPSURLConnection(String strURL, String request) throws PZTechnicalViolationException
+        {
+            String result=null;
+            BufferedInputStream in=null;
+            BufferedOutputStream out=null;
+            URLConnection conn=null;
+
+            try
+            {
+                SSLUtils.setupSecurityProvider();
+                SSLUtils.trustAllHttpsCertificates();
+                System.setProperty("java.protocol.handler.pkgs", "com.sun.net.ssl.internal.www.protocol");
+                java.security.Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());
+                URL url = new URL(strURL);
+                try
+                {
+                    conn = url.openConnection();
+                    conn.setConnectTimeout(120000);
+                    conn.setReadTimeout(120000);
+                }
+                catch (SSLHandshakeException io)
+                {
+                    PZExceptionHandler.raiseTechnicalViolationException("PayMitcoUtills.java", "doPostHTTPSURLConnection()", null, "common", "SSL Handshake Exception:::", PZTechnicalExceptionEnum.SSL_HANDSHAKE_ISSUE, null, io.getMessage(), io.getCause());
+                }
+                if(conn instanceof HttpURLConnection)
+                {
+                    ((HttpURLConnection)conn).setRequestMethod("POST");
+                }
+                conn.setDoInput(true);
+                conn.setDoOutput(true);
+
+                out = new BufferedOutputStream(conn.getOutputStream());
+                byte outBuf[] = request.getBytes(charset);
+                out.write(outBuf);
+
+                out.close();
+
+                in = new BufferedInputStream(conn.getInputStream());
+                result = ReadByteStream(in);
+            }
+            catch (UnsupportedEncodingException ue)
+            {
+                PZExceptionHandler.raiseTechnicalViolationException("PayMitcoUtills.java", "doPostHTTPSURLConnection()", null, "common", "Technical Exception Occurred:::", PZTechnicalExceptionEnum.UNSUPPORTED_ENCOADING_EXCEPTION, null,ue.getMessage(), ue.getCause());
+            }
+            catch (MalformedURLException me)
+            {
+                PZExceptionHandler.raiseTechnicalViolationException("PayMitcoUtills.java", "doPostHTTPSURLConnection()", null, "common", "Technical Exception Occurred:::", PZTechnicalExceptionEnum.MALFORMED_URL_EXCEPITON, null, me.getMessage(), me.getCause());
+            }
+            catch (ProtocolException pe)
+            {
+                PZExceptionHandler.raiseTechnicalViolationException("PayMitcoUtills.java", "doPostHTTPSURLConnection()", null, "common", "Technical Exception Occurred:::", PZTechnicalExceptionEnum.PROTOCOL_EXCEPTION, null, pe.getMessage(), pe.getCause());
+            }
+            catch (IOException ex)
+            {
+                PZExceptionHandler.raiseTechnicalViolationException("PayMitcoUtills.java", "doPostHTTPSURLConnection()", null, "common", "Technical Exception Occurred:::", PZTechnicalExceptionEnum.IOEXCEPTION, null, ex.getMessage(), ex.getCause());
+            }
+            catch (PZConstraintViolationException pze)
+            {
+                PZExceptionHandler.raiseTechnicalViolationException("PayMitcoUtills.java", "doPostHTTPSURLConnection()", null, "common", "Technical Exception Occurred:::", PZTechnicalExceptionEnum.IOEXCEPTION, null, pze.getMessage(), pze.getCause());
+            }
+            finally
+            {
+                if (out != null)
+                {
+                    try
+                    {
+                        out.close();
+                    }
+                    catch (IOException e)
+                    {
+                        PZExceptionHandler.raiseTechnicalViolationException("PayMitcoUtills.java", "doPostHTTPSURLConnection()", null, "common", "Technical Exception Occurred. Please contact your Admin:::", PZTechnicalExceptionEnum.IOEXCEPTION,null, e.getMessage(), e.getCause());
+                    }
+                }
+                if (in != null)
+                {
+                    try
+                    {
+                        in.close();
+                    } catch (IOException e)
+                    {
+                        PZExceptionHandler.raiseTechnicalViolationException("PayMitcoUtills.java", "doPostHTTPSURLConnection()", null, "common", "Technical Exception Occurred. Please contact your Admin:::", PZTechnicalExceptionEnum.IOEXCEPTION,null, e.getMessage(), e.getCause());
+                    }
+                }
+            }
+            if (result == null)
+                return "";
+            else
+                return result;
+        }
+        static class PayMitco
+        {
+            public byte buf[];
+            public int size;
+
+            public PayMitco(byte b[], int s)
+            {
+                buf = b;
+                size = s;
+            }
+        }
+
+        private static String ReadByteStream(BufferedInputStream in) throws PZConstraintViolationException, PZTechnicalViolationException
+        {
+            LinkedList<PayMitco> bufList = new LinkedList<PayMitco>();
+            int size = 0;
+            String buffer = null;
+            byte buf[];
+            try
+            {
+                do
+                {
+                    buf = new byte[128];
+                    int num = in.read(buf);
+                    if (num == -1)
+                        break;
+                    size += num;
+                    bufList.add(new PayMitco(buf, num));
+                }
+                while (true);
+                buf = new byte[size];
+                int pos = 0;
+                for (ListIterator<PayMitco> p = bufList.listIterator(); p.hasNext();)
+                {
+                    PayMitco b = p.next();
+                    for (int i = 0; i < b.size;)
+                    {
+                        buf[pos] = b.buf[i];
+                        i++;
+                        pos++;
+                    }
+                }
+                buffer = new String(buf,charset);
+            }
+            catch (UnsupportedEncodingException ue)
+            {
+                PZExceptionHandler.raiseTechnicalViolationException("PayMitcoUtills.java", "doPostHTTPSURLConnection()", null, "common", "Technical Exception Occurred:::", PZTechnicalExceptionEnum.UNSUPPORTED_ENCOADING_EXCEPTION, null, ue.getMessage(), ue.getCause());
+            }
+            catch (IOException ie)
+            {
+                PZExceptionHandler.raiseTechnicalViolationException("PayMitcoUtills.java", "doPostHTTPSURLConnection()", null, "common", "Technical Exception Occurred:::", PZTechnicalExceptionEnum.UNSUPPORTED_ENCOADING_EXCEPTION, null, ie.getMessage(), ie.getCause());
+            }
+            return buffer;
+        }
+
+        public static Map<String,String> ReadSalesResponse(String str)throws PZTechnicalViolationException
+        {
+            Document doc = createDocumentFromString(str);
+
+            Map<String, String> responseMap  = new HashMap<String, String>();
+
+            doc.getDocumentElement().getNodeName();
+            NodeList nList = null;
+            nList = doc.getElementsByTagName("TransactionBatch");
+            responseMap.put("Error",getTagValue("Error",((Element) nList.item(0))));
+            responseMap.put("Code",getTagValue("Code",((Element) nList.item(0))));
+            responseMap.put("TransactionID",getTagValue("TransactionID",((Element) nList.item(0))));
+            responseMap.put("Reference",getTagValue("Reference",((Element) nList.item(0))));
+            responseMap.put("Status",getTagValue("Status",((Element) nList.item(0))));
+            responseMap.put("Description",getTagValue("Description",((Element) nList.item(0))));
+            responseMap.put("RoutingNumber",getTagValue("RoutingNumber",((Element) nList.item(0))));
+            responseMap.put("AccountNumber",getTagValue("AccountNumber",((Element) nList.item(0))));
+            responseMap.put("AccountType",getTagValue("AccountType",((Element) nList.item(0))));
+            responseMap.put("PaymentType",getTagValue("PaymentType",((Element) nList.item(0))));
+            responseMap.put("Type",getTagValue("Type",((Element) nList.item(0))));
+            responseMap.put("TransactionID",getTagValue("TransactionID",((Element) nList.item(0))));
+            responseMap.put("CustomerID",getTagValue("CustomerID",((Element) nList.item(0))));
+            responseMap.put("CheckNumber",getTagValue("CheckNumber",((Element) nList.item(0))));
+
+
+            return responseMap;
+        }
+
+        public static Map<String,String> ReadRefundResponse(String str)throws PZTechnicalViolationException
+        {
+            Document doc = createDocumentFromString(str);
+
+            Map<String, String> responseMap  = new HashMap<String, String>();
+
+            doc.getDocumentElement().getNodeName();
+            NodeList nList = null;
+            nList = doc.getElementsByTagName("TransactionBatch");
+            responseMap.put("Error",getTagValue("Error",((Element) nList.item(0))));
+            responseMap.put("Code",getTagValue("Code",((Element) nList.item(0))));
+            responseMap.put("TransactionID",getTagValue("TransactionID",((Element) nList.item(0))));
+            responseMap.put("Description",getTagValue("Description",((Element) nList.item(0))));
+            responseMap.put("Status",getTagValue("Status",((Element) nList.item(0))));
+
+            return responseMap;
+        }
+
+        public static Map<String,String> ReadErrorResponse(String str)throws PZTechnicalViolationException
+        {
+            Document doc = createDocumentFromString(str);
+
+            Map<String, String> responseMap  = new HashMap<String, String>();
+
+            doc.getDocumentElement().getNodeName();
+            NodeList nList = null;
+            nList = doc.getElementsByTagName("Errors");
+            //responseMap.put("Error",getTagValue("Error",((Element) nList.item(0))));
+            responseMap.put("Code",getTagValue("Code",((Element) nList.item(0))));
+            //responseMap.put("TransactionID",getTagValue("TransactionID",((Element) nList.item(0))));
+            responseMap.put("FieldName",getTagValue("FieldName",((Element) nList.item(0))));
+            responseMap.put("Description",getTagValue("Description",((Element) nList.item(0))));
+
+            return responseMap;
+        }
+
+        private static String getTagValue(String trackID, Element eElement)
+        {
+            NodeList nlList = null;
+            String value  ="";
+            if(eElement!=null && eElement.getElementsByTagName(trackID)!=null && eElement.getElementsByTagName(trackID).item(0)!=null)
+            {
+                nlList =  eElement.getElementsByTagName(trackID).item(0).getChildNodes();
+            }
+            if(nlList!=null && nlList.item(0)!=null)
+            {
+                Node nValue = (Node) nlList.item(0);
+                value =	nValue.getNodeValue();
+            }
+            return value;
+        }
+
+        private static String getAttributeValue(Element eElement, String trackID)
+        {
+            String value  ="";
+            if(eElement!=null)
+            {
+                value =	eElement.getAttribute(trackID);
+            }
+            return value;
+        }
+
+        public static Document createDocumentFromString(String xmlString ) throws PZTechnicalViolationException
+        {
+            Document document = null;
+            try
+            {
+                DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+                document = docBuilder.parse(new InputSource(new StringReader( xmlString ) ));
+            }
+            catch (ParserConfigurationException pce)
+            {
+                log.error("Exception in createDocumentFromString of PayMitcoUtill",pce);
+                transactionLogger.error("Exception in createDocumentFromString of PayMitcoUtill",pce);
+                PZExceptionHandler.raiseTechnicalViolationException("PayMitcoUtills.java","createDocumentFromString()",null,"common","Technical Exception Occurred. Please contact your Admin:::",PZTechnicalExceptionEnum.PARSE_CONFIG_EXCEPTION,null,pce.getMessage(),pce.getCause());
+            }
+            catch (SAXException e)
+            {
+                log.error("Exception in createDocumentFromString PayMitcoUtill",e);
+                transactionLogger.error("Exception in createDocumentFromString PayMitcoUtill",e);
+                PZExceptionHandler.raiseTechnicalViolationException("PayMitcoUtills.java","createDocumentFromString()",null,"common","Technical Exception Occurred. Please contact your Admin:::",PZTechnicalExceptionEnum.SAXEXCEPTION,null,e.getMessage(),e.getCause());
+            }
+            catch (IOException e)
+            {
+                log.error("Exception in createDocumentFromString PayMitcoUtill",e);
+                transactionLogger.error("Exception in createDocumentFromString PayMitcoUtill",e);
+                PZExceptionHandler.raiseTechnicalViolationException("PayMitcoUtills.java","createDocumentFromString()",null,"common","Technical Exception Occurred. Please contact your Admin:::",PZTechnicalExceptionEnum.IOEXCEPTION,null,e.getMessage(),e.getCause());
+            }
+            return document;
+        }
+
+        public static void main(String args[]) throws PZTechnicalViolationException
+        {
+            String xmlSale =
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                    "<TransactionBatch MerchantID=\"d7d0efca-a8fe-40de-8a00-087425d65750\" AuthKey=\"Ir8Ve0Ev3\">" +
+                    "<Transaction SequenceID=\"1\">" +
+                    "<ACHTransaction>" +
+                    "<TransactionID>24115d49-4fa3-4de8-8d0c-7de1377e8177</TransactionID>" +
+                    "<Type>C</Type>" +
+                    "<Currency>USD</Currency>" +
+                    "<Reference>625dd38e</Reference>" +
+                    "<TransactionTime>12/30/2015 3:51:15 PM</TransactionTime>" +
+                    "<Notes>Testing</Notes>" +
+                    "<Customer>" +
+                    "<CustomerID>4306134d-e29b-44a0-bb1c-fb8f65eef78e</CustomerID>" +
+                    "<FirstName>Nikita</FirstName>" +
+                    "<Initial></Initial>" +
+                    "<LastName>Lanjewar</LastName>" +
+                    "<StreetAddress>malad1 street</StreetAddress>" +
+                    "<City>ALASKA</City>" +
+                    "<State>AL</State>" +
+                    "<ZipCode>40006</ZipCode>" +
+                    "<Country>US</Country>" +
+                    "<Email>nikita.lanjewar@pz.com</Email>" +
+                    "<DateOfBirth></DateOfBirth>" +
+                    "<Last4SSN></Last4SSN>" +
+                    "</Customer>" +
+                    "<Bank>" +
+                    "<Name></Name>" +
+                    "<City></City>" +
+                    "<State></State>" +
+                    "<Phone></Phone>" +
+                    "</Bank>" +
+                    "<CheckNumber></CheckNumber>" +
+                    "<IPAddress>122.169.97.70</IPAddress>" +
+                    "<RoutingNumber>011000390</RoutingNumber>" +
+                    "<AccountNumber>9876543210</AccountNumber>" +
+                    "<AccountType>PC</AccountType>" +
+                    "<PaymentType>ACH</PaymentType>" +
+                    "<Amount>115.00</Amount>" +
+                    "<Product></Product>" +
+                    "<Descriptor></Descriptor>" +
+                    "<Description>DECLINED</Description>" +
+                    "<Status>DECLINED</Status>" +
+                    "<Errors>" +
+                    "<Error>" +
+                    "<Code>040903</Code>" +
+                    "<FieldName>ACHTransaction</FieldName>" +
+                    "<Description>Merchant limit: quantity of transactions per day exceeded. (based on IPAddress)</Description>" +
+                    "</Error>" +
+                    "<Error>" +
+                    "<Code>040904</Code>" +
+                    "<FieldName>ACHTransaction</FieldName>" +
+                    "<Description>Merchant limit Exceed</Description>" +
+                    "</Error>" +
+                    "</Errors>" +
+                    "</ACHTransaction>" +
+                    "</Transaction>" +
+                    "</TransactionBatch>";
+
+            String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                    "<TransactionBatch MerchantID=\"d7d0efca-a8fe-40de-8a00-087425d65750\" AuthKey=\"Ir8Ve0Ev3\">\n" +
+                    "<Transaction SequenceID=\"1\">\n" +
+                    "<ACHTransaction>\n" +
+                    "<TransactionID>7920d192-dc11-4e1f-8f93-bd75ac1d0188</TransactionID>\n" +
+                    "<Type>C</Type>\n" +
+                    "<Currency>USD</Currency>\n" +
+                    "<Reference>9cc2f511</Reference>\n" +
+                    "<TransactionTime>1/2/2016 12:14:02 PM</TransactionTime>\n" +
+                    "<Notes>Testing</Notes>\n" +
+                    "<Customer>\n" +
+                    "<CustomerID>925607c9-4b6e-448e-acbe-57967331669a</CustomerID>\n" +
+                    "<FirstName>Nikita</FirstName>\n" +
+                    "<Initial></Initial>\n" +
+                    "<LastName>Lanjewar</LastName>\n" +
+                    "<StreetAddress>malad 12</StreetAddress>\n" +
+                    "<City>Chicago</City>\n" +
+                    "<State>AK</State>\n" +
+                    "<ZipCode>40006</ZipCode>\n" +
+                    "<Country>US</Country>\n" +
+                    "<Email>nikita.lanjewar@pz.com</Email>\n" +
+                    "<DateOfBirth></DateOfBirth>\n" +
+                    "<Last4SSN></Last4SSN>\n" +
+                    "</Customer>\n" +
+                    "<Bank>\n" +
+                    "<Name>BANK OF AMERICA N.A</Name>\n" +
+                    "<City>RICHMOND</City>\n" +
+                    "<State>VA</State>\n" +
+                    "<Phone>(800) 446-0135</Phone>\n" +
+                    "</Bank>\n" +
+                    "<CheckNumber></CheckNumber>\n" +
+                    "<IPAddress>122.169.97.70</IPAddress>\n" +
+                    "<RoutingNumber>011000390</RoutingNumber>\n" +
+                    "<AccountNumber>9876543210</AccountNumber>\n" +
+                    "<AccountType>PC</AccountType>\n" +
+                    "<PaymentType>ACH</PaymentType>\n" +
+                    "<Amount>150.00</Amount>\n" +
+                    "<Product></Product>\n" +
+                    "<Descriptor>x</Descriptor>\n" +
+                    "<Description></Description>\n" +
+                    "<Status>ACCEPTED</Status>\n" +
+                    "</ACHTransaction>\n" +
+                    "</Transaction>\n" +
+                    "</TransactionBatch>\n";
+
+            String xmlRefund = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                    "<TransactionBatch MerchantID='d7d0efca-a8fe-40de-8a00-087425d65750' AuthKey='Ir8Ve0Ev3'>\n" +
+                    "<Transaction SequenceID='1'>\n" +
+                    "<Refund>\n" +
+                    "<TransactionID>29839f59-12ab-4c06-b508-c78670d4ecc8</TransactionID>\n" +
+                    "<Amount>100.00</Amount>\n" +
+                    "<Status>DECLINED</Status>\n" +
+                    "<Errors>\n" +
+                    "<Error>\n" +
+                    "<Code>410654</Code>\n" +
+                    "<FieldName>Refund Status</FieldName>\n" +
+                    "<Description>Current Status Does Not Permit This Operation.</Description>\n" +
+                    "</Error>\n" +
+                    "</Errors>\n" +
+                    "</Refund>\n" +
+                    "</Transaction>\n" +
+                    "</TransactionBatch>\n";
+
+            String xml1 = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><TransactionBatch MerchantID=\"d7d0efca-a8fe-40de-8a00-087425d65750\" AuthKey=\"Ir8Ve0Ev3\"><Transaction SequenceID=\"1\"><Refund><TransactionID>4aa372c8-da42-460f-8666-cf3085514c33</TransactionID><Amount>168.00</Amount><Status>OK</Status></Refund></Transaction></TransactionBatch>";
+
+
+            try
+            {
+                Map<String, String> responseMap = ReadRefundResponse(xmlRefund.toString());
+
+            }
+            catch (Exception e)
+            {
+
+            }
+        }
+}
+
+

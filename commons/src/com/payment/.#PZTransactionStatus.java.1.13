@@ -1,0 +1,67 @@
+package com.payment;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Jignesh
+ * Date: 2/17/13
+ * Time: 1:01 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public enum PZTransactionStatus
+{
+
+
+    BEGUN("begun"),
+    AUTH_STARTED("authstarted"),
+    PAYOUT_STARTED("payoutstarted"),
+    PROOF_REQUIRED("proofrequired"),
+    AUTH_SUCCESS("authsuccessful"),
+    PAYOUT_SUCCESS("payoutsuccessful"),
+    AUTH_FAILED("authfailed"),
+    PAYOUT_FAILED("payoutfailed"),
+    AUTH_CANCELLED("authcancelled"),
+
+    CAPTURE_STARTED("capturestarted"),
+    CAPTURE_SUCCESS("capturesuccess"),
+    CAPTURE_FAILED("capturefailed"),
+
+    SETTLED("settled"),
+    MARKED_FOR_REVERSAL("markedforreversal"),
+    ACCEPTED_FOR_REVERSAL("acceptedforreversal"),
+    CONSOLIDATED_FOR_REVERSAL("consolidatedforreversal"),
+    WAIT_FOR_REVERSAL("waitforreversal"), //Added for SecureTrading
+    REVERSED("reversed"),
+    FAILED("failed"),
+    CHARGEBACK("chargeback"),
+    CHARGEBACKREVERSED("chargebackreversed"),
+    RETRIEVAL_REQUEST("retrievalrequest"),
+    CANCEL_STARTED("cancelstarted"),
+    AUTHSTARTED_3D("authstarted_3D"),
+    CONFIRMATION_3D("confirmation_3D"),
+    EXCEPTION_WHILE_PROCESSING("exceptionwhileprocessing");
+
+    private String status;
+
+    PZTransactionStatus(String status)
+    {
+        this.status = status;
+    }
+
+
+    @Override
+    public String toString()
+    {
+        return status;
+    }
+}
+
+
+class test
+{
+
+    public static void main(String[] args)
+    {
+        System.out.println(String.valueOf(PZTransactionStatus.BEGUN));
+    }
+
+}

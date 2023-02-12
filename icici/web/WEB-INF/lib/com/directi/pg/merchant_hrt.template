@@ -1,0 +1,36 @@
+<html>
+<body style="font-size: 10pt; font-family: verdana" >
+
+Dear <#COMPANYNAME#>,<br>
+<br>A Customer of yours has done the following Transaction.<br>Payment Gateway -<br>
+<br>Member ID: <#TOID#>
+<br>Company Name: <#COMPANYNAME#>
+<br>
+<br>Description: <#DESCRIPTION#>
+<br>Order Description: <#ORDERDESCRIPTION#>
+<br>Transaction Number: <#TRACKINGID#>
+<br>Amount: <#CURRENCY#> <#AMOUNT#> <#TMPL_TRANSACTION#>
+<br>Card Holder: <#CARDHOLDER#>
+<br>Date: <#DATE#>
+<br>
+<br>Customer Email Address: <#EMAILADDRESS#>
+<br>IP Address: <#IPADDRESS#>
+<br>High Risk Code: <#HRCODE#>
+<br>
+<br>This Transaction has been classified as a HIGH RISK Transaction by our <br>Risk Mitigation System. This requires your Customer to Fax us an Authorisation<br>for this transaction in order to complete the processing. This process is<br>required by our Acquiring Bank to ensure that this <br>transaction is being done by a genuine card-holder.<br>
+<br>Please have your Customer follow the steps below to authorise this<br>transaction. Failure to follow these steps within 7 days of the transaction date <br>will cancel this transaction. A similar email has been sent to your Customer<br>detailing these instructions.<br>
+<br>Steps to be followed by your Customer<br>--------------------------------------<br>
+<br>
+<br>1. Visit <a href = ""></a> This will redirect you to our Secure<br>Order Tracking and Authorisation Webpage<br>
+<br>
+<br>2. In the form provided on that page, please enter your Credit Card Number<br>and Expiry Date and click Continue. This will bring up a list of all<br>Transactions you have done using your Credit Card through our Payment<br>Gateway.<br>
+<br>
+<br>3. Scroll down to the transaction by searching on the "Description"<br>corresponding to the above Order ID. The Status (last column) of this<br>transaction will show as "Transaction Proof Required" with a link to "View<br>Letter Format"<br>
+<br>
+<br>4. Please click on that link and follow the instructions on that page<br>
+<br>
+<br>Incase of any doubts or clarifications feel free to drop us a line.<br>
+<br>
+<br>Support Team<br>Support KB & Help Desk <br><br>
+</body>
+</html>

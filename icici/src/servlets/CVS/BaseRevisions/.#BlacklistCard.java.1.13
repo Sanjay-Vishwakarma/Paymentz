@@ -1,0 +1,383 @@
+import com.directi.pg.*;
+import com.directi.pg.fileupload.FileUploadBean;
+import com.logicboxes.util.ApplicationProperties;
+import com.manager.BlacklistManager;
+import com.manager.dao.BlacklistDAO;
+import com.manager.vo.BlacklistVO;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.User;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+/**
+ * Created by Jinesh on 4/30/2015.
+ */
+public class BlacklistCard extends HttpServlet
+{
+    private static Logger log = new Logger(BlacklistCard.class.getName());
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doPost(request, response);
+    }
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+    {
+        HttpSession session = req.getSession();
+        User user = (User) session.getAttribute("ESAPIUserSessionKey");
+        BlacklistDAO blacklistDAO = new BlacklistDAO();
+        BlacklistManager blacklistManager = new BlacklistManager();
+        String error = "";
+       // error = error+validateParameters(req);
+        String firstSix = req.getParameter("firstsix");
+        String lastFour = req.getParameter("lastfour");
+        String reason = req.getParameter("reason");
+        String remark = req.getParameter("remark");
+        int count = 0;
+        String EOL="<BR>";
+        String sMessage = "";
+        FileUploadBean fub = new FileUploadBean();
+        Functions functions=new Functions();
+        StringBuilder sErrorMessage = new StringBuilder();
+        StringBuilder sSuccessMessage = new StringBuilder();
+        List<BlacklistVO> listVO = new ArrayList<BlacklistVO>();
+        String role="Admin";
+        String username=(String)session.getAttribute("username");
+        String actionExecutorId=(String)session.getAttribute("merchantid");
+        String actionExecutorName=role+"-"+username;
+
+        if (!Admin.isLoggedIn(session))
+        {   log.debug("Admin is logout ");
+            res.sendRedirect("/icici/logout.jsp");
+            return;
+        }
+
+        try
+        {
+            String pathtoraw = ApplicationProperties.getProperty("MPR_FILE_STORE");
+            fub.setSavePath(pathtoraw);
+            fub.doUpload(req,null);
+
+            if (!ESAPI.validator().isValidInput("firstsix", firstSix, "FirstSixcc", 6, false))
+            {
+                log.debug("Invalid AccountId");
+                sErrorMessage.append("Invalid First Six and FirstSix should not be empty" + EOL);
+            }
+            if (!ESAPI.validator().isValidInput("lastfour", lastFour, "LastFourcc", 4, false))
+            {
+                log.debug("Invalid bin");
+                sErrorMessage.append("Invalid Last Four and LastFour should not be empty" + EOL);
+            }
+            if (!ESAPI.validator().isValidInput("reason", reason, "Description", 100, false) && !functions.isValueNull(reason) || functions.hasHTMLTags(reason))
+            {
+                sErrorMessage.append("Invalid Blacklist Reason or Blacklist Reason should not be empty" + EOL);
+            }
+            if(sErrorMessage.length()>0){
+                req.setAttribute("sErrorMessage",sErrorMessage);
+                RequestDispatcher rd = req.getRequestDispatcher("/uploadBlacklistCardDetails.jsp?ctoken="+user.getCSRFToken());
+                rd.forward(req, res);
+            }
+
+            listVO = blacklistDAO.getBlackListedCards(firstSix,lastFour);
+            if(listVO.size()==1)
+            {
+                for(BlacklistVO blacklistVO : listVO)
+                {
+                    error = blacklistVO.getFirstSix()+"******"+blacklistVO.getLastFour()+" is already Blocked";
+                }
+            }
+            else
+            {
+                if (sErrorMessage.length()==0)
+                {
+                    count = blacklistManager.insertBlacklistedCards(firstSix, lastFour, actionExecutorId, actionExecutorName, reason,remark);
+                }
+            }
+        }
+        catch (PZDBViolationException dbe)
+        {
+            log.debug("db exception---"+dbe);
+            PZExceptionHandler.handleDBCVEException(dbe, "", "Inserting Blacklisted Cards");
+        }
+        catch(SystemError sys)
+        {
+            log.error("File is exist", sys);
+        }
+        String file=fub.getFilename();
+
+        String filepath=ApplicationProperties.getProperty("MPR_FILE_STORE")+file;
+
+        StringBuilder response=  processSettlement(file,filepath,sSuccessMessage,sErrorMessage);
+
+        req.setAttribute("count",count);
+        req.setAttribute("error",error);
+        req.setAttribute("sSuccessMessage",sSuccessMessage);
+        req.setAttribute("sErrorMessage",sErrorMessage);
+        RequestDispatcher rd = req.getRequestDispatcher("/uploadBlacklistCardDetails.jsp?ctoken="+user.getCSRFToken());
+        rd.forward(req, res);
+    }
+
+   /* private String validateParameters(HttpServletRequest req)
+    {
+        InputValidator inputValidator = new InputValidator();
+        String error = "";
+        List<InputFields> inputFieldsListOptional = new ArrayList<InputFields>();
+        inputFieldsListOptional.add(InputFields.FIRST_SIX);
+        inputFieldsListOptional.add(InputFields.LAST_FOUR);
+        ValidationErrorList errorList = new ValidationErrorList();
+        inputValidator.InputValidations(req, inputFieldsListOptional, errorList, true );
+        if(!errorList.isEmpty())
+        {
+            for(InputFields inputFields :inputFieldsListOptional)
+            {
+                if(errorList.getError(inputFields.toString())!=null)
+                {
+                    log.debug(errorList.getError(inputFields.toString()).getLogMessage());
+                    error = error+errorList.getError(inputFields.toString()).getMessage();
+                }
+            }
+        }
+        return error;
+    }*/
+
+    public StringBuilder processSettlement(String fileName, String fullFileName ,StringBuilder sSuccessMessage,StringBuilder sErrorMessage)
+    {
+        List<BlacklistVO> vBlacklistedCards = new ArrayList<BlacklistVO>();
+
+        boolean isRecordAuthentic = true;
+        if(!isFileNameValid(fileName))
+        {
+            log.error("Error : Filename is invalid");
+            sErrorMessage.append("File name is invalid.");
+            return sErrorMessage;
+        }
+        try
+        {
+            vBlacklistedCards = loadCardDetails(fullFileName);
+            deletefile(fullFileName);
+        }
+        catch(SystemError se)
+        {
+            log.error("Error While Loading the Blacklisted details : "+ se.getMessage());
+            sErrorMessage.append( se.getMessage());
+            return sErrorMessage;
+        }
+        String firstsix="";
+        String lastfour="";
+        int j = 0;
+        int k = 0;
+
+        for(BlacklistVO blacklistVO : vBlacklistedCards)
+        {
+            Connection connection = null;
+            PreparedStatement preparedStatement=null;
+            ResultSet result=null;
+            try
+            {
+                connection = Database.getConnection();
+                String query = "SELECT * FROM blacklist_cards WHERE first_six=? AND last_four=? AND remark=?";
+                preparedStatement = connection.prepareStatement(query);
+
+                preparedStatement.setString(1, blacklistVO.getFirstSix());
+                preparedStatement.setString(2, blacklistVO.getLastFour());
+                preparedStatement.setString(3, blacklistVO.getRemark());
+                result = preparedStatement.executeQuery();
+                if (result.next())
+                {
+                    k =k+1;
+                    isRecordAuthentic = false;
+                    continue;
+                }
+                else
+                {
+                    String update="INSERT INTO blacklist_cards (first_six,last_four,reason,remark) VALUES (?,?,?,?)";
+                    PreparedStatement pstmt= connection.prepareStatement(update);
+                    pstmt.setString(1,blacklistVO.getFirstSix());
+                    pstmt.setString(2,blacklistVO.getLastFour());
+                    pstmt.setString(3,blacklistVO.getBlacklistCardReason());
+                    pstmt.setString(4,blacklistVO.getRemark());
+                    int i=pstmt.executeUpdate();
+                    if(i==1)
+                    {
+                        j=j+1;
+                    }
+                }
+            }
+            catch (SystemError e)
+            {
+                log.error("error while updating blacklist cards---",e);
+            }
+            catch (SQLException e)
+            {
+                log.error("error while updating blacklist cards---",e);
+            }
+            finally
+            {
+                Database.closeResultSet(result);
+                Database.closePreparedStatement(preparedStatement);
+                Database.closeConnection(connection);
+            }
+        }
+        sSuccessMessage.append("Total Updated Records --> "+j);
+        sErrorMessage.append("Total Failed Records --> "+k);
+        StringBuilder blacklistedMessage = new StringBuilder();
+        blacklistedMessage.append("<table align=\"center\" border=\"1\" bgcolor=\"CCE0FF\" cellpadding=\"2\" cellspacing=\"2\"><tr><td valign=\"middle\" bgcolor=\"#2379A5\"><font class=\"text\" color=\"#FFFFFF\" size=\"1\" face=\"Verdana, Arial\"> Success Result</font></td><td valign=\"middle\" bgcolor=\"#2379A5\"><font class=\"text\" color=\"#FFFFFF\" size=\"1\" face=\"Verdana, Arial\"> Fail Result</font></td></tr>");
+        blacklistedMessage.append("<tr><td>");
+        blacklistedMessage.append(sSuccessMessage.toString());
+        blacklistedMessage.append("</td><td>");
+        blacklistedMessage.append(sErrorMessage.toString());
+        blacklistedMessage.append("</td></tr></table>");
+        return blacklistedMessage;
+    }
+
+    private boolean isFileNameValid(String fileName)
+    {
+        //Sample Valid Filename: settlementDetailsMERCHANT_201212192328.xls
+        boolean isValidFilename = false;
+
+        if("".equals(fileName) || fileName!=null)
+        {
+            if(!fileName.endsWith(".xls"))
+            {
+                isValidFilename = false;
+            }
+            else
+            {
+                isValidFilename = true;
+            }
+        }
+        return isValidFilename;
+    }
+    public void deletefile(String filename)
+    {
+        File deleteFile = new File(filename ) ;
+
+        if( deleteFile.exists() )
+            deleteFile.delete() ;
+
+    }
+    public List<BlacklistVO> loadCardDetails(String fileName) throws SystemError
+    {
+        InputStream inputStream = null;
+        List<BlacklistVO> vList = new ArrayList<BlacklistVO>();
+
+        try
+        {
+            inputStream = new BufferedInputStream(new FileInputStream(fileName));
+            POIFSFileSystem fs = new POIFSFileSystem(inputStream);
+            HSSFWorkbook wb = new HSSFWorkbook(fs);
+            HSSFSheet sheet = wb.getSheetAt(0);
+
+            if (inputStream == null)
+            {
+                throw new SystemError("Settlement File is not found");
+            }
+
+            // get rows of sheet
+            Iterator rows = sheet.rowIterator();
+
+            int cntRowToLeaveFromTop=0;
+            int cntTotalRecords=0;
+            boolean isFileProceeding = false;
+            while (rows.hasNext())
+            {
+                HSSFRow row = (HSSFRow) rows.next();
+                cntRowToLeaveFromTop++;
+                // Skip the header rows.
+                if (cntRowToLeaveFromTop==1)
+                {
+                    isFileProceeding = true;
+                    break;
+                }
+            }
+            if(!isFileProceeding)
+            {
+                throw new SystemError("Settlement Cron Error : Invalid File Format");
+            }
+            int i=0;
+            while(rows.hasNext())
+            {
+                HSSFRow row = (HSSFRow) rows.next();
+                cntTotalRecords++;
+                Iterator cells = row.cellIterator();
+                BlacklistVO blacklistVO = new BlacklistVO();
+                while (cells.hasNext())
+                {
+                    HSSFCell cell = (HSSFCell) cells.next();
+                    if(cell.getCellNum()==0)
+                    {
+                        i=i+1;
+                        blacklistVO.setFirstSix(Functions.getFirstSix(cell.getStringCellValue()));
+                        blacklistVO.setLastFour(Functions.getLastFour(cell.getStringCellValue()));
+                        blacklistVO.setBlacklistCardReason(Functions.getLastFour(cell.getStringCellValue()));
+                        continue;
+                    }
+                    else
+                    {
+                        throw new SystemError("Error: invalid file content");
+                    }
+                }
+                if(blacklistVO!= null)
+                {
+                    vList.add(blacklistVO);
+                }
+            }
+        }
+        catch (IOException e)
+        {
+            if(e.getMessage().toLowerCase().contains("invalid"))
+            {
+                throw new SystemError("Error: Invalid file content");
+            }
+            log.error("Card upload ioexception---",e);
+            throw new SystemError("ERROR:  File cant be read");
+        }
+        catch (NumberFormatException num)
+        {
+            if(num.getMessage().toLowerCase().contains("invalid"))
+            {
+                throw new SystemError("Error: invalid file content");
+            }
+            log.error("Card upload NumberFormatException---",num);
+            throw new SystemError("ERROR:  File cant be read");
+        }
+        catch(SystemError systemError)
+        {
+            throw new SystemError("Error: invalid file content");
+        }
+        finally
+        {
+
+            if (inputStream != null)
+            {
+                try
+                {
+                    inputStream.close();
+                }
+                catch (IOException e)
+                {
+                    throw new SystemError("ERROR: File cant be closed successfully");
+                }
+            }
+        }
+        return (List<BlacklistVO>)vList;
+    }
+}

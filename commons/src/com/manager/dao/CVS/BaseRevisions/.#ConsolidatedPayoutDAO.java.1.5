@@ -1,0 +1,495 @@
+package com.manager.dao;
+
+import com.directi.pg.Database;
+import com.directi.pg.Logger;
+import com.directi.pg.SystemError;
+import com.directi.pg.core.GatewayAccountService;
+import com.directi.pg.core.GatewayType;
+import com.manager.vo.TerminalVO;
+import com.manager.vo.TransactionVO;
+import com.payment.PZTransactionStatus;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.LinkedList;
+import java.util.List;
+
+/**
+ * Created by Admin on 9/5/2020.
+ */
+public class ConsolidatedPayoutDAO
+{
+    Logger logger = new Logger(ConsolidatedPayoutDAO.class.getName());
+    public List<TransactionVO> getTransactionDetailsByDtstamp(String memberId,String accountId,String terminalIds, String tableName, String settleStartDate, String settleEndDate,PZTransactionStatus status)
+    {
+        List<TransactionVO> transactionVOs = new LinkedList<TransactionVO>();
+        Connection con = null;
+        PreparedStatement preparedStatement = null;
+        TransactionVO detailsVO = null;
+        ResultSet rsPayout = null;
+        try
+        {
+            String query = null;
+            con = Database.getRDBConnection();
+            if ("transaction_ecore".equalsIgnoreCase(tableName))
+            {
+                query = "SELECT terminalid,trackingid,description,paymodeid,cardtypeid,FROM_UNIXTIME(dtstamp) as transactiondate,amount,captureamount,currency,STATUS,firstname,lastname FROM transaction_ecore where toid=? and accountid IN ("+accountId+")and paymodeid=? and cardtypeid=? and FROM_UNIXTIME(dtstamp) >=? and FROM_UNIXTIME(dtstamp) <=? and status=? order by terminalid";
+            }
+            else if ("transaction_qwipi".equalsIgnoreCase(tableName))
+            {
+                query = "SELECT terminalid,trackingid,description,paymodeid,cardtypeid,FROM_UNIXTIME(dtstamp) as transactiondate,amount,captureamount,currency,STATUS,firstname,lastname FROM transaction_qwipi where toid=? and accountid IN ("+accountId+") and paymodeid=? and cardtypeid=? and FROM_UNIXTIME(dtstamp) >=? and FROM_UNIXTIME(dtstamp) <=? and status=? order by terminalid";
+            }
+            else
+            {
+                //query = "SELECT trackingid,description,FROM_UNIXTIME(dtstamp) as transactiondate,amount,captureamount,currency,STATUS,firstname,lastname,walletAmount,walletCurrency FROM transaction_common AS tc, transaction_common_details AS tcd where toid=? and accountid=? and paymodeid=? and cardtypeid=? and FROM_UNIXTIME(dtstamp) >=? and FROM_UNIXTIME(dtstamp) <=? and status=?";
+                query = "SELECT terminalid,trackingid,description,paymodeid,cardtypeid,FROM_UNIXTIME(dtstamp) AS transactiondate,amount,captureamount,currency,STATUS,firstname,lastname FROM transaction_common WHERE toid=? AND accountid IN ("+accountId+") AND terminalid IN("+terminalIds+") AND FROM_UNIXTIME(dtstamp) >=? AND FROM_UNIXTIME(dtstamp) <=? AND STATUS=? order by terminalid";
+            }
+
+            preparedStatement = con.prepareStatement(query);
+            preparedStatement.setString(1, memberId);
+//            preparedStatement.setString(2, accountId);
+            preparedStatement.setString(2, settleStartDate);
+            preparedStatement.setString(3, settleEndDate);
+            preparedStatement.setString(4, status.toString());
+            rsPayout = preparedStatement.executeQuery();
+            logger.debug("Query:::::::::::;" + query);
+            logger.debug("preparedStatement:::::::::::;"+preparedStatement);
+            logger.debug("rsPayout:::::::::::;"+rsPayout);
+            while (rsPayout.next())
+            {
+                detailsVO = new TransactionVO();
+                detailsVO.setTerminalId(rsPayout.getString("terminalid")+"-"+GatewayAccountService.getPaymentMode(rsPayout.getString("paymodeid"))+"-"+GatewayAccountService.getCardType(rsPayout.getString("cardtypeid")));
+                detailsVO.setTrackingId(rsPayout.getString("trackingid"));
+                detailsVO.setTransactionDate(rsPayout.getString("transactiondate"));
+                detailsVO.setCustFirstName(rsPayout.getString("firstname"));
+                detailsVO.setCustLastName(rsPayout.getString("lastname"));
+                detailsVO.setOrderId(rsPayout.getString("description"));
+                detailsVO.setStatus(rsPayout.getString("STATUS"));
+                detailsVO.setCurrency(rsPayout.getString("currency"));
+                detailsVO.setAmount(rsPayout.getString("amount"));
+                detailsVO.setCaptureAmount(rsPayout.getDouble("captureamount"));
+                detailsVO.setWalletAmount("");
+                detailsVO.setWalletCurrency("");
+                transactionVOs.add(detailsVO);
+            }
+        }
+        catch (SQLException se)
+        {
+            logger.error("SQLException ::::::: Leaving transactionEntry ", se);
+        }
+        catch (SystemError e)
+        {
+            logger.error("SystemError ::::::: Leaving transactionEntry ", e);
+        }
+        finally
+        {
+            Database.closeResultSet(rsPayout);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(con);
+        }
+        return transactionVOs;
+    }
+    public List<TransactionVO> getTransactionDetailsByTimestamp(String memberId,String accountId,String terminalIds,String tableName, String settleStartDate, String settleEndDate,PZTransactionStatus status)
+    {
+        List<TransactionVO> transactionVOs = new LinkedList<TransactionVO>();
+        Connection con = null;
+        PreparedStatement preparedStatement = null;
+        TransactionVO detailsVO = null;
+        ResultSet rsPayout = null;
+        String statusIn=null;
+        logger.error("status::::"+status.toString());
+        if(status.toString().equals("reversed")){
+            statusIn="'partialrefund','reversed'";
+        }
+        try
+        {
+            String query = null;
+            int count = 0;
+            con = Database.getRDBConnection();
+            if ("transaction_ecore".equalsIgnoreCase(tableName))
+            {
+                query = "SELECT trackingid,description,paymodeid,cardtypeid,FROM_UNIXTIME(dtstamp) as transactiondate,chargebackamount,refundamount,captureamount,currency,STATUS,firstname,lastname FROM transaction_ecore where toid=? and accountid IN ("+accountId+") and paymodeid=? and cardtypeid=? and timestamp >=? and timestamp<=? and status=?";
+            }
+            else if ("transaction_qwipi".equalsIgnoreCase(tableName))
+            {
+                query = "SELECT trackingid,description,paymodeid,cardtypeid,FROM_UNIXTIME(dtstamp) as transactiondate,chargebackamount,refundamount,captureamount,currency,STATUS,firstname,lastname FROM transaction_qwipi where toid=? and accountid IN ("+accountId+") and paymodeid=? and cardtypeid=? and timestamp >=? and timestamp<=? and status=?";
+            }
+            else
+            {
+                //query = "SELECT trackingid,description,FROM_UNIXTIME(dtstamp) as transactiondate,chargebackamount,refundamount,captureamount,currency,STATUS,firstname,lastname FROM transaction_common where toid=? and accountid=? and paymodeid=? and cardtypeid=? and timestamp >=? and timestamp<=? and status=?";
+                query = "SELECT tc.terminalid,tc.trackingid,tc.description,tc.paymodeid,tc.cardtypeid,FROM_UNIXTIME(dtstamp) as transactiondate,tc.chargebackamount,tc.refundamount,tc.captureamount,tc.currency,tc.STATUS,tc.firstname,tc.lastname,tcd.walletAmount,tcd.walletCurrency,tcd.amount,tcd.timestamp FROM transaction_common AS tc, transaction_common_details AS tcd where toid=? and accountid IN ("+accountId+") and terminalid IN("+terminalIds+") and tcd.timestamp >=? and tcd.timestamp<=? AND tcd.status IN("+statusIn+") AND tc.trackingid=tcd.trackingid order by tc.terminalid";
+
+            }
+            preparedStatement = con.prepareStatement(query);
+            preparedStatement.setString(1, memberId);
+//            preparedStatement.setString(2, accountId);
+            preparedStatement.setString(2, settleStartDate);
+            preparedStatement.setString(3, settleEndDate);
+            logger.error("Query for reversed:::::"+preparedStatement);
+            rsPayout = preparedStatement.executeQuery();
+            while (rsPayout.next())
+            {
+                count = count + 1;
+                detailsVO = new TransactionVO();
+                detailsVO.setTerminalId(rsPayout.getString("terminalid")+"-"+GatewayAccountService.getPaymentMode(rsPayout.getString("paymodeid"))+"-"+GatewayAccountService.getCardType(rsPayout.getString("cardtypeid")));
+                detailsVO.setTrackingId(rsPayout.getString("trackingid"));
+                detailsVO.setTransactionDate(rsPayout.getString("timestamp"));
+                detailsVO.setCustFirstName(rsPayout.getString("firstname"));
+                detailsVO.setCustLastName(rsPayout.getString("lastname"));
+                detailsVO.setOrderId(rsPayout.getString("description"));
+                detailsVO.setStatus(rsPayout.getString("STATUS"));
+                detailsVO.setCurrency(rsPayout.getString("currency"));
+                detailsVO.setChargebackAmount(rsPayout.getString("chargebackamount"));
+                detailsVO.setReverseAmount(rsPayout.getString("refundamount"));
+                detailsVO.setWalletAmount(rsPayout.getString("walletAmount"));
+                detailsVO.setWalletCurrency(rsPayout.getString("walletCurrency"));
+                detailsVO.setRefundAmount(rsPayout.getString("amount"));
+                transactionVOs.add(detailsVO);
+            }
+        }
+        catch (SQLException se)
+        {
+            logger.error("SQLException ::::::: Leaving transactionEntry ", se);
+        }
+        catch (SystemError e)
+        {
+            logger.error("SystemError ::::::: Leaving transactionEntry ", e);
+        }
+        finally
+        {
+            Database.closeResultSet(rsPayout);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(con);
+        }
+        return transactionVOs;
+    }
+    public List<TransactionVO> getPayoutTransactionDetailsByTimestamp(String memberId,String accountId,String terminalIds,String tableName, String settleStartDate, String settleEndDate, PZTransactionStatus status)
+    {
+        List<TransactionVO> transactionVOs = new LinkedList<TransactionVO>();
+        Connection con = null;
+        PreparedStatement preparedStatement = null;
+        TransactionVO detailsVO = null;
+        ResultSet rsPayout = null;
+        try
+        {
+            String query = null;
+            int count = 0;
+            con = Database.getRDBConnection();
+            query = "SELECT terminalid,trackingid,payoutamount,paymodeid,cardtypeid,timestamp,description,currency,STATUS,firstname,lastname FROM transaction_common WHERE toid=? AND accountid IN ("+accountId+") AND terminalid IN("+terminalIds+") AND FROM_UNIXTIME(dtstamp) >=? AND FROM_UNIXTIME(dtstamp)<=? AND STATUS=? order by terminalid";
+            preparedStatement = con.prepareStatement(query);
+            preparedStatement.setString(1, memberId);
+//            preparedStatement.setString(2, accountId);
+            preparedStatement.setString(2, settleStartDate);
+            preparedStatement.setString(3, settleEndDate);
+            preparedStatement.setString(4, status.toString());
+            logger.error("Query for Payout Excel:::::"+preparedStatement);
+            rsPayout = preparedStatement.executeQuery();
+            while (rsPayout.next())
+            {
+                count = count + 1;
+                detailsVO = new TransactionVO();
+                detailsVO.setTerminalId(rsPayout.getString("terminalid")+"-"+GatewayAccountService.getPaymentMode(rsPayout.getString("paymodeid"))+"-"+GatewayAccountService.getCardType(rsPayout.getString("cardtypeid")));
+                detailsVO.setTrackingId(rsPayout.getString("trackingid"));
+                detailsVO.setTransactionDate(rsPayout.getString("timestamp"));
+                detailsVO.setCustFirstName(rsPayout.getString("firstname"));
+                detailsVO.setCustLastName(rsPayout.getString("lastname"));
+                detailsVO.setOrderId(rsPayout.getString("description"));
+                detailsVO.setStatus(rsPayout.getString("STATUS"));
+                detailsVO.setCurrency(rsPayout.getString("currency"));
+                detailsVO.setPayoutAmount(rsPayout.getString("payoutamount"));
+                detailsVO.setWalletAmount("");
+                detailsVO.setWalletCurrency("");
+                transactionVOs.add(detailsVO);
+            }
+        }
+        catch (SQLException se)
+        {
+            logger.error("SQLException ::::::: Leaving transactionEntry ", se);
+        }
+        catch (SystemError e)
+        {
+            logger.error("SystemError ::::::: Leaving transactionEntry ", e);
+        }
+        finally
+        {
+            Database.closeResultSet(rsPayout);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(con);
+        }
+        return transactionVOs;
+    }
+    public List<TransactionVO> getRefundReverseTransactionDetailsByTimestamp(String memberId,String accountId,String terminalId,String tableName, String settleStartDate, String settleEndDate, PZTransactionStatus status)
+    {
+        List<TransactionVO> transactionVOs = new LinkedList<TransactionVO>();
+        Connection con = null;
+        PreparedStatement preparedStatement = null;
+        TransactionVO detailsVO = null;
+        ResultSet rsPayout = null;
+        try
+        {
+            String query = null;
+            int count = 0;
+            con = Database.getRDBConnection();
+            query = "SELECT tc.terminalid,tc.trackingid,tc.description,tc.paymodeid,tc.cardtypeid,FROM_UNIXTIME(dtstamp) as transactiondate,tcd.amount,tc.currency,tc.STATUS,tc.firstname,tc.lastname,tcd.walletAmount,tcd.walletCurrency,tcd.timestamp FROM transaction_common AS tc, transaction_common_details AS tcd where toid=? and accountid IN ("+accountId+") and terminalid IN("+terminalId+") and tcd.status='refundreversed' and tcd.timestamp >=? and tcd.timestamp<=?  AND tc.trackingid=tcd.trackingid order by tc.terminalid";
+            preparedStatement = con.prepareStatement(query);
+            preparedStatement.setString(1, memberId);
+//            preparedStatement.setString(2, accountId);
+            preparedStatement.setString(2, settleStartDate);
+            preparedStatement.setString(3, settleEndDate);
+            logger.error("Query for Refund Reverse Excel:::::"+preparedStatement);
+            rsPayout = preparedStatement.executeQuery();
+            while (rsPayout.next())
+            {
+                count = count + 1;
+                detailsVO = new TransactionVO();
+                detailsVO.setTerminalId(rsPayout.getString("terminalid")+"-"+GatewayAccountService.getPaymentMode(rsPayout.getString("paymodeid"))+"-"+GatewayAccountService.getCardType(rsPayout.getString("cardtypeid")));
+                detailsVO.setTrackingId(rsPayout.getString("trackingid"));
+                detailsVO.setTransactionDate(rsPayout.getString("timestamp"));
+                detailsVO.setCustFirstName(rsPayout.getString("firstname"));
+                detailsVO.setCustLastName(rsPayout.getString("lastname"));
+                detailsVO.setOrderId(rsPayout.getString("description"));
+                detailsVO.setStatus(rsPayout.getString("STATUS"));
+                detailsVO.setCurrency(rsPayout.getString("currency"));
+                detailsVO.setAmount(rsPayout.getString("amount"));
+                detailsVO.setWalletAmount("");
+                detailsVO.setWalletCurrency("");
+                transactionVOs.add(detailsVO);
+            }
+        }
+        catch (SQLException se)
+        {
+            logger.error("SQLException ::::::: Leaving transactionEntry ", se);
+        }
+        catch (SystemError e)
+        {
+            logger.error("SystemError ::::::: Leaving transactionEntry ", e);
+        }
+        finally
+        {
+            Database.closeResultSet(rsPayout);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(con);
+        }
+        return transactionVOs;
+    }
+
+    public List<TransactionVO> getCaseFilingTransactionDetailsByTimestamp(String memberId,String accountId,String terminalId,String tableName, String settleStartDate, String settleEndDate, PZTransactionStatus status)
+    {
+        List<TransactionVO> transactionVOs = new LinkedList<TransactionVO>();
+        Connection con = null;
+        PreparedStatement preparedStatement = null;
+        TransactionVO detailsVO = null;
+        ResultSet rsPayout = null;
+        try
+        {
+            String query = null;
+            int count = 0;
+            con = Database.getRDBConnection();
+            query = "SELECT tc.terminalid,tc.trackingid,tc.description,tc.paymodeid,tc.cardtypeid,FROM_UNIXTIME(dtstamp) as transactiondate,tcd.amount,tc.currency,tc.STATUS,tc.firstname,tc.lastname,tcd.walletAmount,tcd.walletCurrency,tcd.timestamp FROM transaction_common AS tc, transaction_common_details AS tcd where toid=? and accountid IN ("+accountId+") and terminalid IN("+terminalId+") and tcd.status='casefiling' and tcd.timestamp >=? and tcd.timestamp<=?  AND tc.trackingid=tcd.trackingid order by tc.terminalid";
+            preparedStatement = con.prepareStatement(query);
+            preparedStatement.setString(1, memberId);
+//            preparedStatement.setString(2, accountId);
+            preparedStatement.setString(2, settleStartDate);
+            preparedStatement.setString(3, settleEndDate);
+            logger.error("Query for Case Filing Excel:::::"+preparedStatement);
+            rsPayout = preparedStatement.executeQuery();
+            while (rsPayout.next())
+            {
+                count = count + 1;
+                detailsVO = new TransactionVO();
+                detailsVO.setTerminalId(rsPayout.getString("terminalid")+"-"+GatewayAccountService.getPaymentMode(rsPayout.getString("paymodeid"))+"-"+GatewayAccountService.getCardType(rsPayout.getString("cardtypeid")));
+                detailsVO.setTrackingId(rsPayout.getString("trackingid"));
+                detailsVO.setTransactionDate(rsPayout.getString("timestamp"));
+                detailsVO.setCustFirstName(rsPayout.getString("firstname"));
+                detailsVO.setCustLastName(rsPayout.getString("lastname"));
+                detailsVO.setOrderId(rsPayout.getString("description"));
+                detailsVO.setStatus(rsPayout.getString("STATUS"));
+                detailsVO.setCurrency(rsPayout.getString("currency"));
+                detailsVO.setAmount(rsPayout.getString("amount"));
+                detailsVO.setWalletAmount("");
+                detailsVO.setWalletCurrency("");
+                transactionVOs.add(detailsVO);
+            }
+        }
+        catch (SQLException se)
+        {
+            logger.error("SQLException ::::::: Leaving transactionEntry ", se);
+        }
+        catch (SystemError e)
+        {
+            logger.error("SystemError ::::::: Leaving transactionEntry ", e);
+        }
+        finally
+        {
+            Database.closeResultSet(rsPayout);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(con);
+        }
+        return transactionVOs;
+    }
+    public List<TransactionVO> getTransactionDetailsByTimestampForChargeback(String memberId,String acountId,String terminalIds,String tableName, String settleStartDate, String settleEndDate,PZTransactionStatus status)
+    {
+        List<TransactionVO> transactionVOs = new LinkedList<TransactionVO>();
+        Connection con = null;
+        PreparedStatement preparedStatement = null;
+        TransactionVO detailsVO = null;
+        ResultSet rsPayout = null;
+        try
+        {
+            String query = null;
+            int count = 0;
+            con = Database.getRDBConnection();
+            query = "SELECT tc.terminalid,tcd.trackingid,tc.description,tc.paymodeid,tc.cardtypeid,FROM_UNIXTIME(dtstamp) as transactiondate,tc.currency,tc.STATUS,tc.firstname,tc.lastname,tcd.walletAmount,tcd.walletCurrency,tcd.amount,tcd.timestamp FROM transaction_common AS tc, transaction_common_details AS tcd where toid=? and accountid IN ("+acountId+") and terminalid IN("+terminalIds+") and tcd.timestamp >=? and tcd.timestamp<=? and tcd.status='chargeback' AND tc.trackingid=tcd.trackingid order by tc.terminalid";
+            preparedStatement = con.prepareStatement(query);
+            preparedStatement.setString(1, memberId);
+//            preparedStatement.setString(2, acountId);
+            preparedStatement.setString(2, settleStartDate);
+            preparedStatement.setString(3, settleEndDate);
+            logger.error("Query for chargeback:::::"+preparedStatement);
+            rsPayout = preparedStatement.executeQuery();
+            while (rsPayout.next())
+            {
+                count = count + 1;
+                detailsVO = new TransactionVO();
+                detailsVO.setTerminalId(rsPayout.getString("terminalid")+"-"+GatewayAccountService.getPaymentMode(rsPayout.getString("paymodeid"))+"-"+GatewayAccountService.getCardType(rsPayout.getString("cardtypeid")));
+                detailsVO.setTrackingId(rsPayout.getString("trackingid"));
+                detailsVO.setTransactionDate(rsPayout.getString("timestamp"));
+                detailsVO.setCustFirstName(rsPayout.getString("firstname"));
+                detailsVO.setCustLastName(rsPayout.getString("lastname"));
+                detailsVO.setOrderId(rsPayout.getString("description"));
+                detailsVO.setStatus(rsPayout.getString("STATUS"));
+                detailsVO.setCurrency(rsPayout.getString("currency"));
+                detailsVO.setChargebackAmount(rsPayout.getString("amount"));
+                detailsVO.setWalletAmount(rsPayout.getString("walletAmount"));
+                detailsVO.setWalletCurrency(rsPayout.getString("walletCurrency"));
+                transactionVOs.add(detailsVO);
+            }
+        }
+        catch (SQLException se)
+        {
+            logger.error("SQLException ::::::: Leaving transactionEntry ", se);
+        }
+        catch (SystemError e)
+        {
+            logger.error("SystemError ::::::: Leaving transactionEntry ", e);
+        }
+        finally
+        {
+            Database.closeResultSet(rsPayout);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(con);
+        }
+        return transactionVOs;
+    }
+    public List<TransactionVO> geTransactionDetailsForChargebackReversed(String meberId,String accountId,String terminalIds,String tableName, String settleStartDate, String settleEndDate,PZTransactionStatus status)
+    {
+        List<TransactionVO> transactionVOs = new LinkedList<TransactionVO>();
+        Connection con = null;
+        PreparedStatement preparedStatement = null;
+        TransactionVO detailsVO = null;
+        ResultSet rsPayout = null;
+        try
+        {
+            String query = null;
+            int count = 0;
+            con = Database.getRDBConnection();
+            query = "SELECT tc.terminalid,tc.trackingid,tc.description,tc.paymodeid,tc.cardtypeid,FROM_UNIXTIME(dtstamp) as transactiondate,tcd.amount,tc.currency,tcd.STATUS,tc.firstname,tc.lastname,tcd.walletAmount,tcd.walletCurrency,tcd.timestamp FROM transaction_common AS tc, transaction_common_details AS tcd where toid=? and accountid IN ("+accountId+") and terminalid IN("+terminalIds+") and tcd.status='chargebackreversed' and tcd.timestamp >=? and tcd.timestamp<=?  AND tc.trackingid=tcd.trackingid order by tc.terminalid";
+            preparedStatement = con.prepareStatement(query);
+            preparedStatement.setString(1, meberId);
+//            preparedStatement.setString(2, accountId);
+            preparedStatement.setString(2, settleStartDate);
+            preparedStatement.setString(3, settleEndDate);
+            logger.error("Query for ChargebackReversed:::::"+preparedStatement);
+            rsPayout = preparedStatement.executeQuery();
+            while (rsPayout.next())
+            {
+                count = count + 1;
+                detailsVO = new TransactionVO();
+                detailsVO.setTerminalId(rsPayout.getString("terminalid")+"-"+GatewayAccountService.getPaymentMode(rsPayout.getString("paymodeid"))+"-"+GatewayAccountService.getCardType(rsPayout.getString("cardtypeid")));
+                detailsVO.setTrackingId(rsPayout.getString("trackingid"));
+                detailsVO.setTransactionDate(rsPayout.getString("timestamp"));
+                detailsVO.setCustFirstName(rsPayout.getString("firstname"));
+                detailsVO.setCustLastName(rsPayout.getString("lastname"));
+                detailsVO.setOrderId(rsPayout.getString("description"));
+                detailsVO.setStatus(rsPayout.getString("STATUS"));
+                detailsVO.setCurrency(rsPayout.getString("currency"));
+                detailsVO.setChargebackAmount(rsPayout.getString("amount"));
+                detailsVO.setWalletAmount("");
+                detailsVO.setWalletCurrency("");
+                transactionVOs.add(detailsVO);
+            }
+        }
+        catch (SQLException se)
+        {
+            logger.error("SQLException ::::::: Leaving transactionEntry ", se);
+        }
+        catch (SystemError e)
+        {
+            logger.error("SystemError ::::::: Leaving transactionEntry ", e);
+        }
+        finally
+        {
+            Database.closeResultSet(rsPayout);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(con);
+        }
+        return transactionVOs;
+    }
+    public List<TransactionVO> getRollingReserveTransaction(String memberId,String accountId,String terminalIds,String rollingReserveStartDate, String rollingReserveEndDate)
+    {
+        List<TransactionVO> transactionVOs = new LinkedList<TransactionVO>();
+        Connection con = null;
+        PreparedStatement preparedStatement = null;
+        TransactionVO detailsVO = null;
+        ResultSet rsPayout = null;
+        try
+        {
+            String query = null;
+            con = Database.getRDBConnection();
+            query = "SELECT t.terminalid,t.trackingid,t.description,t.paymodeid,t.cardtypeid,FROM_UNIXTIME(dtstamp) as transactiondate,t.amount,t.captureamount,t.currency,t.STATUS,t.firstname,t.lastname,bd.isRollingReserveReleased FROM transaction_common as t JOIN bin_details as bd where t.toid=? and t.accountid IN ("+accountId+")and FROM_UNIXTIME(dtstamp) >=? and FROM_UNIXTIME(dtstamp) <=? and t.terminalid IN("+terminalIds+") and bd.isRollingReserveReleased=? and bd.icicitransid=t.trackingid and t.STATUS IN ('chargebackreversed','settled', 'reversed', 'chargeback') order by t.terminalid";
+
+            preparedStatement = con.prepareStatement(query);
+            preparedStatement.setString(1, memberId);
+//            preparedStatement.setString(2, accountId);
+            preparedStatement.setString(2, rollingReserveStartDate);
+            preparedStatement.setString(3, rollingReserveEndDate);
+            preparedStatement.setString(4, "Y");
+            logger.error("Query For RollingReverse::::"+preparedStatement);
+
+            rsPayout = preparedStatement.executeQuery();
+            while (rsPayout.next())
+            {
+                detailsVO = new TransactionVO();
+                detailsVO.setTerminalId(rsPayout.getString("terminalid")+"-"+GatewayAccountService.getPaymentMode(rsPayout.getString("paymodeid"))+"-"+GatewayAccountService.getCardType(rsPayout.getString("cardtypeid")));
+                detailsVO.setTrackingId(rsPayout.getString("trackingid"));
+                detailsVO.setTransactionDate(rsPayout.getString("transactiondate"));
+                detailsVO.setCustFirstName(rsPayout.getString("firstname"));
+                detailsVO.setCustLastName(rsPayout.getString("lastname"));
+                detailsVO.setOrderId(rsPayout.getString("description"));
+                detailsVO.setStatus(rsPayout.getString("STATUS"));
+                detailsVO.setCurrency(rsPayout.getString("currency"));
+                detailsVO.setAmount(rsPayout.getString("amount"));
+                detailsVO.setCaptureAmount(rsPayout.getDouble("captureamount"));
+                detailsVO.setIsRollingReserve(rsPayout.getString("isRollingReserveReleased"));
+                transactionVOs.add(detailsVO);
+            }
+        }
+        catch (SQLException se)
+        {
+            logger.error("SQLException ::::::: Leaving transactionEntry ", se);
+        }
+        catch (SystemError e)
+        {
+            logger.error("SystemError ::::::: Leaving transactionEntry ", e);
+        }
+        finally
+        {
+            Database.closeResultSet(rsPayout);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(con);
+        }
+        return transactionVOs;
+    }
+}

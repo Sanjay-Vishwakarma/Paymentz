@@ -1,0 +1,1 @@
+INSERT INTO `paymentz`.`error_code` (`error_type`, `error_name`, `error_code`, `error_description`, `api_code`, `api_description`) VALUES ('VALIDATION', 'VALIDATION_AUTHTOKEN', '10182', 'Invalid authToken, authToken cannot be empty', '10182', 'Invalid authToken, authToken cannot be empty'); 

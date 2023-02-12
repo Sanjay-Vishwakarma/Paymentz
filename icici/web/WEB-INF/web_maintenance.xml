@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<!DOCTYPE web-app
+        PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.2//EN"
+        "http://java.sun.com/j2ee/dtds/web-app_2_2.dtd">
+
+<web-app>
+    <servlet>
+        <servlet-name>InitServlet</servlet-name>
+        <servlet-class>InitServlet</servlet-class>
+        <load-on-startup>100</load-on-startup>
+    </servlet>
+
+    <servlet>
+        <servlet-name>maintenance</servlet-name>
+        <jsp-file>/maintenance.html</jsp-file>
+        <load-on-startup/>
+    </servlet>
+
+    <servlet>
+        <servlet-name>
+            servletToJsp
+        </servlet-name>
+        <servlet-class>
+            servletToJsp
+        </servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>maintenance</servlet-name>
+        <url-pattern>/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>maintenance</servlet-name>
+        <url-pattern>/servlet/*</url-pattern>
+    </servlet-mapping>
+
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>Protected Area</web-resource-name>
+            <!-- Define the context-relative URL(s) to be protected -->
+            <url-pattern>/logger.jsp</url-pattern>
+
+            <url-pattern>/admin/index.jsp</url-pattern>
+            <url-pattern>/rawbatch.jsp</url-pattern>
+
+            <url-pattern>/servlet/TempPod</url-pattern>
+            <url-pattern>/servlet/TempPodSubmit</url-pattern>
+            <url-pattern>/servlet/AdminReverseList</url-pattern>
+            <url-pattern>/servlet/AdminDoReverseTransaction</url-pattern>
+            <url-pattern>/servlet/ChargebackList</url-pattern>
+            <url-pattern>/servlet/ChargebackList</url-pattern>
+            <url-pattern>/servlet/DoChargebackTransaction</url-pattern>
+            <url-pattern>/servlet/GetChargebackDetails</url-pattern>
+            <url-pattern>/servlet/RawConfirmBatch</url-pattern>
+            <url-pattern>/servlet/RawCancel</url-pattern>
+            <url-pattern>/servlet/RawCheck</url-pattern>
+
+            <url-pattern>/servlet/AdminChargebackReverseList</url-pattern>
+            <url-pattern>/servlet/AdminDoReverseChargeback</url-pattern>
+            <url-pattern>/servlet/BlockedIPList</url-pattern>
+            <url-pattern>/servlet/BlockedDomainList</url-pattern>
+            <url-pattern>/servlet/BlockedEmailList</url-pattern>
+            <url-pattern>/servlet/UnblockIP</url-pattern>
+            <url-pattern>/servlet/UnblockEmail</url-pattern>
+            <url-pattern>/servlet/AdminTransactionDetails</url-pattern>
+            <url-pattern>/servlet/UnblockDomain</url-pattern>
+
+            <url-pattern>/servlet/AdminDoProofReceived</url-pattern>
+            <url-pattern>/servlet/AdminProofrequiredList</url-pattern>
+            <url-pattern>/servlet/MemberList</url-pattern>
+            <url-pattern>/servlet/MemberDetails</url-pattern>
+            <url-pattern>/servlet/SetReserves</url-pattern>
+
+            <!-- If you list http methods, only those methods are protected -->
+            <http-method>DELETE</http-method>
+            <http-method>GET</http-method>
+            <http-method>POST</http-method>
+            <http-method>PUT</http-method>
+        </web-resource-collection>
+        <auth-constraint>
+            <!-- Anyone with one of the listed roles may access this area -->
+            <role-name>payment</role-name>
+        </auth-constraint>
+    </security-constraint>
+
+    <!-- Default login configuration uses BASIC authentication-->
+
+    <login-config>
+        <auth-method>BASIC</auth-method>
+        <realm-name>Example Basic Authentication Area</realm-name>
+    </login-config>
+
+</web-app>

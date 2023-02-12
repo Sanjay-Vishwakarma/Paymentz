@@ -1,0 +1,2629 @@
+package com.manager.dao;
+
+import com.directi.pg.*;
+import com.manager.vo.BlacklistVO;
+import com.manager.vo.PaginationVO;
+import com.payment.exceptionHandler.PZDBViolationException;
+import com.payment.exceptionHandler.PZExceptionHandler;
+import com.payment.exceptionHandler.constraintType.PZDBExceptionEnum;
+
+import javax.servlet.http.HttpServletRequest;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Created by Jinesh on 4/30/2015.
+ */
+public class BlacklistDAO
+{
+    private static Logger log = new Logger(BlacklistDAO.class.getName());
+
+    public int insertBlackListCard(String firstSix, String lastFour) throws PZDBViolationException
+    {
+        Connection con = null;
+        PreparedStatement ps = null;
+        int count = 0;
+        try
+        {
+            con = Database.getConnection();
+            String insertQuery = "INSERT INTO blacklist_cards (first_six,last_four) VALUES (?,?)";
+            ps = con.prepareStatement(insertQuery);
+            ps.setString(1, firstSix);
+            ps.setString(2, lastFour);
+            count = ps.executeUpdate();
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "insertBlackListCard()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "insertBlackListCard()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(con);
+        }
+        return count;
+    }
+
+    public List<BlacklistVO> getBlackListedCards(String firstSix, String lastFour) throws PZDBViolationException
+    {
+        Connection con = null;
+        ResultSet rs = null;
+        StringBuffer sb = new StringBuffer();
+        List<BlacklistVO> listOfCard = new ArrayList<BlacklistVO>();
+        Functions functions = new Functions();
+        try
+        {
+            con = Database.getRDBConnection();
+            sb.append("select * from blacklist_cards");
+
+            if (functions.isValueNull(firstSix) && !functions.isValueNull(lastFour))
+            {
+                sb.append(" where first_six=" + firstSix);
+            }
+            if (functions.isValueNull(lastFour) && !functions.isValueNull(firstSix))
+            {
+                sb.append(" where last_four=" + lastFour);
+            }
+            if (functions.isValueNull(firstSix) && functions.isValueNull(lastFour))
+            {
+                sb.append(" where first_six=" + firstSix + " and last_four=" + lastFour);
+            }
+            PreparedStatement ps = con.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                BlacklistVO blacklistVO = new BlacklistVO();
+                blacklistVO.setFirstSix(rs.getString("first_six"));
+                blacklistVO.setLastFour(rs.getString("last_four"));
+                listOfCard.add(blacklistVO);
+
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlackListedCards()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlackListedCards()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closeConnection(con);
+        }
+        return listOfCard;
+    }
+
+    public List<BlacklistVO> getBlackListedCardsPage(String firstSix, String lastFour, PaginationVO paginationVO) throws PZDBViolationException
+    {
+        int totalreords = 0;
+        Connection con = null;
+        ResultSet rs = null;
+        StringBuffer sb = new StringBuffer();
+        List<BlacklistVO> listOfCard = new ArrayList<BlacklistVO>();
+        Functions functions = new Functions();
+        try
+        {
+            con = Database.getRDBConnection();
+            sb.append("select * from blacklist_cards");
+            StringBuffer countQuery = new StringBuffer("select count(*) from blacklist_cards");
+
+            if (functions.isValueNull(firstSix) && !functions.isValueNull(lastFour))
+            {
+                sb.append(" where first_six=" + firstSix);
+                countQuery.append(" where first_six=" + firstSix);
+            }
+            if (functions.isValueNull(lastFour) && !functions.isValueNull(firstSix))
+            {
+                sb.append(" where last_four=" + lastFour);
+                countQuery.append(" where last_four=" + lastFour);
+            }
+            if (functions.isValueNull(firstSix) && functions.isValueNull(lastFour))
+            {
+                sb.append(" where first_six=" + firstSix + " and last_four=" + lastFour);
+                countQuery.append(" where first_six=" + firstSix + " and last_four=" + lastFour);
+            }
+            sb.append(" order by id LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            PreparedStatement ps = con.prepareStatement(sb.toString());
+
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                BlacklistVO blacklistVO = new BlacklistVO();
+                blacklistVO.setId(rs.getString("id"));
+                blacklistVO.setFirstSix(rs.getString("first_six"));
+                blacklistVO.setLastFour(rs.getString("last_four"));
+                listOfCard.add(blacklistVO);
+
+            }
+            ps = con.prepareStatement(countQuery.toString());
+            rs = ps.executeQuery();
+            if (rs.next())
+            {
+                totalreords = rs.getInt(1);
+            }
+            if (totalreords != 0)
+            {
+                paginationVO.setTotalRecords(totalreords);
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlackListedCardsPage()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlackListedCardsPage()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closeConnection(con);
+        }
+        return listOfCard;
+    }
+
+    public void deleteBlockedCard(String id) throws PZDBViolationException
+    {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try
+        {
+            conn = Database.getConnection();
+            String dQuery = "DELETE FROM blacklist_cards WHERE id=?";
+            ps = conn.prepareStatement(dQuery);
+            ps.setString(1, id);
+            ps.executeUpdate();
+            log.debug("delete card---" + dQuery);
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "deleteBlockedCard()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "deleteBlockedCard()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+    }
+
+    public List<BlacklistVO> getBlockedIp(String ip) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        List<BlacklistVO> listOfIp = new ArrayList<BlacklistVO>();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getRDBConnection();
+            sb.append("select * from blacklist_ip");
+            String query = "select count(*) blacklist_ip";
+            if (function.isValueNull(ip))
+            {
+                sb.append(" where ipaddress='" + ip + "'");
+            }
+
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setIpAddress(rs.getString("ipaddress"));
+                listOfIp.add(blacklistVO);
+            }
+            log.debug("ip query---" + sb.toString());
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedIp()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedIp()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return listOfIp;
+    }
+
+    public int insertBlockedIp(String ipAddress) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps = null;
+        int count = 0;
+        try
+        {
+            conn = Database.getConnection();
+            String insertQuery = "insert into blacklist_ip (ipaddress) values (?)";
+            ps = conn.prepareStatement(insertQuery);
+            ps.setString(1, ipAddress);
+            count = ps.executeUpdate();
+            log.debug("insert ip address---" + insertQuery);
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedIp()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedIp()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return count;
+    }
+
+    public void unblockIpAddress(String ipAddress) throws PZDBViolationException
+    {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = new BlacklistVO();
+        try
+        {
+            conn = Database.getConnection();
+            String dQuery = "delete from blacklist_ip where ipaddress=?";
+            ps = conn.prepareStatement(dQuery);
+            ps.setString(1, ipAddress);
+            ps.executeUpdate();
+            log.debug("unblock query---" + dQuery);
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockIpAddress()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockIpAddress()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+    }
+    //BlockEmail
+
+    public List<BlacklistVO> getBlockedEmailAddress(String email, PaginationVO paginationVO) throws PZDBViolationException
+    {
+        int totalreords = 0;
+        Connection conn = null;
+        ResultSet rs = null;
+        BlacklistVO blacklistVO = null;
+        List<BlacklistVO> listOfEmail = new ArrayList<BlacklistVO>();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("select * from blacklist_email");
+            StringBuffer countQuery = new StringBuffer("select count(*) from blacklist_email");
+
+            if (function.isValueNull(email))
+            {
+                sb.append(" where emailAddress='" + email + "'");
+                countQuery.append(" where emailAddress='" + email + "'");
+            }
+            sb.append(" order by TIMESTAMP desc LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            PreparedStatement ps = conn.prepareStatement(sb.toString());
+
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setId(rs.getString("id"));
+                blacklistVO.setEmailAddress(rs.getString("emailAddress"));
+                listOfEmail.add(blacklistVO);
+            }
+            log.debug("email query---" + sb.toString());
+            ps = conn.prepareStatement(countQuery.toString());
+            rs = ps.executeQuery();
+            if (rs.next())
+            {
+                totalreords = rs.getInt(1);
+            }
+            if (totalreords != 0)
+            {
+                paginationVO.setTotalRecords(totalreords);
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedEmailAddress()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedEmailAddress()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closeConnection(conn);
+        }
+        return listOfEmail;
+    }
+
+    public int insertBlockedEmail(String emailAddress) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps = null;
+        int count = 0;
+        try
+        {
+            conn = Database.getConnection();
+            String insertQuery = "insert into blacklist_email (emailAddress) values (?)";
+            ps = conn.prepareStatement(insertQuery);
+            ps.setString(1, emailAddress);
+
+            count = ps.executeUpdate();
+            log.debug("insert email address---" + insertQuery);
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "insertBlockedEmail()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "insertBlockedEmail()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return count;
+    }
+
+    public void unblockEmailAddress(String id) throws PZDBViolationException
+    {
+        Connection conn = null;
+        BlacklistVO blacklistVO = new BlacklistVO();
+        PreparedStatement ps = null;
+        try
+        {
+            conn = Database.getConnection();
+            String dQuery = "delete from blacklist_email where id=?";
+            ps = conn.prepareStatement(dQuery);
+            ps.setString(1, id);
+            ps.executeUpdate();
+            log.debug("unblock query---" + dQuery);
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockEmailAddress()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockEmailAddress()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+    }
+
+    //BlockNames
+    public List<BlacklistVO> getBlockedName(String name, PaginationVO paginationVO) throws PZDBViolationException
+    {
+        int totalreords = 0;
+        Connection conn = null;
+        ResultSet rs = null;
+        BlacklistVO blacklistVO = null;
+        List<BlacklistVO> listOfName = new ArrayList<BlacklistVO>();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("select * from blacklist_name");
+            StringBuffer countQuery = new StringBuffer("select count(*) from blacklist_name");
+
+            if (function.isValueNull(name))
+            {
+                sb.append(" where name='" + name + "'");
+                countQuery.append(" where name='" + name + "'");
+            }
+            sb.append(" order by TIMESTAMP desc LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            PreparedStatement ps = conn.prepareStatement(sb.toString());
+
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setId(rs.getString("id"));
+                blacklistVO.setName(rs.getString("name"));
+                listOfName.add(blacklistVO);
+            }
+            log.debug("name query---" + sb.toString());
+            ps = conn.prepareStatement(countQuery.toString());
+            rs = ps.executeQuery();
+            if (rs.next())
+            {
+                totalreords = rs.getInt(1);
+            }
+            if (totalreords != 0)
+            {
+                paginationVO.setTotalRecords(totalreords);
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedName()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedName()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closeConnection(conn);
+        }
+        return listOfName;
+    }
+
+    public int insertBlockedName(String name) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps = null;
+
+        int count = 0;
+        try
+        {
+            conn = Database.getConnection();
+            String insertQuery = "insert into blacklist_name (name) values (?)";
+            ps = conn.prepareStatement(insertQuery);
+            ps.setString(1, name);
+
+            count = ps.executeUpdate();
+            log.debug("insert name address---" + insertQuery);
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "insertBlockedName()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "insertBlockedName()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return count;
+    }
+
+    public void unblockName(String id) throws PZDBViolationException
+    {
+        Connection conn = null;
+        BlacklistVO blacklistVO = new BlacklistVO();
+        PreparedStatement ps = null;
+        try
+        {
+            conn = Database.getConnection();
+            String dQuery = "delete from blacklist_name where id=?";
+            ps = conn.prepareStatement(dQuery);
+            ps.setString(1, id);
+            ps.executeUpdate();
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockName()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockName()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+    }
+
+    //BlockCountry
+    public List<BlacklistVO> getBlockedCountry(String country, String accountId, String memberId) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        List<BlacklistVO> listOfCountry = new ArrayList();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("select * from blacklist_country where id>0");
+            StringBuffer countQuery = new StringBuffer("select count(*) from blacklist_country where  id>0");
+
+            if (function.isValueNull(country))
+            {
+                sb.append(" and country='" + country + "'");
+                countQuery.append(" and country='" + country + "'");
+            }
+            if (function.isValueNull(accountId))
+            {
+                sb.append(" and accountid='" + accountId + "'");
+                countQuery.append(" and accountid='" + accountId + "'");
+            }
+            if (function.isValueNull(memberId))
+            {
+                sb.append(" and memberid='" + memberId + "'");
+                countQuery.append(" and memberid='" + memberId + "'");
+            }
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setId(rs.getString("id"));
+                blacklistVO.setCountry(rs.getString("country"));
+                blacklistVO.setTelnocc(rs.getString("telnocc"));
+                blacklistVO.setCountryCode(rs.getString("country_code"));
+                blacklistVO.setThreeDigitCountryCode(rs.getString("three_digit_country_code"));
+                blacklistVO.setAccountId(rs.getString("accountid"));
+                blacklistVO.setMemberId(rs.getString("memberid"));
+                listOfCountry.add(blacklistVO);
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedCountry()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedCountry()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return listOfCountry;
+    }
+
+    public List<BlacklistVO> getBlockedCountryPage(String country, String accountId, String memberId, PaginationVO paginationVO) throws PZDBViolationException
+    {
+        int totalreords = 0;
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        List<BlacklistVO> listOfCountry = new ArrayList();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("select * from blacklist_country where id>0");
+            StringBuffer countQuery = new StringBuffer("select count(*) from blacklist_country where  id>0");
+
+            if (function.isValueNull(country))
+            {
+                sb.append(" and country='" + country + "'");
+                countQuery.append(" and country='" + country + "'");
+            }
+            if (function.isValueNull(accountId))
+            {
+                sb.append(" and accountid='" + accountId + "'");
+                countQuery.append(" and accountid='" + accountId + "'");
+            }
+            if (function.isValueNull(memberId))
+            {
+                sb.append(" and memberid='" + memberId + "'");
+                countQuery.append(" and memberid='" + memberId + "'");
+            }
+            sb.append(" order by TIMESTAMP desc LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setId(rs.getString("id"));
+                blacklistVO.setCountry(rs.getString("country"));
+                blacklistVO.setTelnocc(rs.getString("telnocc"));
+                blacklistVO.setCountryCode(rs.getString("country_code"));
+                blacklistVO.setThreeDigitCountryCode(rs.getString("three_digit_country_code"));
+                blacklistVO.setAccountId(rs.getString("accountid"));
+                blacklistVO.setMemberId(rs.getString("memberid"));
+                listOfCountry.add(blacklistVO);
+            }
+            ps = conn.prepareStatement(countQuery.toString());
+            rs = ps.executeQuery();
+            if (rs.next())
+            {
+                totalreords = rs.getInt(1);
+            }
+            if (totalreords != 0)
+            {
+                paginationVO.setTotalRecords(totalreords);
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedCountryPage()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedCountryPage()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return listOfCountry;
+    }
+
+    public List<BlacklistVO> getBlockedCountryPartner(String country, String accountId, String memberId, int records, int pageno, HttpServletRequest req) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        ResultSet rs1 = null;
+        PreparedStatement ps = null;
+        PreparedStatement pstmt = null;
+        BlacklistVO blacklistVO = null;
+        List<BlacklistVO> listOfCountry = new ArrayList();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        int start = 0;
+        int end = 0;
+
+        start = (pageno - 1) * records;
+        end = records;
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("select * from blacklist_country where id>0");
+            StringBuffer countQuery = new StringBuffer("select count(*) from blacklist_country where id>0");
+
+            if (function.isValueNull(memberId))
+            {
+                sb.append(" and memberid='" + memberId + "'");
+                countQuery.append(" and memberid='" + memberId + "'");
+            }
+            if (function.isValueNull(country))
+            {
+                sb.append(" and country='" + country + "'");
+                countQuery.append(" and country='" + country + "'");
+            }
+            if (function.isValueNull(accountId))
+            {
+                sb.append(" and accountid='" + accountId + "'");
+                countQuery.append(" and accountid='" + accountId + "'");
+            }
+            sb.append(" ORDER BY TIMESTAMP DESC ");
+            sb.append(" limit  " + start + "," + end);
+            ps = conn.prepareStatement(sb.toString());
+            log.debug("inside country query:::::" + ps);
+
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setCountry(rs.getString("country"));
+                blacklistVO.setTelnocc(rs.getString("telnocc"));
+                blacklistVO.setCountryCode(rs.getString("country_code"));
+                blacklistVO.setThreeDigitCountryCode(rs.getString("three_digit_country_code"));
+                blacklistVO.setAccountId(rs.getString("accountid"));
+                blacklistVO.setMemberId(rs.getString("memberid"));
+                listOfCountry.add(blacklistVO);
+            }
+            pstmt = conn.prepareStatement(countQuery.toString());
+            log.debug("count query::::" + pstmt);
+            rs1 = pstmt.executeQuery();
+            int totalrecords = 0;
+            if (rs1.next())
+                totalrecords = rs1.getInt(1);
+
+            req.setAttribute("totalrecords", totalrecords);
+            req.setAttribute("records", "0");
+            if (totalrecords > 0)
+            {
+                req.setAttribute("records", listOfCountry.size());
+            }
+            log.debug("totalrecords::::" + totalrecords);
+            log.debug("listOfCountry size::::" + listOfCountry.size());
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedCountry()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedCountry()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return listOfCountry;
+    }
+
+    public int insertBlockedCountry(String country, String code, String telCc, String three_digit_country_code, String accountId, String memberId) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps = null;
+        int count = 0;
+        try
+        {
+            conn = Database.getConnection();
+            String insertQuery = "insert into blacklist_country (country,country_code,telnocc,accountid,memberid,three_digit_country_code) values (?,?,?,?,?,?)";
+            ps = conn.prepareStatement(insertQuery);
+            ps.setString(1, country);
+            ps.setString(2, code);
+            ps.setString(3, telCc);
+            ps.setString(4, accountId);
+            ps.setString(5, memberId);
+            ps.setString(6, three_digit_country_code);
+            count = ps.executeUpdate();
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "insertBlockedCountry()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "insertBlockedCountry()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return count;
+    }
+
+    public void unblockCountry(String Id) throws PZDBViolationException
+    {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = new BlacklistVO();
+        try
+        {
+            conn = Database.getConnection();
+            String dQuery = "delete from blacklist_country where id=?";
+            ps = conn.prepareStatement(dQuery);
+            ps.setString(1, Id);
+            log.debug("PS::::::::" + ps);
+            ps.executeUpdate();
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockCountry()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockCountry()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+    }
+
+    public void addCustomerNameBatch(Set<String> nameList, String reason) throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        try
+        {
+            String query = "insert into blacklist_name(name,reason) value(?,?)";
+            connection = Database.getConnection();
+            preparedStatement = connection.prepareStatement(query);
+            for (String customerName : nameList)
+            {
+                preparedStatement.setString(1, customerName);
+                preparedStatement.setString(2, reason);
+                preparedStatement.addBatch();
+            }
+            int k[] = preparedStatement.executeBatch();
+        }
+        catch (SystemError systemError)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "addCustomerNameBatch()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, systemError.getMessage(), systemError.getCause());
+        }
+        catch (SQLException sql)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "addCustomerNameBatch()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, sql.getMessage(), sql.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+    }
+
+    public void addCustomerCardBatch(Set<String> cardList, String reason) throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        try
+        {
+            connection = Database.getConnection();
+            String query = "insert into blacklist_cards(first_six,last_four,reason)values(?,?,?)";
+            preparedStatement = connection.prepareStatement(query);
+            for (String cardNumber : cardList)
+            {
+                String firstSix = Functions.getFirstSix(cardNumber);
+                String lastFour = Functions.getLastFour(cardNumber);
+                preparedStatement.setString(1, firstSix);
+                preparedStatement.setString(2, lastFour);
+                preparedStatement.setString(3, reason);
+                preparedStatement.addBatch();
+            }
+
+            int k[] = preparedStatement.executeBatch();
+        }
+        catch (SystemError systemError)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "addCustomerCardBatch()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, systemError.getMessage(), systemError.getCause());
+        }
+        catch (SQLException sql)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "addCustomerCardBatch()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, sql.getMessage(), sql.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+    }
+
+    public void addCustomerEmailBatch(Set<String> emailList, String reason) throws PZDBViolationException
+    {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try
+        {
+            String query = "insert into blacklist_email (emailAddress,reason) values (?,?)";
+            conn = Database.getConnection();
+            ps = conn.prepareStatement(query);
+            for (String emailAddress : emailList)
+            {
+                ps.setString(1, emailAddress);
+                ps.setString(2, reason);
+                ps.addBatch();
+            }
+            int k[] = ps.executeBatch();
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "addCustomerEmailBatch()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "addCustomerEmailBatch()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+    }
+
+    public void addCustomerNameBatch(String customerName, String reason) throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        try
+        {
+            String query = "insert into blacklist_name(name,reason) value(?,?)";
+            connection = Database.getConnection();
+            preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, customerName);
+            preparedStatement.setString(2, reason);
+            int k = preparedStatement.executeUpdate();
+        }
+        catch (SystemError systemError)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "addCustomerNameBatch()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, systemError.getMessage(), systemError.getCause());
+        }
+        catch (SQLException sql)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "addCustomerNameBatch()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, sql.getMessage(), sql.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return;
+    }
+
+    public void addCustomerCardBatch(String cardNumber, String reason) throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        try
+        {
+            String firstSix = Functions.getFirstSix(cardNumber);
+            String lastFour = Functions.getLastFour(cardNumber);
+            connection = Database.getConnection();
+            String query = "insert into blacklist_cards(first_six,last_four,reason)value(?,?,?)";
+            preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, firstSix);
+            preparedStatement.setString(2, lastFour);
+            preparedStatement.setString(3, reason);
+            int k = preparedStatement.executeUpdate();
+        }
+        catch (SystemError systemError)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "addCustomerCardBatch()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, systemError.getMessage(), systemError.getCause());
+        }
+        catch (SQLException sql)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "addCustomerCardBatch()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, sql.getMessage(), sql.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+    }
+
+    public void addCustomerEmailBatch(String cardHolderEmail, String reason) throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        try
+        {
+            String query = "insert into blacklist_email (emailAddress,reason) values (?,?)";
+            connection = Database.getConnection();
+            preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, cardHolderEmail);
+            preparedStatement.setString(2, reason);
+            int k = preparedStatement.executeUpdate();
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "addCustomerEmailBatch()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "addCustomerEmailBatch()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+    }
+
+    public List<BlacklistVO> getBlockedBin(String startBin, String endBin, String accountId, String memberId) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        List<BlacklistVO> list = new ArrayList();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("select * from blacklist_bin where id>0 ");
+            StringBuffer countQuery = new StringBuffer("select count(*) blacklist_bin");
+
+            if (function.isValueNull(startBin) && function.isValueNull(endBin))
+            {
+                sb.append("And startBin <='" + startBin + "'" + "AND endBin >='" + endBin + "'");
+                countQuery.append("And startBin <='" + startBin + "'" + "AND endBin >='" + endBin + "'");
+            }
+
+            if (function.isValueNull(accountId))
+            {
+                sb.append(" and accountid='" + accountId + "'");
+                countQuery.append(" where accountid='" + accountId + "'");
+            }
+            if (function.isValueNull(memberId))
+            {
+                sb.append(" and memberid='" + memberId + "'");
+                countQuery.append(" where memberid='" + memberId + "'");
+            }
+            sb.append(" ORDER BY TIMESTAMP DESC ");
+            ps = conn.prepareStatement(sb.toString());
+
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setAccountId(rs.getString("accountid"));
+                blacklistVO.setMemberId(rs.getString("memberid"));
+                blacklistVO.setBinStart(rs.getString("startBin"));
+                blacklistVO.setBinEnd(rs.getString("endBin"));
+                list.add(blacklistVO);
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedCountry()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedCountry()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+    public List<BlacklistVO> getBlockedBinPage(String startBin, String endBin, String accountId, String memberId, PaginationVO paginationVO) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        List<BlacklistVO> list = new ArrayList();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        int totalreords = 0;
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("select * from blacklist_bin where id>0 ");
+            StringBuffer countQuery = new StringBuffer("select count(*) from blacklist_bin where id>0 ");
+
+            if (function.isValueNull(startBin) && function.isValueNull(endBin))
+            {
+                sb.append("And startBin <='" + startBin + "'" + "AND endBin >='" + endBin + "'");
+                countQuery.append("And startBin <='" + startBin + "'" + "AND endBin >='" + endBin + "'");
+            }
+
+            if (function.isValueNull(accountId))
+            {
+                sb.append(" and accountid='" + accountId + "'");
+                countQuery.append(" AND accountid='" + accountId + "'");
+            }
+            if (function.isValueNull(memberId))
+            {
+                sb.append(" and memberid='" + memberId + "'");
+                countQuery.append(" AND memberid='" + memberId + "'");
+            }
+            if (!function.isValueNull(startBin) && !function.isValueNull(endBin))
+            {
+                sb.append(" order by TIMESTAMP desc LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            }
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setId(rs.getString("id"));
+                blacklistVO.setAccountId(rs.getString("accountid"));
+                blacklistVO.setMemberId(rs.getString("memberid"));
+                blacklistVO.setBinStart(rs.getString("startBin"));
+                blacklistVO.setBinEnd(rs.getString("endBin"));
+                list.add(blacklistVO);
+            }
+            ps = conn.prepareStatement(countQuery.toString());
+
+            rs = ps.executeQuery();
+            if (rs.next())
+            {
+                totalreords = rs.getInt(1);
+            }
+            if (totalreords != 0)
+            {
+                paginationVO.setTotalRecords(totalreords);
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedBinPage()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedBinPage()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+    public int addBin(String startBin, String endBin, String accountId, String memberId) throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        int count = 0;
+        try
+        {
+            String query = "insert into blacklist_bin (startBin,endBin,accountid,memberid) values (?,?,?,?)";
+            connection = Database.getConnection();
+            preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, startBin);
+            preparedStatement.setString(2, endBin);
+            preparedStatement.setString(3, accountId);
+            preparedStatement.setString(4, memberId);
+            count = preparedStatement.executeUpdate();
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "addCustomerEmailBatch()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "addCustomerEmailBatch()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return count;
+    }
+
+    public List<BlacklistVO> getBlackListBinForPartner(String startBin, String endBin, String accountId, String memberId, int records, int pageno, HttpServletRequest req) throws PZDBViolationException
+    {
+        int start = 0;
+        int end = 0;
+        Connection conn = null;
+        ResultSet rs = null;
+        ResultSet rs1 = null;
+        PreparedStatement ps = null;
+        PreparedStatement pstmt = null;
+        BlacklistVO BlacklistVO = null;
+        List<BlacklistVO> list = new ArrayList();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+
+        start = (pageno - 1) * records;
+        end = records;
+
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("select startBin,endBin,accountId,memberId from blacklist_bin where id>0 ");
+            StringBuffer countQuery = new StringBuffer("select count(*) from blacklist_bin");
+
+            if (function.isValueNull(memberId))
+            {
+                sb.append(" and memberId='" + memberId + "'");
+                countQuery.append(" where memberId='" + memberId + "'");
+            }
+
+            if (function.isValueNull(startBin) && function.isValueNull(endBin))
+            {
+                sb.append("And startBin >='"+startBin+"'"+"AND endBin <='"+endBin+"'");
+                countQuery.append("And startBin >='"+startBin+"'"+"AND endBin <='"+endBin+"'");
+            }
+
+            if (function.isValueNull(accountId))
+            {
+                sb.append(" and accountId='" + accountId + "'");
+                countQuery.append(" and accountId='" + accountId + "'");
+            }
+            sb.append(" ORDER BY TIMESTAMP DESC ");
+            sb.append(" limit  " + start + "," + end);
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                BlacklistVO = new BlacklistVO();
+                BlacklistVO.setAccountId(rs.getString("accountid"));
+                BlacklistVO.setMemberId(rs.getString("memberId"));
+                BlacklistVO.setBinStart(rs.getString("startBin"));
+                BlacklistVO.setBinEnd(rs.getString("endBin"));
+                list.add(BlacklistVO);
+            }
+            pstmt = conn.prepareStatement(countQuery.toString());
+            rs1 = pstmt.executeQuery();
+
+            int totalrecords = 0;
+            if (rs1.next())
+                totalrecords = rs1.getInt(1);
+
+            req.setAttribute("totalrecords", totalrecords);
+            req.setAttribute("records", "0");
+            if (totalrecords > 0)
+            {
+                req.setAttribute("records", list.size());
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getWhiteListBin()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getWhiteListBin()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+    public void unblockBin(String Id) throws PZDBViolationException
+    {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try
+        {
+            conn = Database.getConnection();
+            String dQuery = "delete from blacklist_bin where id=?";
+            ps = conn.prepareStatement(dQuery);
+            ps.setString(1, Id);
+            ps.executeUpdate();
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockCountry()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockCountry()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+    }
+
+    public int uploadBins(List<String> queryBatch) throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        int count = 0;
+        try
+        {
+            connection = Database.getConnection();
+            for (String batch : queryBatch)
+            {
+                if (batch != null && batch.length() > 0 && batch.charAt(batch.length() - 1) == ',')
+                {
+                    batch = batch.substring(0, batch.length() - 1);
+                }
+                preparedStatement = connection.prepareStatement(batch.toString());
+                log.debug("prepare Statement::::::"+preparedStatement);
+                count = count + preparedStatement.executeUpdate();
+            }
+        }
+        catch (SystemError systemError)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "uploadBins()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, systemError.getMessage(), systemError.getCause());
+        }
+        catch (SQLException sql)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "uploadBins()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, sql.getMessage(), sql.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return count;
+    }
+
+    public boolean deleteBlacklistCard(String memberId, String accountId, String country) throws PZDBViolationException
+    {
+        log.debug("inside deleteBlacklistCard:::");
+        boolean isRecordAvailable = false;
+        Connection conn = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet result = null;
+        Functions functions = new Functions();
+        int counter = 1;
+        try
+        {
+            conn = Database.getRDBConnection();
+            StringBuilder query = new StringBuilder("DELETE from blacklist_country");
+
+            if (functions.isValueNull(memberId))
+            {
+                query.append(" WHERE memberid=?");
+            }
+            if (functions.isValueNull(accountId))
+            {
+                query.append(" and accountid=?");
+            }
+            if (functions.isValueNull(country))
+            {
+                query.append(" and country=?");
+            }
+            preparedStatement = conn.prepareStatement(query.toString());
+
+            if (functions.isValueNull(memberId))
+            {
+                preparedStatement.setString(counter, memberId);
+                counter++;
+            }
+            if (functions.isValueNull(accountId))
+            {
+                preparedStatement.setString(counter, accountId);
+                counter++;
+            }
+            if (functions.isValueNull(country))
+            {
+                preparedStatement.setString(counter, country);
+                counter++;
+            }
+
+            log.debug("delete query:::::" + preparedStatement);
+            int i = preparedStatement.executeUpdate();
+            if (i > 0)
+            {
+                log.debug("inside if true");
+                isRecordAvailable = true;
+            }
+        }
+        catch (SQLException e)
+        {
+            log.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(BlacklistDAO.class.getName(), "isRecordAvailableForMember()", null, "Common", "Sql exception while connecting to blacklist_country table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError)
+        {
+            log.error("SystemError:::::", systemError);
+            PZExceptionHandler.raiseDBViolationException(BlacklistDAO.class.getName(), "isRecordAvailableForMember()", null, "Common", "Sql exception while connecting to blacklist_country table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(result);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(conn);
+        }
+        log.debug("return:::::" + isRecordAvailable);
+        return isRecordAvailable;
+    }
+
+    public boolean deleteBlacklistBin(String memberid, String accountid, String startBin, String endBin) throws PZDBViolationException
+    {
+        log.debug("inside deleteBlacklistCard:::");
+        boolean isRecordAvailable = false;
+        Connection conn = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet result = null;
+        Functions functions = new Functions();
+        int counter = 1;
+        try
+        {
+            conn = Database.getRDBConnection();
+            StringBuilder query = new StringBuilder("DELETE from blacklist_bin");
+
+            if (functions.isValueNull(memberid))
+            {
+                query.append(" WHERE memberid=?");
+            }
+            if (functions.isValueNull(accountid))
+            {
+                query.append(" and accountid=?");
+            }
+            if (functions.isValueNull(startBin))
+            {
+                query.append(" and startBin=?");
+            }
+            if (functions.isValueNull(endBin))
+            {
+                query.append(" and endBin=?");
+            }
+            preparedStatement = conn.prepareStatement(query.toString());
+
+            if (functions.isValueNull(memberid))
+            {
+                preparedStatement.setString(counter, memberid);
+                counter++;
+            }
+            if (functions.isValueNull(accountid))
+            {
+                preparedStatement.setString(counter, accountid);
+                counter++;
+            }
+            if (functions.isValueNull(startBin))
+            {
+                preparedStatement.setString(counter, startBin);
+                counter++;
+            }
+            if (functions.isValueNull(endBin))
+            {
+                preparedStatement.setString(counter, endBin);
+                counter++;
+            }
+
+            log.debug("delete query:::::" + preparedStatement);
+            int i = preparedStatement.executeUpdate();
+            if (i > 0)
+            {
+                log.debug("inside if true");
+                isRecordAvailable = true;
+            }
+        }
+        catch (SQLException e)
+        {
+            log.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(BlacklistDAO.class.getName(), "isRecordAvailableForMember()", null, "Common", "Sql exception while connecting to blacklist_country table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError)
+        {
+            log.error("SystemError:::::", systemError);
+            PZExceptionHandler.raiseDBViolationException(BlacklistDAO.class.getName(), "isRecordAvailableForMember()", null, "Common", "Sql exception while connecting to blacklist_country table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(result);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(conn);
+        }
+        log.debug("return:::::" + isRecordAvailable);
+        return isRecordAvailable;
+    }
+
+    public boolean checkblocklist(String ipStartRange) throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet rs = null;
+        boolean flag = false;
+
+        try
+        {
+            connection = Database.getRDBConnection();
+            StringBuffer stringBuffer = new StringBuffer("SELECT * FROM blacklist_ip where id>0 And ipaddress ='" + ipStartRange + "' AND type = 'Ipv4'");
+            preparedStatement = connection.prepareStatement(stringBuffer.toString());
+            rs = preparedStatement.executeQuery();
+            if (rs.next())
+            {
+                flag = true;
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "checkblocklist()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "checkblocklist()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return flag;
+    }
+
+    public boolean chackmemberId(String memberId) throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet rs = null;
+        boolean flag = false;
+
+        try
+        {
+            connection = Database.getRDBConnection();
+            StringBuffer stringBuffer = new StringBuffer("SELECT memberid FROM members where memberid ='" + memberId+"'");
+            preparedStatement = connection.prepareStatement(stringBuffer.toString());
+            rs = preparedStatement.executeQuery();
+            if (rs.next())
+            {
+                flag = true;
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "chackmemberId()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "chackmemberId()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return flag;
+    }
+
+    public boolean checkblocklistForV6(String ipv6Start) throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet rs = null;
+        boolean flag = false;
+
+        try
+        {
+            connection = Database.getRDBConnection();
+            StringBuffer stringBuffer = new StringBuffer("SELECT * FROM blacklist_ip where id>0 And ipaddress ='" + ipv6Start + "' AND type = 'Ipv6'");
+            preparedStatement = connection.prepareStatement(stringBuffer.toString());
+            rs = preparedStatement.executeQuery();
+            if (rs.next())
+            {
+                flag = true;
+            }
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "checkblocklistForV6()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "checkblocklistForV6()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return flag;
+    }
+
+    public ArrayList<BlacklistVO> getIpFromTop(String ipStartRange, String memberId, String selectIpVersion) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        ArrayList<BlacklistVO> list1 = new ArrayList();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("SELECT * FROM blacklist_ip ORDER BY id DESC  LIMIT 1;");
+            StringBuffer countQuery = new StringBuffer("select count(*)from  blacklist_ip");
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setMemberId(rs.getString("memberId"));
+                blacklistVO.setStartIpv4(rs.getString("ipaddress"));
+                //blacklistVO.setEndIpv4(rs.getString("end_range_ip"));
+                blacklistVO.selectIpVersion(rs.getString("type"));
+                list1.add(blacklistVO);
+
+            }
+
+        }
+        catch (SystemError se)
+        {
+            log.error("Internal Error", se);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getIpFromTop()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            log.error("Internal Error", e);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getIpFromTop()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list1;
+    }
+
+    public ArrayList<BlacklistVO> getIpFromTopfor6(String ipv6Start, String memberId, String selectIpVersion) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        ArrayList<BlacklistVO> list1 = new ArrayList();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("SELECT * FROM blacklist_ip ORDER BY id DESC  LIMIT 1; ");
+            StringBuffer countQuery = new StringBuffer("select count(*)from blacklist_ip");
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setMemberId(rs.getString("memberId"));
+                blacklistVO.setIpv6Start(rs.getString("ipaddress"));
+                // // blacklistVO.setIpv6End(rs.getString("end_range_ip"));
+                blacklistVO.selectIpVersion(rs.getString("type"));
+                list1.add(blacklistVO);
+            }
+
+        }
+        catch (SystemError se)
+        {
+            log.error("Internal Error", se);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getIpFromTopfor6()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            log.error("Internal Error", e);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getIpFromTopfor6()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list1;
+    }
+
+    //Block  Ipv4 Sanjay
+    public boolean addBlacklistIpv4(String memberId, String ipStartRange, String selectIpVersion) throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        boolean result = false;
+        try
+        {
+            connection = Database.getConnection();
+            StringBuffer query = new StringBuffer("INSERT INTO blacklist_ip (memberid,ipaddress,type) VALUES (?,?,?)");
+            preparedStatement = connection.prepareStatement(query.toString());
+            preparedStatement.setString(1, memberId);
+            preparedStatement.setString(2, ipStartRange);
+            preparedStatement.setString(3, selectIpVersion);
+            int k = preparedStatement.executeUpdate();
+
+            if (k > 0)
+            {
+                result = true;
+            }
+        }
+        catch (SQLException e)
+        {
+            log.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(BlacklistDAO.class.getName(), "addBlacklistIpv4()", null, "Common", "Sql exception while connecting to blacklist_ip table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError)
+        {
+            log.error("SystemError:::::", systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "addBlacklistIpv4()", null, "Common", "Sql exception while connecting to blacklist_ip table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return result;
+    }
+
+    public boolean addBlacklistIpv4nullmemberid(String ipStartRange, String selectIpVersion) throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        boolean result = false;
+        try
+        {
+            connection = Database.getConnection();
+            StringBuffer query = new StringBuffer("INSERT INTO blacklist_ip (ipaddress ,type) VALUES (?,?)");
+            preparedStatement = connection.prepareStatement(query.toString());
+            preparedStatement.setString(1, ipStartRange);
+            preparedStatement.setString(2, selectIpVersion);
+            int k = preparedStatement.executeUpdate();
+
+            if (k > 0)
+            {
+                result = true;
+            }
+        }
+        catch (SQLException e)
+        {
+            log.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(BlacklistDAO.class.getName(), "addBlacklistIpv4nullmemberid()", null, "Common", "Sql exception while connecting to blacklist_ip table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError)
+        {
+            log.error("SystemError:::::", systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "addBlacklistIpv4nullmemberid()", null, "Common", "Sql exception while connecting to blacklist_ip table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return result;
+    }
+    //Block  Ipv6 Sanjay
+    public boolean addBlacklistIpv6(String memberId, String selectIpVersion, String ipv6Start) throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        boolean result = false;
+        try
+        {
+
+            connection = Database.getConnection();
+            StringBuffer query = new StringBuffer("INSERT INTO blacklist_ip (memberid,type,ipaddress) VALUES (?,?,?)");
+            preparedStatement = connection.prepareStatement(query.toString());
+            preparedStatement.setString(1, memberId);
+            preparedStatement.setString(2, selectIpVersion);
+            preparedStatement.setString(3, ipv6Start);
+            int k = preparedStatement.executeUpdate();
+            if (k > 0)
+            {
+                result = true;
+            }
+        }
+        catch (SQLException e)
+        {
+            log.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(BlacklistDAO.class.getName(), "addBlacklistIpv6()", null, "Common", "Sql exception while connecting to blacklist_ip table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError)
+        {
+            log.error("SystemError:::::", systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "addBlacklistIpv6()", null, "Common", "Sql exception while connecting to blacklist_ip table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return result;
+    }
+
+    public boolean addBlacklistIpv6memberidNull(String selectIpVersion, String ipv6Start) throws PZDBViolationException
+    {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        boolean result = false;
+        try
+        {
+
+            connection = Database.getConnection();
+            StringBuffer query = new StringBuffer("INSERT INTO blacklist_ip (type,ipaddress) VALUES (?,?)");
+            preparedStatement = connection.prepareStatement(query.toString());
+            preparedStatement.setString(1, selectIpVersion);
+            preparedStatement.setString(2, ipv6Start);
+            int k = preparedStatement.executeUpdate();
+            if (k > 0)
+            {
+                result = true;
+            }
+        }
+        catch (SQLException e)
+        {
+            log.error("SQLException:::::", e);
+            PZExceptionHandler.raiseDBViolationException(BlacklistDAO.class.getName(), "addBlacklistIpv6memberidNull()", null, "Common", "Sql exception while connecting to blacklist_ip table", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, e.getMessage(), e.getCause());
+        }
+        catch (SystemError systemError)
+        {
+            log.error("SystemError:::::", systemError);
+            PZExceptionHandler.raiseDBViolationException(WhiteListDAO.class.getName(), "addBlacklistIpv6memberidNull()", null, "Common", "Sql exception while connecting to blacklist_ip table", PZDBExceptionEnum.INCORRECT_QUERY, null, systemError.getMessage(), systemError.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(preparedStatement);
+            Database.closeConnection(connection);
+        }
+        return result;
+    }
+
+    public List<BlacklistVO> getBlockedipMemneridStartRange(String ipStartRange, String memberId, String selectIpVersion, PaginationVO paginationVO) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        ResultSet rsCommonIPList = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        PreparedStatement psCountOfCommonIpList = null;
+        int counter = 1;
+        List<BlacklistVO> list = new ArrayList<BlacklistVO>();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("SELECT * FROM blacklist_ip ");
+            StringBuffer countQuery = new StringBuffer("select count(*)from blacklist_ip");
+            sb.append(" where id>0 And ipaddress ='" + ipStartRange + "'" + "And memberid ='" + memberId + "' AND type = 'Ipv4'");
+            countQuery.append(" where id>0 And ipaddress ='" + ipStartRange + "'" + "And memberid ='" + memberId + "' AND type = 'Ipv4'");
+
+
+            sb.append(" ORDER BY ID DESC LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setMemberId(rs.getString("memberId"));
+                blacklistVO.setStartIpv4(rs.getString("ipaddress"));
+                ////blacklistVO.setEndIpv4(rs.getString("end_range_ip"));
+                blacklistVO.selectIpVersion(rs.getString("type"));
+                list.add(blacklistVO);
+            }
+
+            counter = 1;
+            psCountOfCommonIpList = conn.prepareStatement(countQuery.toString());
+            rsCommonIPList = psCountOfCommonIpList.executeQuery();
+            if (rsCommonIPList.next())
+            {
+                paginationVO.setTotalRecords(rsCommonIPList.getInt(1));
+            }
+        }
+        catch (SystemError se)
+        {
+            log.error("Internal Error", se);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipMemneridStartRangeEndRange()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            log.error("Internal Error", e);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipMemneridStartRangeEndRange()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+    public List<BlacklistVO> getBlockedipMemnerid(String memberId, PaginationVO paginationVO, String selectIpVersion) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        ResultSet rsCommonIPList = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        PreparedStatement psCountOfCommonIpList = null;
+        int counter = 1;
+        List<BlacklistVO> list = new ArrayList<BlacklistVO>();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("SELECT * FROM blacklist_ip ");
+            StringBuffer countQuery = new StringBuffer("select count(*)from blacklist_ip");
+            sb.append(" where id>0 And memberid ='" + memberId + "' AND type = 'Ipv4'");
+            countQuery.append(" where id>0 And memberid ='" + memberId + "' AND type = 'Ipv4'");
+            sb.append(" ORDER BY ID DESC LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setMemberId(rs.getString("memberId"));
+                blacklistVO.setStartIpv4(rs.getString("ipaddress"));
+                // //blacklistVO.setEndIpv4(rs.getString("end_range_ip"));
+                blacklistVO.selectIpVersion(rs.getString("type"));
+                list.add(blacklistVO);
+            }
+
+            counter = 1;
+            psCountOfCommonIpList = conn.prepareStatement(countQuery.toString());
+            rsCommonIPList = psCountOfCommonIpList.executeQuery();
+            if (rsCommonIPList.next())
+            {
+                paginationVO.setTotalRecords(rsCommonIPList.getInt(1));
+            }
+        }
+        catch (SystemError se)
+        {
+            log.error("Internal Error", se);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipMemnerid()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            log.error("Internal Error", e);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipMemnerid()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+    public List<BlacklistVO> getBlockedipipStartRange(String ipStartRange, PaginationVO paginationVO) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        ResultSet rsCommonIPList = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        PreparedStatement psCountOfCommonIpList = null;
+        int counter = 1;
+        List<BlacklistVO> list = new ArrayList<BlacklistVO>();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("SELECT * FROM blacklist_ip ");
+            StringBuffer countQuery = new StringBuffer("select count(*) from blacklist_ip");
+            sb.append(" where id>0 And ipaddress ='" + ipStartRange + "' AND type = 'Ipv4'");
+            countQuery.append(" where id>0 And ipaddress ='" + ipStartRange + "' AND type = 'Ipv4'");
+            sb.append(" ORDER BY ID DESC LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setMemberId(rs.getString("memberId"));
+                blacklistVO.setStartIpv4(rs.getString("ipaddress"));
+                //    //blacklistVO.setEndIpv4(rs.getString("end_range_ip"));
+                blacklistVO.selectIpVersion(rs.getString("type"));
+                list.add(blacklistVO);
+            }
+            counter = 1;
+            psCountOfCommonIpList = conn.prepareStatement(countQuery.toString());
+            rsCommonIPList = psCountOfCommonIpList.executeQuery();
+            if (rsCommonIPList.next())
+            {
+                paginationVO.setTotalRecords(rsCommonIPList.getInt(1));
+            }
+        }
+        catch (SystemError se)
+        {
+            log.error("Internal Error", se);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipipStartRange()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            log.error("Internal Error", e);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipipStartRange()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+    public List<BlacklistVO> getBlockedipv4(PaginationVO paginationVO) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        ResultSet rsCommonIPList = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        PreparedStatement psCountOfCommonIpList = null;
+        int counter = 1;
+        List<BlacklistVO> list = new ArrayList<BlacklistVO>();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("SELECT * FROM blacklist_ip ");
+            StringBuffer countQuery = new StringBuffer("select count(*) FROM  blacklist_ip");
+            sb.append(" where id>0  AND type = 'Ipv4'");
+            countQuery.append(" where id>0  AND type = 'Ipv4'");
+            sb.append(" ORDER BY ID DESC LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            countQuery.append(" ORDER BY ID DESC ");
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setMemberId(rs.getString("memberId"));
+                blacklistVO.setStartIpv4(rs.getString("ipaddress"));
+                //blacklistVO.setEndIpv4(rs.getString("end_range_ip"));
+                blacklistVO.selectIpVersion(rs.getString("type"));
+                list.add(blacklistVO);
+            }
+            counter = 1;
+            psCountOfCommonIpList = conn.prepareStatement(countQuery.toString());
+
+
+            rsCommonIPList = psCountOfCommonIpList.executeQuery();
+            if (rsCommonIPList.next())
+            {
+                paginationVO.setTotalRecords(rsCommonIPList.getInt(1));
+            }
+        }
+        catch (SystemError se)
+        {
+            log.error("Internal Error", se);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipv4()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            log.error("Internal Error", e);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipv4()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+    public List<BlacklistVO> getBlockedipv6MemneridStartRange(String ipv6Start, String memberId, String selectIpVersion, PaginationVO paginationVO) throws PZDBViolationException
+    {
+
+        Connection conn = null;
+        ResultSet rs = null;
+        ResultSet rsCommonIPList = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        PreparedStatement psCountOfCommonIpList = null;
+        int counter = 1;
+        List<BlacklistVO> list = new ArrayList<BlacklistVO>();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("SELECT * FROM blacklist_ip ");
+            StringBuffer countQuery = new StringBuffer("select count(*)from blacklist_ip");
+
+            sb.append(" where id>0 And ipaddress ='" + ipv6Start + "'" + "And memberid ='" + memberId + "'AND type = 'Ipv6'");
+            countQuery.append(" where id>0 And  ipaddress ='" + ipv6Start + "'" + "And memberid ='" + memberId + "'AND type = 'Ipv6'");
+
+
+            sb.append(" ORDER BY ID DESC LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setMemberId(rs.getString("memberId"));
+                blacklistVO.setIpv6Start(rs.getString("ipaddress"));
+                blacklistVO.selectIpVersion(rs.getString("type"));
+                list.add(blacklistVO);
+            }
+
+            counter = 1;
+            psCountOfCommonIpList = conn.prepareStatement(countQuery.toString());
+            rsCommonIPList = psCountOfCommonIpList.executeQuery();
+            if (rsCommonIPList.next())
+            {
+                paginationVO.setTotalRecords(rsCommonIPList.getInt(1));
+            }
+
+        }
+        catch (SystemError se)
+        {
+            log.error("Internal Error", se);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipv6MemneridStartRange()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            log.error("Internal Error", e);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipv6MemneridStartRange()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+    public List<BlacklistVO> getBlockedipv6Memnerid(String memberId, PaginationVO paginationVO) throws PZDBViolationException
+    {
+
+        Connection conn = null;
+        ResultSet rs = null;
+        ResultSet rsCommonIPList = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        PreparedStatement psCountOfCommonIpList = null;
+        int counter = 1;
+        List<BlacklistVO> list = new ArrayList<BlacklistVO>();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("SELECT * FROM blacklist_ip ");
+            StringBuffer countQuery = new StringBuffer("select count(*)from blacklist_ip");
+
+            sb.append(" where id>0 And memberid ='" + memberId + "'AND type = 'Ipv6'");
+            countQuery.append(" where id>0 And  memberid ='" + memberId + "'AND type = 'Ipv6'");
+
+
+            sb.append(" ORDER BY ID DESC LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setMemberId(rs.getString("memberId"));
+                blacklistVO.setIpv6Start(rs.getString("ipaddress"));
+                // blacklistVO.setIpv6End(rs.getString("end_range_ip"));
+                blacklistVO.selectIpVersion(rs.getString("type"));
+                list.add(blacklistVO);
+            }
+            counter = 1;
+            psCountOfCommonIpList = conn.prepareStatement(countQuery.toString());
+            rsCommonIPList = psCountOfCommonIpList.executeQuery();
+            if (rsCommonIPList.next())
+            {
+                paginationVO.setTotalRecords(rsCommonIPList.getInt(1));
+            }
+        }
+        catch (SystemError se)
+        {
+            log.error("Internal Error", se);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipv6Memnerid()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            log.error("Internal Error", e);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipv6Memnerid()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+    public List<BlacklistVO> getBlockedipv6ipv6Start(String ipv6Start, PaginationVO paginationVO) throws PZDBViolationException
+    {
+
+        Connection conn = null;
+        ResultSet rs = null;
+        ResultSet rsCommonIPList = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        PreparedStatement psCountOfCommonIpList = null;
+        int counter = 1;
+        List<BlacklistVO> list = new ArrayList<BlacklistVO>();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("SELECT * FROM blacklist_ip ");
+            StringBuffer countQuery = new StringBuffer("select count(*) from blacklist_ip");
+
+            sb.append(" where id>0 AND ipaddress = '" + ipv6Start + "' AND type = 'Ipv6'");
+            countQuery.append(" where id>0 AND ipaddress ='" + ipv6Start + "'AND  type = 'Ipv6'");
+
+
+            sb.append(" ORDER BY ID DESC LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setMemberId(rs.getString("memberId"));
+                blacklistVO.setIpv6Start(rs.getString("ipaddress"));
+                blacklistVO.selectIpVersion(rs.getString("type"));
+                list.add(blacklistVO);
+            }
+
+            counter = 1;
+            psCountOfCommonIpList = conn.prepareStatement(countQuery.toString());
+            rsCommonIPList = psCountOfCommonIpList.executeQuery();
+            if (rsCommonIPList.next())
+            {
+                paginationVO.setTotalRecords(rsCommonIPList.getInt(1));
+            }
+        }
+        catch (SystemError se)
+        {
+            log.error("Internal Error", se);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipv6ipv6Start()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            log.error("Internal Error", e);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipv6ipv6Start()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+    public List<BlacklistVO> getBlockedipv6(PaginationVO paginationVO) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        ResultSet rsCommonIPList = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        PreparedStatement psCountOfCommonIpList = null;
+        int counter = 1;
+        List<BlacklistVO> list = new ArrayList<BlacklistVO>();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("SELECT * FROM blacklist_ip ");
+            StringBuffer countQuery = new StringBuffer("select count(*) from blacklist_ip");
+
+            sb.append(" where id>0 AND type = 'Ipv6'");
+            countQuery.append(" where id>0 AND type = 'Ipv6'");
+
+
+            sb.append(" ORDER BY ID DESC LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setMemberId(rs.getString("memberId"));
+                blacklistVO.setIpv6Start(rs.getString("ipaddress"));
+                // blacklistVO.setIpv6End(rs.getString("end_range_ip"));
+                blacklistVO.selectIpVersion(rs.getString("type"));
+                list.add(blacklistVO);
+            }
+            counter = 1;
+            psCountOfCommonIpList = conn.prepareStatement(countQuery.toString());
+            rsCommonIPList = psCountOfCommonIpList.executeQuery();
+            if (rsCommonIPList.next())
+            {
+                paginationVO.setTotalRecords(rsCommonIPList.getInt(1));
+            }
+
+        }
+        catch (SystemError se)
+        {
+            log.error("Internal Error", se);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipv6()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            log.error("Internal Error", e);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipv6()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+    public List<BlacklistVO> getBlockedipfromMemberId(String memberId, PaginationVO paginationVO) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        ResultSet rsCommonIPList = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        PreparedStatement psCountOfCommonIpList = null;
+        int counter = 1;
+        List<BlacklistVO> list = new ArrayList<BlacklistVO>();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("SELECT * FROM blacklist_ip ");
+            StringBuffer countQuery = new StringBuffer("select count(*) from blacklist_ip");
+
+            sb.append(" where id>0 AND memberId = '" + memberId + "'");
+            countQuery.append(" where id>0 AND memberId = '" + memberId + "'");
+
+
+            sb.append(" ORDER BY ID DESC LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setMemberId(rs.getString("memberId"));
+                blacklistVO.setStartIpv4(rs.getString("ipaddress"));
+                //blacklistVO.setIpv6End(rs.getString("end_range_ip"));
+                blacklistVO.setId(rs.getString("id"));
+                blacklistVO.selectIpVersion(rs.getString("type"));
+                list.add(blacklistVO);
+            }
+            counter = 1;
+            psCountOfCommonIpList = conn.prepareStatement(countQuery.toString());
+            rsCommonIPList = psCountOfCommonIpList.executeQuery();
+            if (rsCommonIPList.next())
+            {
+                paginationVO.setTotalRecords(rsCommonIPList.getInt(1));
+            }
+
+        }
+        catch (SystemError se)
+        {
+            log.error("Internal Error", se);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipfromMemberId()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            log.error("Internal Error", e);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedipfromMemberId()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+    public List<BlacklistVO> getBlockedIP(PaginationVO paginationVO) throws PZDBViolationException
+    {
+        Connection conn = null;
+        ResultSet rs = null;
+        ResultSet rsCommonIPList = null;
+        PreparedStatement ps = null;
+        BlacklistVO blacklistVO = null;
+        PreparedStatement psCountOfCommonIpList = null;
+        int counter = 1;
+        List<BlacklistVO> list = new ArrayList<BlacklistVO>();
+        StringBuffer sb = new StringBuffer();
+        Functions function = new Functions();
+        try
+        {
+            conn = Database.getConnection();
+            sb.append("SELECT * FROM blacklist_ip ");
+            StringBuffer countQuery = new StringBuffer("select count(*) from blacklist_ip");
+
+            sb.append(" where id>0 ");
+            countQuery.append(" where id>0 ");
+
+
+            sb.append(" ORDER BY ID DESC LIMIT " + paginationVO.getStart() + "," + paginationVO.getEnd());
+            ps = conn.prepareStatement(sb.toString());
+            rs = ps.executeQuery();
+            while (rs.next())
+            {
+                blacklistVO = new BlacklistVO();
+                blacklistVO.setMemberId(rs.getString("memberId"));
+                blacklistVO.setStartIpv4(rs.getString("ipaddress"));
+                blacklistVO.selectIpVersion(rs.getString("type"));
+                blacklistVO.setId(rs.getString("id"));
+
+                list.add(blacklistVO);
+            }
+            counter = 1;
+            psCountOfCommonIpList = conn.prepareStatement(countQuery.toString());
+            rsCommonIPList = psCountOfCommonIpList.executeQuery();
+            if (rsCommonIPList.next())
+            {
+                paginationVO.setTotalRecords(rsCommonIPList.getInt(1));
+            }
+
+        }
+        catch (SystemError se)
+        {
+            log.error("Internal Error", se);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedIP()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            log.error("Internal Error", e);
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "getBlockedIP()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+
+            Database.closeResultSet(rs);
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+        return list;
+    }
+
+    public void unblockIpv6memberIdipv6Start(String memberId, String ipv6Start, String selectIpVersion) throws PZDBViolationException
+    {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try
+        {
+            conn = Database.getConnection();
+            String dQuery = "DELETE FROM blacklist_ip WHERE   memberid=? and ipaddress =? AND type=?";
+            ps = conn.prepareStatement(dQuery);
+            ps.setString(1, memberId);
+            ps.setString(2, ipv6Start);
+            ps.setString(3, selectIpVersion);
+            ps.executeUpdate();
+
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockIpv6memberIdipv6Start()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockIpv6memberIdipv6Start()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+    }
+
+    public void unblockIp(String ipStartRange, String memberId, String selectIpVersion) throws PZDBViolationException
+    {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try
+        {
+            conn = Database.getConnection();
+            String dQuery = "DELETE FROM blacklist_ip WHERE ipaddress=? AND memberid=? and type=?";
+            ps = conn.prepareStatement(dQuery);
+            ps.setString(1, ipStartRange);
+            ps.setString(2, memberId);
+            ps.setString(3, selectIpVersion);
+            ps.executeUpdate();
+
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockIp()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockIp()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+    }
+
+
+    public void unblockIp(String ipStartRange, String selectIpVersion) throws PZDBViolationException
+    {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try
+        {
+            conn = Database.getConnection();
+            String dQuery = "DELETE FROM blacklist_ip WHERE   ipaddress=? and type=?";
+
+            ps = conn.prepareStatement(dQuery);
+            ps.setString(1, ipStartRange);
+            ps.setString(2, selectIpVersion);
+            ps.executeUpdate();
+
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockIp()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockIp()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+    }
+
+    public void unblockIpv6(String ipv6Start, String selectIpVersion) throws PZDBViolationException
+    {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try
+        {
+            conn = Database.getConnection();
+            String dQuery = "DELETE FROM blacklist_ip WHERE   ipaddress=? AND type=? ";
+            ps = conn.prepareStatement(dQuery);
+            ps.setString(1, ipv6Start);
+            ps.setString(2, selectIpVersion);
+
+            ps.executeUpdate();
+
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockIpv6()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockIpv6()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+    }
+
+    public void unblockIpv6(String id) throws PZDBViolationException
+    {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try
+        {
+            conn = Database.getConnection();
+            String dQuery = "DELETE FROM blacklist_ip WHERE   id=?  ";
+            ps = conn.prepareStatement(dQuery);
+            ps.setString(1, id);
+            ps.executeUpdate();
+
+        }
+        catch (SystemError se)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockIpv6()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.DB_CONNECTION_ISSUE, null, se.getMessage(), se.getCause());
+        }
+        catch (SQLException e)
+        {
+            PZExceptionHandler.raiseDBViolationException("BlacklistDAO.java", "unblockIpv6()", null, "Common", "DB Connection Error:::", PZDBExceptionEnum.INCORRECT_QUERY, null, e.getMessage(), e.getCause());
+        }
+        finally
+        {
+            Database.closePreparedStatement(ps);
+            Database.closeConnection(conn);
+        }
+    }
+
+
+}

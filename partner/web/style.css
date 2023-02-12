@@ -1,0 +1,124 @@
+.headertd{background:#2379A5;text-valign: center;text-align: center;font-family:verdana,arial}
+.headerfont{color:#ffffff;font-family:verdana,arial;font-size:10px;FONT-WEIGHT: bold}
+.headerfont1{color:#ffffff;font-family:verdana,arial;font-size:10px;FONT-WEIGHT: bold}
+.tr0{
+	color:#001962;
+	background:#E6F5FF;
+	font-family:verdana,arial;
+	font-size: 11px;
+	font-weight: normal;
+}
+.tr1{
+	color:#001962;
+	background:#F1F3F5;
+	font-family:verdana,arial;
+	font-size: 11px;
+	font-weight: normal;
+}
+.th0{
+	color:#ffffff;
+	background:#B2B2B2;
+	text-align:center;
+	font-family:verdana,arial;
+	font-size:12px;
+	FONT-WEIGHT: bold;
+}
+.th1{
+	color:#ffffff;
+	background:#949494;
+	text-align:center;
+	font-family:verdana,arial;
+	font-size: 12px;
+	FONT-WEIGHT: bold
+}
+.submit{FONT-WEIGHT: bold; FONT-SIZE: 8pt; COLOR:#f1ede0; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif; BACKGROUND-COLOR:#007ACC}
+.textBoxes {FONT-SIZE: 8pt; FONT-FAMILY: verdana,arial,sans-serif}
+.search{font-family:verdana,arial;font-size:11px}
+.label{color:#ffffff;font-family:verdana,arial;font-size:11px;FONT-WEIGHT: bold;}
+.title{color:#001962;font-family:verdana,arial;font-size:22px;FONT-WEIGHT: bold;text-align:center}
+
+.subtitle{color:#001962;font-family:verdana,arial;font-size:15px;FONT-WEIGHT: bold;text-align:left}
+.subtitle1{color:#001962;font-family:verdana,arial;font-size:15px;FONT-WEIGHT: bold;text-align:center}
+.total{color:#7D0000;background:#F1EDE0;text-valign:center;font-family:verdana,arial;font-size:11px; FONT-WEIGHT: bold}
+.menufont{
+	color:#ffffff;
+	text-valign:center;
+	text-align:center;
+	font-family:verdana,arial;
+	font-size:14px;
+	background : #007ACC;
+	FONT-WEIGHT: bold;
+	text-decoration : none;
+}
+.button{BACKGROUND-COLOR:#949494;color:#ffffff;text-valign: center;text-align: center;font-family:verdana,arial;FONT-WEIGHT: bold; font-size:11px}
+.merchant{color:#001962;text-valign:center;font-family:verdana,arial;font-size:12px; FONT-WEIGHT: bold}
+.text{color:#001962;text-valign:left;font-family:verdana,arial;font-size:12px;}
+.textb{color:#001962;text-valign:center;font-family:verdana,arial;font-size:12px; FONT-WEIGHT: bold}
+A:HOVER {
+	color: #B4735C;
+	text-valign:center;
+	text-align:center;
+	font-family:verdana,arial;
+	font-size:12px;
+	FONT-WEIGHT: bold;
+	text-decoration:underline
+}
+A{
+	color:#7D0000;
+	text-valign:center;
+
+	font-family:verdana,arial;
+	font-size:12px;
+	FONT-WEIGHT: bold;
+	text-decoration: underline;
+}
+.link{
+	color:#001962;
+	text-valign:center;
+	font-family:verdana,arial;
+	font-size: 12px;
+	FONT-WEIGHT: bold;
+	text-decoration: none;
+}
+
+.nolink{
+	color:#001962;
+	text-valign:center;
+	font-family:verdana,arial;
+	font-size: 12px;
+	FONT-WEIGHT: bold;
+	text-decoration: none;
+}
+.negbal0{
+	color:#001962;
+	background:#E6F5FF;
+	text-align:right;
+	font-family:verdana,arial;
+	font-size: 11px;
+	font-weight: normal;
+}
+.negbal1{
+	color :#001962;
+	background:#F1F3F5;
+	text-align: right;
+	font-family:verdana,arial;
+	font-size: 11px;
+	font-weight: normal;
+}
+.negbal{
+	color : Red;
+	}
+
+
+
+A:HOVER.menufont{
+	color:#ffffff;
+	text-valign:center;
+	text-align:center;
+	font-family:verdana,arial;
+	font-size:12px;
+	background : #007ACC;
+	FONT-WEIGHT: bold;
+	text-decoration : none;
+}
+	

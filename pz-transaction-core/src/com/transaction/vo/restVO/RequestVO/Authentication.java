@@ -1,0 +1,99 @@
+package com.transaction.vo.restVO.RequestVO;
+
+import javax.ws.rs.FormParam;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+
+/**
+ * Created by Sneha on 2/8/2016.
+ */
+@XmlRootElement(name="authentication")
+@XmlAccessorType(XmlAccessType.FIELD)
+public class Authentication
+{
+    @FormParam("authentication.memberId")
+    String memberId;
+
+    @FormParam("authentication.password")
+    String password;
+
+    @FormParam("authentication.checksum")
+    String checksum;
+
+    @FormParam("authentication.terminalId")
+    String terminalId;
+
+    @FormParam("authentication.partnerId")
+    String partnerId;
+
+    @FormParam("authentication.sKey")
+    String sKey;
+
+    @FormParam("authentication.accountId")
+    String accountId;
+
+    public String getPartnerId()
+    {
+        return partnerId;
+    }
+
+    public void setPartnerId(String partnerId)
+    {
+        this.partnerId = partnerId;
+    }
+
+    public String getMemberId()
+    {
+        return memberId;
+    }
+
+    public void setMemberId(String memberId)
+    {
+        this.memberId = memberId;
+    }
+
+    public String getPassword()
+    {
+        return password;
+    }
+
+    public void setPassword(String password)
+    {
+        this.password = password;
+    }
+
+    public String getChecksum()
+    {
+        return checksum;
+    }
+
+    public void setChecksum(String checksum)
+    {
+        this.checksum = checksum;
+    }
+
+    public String getTerminalId()
+    {
+        return terminalId;
+    }
+
+    public void setTerminalId(String terminalId)
+    {
+        this.terminalId = terminalId;
+    }
+
+    public String getsKey()
+    {
+        return sKey;
+    }
+
+    public void setsKey(String sKey)
+    {
+        this.sKey = sKey;
+    }
+
+    public String getAccountId() {return accountId;}
+
+    public void setAccountId(String accountId) {this.accountId = accountId;}
+}

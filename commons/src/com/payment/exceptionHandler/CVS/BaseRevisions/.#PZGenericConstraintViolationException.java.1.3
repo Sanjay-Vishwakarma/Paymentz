@@ -1,0 +1,64 @@
+package com.payment.exceptionHandler;
+
+import com.payment.exceptionHandler.constraint.PZGenericConstraint;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Jinesh
+ * Date: 11/20/14
+ * Time: 1:11 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class PZGenericConstraintViolationException extends Exception
+{
+
+    PZGenericConstraint pzGenericConstraint;
+
+    public PZGenericConstraintViolationException(PZGenericConstraint genConstraint, String msg, Throwable cause)
+    {
+        super(msg, cause);
+        pzGenericConstraint = genConstraint;
+
+    }
+
+    PZGenericConstraintViolationException(PZGenericConstraint genConstraint, String msg)
+    {
+        super(msg);
+        pzGenericConstraint = genConstraint;
+
+    }
+    public PZGenericConstraintViolationException(String msg, Throwable cause)
+    {
+        super(msg, cause);
+
+
+    }
+
+    public PZGenericConstraintViolationException(String msg)
+    {
+        super(msg);
+
+
+    }
+
+    public PZGenericConstraintViolationException(String className,String methodName,String moduleName,String message,String exceptionMsg, String cause)
+    {
+
+    }
+
+
+
+    public PZGenericConstraint getPzGenericConstraint()
+    {
+        return pzGenericConstraint;
+    }
+
+    public void setPzGenericConstraint(PZGenericConstraint pzGenericConstraint)
+    {
+        this.pzGenericConstraint = pzGenericConstraint;
+    }
+
+
+
+
+}
